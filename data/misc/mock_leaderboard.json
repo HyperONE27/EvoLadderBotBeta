@@ -1,0 +1,702 @@
+[
+    {
+        "player_id": "Player001",
+        "main_id": "Player001",
+        "mmr": 4850,
+        "race": "bw_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player001",
+        "main_id": "Player001",
+        "mmr": 4200,
+        "race": "bw_zerg",
+        "country": "US"
+    },
+    {
+        "player_id": "Player001",
+        "main_id": "Player001",
+        "mmr": 3800,
+        "race": "sc2_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player001",
+        "main_id": "Player001",
+        "mmr": 3500,
+        "race": "sc2_protoss",
+        "country": "US"
+    },
+    {
+        "player_id": "Player002",
+        "main_id": "Player002",
+        "mmr": 4720,
+        "race": "bw_protoss",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player002",
+        "main_id": "Player002",
+        "mmr": 4500,
+        "race": "bw_terran",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player002",
+        "main_id": "Player002",
+        "mmr": 4100,
+        "race": "sc2_zerg",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player002",
+        "main_id": "Player002",
+        "mmr": 3900,
+        "race": "sc2_terran",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player003",
+        "main_id": "Player003",
+        "mmr": 4680,
+        "race": "bw_zerg",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player003",
+        "main_id": "Player003",
+        "mmr": 4400,
+        "race": "bw_protoss",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player003",
+        "main_id": "Player003",
+        "mmr": 4000,
+        "race": "sc2_protoss",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player003",
+        "main_id": "Player003",
+        "mmr": 3600,
+        "race": "sc2_zerg",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player004",
+        "main_id": "Player004",
+        "mmr": 4520,
+        "race": "sc2_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player004",
+        "main_id": "Player004",
+        "mmr": 4300,
+        "race": "bw_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player004",
+        "main_id": "Player004",
+        "mmr": 3900,
+        "race": "bw_zerg",
+        "country": "US"
+    },
+    {
+        "player_id": "Player004",
+        "main_id": "Player004",
+        "mmr": 3700,
+        "race": "sc2_protoss",
+        "country": "US"
+    },
+    {
+        "player_id": "Player005",
+        "main_id": "Player005",
+        "mmr": 4380,
+        "race": "bw_protoss",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player005",
+        "main_id": "Player005",
+        "mmr": 4100,
+        "race": "bw_zerg",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player005",
+        "main_id": "Player005",
+        "mmr": 3800,
+        "race": "sc2_terran",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player005",
+        "main_id": "Player005",
+        "mmr": 3500,
+        "race": "sc2_zerg",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player006",
+        "main_id": "Player006",
+        "mmr": 4250,
+        "race": "sc2_zerg",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player006",
+        "main_id": "Player006",
+        "mmr": 4000,
+        "race": "bw_terran",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player006",
+        "main_id": "Player006",
+        "mmr": 3700,
+        "race": "bw_protoss",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player006",
+        "main_id": "Player006",
+        "mmr": 3400,
+        "race": "sc2_protoss",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player007",
+        "main_id": "Player007",
+        "mmr": 4120,
+        "race": "bw_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player007",
+        "main_id": "Player007",
+        "mmr": 3850,
+        "race": "bw_protoss",
+        "country": "US"
+    },
+    {
+        "player_id": "Player007",
+        "main_id": "Player007",
+        "mmr": 3600,
+        "race": "sc2_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player007",
+        "main_id": "Player007",
+        "mmr": 3300,
+        "race": "sc2_zerg",
+        "country": "US"
+    },
+    {
+        "player_id": "Player008",
+        "main_id": "Player008",
+        "mmr": 3980,
+        "race": "sc2_protoss",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player008",
+        "main_id": "Player008",
+        "mmr": 3750,
+        "race": "bw_zerg",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player008",
+        "main_id": "Player008",
+        "mmr": 3500,
+        "race": "bw_terran",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player008",
+        "main_id": "Player008",
+        "mmr": 3200,
+        "race": "sc2_terran",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player009",
+        "main_id": "Player009",
+        "mmr": 3850,
+        "race": "bw_zerg",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player009",
+        "main_id": "Player009",
+        "mmr": 3600,
+        "race": "bw_protoss",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player009",
+        "main_id": "Player009",
+        "mmr": 3400,
+        "race": "sc2_zerg",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player009",
+        "main_id": "Player009",
+        "mmr": 3100,
+        "race": "sc2_protoss",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player010",
+        "main_id": "Player010",
+        "mmr": 3720,
+        "race": "sc2_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player010",
+        "main_id": "Player010",
+        "mmr": 3500,
+        "race": "bw_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player010",
+        "main_id": "Player010",
+        "mmr": 3200,
+        "race": "bw_protoss",
+        "country": "US"
+    },
+    {
+        "player_id": "Player010",
+        "main_id": "Player010",
+        "mmr": 2900,
+        "race": "sc2_zerg",
+        "country": "US"
+    },
+    {
+        "player_id": "Player011",
+        "main_id": "Player011",
+        "mmr": 3580,
+        "race": "bw_protoss",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player011",
+        "main_id": "Player011",
+        "mmr": 3350,
+        "race": "bw_zerg",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player011",
+        "main_id": "Player011",
+        "mmr": 3100,
+        "race": "sc2_terran",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player011",
+        "main_id": "Player011",
+        "mmr": 2800,
+        "race": "sc2_protoss",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player012",
+        "main_id": "Player012",
+        "mmr": 3450,
+        "race": "sc2_zerg",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player012",
+        "main_id": "Player012",
+        "mmr": 3200,
+        "race": "bw_terran",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player012",
+        "main_id": "Player012",
+        "mmr": 2950,
+        "race": "bw_protoss",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player012",
+        "main_id": "Player012",
+        "mmr": 2700,
+        "race": "sc2_terran",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player013",
+        "main_id": "Player013",
+        "mmr": 3320,
+        "race": "bw_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player013",
+        "main_id": "Player013",
+        "mmr": 3100,
+        "race": "bw_protoss",
+        "country": "US"
+    },
+    {
+        "player_id": "Player013",
+        "main_id": "Player013",
+        "mmr": 2850,
+        "race": "sc2_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player013",
+        "main_id": "Player013",
+        "mmr": 2600,
+        "race": "sc2_zerg",
+        "country": "US"
+    },
+    {
+        "player_id": "Player014",
+        "main_id": "Player014",
+        "mmr": 3180,
+        "race": "sc2_protoss",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player014",
+        "main_id": "Player014",
+        "mmr": 2950,
+        "race": "bw_zerg",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player014",
+        "main_id": "Player014",
+        "mmr": 2700,
+        "race": "bw_terran",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player014",
+        "main_id": "Player014",
+        "mmr": 2450,
+        "race": "sc2_terran",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player015",
+        "main_id": "Player015",
+        "mmr": 3050,
+        "race": "bw_zerg",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player015",
+        "main_id": "Player015",
+        "mmr": 2800,
+        "race": "bw_protoss",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player015",
+        "main_id": "Player015",
+        "mmr": 2550,
+        "race": "sc2_zerg",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player015",
+        "main_id": "Player015",
+        "mmr": 2300,
+        "race": "sc2_protoss",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player016",
+        "main_id": "Player016",
+        "mmr": 2920,
+        "race": "sc2_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player016",
+        "main_id": "Player016",
+        "mmr": 2700,
+        "race": "bw_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player016",
+        "main_id": "Player016",
+        "mmr": 2450,
+        "race": "bw_protoss",
+        "country": "US"
+    },
+    {
+        "player_id": "Player016",
+        "main_id": "Player016",
+        "mmr": 2200,
+        "race": "sc2_zerg",
+        "country": "US"
+    },
+    {
+        "player_id": "Player017",
+        "main_id": "Player017",
+        "mmr": 2780,
+        "race": "bw_protoss",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player017",
+        "main_id": "Player017",
+        "mmr": 2550,
+        "race": "bw_zerg",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player017",
+        "main_id": "Player017",
+        "mmr": 2300,
+        "race": "sc2_terran",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player017",
+        "main_id": "Player017",
+        "mmr": 2050,
+        "race": "sc2_protoss",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player018",
+        "main_id": "Player018",
+        "mmr": 2650,
+        "race": "sc2_zerg",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player018",
+        "main_id": "Player018",
+        "mmr": 2400,
+        "race": "bw_terran",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player018",
+        "main_id": "Player018",
+        "mmr": 2150,
+        "race": "bw_protoss",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player018",
+        "main_id": "Player018",
+        "mmr": 1900,
+        "race": "sc2_terran",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player019",
+        "main_id": "Player019",
+        "mmr": 2520,
+        "race": "bw_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player019",
+        "main_id": "Player019",
+        "mmr": 2300,
+        "race": "bw_protoss",
+        "country": "US"
+    },
+    {
+        "player_id": "Player019",
+        "main_id": "Player019",
+        "mmr": 2050,
+        "race": "sc2_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player019",
+        "main_id": "Player019",
+        "mmr": 1800,
+        "race": "sc2_zerg",
+        "country": "US"
+    },
+    {
+        "player_id": "Player020",
+        "main_id": "Player020",
+        "mmr": 2380,
+        "race": "sc2_protoss",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player020",
+        "main_id": "Player020",
+        "mmr": 2150,
+        "race": "bw_zerg",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player020",
+        "main_id": "Player020",
+        "mmr": 1900,
+        "race": "bw_terran",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player020",
+        "main_id": "Player020",
+        "mmr": 1650,
+        "race": "sc2_terran",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player021",
+        "main_id": "Player021",
+        "mmr": 2250,
+        "race": "bw_zerg",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player021",
+        "main_id": "Player021",
+        "mmr": 2000,
+        "race": "bw_protoss",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player021",
+        "main_id": "Player021",
+        "mmr": 1750,
+        "race": "sc2_zerg",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player021",
+        "main_id": "Player021",
+        "mmr": 1500,
+        "race": "sc2_protoss",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player022",
+        "main_id": "Player022",
+        "mmr": 2120,
+        "race": "sc2_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player022",
+        "main_id": "Player022",
+        "mmr": 1900,
+        "race": "bw_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player022",
+        "main_id": "Player022",
+        "mmr": 1650,
+        "race": "bw_protoss",
+        "country": "US"
+    },
+    {
+        "player_id": "Player022",
+        "main_id": "Player022",
+        "mmr": 1400,
+        "race": "sc2_zerg",
+        "country": "US"
+    },
+    {
+        "player_id": "Player023",
+        "main_id": "Player023",
+        "mmr": 1980,
+        "race": "bw_protoss",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player023",
+        "main_id": "Player023",
+        "mmr": 1750,
+        "race": "bw_zerg",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player023",
+        "main_id": "Player023",
+        "mmr": 1500,
+        "race": "sc2_terran",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player023",
+        "main_id": "Player023",
+        "mmr": 1250,
+        "race": "sc2_protoss",
+        "country": "KR"
+    },
+    {
+        "player_id": "Player024",
+        "main_id": "Player024",
+        "mmr": 1850,
+        "race": "sc2_zerg",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player024",
+        "main_id": "Player024",
+        "mmr": 1600,
+        "race": "bw_terran",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player024",
+        "main_id": "Player024",
+        "mmr": 1350,
+        "race": "bw_protoss",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player024",
+        "main_id": "Player024",
+        "mmr": 1100,
+        "race": "sc2_terran",
+        "country": "DK"
+    },
+    {
+        "player_id": "Player025",
+        "main_id": "Player025",
+        "mmr": 1720,
+        "race": "bw_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player025",
+        "main_id": "Player025",
+        "mmr": 1500,
+        "race": "bw_protoss",
+        "country": "US"
+    },
+    {
+        "player_id": "Player025",
+        "main_id": "Player025",
+        "mmr": 1250,
+        "race": "sc2_terran",
+        "country": "US"
+    },
+    {
+        "player_id": "Player025",
+        "main_id": "Player025",
+        "mmr": 1000,
+        "race": "sc2_zerg",
+        "country": "US"
+    }
+]

@@ -1,0 +1,126 @@
+{
+    "geographic_regions": {
+        "NAW": {
+            "name": "Western North America",
+            "globe_emote_code": "AM"
+        },
+        "NAC": {
+            "name": "Central North America",
+            "globe_emote_code": "AM"
+        },
+        "NAE": {
+            "name": "Eastern North America",
+            "globe_emote_code": "AM"
+        },
+        "CAM": {
+            "name": "Central America and the Caribbean",
+            "globe_emote_code": "AM"
+        },
+        "SAM": {
+            "name": "South America",
+            "globe_emote_code": "AM"
+        },
+        "EUW": {
+            "name": "Western Europe",
+            "globe_emote_code": "AF"
+        },
+        "EUE": {
+            "name": "Northern and Eastern Europe",
+            "globe_emote_code": "AF"
+        },
+        "AFR": {
+            "name": "Africa",
+            "globe_emote_code": "AF"
+        },
+        "MEA": {
+            "name": "Middle East",
+            "globe_emote_code": "AF"
+        },
+        "SEA": {
+            "name": "South and Southeast Asia",
+            "globe_emote_code": "AS"
+        },
+        "KRJ": {
+            "name": "Korea and Japan",
+            "globe_emote_code": "AS"
+        },
+        "CHN": {
+            "name": "China",
+            "globe_emote_code": "AS"
+        },
+        "THM": {
+            "name": "Taiwan, Hong Kong, and Macau",
+            "globe_emote_code": "AS"
+        },
+        "OCE": {
+            "name": "Oceania",
+            "globe_emote_code": "AS"
+        },
+        "USB": {
+            "name": "Urals and Siberia",
+            "globe_emote_code": "AS"
+        },
+        "FER": {
+            "name": "Far East Russia",
+            "globe_emote_code": "AS"
+        }
+    },
+    "game_servers": {
+        "USW": {
+            "name": "Western United States",
+            "short_name": "US West",
+            "game_region_code": "AM"
+        },
+        "USC": {
+            "name": "Central United States",
+            "short_name": "US Central",
+            "game_region_code": "AM"
+        },
+        "USE": {
+            "name": "Eastern United States",
+            "short_name": "US East",
+            "game_region_code": "AM"
+        },
+        "BRZ": {
+            "name": "Brazil",
+            "short_name": "Brazil",
+            "game_region_code": "AM"
+        },
+        "EUC": {
+            "name": "Central Europe",
+            "short_name": "Europe",
+            "game_region_code": "EU"
+        },
+        "SNG": {
+            "name": "Singapore",
+            "short_name": "Singapore",
+            "game_region_code": "AM"
+        },
+        "AUS": {
+            "name": "Australia",
+            "short_name": "Australia",
+            "game_region_code": "AM"
+        },
+        "KOR": {
+            "name": "Korea",
+            "short_name": "Korea",
+            "game_region_code": "AS"
+        },
+        "TWN": {
+            "name": "Taiwan",
+            "short_name": "Taiwan",
+            "game_region_code": "AS"
+        }
+    },
+    "game_regions": {
+        "AM": {
+            "name": "Americas"
+        },
+        "EU": {
+            "name": "Europe"
+        },
+        "AS": {
+            "name": "Asia"
+        }
+    }
+}

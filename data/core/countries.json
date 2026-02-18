@@ -1,0 +1,1006 @@
+{
+    "AW": {
+        "name": "Aruba",
+        "common": false
+    },
+    "AF": {
+        "name": "Afghanistan",
+        "common": false
+    },
+    "AO": {
+        "name": "Angola",
+        "common": false
+    },
+    "AI": {
+        "name": "Anguilla",
+        "common": false
+    },
+    "AX": {
+        "name": "Åland Islands",
+        "common": false
+    },
+    "AL": {
+        "name": "Albania",
+        "common": false
+    },
+    "AD": {
+        "name": "Andorra",
+        "common": false
+    },
+    "AE": {
+        "name": "United Arab Emirates",
+        "common": false
+    },
+    "AR": {
+        "name": "Argentina",
+        "common": true
+    },
+    "AM": {
+        "name": "Armenia",
+        "common": false
+    },
+    "AS": {
+        "name": "American Samoa",
+        "common": false
+    },
+    "AQ": {
+        "name": "Antarctica",
+        "common": false
+    },
+    "TF": {
+        "name": "French Southern Territories",
+        "common": false
+    },
+    "AG": {
+        "name": "Antigua and Barbuda",
+        "common": false
+    },
+    "AU": {
+        "name": "Australia",
+        "common": true
+    },
+    "AT": {
+        "name": "Austria",
+        "common": true
+    },
+    "AZ": {
+        "name": "Azerbaijan",
+        "common": false
+    },
+    "BI": {
+        "name": "Burundi",
+        "common": false
+    },
+    "BE": {
+        "name": "Belgium",
+        "common": false
+    },
+    "BJ": {
+        "name": "Benin",
+        "common": false
+    },
+    "BQ": {
+        "name": "Bonaire, St. Eustatius and Saba",
+        "common": false
+    },
+    "BF": {
+        "name": "Burkina Faso",
+        "common": false
+    },
+    "BD": {
+        "name": "Bangladesh",
+        "common": false
+    },
+    "BG": {
+        "name": "Bulgaria",
+        "common": true
+    },
+    "BH": {
+        "name": "Bahrain",
+        "common": false
+    },
+    "BS": {
+        "name": "Bahamas",
+        "common": false
+    },
+    "BA": {
+        "name": "Bosnia and Herzegovina",
+        "common": true
+    },
+    "BL": {
+        "name": "St. Barthélemy",
+        "common": false
+    },
+    "BY": {
+        "name": "Belarus",
+        "common": true
+    },
+    "BZ": {
+        "name": "Belize",
+        "common": false
+    },
+    "BM": {
+        "name": "Bermuda",
+        "common": false
+    },
+    "BO": {
+        "name": "Bolivia",
+        "common": true
+    },
+    "BR": {
+        "name": "Brazil",
+        "common": true
+    },
+    "BB": {
+        "name": "Barbados",
+        "common": false
+    },
+    "BN": {
+        "name": "Brunei Darussalam",
+        "common": false
+    },
+    "BT": {
+        "name": "Bhutan",
+        "common": false
+    },
+    "BV": {
+        "name": "Bouvet Island",
+        "common": false
+    },
+    "BW": {
+        "name": "Botswana",
+        "common": false
+    },
+    "CF": {
+        "name": "Central African Republic",
+        "common": false
+    },
+    "CA": {
+        "name": "Canada",
+        "common": true
+    },
+    "CC": {
+        "name": "Cocos (Keeling) Islands",
+        "common": false
+    },
+    "CH": {
+        "name": "Switzerland",
+        "common": false
+    },
+    "CL": {
+        "name": "Chile",
+        "common": true
+    },
+    "CN": {
+        "name": "China",
+        "common": true
+    },
+    "CI": {
+        "name": "Côte d'Ivoire",
+        "common": false
+    },
+    "CM": {
+        "name": "Cameroon",
+        "common": false
+    },
+    "CD": {
+        "name": "Congo, The Democratic Republic of the",
+        "common": false
+    },
+    "CG": {
+        "name": "Congo",
+        "common": false
+    },
+    "CK": {
+        "name": "Cook Islands",
+        "common": false
+    },
+    "CO": {
+        "name": "Colombia",
+        "common": true
+    },
+    "KM": {
+        "name": "Comoros",
+        "common": false
+    },
+    "CV": {
+        "name": "Cabo Verde",
+        "common": false
+    },
+    "CR": {
+        "name": "Costa Rica",
+        "common": true
+    },
+    "CU": {
+        "name": "Cuba",
+        "common": true
+    },
+    "CW": {
+        "name": "Curaçao",
+        "common": false
+    },
+    "CX": {
+        "name": "Christmas Island",
+        "common": false
+    },
+    "KY": {
+        "name": "Cayman Islands",
+        "common": false
+    },
+    "CY": {
+        "name": "Cyprus",
+        "common": false
+    },
+    "CZ": {
+        "name": "Czechia",
+        "common": true
+    },
+    "DE": {
+        "name": "Germany",
+        "common": true
+    },
+    "DJ": {
+        "name": "Djibouti",
+        "common": false
+    },
+    "DM": {
+        "name": "Dominica",
+        "common": false
+    },
+    "DK": {
+        "name": "Denmark",
+        "common": true
+    },
+    "DO": {
+        "name": "Dominican Republic",
+        "common": false
+    },
+    "DZ": {
+        "name": "Algeria",
+        "common": false
+    },
+    "EC": {
+        "name": "Ecuador",
+        "common": true
+    },
+    "EG": {
+        "name": "Egypt",
+        "common": false
+    },
+    "ER": {
+        "name": "Eritrea",
+        "common": false
+    },
+    "EH": {
+        "name": "Western Sahara",
+        "common": false
+    },
+    "ES": {
+        "name": "Spain",
+        "common": true
+    },
+    "EE": {
+        "name": "Estonia",
+        "common": false
+    },
+    "ET": {
+        "name": "Ethiopia",
+        "common": false
+    },
+    "FI": {
+        "name": "Finland",
+        "common": true
+    },
+    "FJ": {
+        "name": "Fiji",
+        "common": false
+    },
+    "FK": {
+        "name": "Falkland Islands",
+        "common": false
+    },
+    "FR": {
+        "name": "France",
+        "common": true
+    },
+    "FO": {
+        "name": "Faroe Islands",
+        "common": false
+    },
+    "FM": {
+        "name": "Micronesia, Federated States of",
+        "common": false
+    },
+    "GA": {
+        "name": "Gabon",
+        "common": false
+    },
+    "GB": {
+        "name": "United Kingdom",
+        "common": true
+    },
+    "GE": {
+        "name": "Georgia",
+        "common": false
+    },
+    "GG": {
+        "name": "Guernsey",
+        "common": false
+    },
+    "GH": {
+        "name": "Ghana",
+        "common": false
+    },
+    "GI": {
+        "name": "Gibraltar",
+        "common": false
+    },
+    "GN": {
+        "name": "Guinea",
+        "common": false
+    },
+    "GP": {
+        "name": "Guadeloupe",
+        "common": false
+    },
+    "GM": {
+        "name": "Gambia",
+        "common": false
+    },
+    "GW": {
+        "name": "Guinea-Bissau",
+        "common": false
+    },
+    "GQ": {
+        "name": "Equatorial Guinea",
+        "common": false
+    },
+    "GR": {
+        "name": "Greece",
+        "common": false
+    },
+    "GD": {
+        "name": "Grenada",
+        "common": false
+    },
+    "GL": {
+        "name": "Greenland",
+        "common": false
+    },
+    "GT": {
+        "name": "Guatemala",
+        "common": false
+    },
+    "GF": {
+        "name": "French Guiana",
+        "common": false
+    },
+    "GU": {
+        "name": "Guam",
+        "common": false
+    },
+    "GY": {
+        "name": "Guyana",
+        "common": false
+    },
+    "HK": {
+        "name": "Hong Kong",
+        "common": true
+    },
+    "HM": {
+        "name": "Heard Island and McDonald Islands",
+        "common": false
+    },
+    "HN": {
+        "name": "Honduras",
+        "common": false
+    },
+    "HR": {
+        "name": "Croatia",
+        "common": true
+    },
+    "HT": {
+        "name": "Haiti",
+        "common": false
+    },
+    "HU": {
+        "name": "Hungary",
+        "common": true
+    },
+    "ID": {
+        "name": "Indonesia",
+        "common": true
+    },
+    "IM": {
+        "name": "Isle of Man",
+        "common": false
+    },
+    "IN": {
+        "name": "India",
+        "common": true
+    },
+    "IO": {
+        "name": "British Indian Ocean Territory",
+        "common": false
+    },
+    "IE": {
+        "name": "Ireland",
+        "common": false
+    },
+    "IR": {
+        "name": "Iran",
+        "common": false
+    },
+    "IQ": {
+        "name": "Iraq",
+        "common": false
+    },
+    "IS": {
+        "name": "Iceland",
+        "common": false
+    },
+    "IL": {
+        "name": "Israel",
+        "common": true
+    },
+    "IT": {
+        "name": "Italy",
+        "common": true
+    },
+    "JM": {
+        "name": "Jamaica",
+        "common": false
+    },
+    "JE": {
+        "name": "Jersey",
+        "common": false
+    },
+    "JO": {
+        "name": "Jordan",
+        "common": false
+    },
+    "JP": {
+        "name": "Japan",
+        "common": true
+    },
+    "KZ": {
+        "name": "Kazakhstan",
+        "common": true
+    },
+    "KE": {
+        "name": "Kenya",
+        "common": false
+    },
+    "KG": {
+        "name": "Kyrgyzstan",
+        "common": false
+    },
+    "KH": {
+        "name": "Cambodia",
+        "common": false
+    },
+    "KI": {
+        "name": "Kiribati",
+        "common": false
+    },
+    "KN": {
+        "name": "St. Kitts and Nevis",
+        "common": false
+    },
+    "KR": {
+        "name": "South Korea",
+        "common": true
+    },
+    "KW": {
+        "name": "Kuwait",
+        "common": false
+    },
+    "LA": {
+        "name": "Laos",
+        "common": false
+    },
+    "LB": {
+        "name": "Lebanon",
+        "common": false
+    },
+    "LR": {
+        "name": "Liberia",
+        "common": false
+    },
+    "LY": {
+        "name": "Libya",
+        "common": false
+    },
+    "LC": {
+        "name": "St. Lucia",
+        "common": false
+    },
+    "LI": {
+        "name": "Liechtenstein",
+        "common": false
+    },
+    "LK": {
+        "name": "Sri Lanka",
+        "common": false
+    },
+    "LS": {
+        "name": "Lesotho",
+        "common": false
+    },
+    "LT": {
+        "name": "Lithuania",
+        "common": true
+    },
+    "LU": {
+        "name": "Luxembourg",
+        "common": false
+    },
+    "LV": {
+        "name": "Latvia",
+        "common": false
+    },
+    "MO": {
+        "name": "Macau",
+        "common": false
+    },
+    "MF": {
+        "name": "St. Martin",
+        "common": false
+    },
+    "MA": {
+        "name": "Morocco",
+        "common": false
+    },
+    "MC": {
+        "name": "Monaco",
+        "common": false
+    },
+    "MD": {
+        "name": "Moldova",
+        "common": false
+    },
+    "MG": {
+        "name": "Madagascar",
+        "common": false
+    },
+    "MV": {
+        "name": "Maldives",
+        "common": false
+    },
+    "MX": {
+        "name": "Mexico",
+        "common": true
+    },
+    "MH": {
+        "name": "Marshall Islands",
+        "common": false
+    },
+    "MK": {
+        "name": "North Macedonia",
+        "common": false
+    },
+    "ML": {
+        "name": "Mali",
+        "common": false
+    },
+    "MT": {
+        "name": "Malta",
+        "common": false
+    },
+    "MM": {
+        "name": "Myanmar",
+        "common": false
+    },
+    "ME": {
+        "name": "Montenegro",
+        "common": false
+    },
+    "MN": {
+        "name": "Mongolia",
+        "common": false
+    },
+    "MP": {
+        "name": "Northern Mariana Islands",
+        "common": false
+    },
+    "MZ": {
+        "name": "Mozambique",
+        "common": false
+    },
+    "MR": {
+        "name": "Mauritania",
+        "common": false
+    },
+    "MS": {
+        "name": "Montserrat",
+        "common": false
+    },
+    "MQ": {
+        "name": "Martinique",
+        "common": false
+    },
+    "MU": {
+        "name": "Mauritius",
+        "common": false
+    },
+    "MW": {
+        "name": "Malawi",
+        "common": false
+    },
+    "MY": {
+        "name": "Malaysia",
+        "common": true
+    },
+    "YT": {
+        "name": "Mayotte",
+        "common": false
+    },
+    "NA": {
+        "name": "Namibia",
+        "common": false
+    },
+    "NC": {
+        "name": "New Caledonia",
+        "common": false
+    },
+    "NE": {
+        "name": "Niger",
+        "common": false
+    },
+    "NF": {
+        "name": "Norfolk Island",
+        "common": false
+    },
+    "NG": {
+        "name": "Nigeria",
+        "common": false
+    },
+    "NI": {
+        "name": "Nicaragua",
+        "common": false
+    },
+    "NU": {
+        "name": "Niue",
+        "common": false
+    },
+    "NL": {
+        "name": "Netherlands",
+        "common": true
+    },
+    "NO": {
+        "name": "Norway",
+        "common": true
+    },
+    "NP": {
+        "name": "Nepal",
+        "common": false
+    },
+    "NR": {
+        "name": "Nauru",
+        "common": false
+    },
+    "NZ": {
+        "name": "New Zealand",
+        "common": true
+    },
+    "OM": {
+        "name": "Oman",
+        "common": false
+    },
+    "PK": {
+        "name": "Pakistan",
+        "common": false
+    },
+    "PA": {
+        "name": "Panama",
+        "common": false
+    },
+    "PN": {
+        "name": "Pitcairn",
+        "common": false
+    },
+    "PE": {
+        "name": "Peru",
+        "common": true
+    },
+    "PH": {
+        "name": "Philippines",
+        "common": true
+    },
+    "PW": {
+        "name": "Palau",
+        "common": false
+    },
+    "PG": {
+        "name": "Papua New Guinea",
+        "common": false
+    },
+    "PL": {
+        "name": "Poland",
+        "common": true
+    },
+    "PR": {
+        "name": "Puerto Rico",
+        "common": false
+    },
+    "KP": {
+        "name": "North Korea",
+        "common": false
+    },
+    "PT": {
+        "name": "Portugal",
+        "common": false
+    },
+    "PY": {
+        "name": "Paraguay",
+        "common": false
+    },
+    "PS": {
+        "name": "Palestine, State of",
+        "common": false
+    },
+    "PF": {
+        "name": "French Polynesia",
+        "common": false
+    },
+    "QA": {
+        "name": "Qatar",
+        "common": false
+    },
+    "RE": {
+        "name": "Réunion",
+        "common": false
+    },
+    "RO": {
+        "name": "Romania",
+        "common": true
+    },
+    "RU": {
+        "name": "Russia",
+        "common": true
+    },
+    "RW": {
+        "name": "Rwanda",
+        "common": false
+    },
+    "SA": {
+        "name": "Saudi Arabia",
+        "common": false
+    },
+    "SD": {
+        "name": "Sudan",
+        "common": false
+    },
+    "SN": {
+        "name": "Senegal",
+        "common": false
+    },
+    "SG": {
+        "name": "Singapore",
+        "common": true
+    },
+    "GS": {
+        "name": "South Georgia and the South Sandwich Islands",
+        "common": false
+    },
+    "SH": {
+        "name": "St. Helena, Ascension and Tristan da Cunha",
+        "common": false
+    },
+    "SJ": {
+        "name": "Svalbard and Jan Mayen",
+        "common": false
+    },
+    "SB": {
+        "name": "Solomon Islands",
+        "common": false
+    },
+    "SL": {
+        "name": "Sierra Leone",
+        "common": false
+    },
+    "SV": {
+        "name": "El Salvador",
+        "common": false
+    },
+    "SM": {
+        "name": "San Marino",
+        "common": false
+    },
+    "SO": {
+        "name": "Somalia",
+        "common": false
+    },
+    "PM": {
+        "name": "St. Pierre and Miquelon",
+        "common": false
+    },
+    "RS": {
+        "name": "Serbia",
+        "common": false
+    },
+    "SS": {
+        "name": "South Sudan",
+        "common": false
+    },
+    "ST": {
+        "name": "Sao Tome and Principe",
+        "common": false
+    },
+    "SR": {
+        "name": "Suriname",
+        "common": false
+    },
+    "SK": {
+        "name": "Slovakia",
+        "common": false
+    },
+    "SI": {
+        "name": "Slovenia",
+        "common": false
+    },
+    "SE": {
+        "name": "Sweden",
+        "common": true
+    },
+    "SZ": {
+        "name": "Eswatini",
+        "common": false
+    },
+    "SX": {
+        "name": "St. Maarten",
+        "common": false
+    },
+    "SC": {
+        "name": "Seychelles",
+        "common": false
+    },
+    "SY": {
+        "name": "Syria",
+        "common": false
+    },
+    "TC": {
+        "name": "Turks and Caicos Islands",
+        "common": false
+    },
+    "TD": {
+        "name": "Chad",
+        "common": false
+    },
+    "TG": {
+        "name": "Togo",
+        "common": false
+    },
+    "TH": {
+        "name": "Thailand",
+        "common": false
+    },
+    "TJ": {
+        "name": "Tajikistan",
+        "common": false
+    },
+    "TK": {
+        "name": "Tokelau",
+        "common": false
+    },
+    "TM": {
+        "name": "Turkmenistan",
+        "common": false
+    },
+    "TL": {
+        "name": "Timor-Leste",
+        "common": false
+    },
+    "TO": {
+        "name": "Tonga",
+        "common": false
+    },
+    "TT": {
+        "name": "Trinidad and Tobago",
+        "common": false
+    },
+    "TN": {
+        "name": "Tunisia",
+        "common": false
+    },
+    "TR": {
+        "name": "Türkiye",
+        "common": false
+    },
+    "TV": {
+        "name": "Tuvalu",
+        "common": false
+    },
+    "TW": {
+        "name": "Taiwan",
+        "common": true
+    },
+    "TZ": {
+        "name": "Tanzania",
+        "common": false
+    },
+    "UG": {
+        "name": "Uganda",
+        "common": false
+    },
+    "UA": {
+        "name": "Ukraine",
+        "common": true
+    },
+    "UM": {
+        "name": "United States Minor Outlying Islands",
+        "common": false
+    },
+    "UY": {
+        "name": "Uruguay",
+        "common": false
+    },
+    "US": {
+        "name": "United States",
+        "common": true
+    },
+    "UZ": {
+        "name": "Uzbekistan",
+        "common": false
+    },
+    "VA": {
+        "name": "Vatican City",
+        "common": false
+    },
+    "VC": {
+        "name": "St. Vincent and the Grenadines",
+        "common": false
+    },
+    "VE": {
+        "name": "Venezuela",
+        "common": false
+    },
+    "VG": {
+        "name": "British Virgin Islands",
+        "common": false
+    },
+    "VI": {
+        "name": "United States Virgin Islands",
+        "common": false
+    },
+    "VN": {
+        "name": "Vietnam",
+        "common": true
+    },
+    "VU": {
+        "name": "Vanuatu",
+        "common": false
+    },
+    "WF": {
+        "name": "Wallis and Futuna",
+        "common": false
+    },
+    "WS": {
+        "name": "Samoa",
+        "common": false
+    },
+    "YE": {
+        "name": "Yemen",
+        "common": false
+    },
+    "ZA": {
+        "name": "South Africa",
+        "common": false
+    },
+    "ZM": {
+        "name": "Zambia",
+        "common": false
+    },
+    "ZW": {
+        "name": "Zimbabwe",
+        "common": false
+    },
+    "XX": {
+        "name": "Nonrepresenting",
+        "common": false
+    },
+    "ZZ": {
+        "name": "Other",
+        "common": true
+    }
+}

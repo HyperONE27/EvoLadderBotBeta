@@ -1,0 +1,190 @@
+{
+    "region_order": [
+        "NAW",
+        "NAC",
+        "NAE",
+        "CAM",
+        "SAM",
+        "EUW",
+        "EUE",
+        "AFR",
+        "MEA",
+        "SEA",
+        "KRJ",
+        "CHN",
+        "THM",
+        "OCE",
+        "USB",
+        "FER"
+    ],
+    "mappings": {
+        "NAW": {
+            "NAW": "US West",
+            "NAC": "US Central",
+            "NAE": "US Central",
+            "CAM": "US East",
+            "SAM": "US East",
+            "EUW": "US East",
+            "EUE": "US East",
+            "AFR": "US East",
+            "MEA": "Korea",
+            "SEA": "Korea",
+            "KRJ": "US West",
+            "CHN": "US West",
+            "THM": "US West",
+            "OCE": "US West",
+            "USB": "Korea",
+            "FER": "Korea"
+        },
+        "NAC": {
+            "NAC": "US Central",
+            "NAE": "US Central",
+            "CAM": "US East",
+            "SAM": "US East",
+            "EUW": "US East",
+            "EUE": "US East",
+            "AFR": "Central EU",
+            "MEA": "Central EU",
+            "SEA": "US West",
+            "KRJ": "US West",
+            "CHN": "US West",
+            "THM": "US West",
+            "OCE": "US West",
+            "USB": "Central EU",
+            "FER": "Central EU"
+        },
+        "NAE": {
+            "NAE": "US East",
+            "CAM": "US East",
+            "SAM": "US East",
+            "EUW": "US East",
+            "EUE": "Central EU",
+            "AFR": "Central EU",
+            "MEA": "Central EU",
+            "SEA": "US West",
+            "KRJ": "US West",
+            "CHN": "US West",
+            "THM": "US West",
+            "OCE": "US West",
+            "USB": "Central EU",
+            "FER": "Central EU"
+        },
+        "CAM": {
+            "CAM": "US East",
+            "SAM": "US East",
+            "EUW": "US East",
+            "EUE": "US East",
+            "AFR": "US East",
+            "MEA": "US East",
+            "SEA": "US West",
+            "KRJ": "US West",
+            "CHN": "US West",
+            "THM": "US West",
+            "OCE": "US West",
+            "USB": "Central EU",
+            "FER": "Central EU"
+        },
+        "SAM": {
+            "SAM": "US East",
+            "EUW": "US East",
+            "EUE": "US East",
+            "AFR": "US East",
+            "MEA": "US East",
+            "SEA": "US West",
+            "KRJ": "US West",
+            "CHN": "US West",
+            "THM": "US West",
+            "OCE": "US West",
+            "USB": "US West",
+            "FER": "US West"
+        },
+        "EUW": {
+            "EUW": "Central EU",
+            "EUE": "Central EU",
+            "AFR": "Central EU",
+            "MEA": "Central EU",
+            "SEA": "US West",
+            "KRJ": "US West",
+            "CHN": "US West",
+            "THM": "US West",
+            "OCE": "US West",
+            "USB": "Central EU",
+            "FER": "Central EU"
+        },
+        "EUE": {
+            "EUE": "Central EU",
+            "AFR": "Central EU",
+            "MEA": "Central EU",
+            "SEA": "US West",
+            "KRJ": "US Central",
+            "CHN": "US West",
+            "THM": "US West",
+            "OCE": "US West",
+            "USB": "Central EU",
+            "FER": "Central EU"
+        },
+        "AFR": {
+            "AFR": "Central EU",
+            "MEA": "Central EU",
+            "SEA": "Singapore",
+            "KRJ": "Singapore",
+            "CHN": "Singapore",
+            "THM": "Singapore",
+            "OCE": "Singapore",
+            "USB": "Central EU",
+            "FER": "Central EU"
+        },
+        "MEA": {
+            "MEA": "Central EU",
+            "SEA": "Singapore",
+            "KRJ": "Singapore",
+            "CHN": "Singapore",
+            "THM": "Singapore",
+            "OCE": "Singapore",
+            "USB": "Central EU",
+            "FER": "Central EU"
+        },
+        "SEA": {
+            "SEA": "Singapore",
+            "KRJ": "Taiwan",
+            "CHN": "Taiwan",
+            "THM": "Singapore",
+            "OCE": "Singapore",
+            "USB": "Singapore",
+            "FER": "Korea"
+        },
+        "KRJ": {
+            "KRJ": "Korea",
+            "CHN": "Korea",
+            "THM": "Korea",
+            "OCE": "Singapore",
+            "USB": "Singapore",
+            "FER": "Korea"
+        },
+        "CHN": {
+            "CHN": "Korea",
+            "THM": "Taiwan",
+            "OCE": "Singapore",
+            "USB": "Singapore",
+            "FER": "Korea"
+        },
+        "THM": {
+            "THM": "Taiwan",
+            "OCE": "Singapore",
+            "USB": "Singapore",
+            "FER": "Korea"
+        },
+        "OCE": {
+            "OCE": "Australia",
+            "USB": "Singapore",
+            "FER": "Singapore"
+        },
+        "USB": {
+            "USB": "Central EU",
+            "FER": "Central EU"
+        },
+        "FER": {
+            "FER": "Korea"
+        }
+    }
+}
