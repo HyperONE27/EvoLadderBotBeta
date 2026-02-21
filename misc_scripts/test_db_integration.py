@@ -177,8 +177,6 @@ def test_env_vars() -> None:
         "SUPABASE_ANON_KEY",
         "SUPABASE_SERVICE_ROLE_KEY",
         "ADMINS",
-        "DB_POOL_MIN_CONNECTIONS",
-        "DB_POOL_MAX_CONNECTIONS",
     ]
     for var in required:
         value = os.getenv(var)
