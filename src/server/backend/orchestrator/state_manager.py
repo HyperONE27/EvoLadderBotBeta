@@ -1,4 +1,11 @@
-"""Centralized state manager - owns all state in the backend."""
+import polars as pl
+from typing import Dict, List, Optional
+
+from server.backend.config import Admin
+from server.backend.types.game_data import (
+    Country, CrossTableData, Emote, Map, 
+    Mod, Race, RegionData, SeasonData
+)
 
 class StateManager:
     def __new__(cls):
@@ -7,25 +14,30 @@ class StateManager:
         return cls._instance
 
     def __init__(self):
-        # Basic data from data/ directory for looksups
-        self._admins: 
-        self._countries: 
-        self._cross_table: 
-        self._emotes: 
-        self._leaderboard: 
-        self._maps: 
-        self._mods: 
-        self._races: 
-        self._regions: 
+        # Admins
+        self.admins: List[Admin] = []
+
+        # Basic data for looksups
+        self.countries: Dict[str, Country] = {}
+        self.cross_table: CrossTableData = {
+            "region_order": [],
+            "mappings": {}
+        }
+        self.emotes: Dict[str, Emote] = {}
+        self.maps: Dict[str, SeasonData] = {}
+        self.mods: Dict[str, Mod] = {}
+        self.races: Dict[str, Race] = {}
+        self.regions: RegionData = {
+            "geographic_regions": {},
+            "game_servers": {},
+            "game_regions": {}
+        }
 
         # In-memory DataFrames (caching the entire database)
-        self._players_df: Optional[pl.DataFrame] = None
-        self._player_action_logs_df: Optional[pl.DataFrame] = None
-        self._command_calls_df: Optional[pl.DataFrame] = None
-        self._replays_df: Optional[pl.DataFrame] = None
-        self._mmrs_1v1_df: Optional[pl.DataFrame] = None
-        self._matches_1v1_df: Optional[pl.DataFrame] = None
-        self._preferences_1v1_df: Optional[pl.DataFrame] = None
-        self._admin_actions_df: Optional[pl.DataFrame] = None
-
-        # System state
+        self.players_df: Optional[pl.DataFrame] = None
+        self.notifications_df: Optional[pl.DataFrame] = None
+        self.events_df: Optional[pl.DataFrame] = None  
+        self.matches_1v1_df: Optional[pl.DataFrame] = None
+        self.mmrs_1v1_df: Optional[pl.DataFrame] = None
+        self.preferences_1v1_df: Optional[pl.DataFrame] = None
+        self.replays_1v1_df: Optional[pl.DataFrame] = None

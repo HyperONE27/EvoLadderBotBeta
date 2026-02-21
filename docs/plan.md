@@ -49,3 +49,39 @@ No good replacement for simple columnar operations to Polars
   - Look through all subdirectories under "C:/Users/{stuff}/Documents/StarCraft II/Accounts/..."
   - Gather all toon handles (e.g. "1-S2-...", "2-S2-...", "3-S2-...")
   - 
+
+
+===
+
+```sql
+CREATE TABLE IF NOT EXISTS player_updates (
+    id                      SERIAL PRIMARY KEY,
+    discord_uid             BIGINT NOT NULL,
+    player_name             TEXT NOT NULL,
+    setting_name            TEXT NOT NULL,
+    old_value               TEXT,
+    new_value               TEXT,
+    changed_at              TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    changed_by              TEXT DEFAULT 'player' NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS admin_actions (
+    id                      SERIAL PRIMARY KEY,
+    admin_discord_uid       BIGINT NOT NULL,
+    admin_username          TEXT NOT NULL,
+    action_type             TEXT NOT NULL,
+    target_player_uid       BIGINT,
+    target_match_id         INTEGER,
+    action_details          JSONB NOT NULL,
+    reason                  TEXT,
+    performed_at            TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS command_calls (
+    id                      SERIAL PRIMARY KEY,
+    discord_uid             BIGINT NOT NULL,
+    player_name             TEXT NOT NULL,
+    command                 TEXT NOT NULL,
+    called_at               TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+```
