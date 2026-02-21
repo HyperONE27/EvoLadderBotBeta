@@ -1,5 +1,5 @@
 import polars as pl
-from config import DATABASE
+from server.backend.config import DATABASE
 from supabase import create_client
 from typing import Dict
 

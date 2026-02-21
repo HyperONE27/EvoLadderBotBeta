@@ -21,12 +21,7 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# Needed by data_loader, state_manager, config (server.backend.* imports)
 sys.path.insert(0, str(REPO_ROOT / "src"))
-
-# Needed by database.py whose top-level `from config import DATABASE`
-# resolves to server/backend/config.py when this directory is on sys.path.
-sys.path.insert(0, str(REPO_ROOT / "src" / "server" / "backend"))
 
 # ---------------------------------------------------------------------------
 # Environment – must happen before any server.backend imports
@@ -259,6 +254,20 @@ def test_admins(state: StateManager) -> None:
         )
 
 
+def _preview_json_value(value: Any, n: int = 3) -> str:
+    """Return a short human-readable preview of a JSON-loaded value."""
+    if isinstance(value, dict):
+        keys = list(value.keys())[:n]
+        pairs = {k: value[k] for k in keys}
+        suffix = f", ... (+{len(value) - n} more)" if len(value) > n else ""
+        return str(pairs) + suffix
+    if isinstance(value, list):
+        items = value[:n]
+        suffix = f", ... (+{len(value) - n} more)" if len(value) > n else ""
+        return str(items) + suffix
+    return repr(value)
+
+
 def test_json_data(state: StateManager) -> None:
     section("JSON Data (data/core/)")
     for key in EXPECTED_JSON_KEYS:
@@ -266,6 +275,8 @@ def test_json_data(state: StateManager) -> None:
         non_empty = value is not None and value not in ({}, [], "")
         check(f"{key} is loaded and non-empty", non_empty,
               f"type={type(value).__name__}")
+        if non_empty:
+            print(f"  [PREVIEW] {key}: {_preview_json_value(value)}")
 
 
 def test_dataframes(state: StateManager) -> None:

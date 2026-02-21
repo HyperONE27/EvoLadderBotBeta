@@ -60,7 +60,7 @@ EXPECTED_LOBBY_SETTINGS: Dict[str, str] = {
     "speed": "Faster"
 }
 
-MATCHMAKER: Dict[str, int] = {
+MATCHMAKER: Dict[str, Union[float, int]] = {
     "balance_threshold": 50,
     "refinement_passes": 2,
     "wait_cycle_priority_coefficient": 20,
