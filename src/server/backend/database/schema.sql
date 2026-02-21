@@ -26,7 +26,7 @@ CREATE TYPE player_report_type as ENUM (
     'loss',
     'draw',
     'abort',
-    'abandoned'
+    'abandoned',
     'no_report'
 );
 
@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS matches_1v1 (
     map_name                TEXT NOT NULL,
     server_name             TEXT NOT NULL,
     assigned_at             TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    completed_at            TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    completed_at            TIMESTAMPTZ DEFAULT NULL,
     player_1_replay_path    TEXT,
     player_1_uploaded_at    TIMESTAMPTZ,
     player_2_replay_path    TEXT,

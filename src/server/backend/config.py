@@ -1,7 +1,7 @@
 import json
 import os
 from dotenv import load_dotenv
-from typing import Dict, List, Union, TypedDict
+from typing import Dict, List, TypedDict, Union
 
 load_dotenv()
 
@@ -34,12 +34,10 @@ def _get_str_env(key: str) -> str:
 
 ADMINS: List[Admin] = _get_admins_env("ADMINS")
 
-DATABASE: Dict[str, Union[int, str]] = {
+DATABASE: Dict[str, str] = {
     "url": _get_str_env("SUPABASE_URL"),
     "anon_key": _get_str_env("SUPABASE_ANON_KEY"),
     "service_role_key": _get_str_env("SUPABASE_SERVICE_ROLE_KEY"),
-    "pool_min": _get_int_env("DB_POOL_MIN_CONNECTIONS"),
-    "pool_max": _get_int_env("DB_POOL_MAX_CONNECTIONS")
 }
 
 DISCORD: Dict[str, Union[int, str]] = {

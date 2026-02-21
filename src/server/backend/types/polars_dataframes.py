@@ -3,6 +3,7 @@ import polars as pl
 
 # Polars DataFrame schema for storing PostgreSQL table "players"
 PLAYERS_SCHEMA: Dict[str, pl.DataType] = {
+    "id": pl.Int32,
     "discord_uid": pl.Int64,
     "discord_username": pl.String,
     "player_name": pl.String,
@@ -21,12 +22,14 @@ PLAYERS_SCHEMA: Dict[str, pl.DataType] = {
 }
 
 NOTIFICATIONS_SCHEMA: Dict[str, pl.DataType] = {
+    "id": pl.Int32,
     "discord_uid": pl.Int64,
     "quick_start_guide": pl.Boolean,
     "shield_battery_bug": pl.Boolean,
 }
 
 EVENTS_SCHEMA: Dict[str, pl.DataType] = {
+    "id": pl.Int32,
     "discord_uid": pl.Int64,
     "event_type": pl.String,
     "event_data": pl.String,
@@ -34,6 +37,7 @@ EVENTS_SCHEMA: Dict[str, pl.DataType] = {
 }
 
 MATCHES_1V1_SCHEMA: Dict[str, pl.DataType] = {
+    "id": pl.Int32,
     "player_1_discord_uid": pl.Int64,
     "player_2_discord_uid": pl.Int64,
     "player_1_race": pl.String,
@@ -55,6 +59,7 @@ MATCHES_1V1_SCHEMA: Dict[str, pl.DataType] = {
 }
 
 MMRS_1V1_SCHEMA: Dict[str, pl.DataType] = {
+    "id": pl.Int32,
     "discord_uid": pl.Int64,
     "player_name": pl.String,
     "race": pl.String,
@@ -67,12 +72,14 @@ MMRS_1V1_SCHEMA: Dict[str, pl.DataType] = {
 }
 
 PREFERENCES_1V1_SCHEMA: Dict[str, pl.DataType] = {
+    "id": pl.Int32,
     "discord_uid": pl.Int64,
     "last_chosen_races": pl.List(pl.String),
     "last_chosen_vetoes": pl.List(pl.String),
 }
 
 REPLAYS_1V1_SCHEMA: Dict[str, pl.DataType] = {
+    "id": pl.Int32,
     "replay_path": pl.String,
     "replay_hash": pl.String,
     "replay_time": pl.Datetime,
