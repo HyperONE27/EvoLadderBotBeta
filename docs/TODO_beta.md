@@ -49,3 +49,48 @@ No good replacement for simple columnar operations to Polars
   - Look through all subdirectories under "C:/Users/{stuff}/Documents/StarCraft II/Accounts/..."
   - Gather all toon handles (e.g. "1-S2-...", "2-S2-...", "3-S2-...")
   - 
+
+===
+
+CHECKLIST
+
+❌⏰✅
+
+- Database
+    - Schema
+    - Connection
+    - Reader
+    - Writer
+    - Job Queue
+- Backend
+    - API
+        - Schema
+        - GET
+            - 
+        - POST
+            - 
+        - PUT
+            - 
+        - DELETE
+            - 
+    - Orchestrator
+        - DataLoader
+        - ServiceOrchestrator
+        - StateManager
+        - StateReader
+        - TransitionManager
+    - Services
+        - 
+- Bot
+    - Config
+        - Intents
+        - Graceful Shutdown
+    - Commands
+        - Admin Commands
+        - User Commands
+    - Components
+        - Embeds
+        - Views
+        - Buttons
+        - Dropdowns
+        - Modals

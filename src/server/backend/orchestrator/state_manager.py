@@ -13,29 +13,25 @@ class StateManager:
     _instance: Optional["StateManager"] = None
 
     def __new__(cls) -> "StateManager":
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
+        if cls._instance is not None:
+            return cls._instance
 
-    def __init__(self) -> None:
-        if self._initialised:
-            return
-        self._initialised = True
+        instance = super().__new__(cls)
 
         # Admins
-        self.admins: List[Admin] = []
+        instance.admins: List[Admin] = []
 
         # Basic data for lookups
-        self.countries: Dict[str, Country] = {}
-        self.cross_table: CrossTableData = {
+        instance.countries: Dict[str, Country] = {}
+        instance.cross_table: CrossTableData = {
             "region_order": [],
             "mappings": {}
         }
-        self.emotes: Dict[str, Emote] = {}
-        self.maps: Dict[str, SeasonData] = {}
-        self.mods: Dict[str, Mod] = {}
-        self.races: Dict[str, Race] = {}
-        self.regions: RegionData = {
+        instance.emotes: Dict[str, Emote] = {}
+        instance.maps: Dict[str, SeasonData] = {}
+        instance.mods: Dict[str, Mod] = {}
+        instance.races: Dict[str, Race] = {}
+        instance.regions: RegionData = {
             "geographic_regions": {},
             "game_servers": {},
             "game_regions": {}
@@ -43,10 +39,18 @@ class StateManager:
 
         # In-memory DataFrames (caching the entire database).
         # None until populate_state_manager() has been called.
-        self.players_df: Optional[pl.DataFrame] = None
-        self.notifications_df: Optional[pl.DataFrame] = None
-        self.events_df: Optional[pl.DataFrame] = None
-        self.matches_1v1_df: Optional[pl.DataFrame] = None
-        self.mmrs_1v1_df: Optional[pl.DataFrame] = None
-        self.preferences_1v1_df: Optional[pl.DataFrame] = None
-        self.replays_1v1_df: Optional[pl.DataFrame] = None
+        instance.players_df: Optional[pl.DataFrame] = None
+        instance.notifications_df: Optional[pl.DataFrame] = None
+        instance.events_df: Optional[pl.DataFrame] = None
+        instance.matches_1v1_df: Optional[pl.DataFrame] = None
+        instance.mmrs_1v1_df: Optional[pl.DataFrame] = None
+        instance.preferences_1v1_df: Optional[pl.DataFrame] = None
+        instance.replays_1v1_df: Optional[pl.DataFrame] = None
+
+        cls._instance = instance
+        return instance
+
+    def __init__(self) -> None:
+        """Singleton initialization is handled in __new__. This method does nothing."""
+        pass
+

@@ -1,6 +1,6 @@
 import polars as pl
 from server.backend.config import DATABASE
-from supabase import create_client
+from supabase import acreate_client
 from typing import Dict
 
 from server.backend.types.polars_dataframes import (
@@ -14,11 +14,11 @@ from server.backend.types.polars_dataframes import (
 )
 
 # Connection functions
-def create_read_client():
-    return create_client(DATABASE["url"], DATABASE["anon_key"])
+async def create_read_client():
+    return await acreate_client(DATABASE["url"], DATABASE["anon_key"])
 
-def create_write_client():
-    return create_client(DATABASE["url"], DATABASE["service_role_key"])
+async def create_write_client():
+    return await acreate_client(DATABASE["url"], DATABASE["service_role_key"])
 
 
 class DatabaseReader:   
