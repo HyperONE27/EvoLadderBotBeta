@@ -24,8 +24,7 @@ PLAYERS_SCHEMA: Dict[str, pl.DataType] = {
 NOTIFICATIONS_SCHEMA: Dict[str, pl.DataType] = {
     "id": pl.Int32,
     "discord_uid": pl.Int64,
-    "quick_start_guide": pl.Boolean,
-    "shield_battery_bug": pl.Boolean,
+    "read_quick_start_guide": pl.Boolean,
 }
 
 EVENTS_SCHEMA: Dict[str, pl.DataType] = {
@@ -40,6 +39,8 @@ MATCHES_1V1_SCHEMA: Dict[str, pl.DataType] = {
     "id": pl.Int32,
     "player_1_discord_uid": pl.Int64,
     "player_2_discord_uid": pl.Int64,
+    "player_1_name": pl.String,
+    "player_2_name": pl.String,
     "player_1_race": pl.String,
     "player_2_race": pl.String,
     "player_1_mmr": pl.Int32,
@@ -99,4 +100,14 @@ REPLAYS_1V1_SCHEMA: Dict[str, pl.DataType] = {
     "game_duration_setting": pl.String,
     "locked_alliances": pl.String,
     "cache_handles": pl.List(pl.String),
+}
+
+TABLE_SCHEMAS: Dict[str, Dict[str, pl.DataType]] = {
+    "players": PLAYERS_SCHEMA,
+    "notifications": NOTIFICATIONS_SCHEMA,
+    "events": EVENTS_SCHEMA,
+    "matches_1v1": MATCHES_1V1_SCHEMA,
+    "mmrs_1v1": MMRS_1V1_SCHEMA,
+    "preferences_1v1": PREFERENCES_1V1_SCHEMA,
+    "replays_1v1": REPLAYS_1V1_SCHEMA,
 }

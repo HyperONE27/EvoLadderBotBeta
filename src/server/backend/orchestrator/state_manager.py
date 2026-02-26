@@ -1,56 +1,46 @@
 import polars as pl
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from server.backend.config import Admin
-from server.backend.types.game_data import (
+from server.backend.types.json_types import (
     Country, CrossTableData, Emote, Map,
     Mod, Race, RegionData, SeasonData
 )
-
+from server.backend.types.state_types import (
+    QueueEntry1v1
+)
 
 class StateManager:
-    _initialised: bool = False
-    _instance: Optional["StateManager"] = None
-
-    def __new__(cls) -> "StateManager":
-        if cls._instance is not None:
-            return cls._instance
-
-        instance = super().__new__(cls)
-
+    def __init__(self) -> None:
         # Admins
-        instance.admins: List[Admin] = []
+        self.admins: List[Admin] = []
 
-        # Basic data for lookups
-        instance.countries: Dict[str, Country] = {}
-        instance.cross_table: CrossTableData = {
+        # Static data from JSON files for lookups
+        self.countries: Dict[str, Country] = {}
+        self.cross_table: CrossTableData = {
             "region_order": [],
             "mappings": {}
         }
-        instance.emotes: Dict[str, Emote] = {}
-        instance.maps: Dict[str, SeasonData] = {}
-        instance.mods: Dict[str, Mod] = {}
-        instance.races: Dict[str, Race] = {}
-        instance.regions: RegionData = {
+        self.emotes: Dict[str, Emote] = {}
+        self.maps: Dict[str, SeasonData] = {}
+        self.mods: Dict[str, Mod] = {}
+        self.races: Dict[str, Race] = {}
+        self.regions: RegionData = {
             "geographic_regions": {},
             "game_servers": {},
             "game_regions": {}
         }
 
-        # In-memory DataFrames (caching the entire database).
-        # None until populate_state_manager() has been called.
-        instance.players_df: Optional[pl.DataFrame] = None
-        instance.notifications_df: Optional[pl.DataFrame] = None
-        instance.events_df: Optional[pl.DataFrame] = None
-        instance.matches_1v1_df: Optional[pl.DataFrame] = None
-        instance.mmrs_1v1_df: Optional[pl.DataFrame] = None
-        instance.preferences_1v1_df: Optional[pl.DataFrame] = None
-        instance.replays_1v1_df: Optional[pl.DataFrame] = None
+        # In-memory DataFrames (cacshouhing the entire database).
+        # None until populate_state_manager() has been called by DataLoader.
+        self.players_df:            (pl.DataFrame | None) = None
+        self.notifications_df:      (pl.DataFrame | None) = None
+        self.events_df:             (pl.DataFrame | None) = None
+        self.matches_1v1_df:        (pl.DataFrame | None) = None
+        self.mmrs_1v1_df:           (pl.DataFrame | None) = None
+        self.preferences_1v1_df:    (pl.DataFrame | None) = None
+        self.replays_1v1_df:        (pl.DataFrame | None) = None
 
-        cls._instance = instance
-        return instance
-
-    def __init__(self) -> None:
-        """Singleton initialization is handled in __new__. This method does nothing."""
-        pass
-
+        # Current application state
+        self.queue_1v1: List[QueueEntry1v1] = []
+        self.write_back_queue = []

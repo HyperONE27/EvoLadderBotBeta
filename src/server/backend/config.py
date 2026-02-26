@@ -1,7 +1,7 @@
 import json
 import os
 from dotenv import load_dotenv
-from typing import Dict, List, TypedDict, Union
+from typing import Dict, List, TypedDict
 
 load_dotenv()
 
@@ -40,8 +40,8 @@ DATABASE: Dict[str, str] = {
     "service_role_key": _get_str_env("SUPABASE_SERVICE_ROLE_KEY"),
 }
 
-DISCORD: Dict[str, Union[int, str]] = {
-    "bot_token": _get_str_env("BOT_TOKEN"),
+DISCORD: Dict[str, (int | str)] = {
+    "bot_token" : _get_str_env("BOT_TOKEN"),
     "match_log_channel_id": _get_int_env("MATCH_LOG_CHANNEL_ID")
 }
 
@@ -58,7 +58,7 @@ EXPECTED_LOBBY_SETTINGS: Dict[str, str] = {
     "speed": "Faster"
 }
 
-MATCHMAKER: Dict[str, Union[float, int]] = {
+MATCHMAKER: Dict[str, (float | int)] = {
     "balance_threshold": 50,
     "refinement_passes": 2,
     "wait_cycle_priority_coefficient": 20,

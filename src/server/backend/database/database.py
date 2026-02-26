@@ -1,70 +1,37 @@
 import polars as pl
 from server.backend.config import DATABASE
-from supabase import acreate_client
+from supabase import create_client, Client
 from typing import Dict
 
-from server.backend.types.polars_dataframes import (
-    PLAYERS_SCHEMA,
-    NOTIFICATIONS_SCHEMA,
-    EVENTS_SCHEMA,
-    MATCHES_1V1_SCHEMA,
-    MMRS_1V1_SCHEMA,
-    PREFERENCES_1V1_SCHEMA,
-    REPLAYS_1V1_SCHEMA,
-)
+from server.backend.types.polars_dataframes import TABLE_SCHEMAS
 
 # Connection functions
-async def create_read_client():
-    return await acreate_client(DATABASE["url"], DATABASE["anon_key"])
+def create_read_client() -> Client:
+    return create_client(DATABASE["url"], DATABASE["anon_key"])
 
-async def create_write_client():
-    return await acreate_client(DATABASE["url"], DATABASE["service_role_key"])
+def create_write_client() -> Client:
+    return create_client(DATABASE["url"], DATABASE["service_role_key"])
 
 
 class DatabaseReader:   
     def __init__(self):
-        self.client = create_read_client()
+        self.client: Client = create_read_client()
 
     def load_all_tables(self) -> Dict[str, pl.DataFrame]:
         """Load all database tables into Polars DataFrames."""
         tables: Dict[str, pl.DataFrame] = {}
         
-        tables_list = [
-            "players",
-            "notifications",
-            "events",
-            "matches_1v1",
-            "mmrs_1v1",
-            "preferences_1v1",
-            "replays_1v1",
-        ]
-
-        for table_name in tables_list:
+        for table_name in TABLE_SCHEMAS.keys():
             tables[table_name] = self._load_table(table_name)
         
         return tables
 
     def _get_table_schema(self, table_name: str) -> Dict[str, pl.DataType]:
         """Get the Polars schema for a table."""
-        schemas = {
-            "players": PLAYERS_SCHEMA,
-            "notifications": NOTIFICATIONS_SCHEMA,
-            "events": EVENTS_SCHEMA,
-            "matches_1v1": MATCHES_1V1_SCHEMA,
-            "mmrs_1v1": MMRS_1V1_SCHEMA,
-            "preferences_1v1": PREFERENCES_1V1_SCHEMA,
-            "replays_1v1": REPLAYS_1V1_SCHEMA,
-        }
-        
-        schema = schemas.get(table_name)
-        if schema is None:
-            raise ValueError(f"No schema defined for table: {table_name}")
-        
-        return schema
+        return TABLE_SCHEMAS.get(table_name)
 
     def _load_table(self, table_name: str) -> pl.DataFrame:
         """Load a single table with strict schema validation."""
-
         try:
             response = self.client.table(table_name).select("*").execute()
             data = response.data
@@ -112,7 +79,7 @@ class DatabaseReader:
 
 class DatabaseWriter:
     def __init__(self):
-        self.client = create_write_client()
+        self.client: Client = create_write_client()
 
     # All write operations here
     

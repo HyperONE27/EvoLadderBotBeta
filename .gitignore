@@ -217,3 +217,7 @@ __marimo__/
 
 # Secrets
 secrets/*
+misc/dump/*
+
+# Cursor
+.cursor/*

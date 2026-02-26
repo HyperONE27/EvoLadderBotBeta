@@ -52,6 +52,39 @@ No good replacement for simple columnar operations to Polars
 
 ===
 
+ARCHITECTURE
+
+# Server
+
+## Database
+
+
+## Backend
+
+### Orchestrator
+- DataLoader:
+    - Runs when the backend processes launches
+    - Handles the initialization of StateManager
+- ServiceOrchestrator:
+    - Coordinates stateless backend service calls
+    - Chains calls into each other
+- StateManager:
+    - Owns all state
+    - Built to be dumb: all data, no logic
+- StateReader:
+    - Handles all read operations on StateManager
+- TransitionManager:
+    - Handles all write operations on StateManager
+    - Responsible for validating and applying all state changes
+
+
+### Services
+
+## Bot
+
+
+===
+
 CHECKLIST
 
 ❌⏰✅
@@ -65,13 +98,13 @@ CHECKLIST
 - Backend
     - API
         - Schema
-        - GET
+        - GET: Retrieve data from the server
             - 
-        - POST
+        - POST: Create a new resource or submit data
             - 
-        - PUT
+        - PUT: Replace an existing resource/data
             - 
-        - DELETE
+        - DELETE: Remove a resource/data
             - 
     - Orchestrator
         - DataLoader
@@ -79,7 +112,17 @@ CHECKLIST
         - StateManager
         - StateReader
         - TransitionManager
+            - Add initialization
+            - Set up 
     - Services
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
         - 
 - Bot
     - Config
@@ -87,10 +130,27 @@ CHECKLIST
         - Graceful Shutdown
     - Commands
         - Admin Commands
+            - /owner admin
+            - /admin ban
+            - /admin match
+            - /admin mmr
+            - /admin snapshot
+            - /admin status
         - User Commands
+            - /help
+            - /leaderboard
+            - /profile
+            - /prune
+            - /queue
+            - /setcountry
+            - /setup
     - Components
         - Embeds
         - Views
         - Buttons
         - Dropdowns
         - Modals
+
+- Experiment Claude-Generated Modules to clean up later
+    - src/server/backend/services/matchmaker_service.py
+    - src/server/backend/utils/*.py

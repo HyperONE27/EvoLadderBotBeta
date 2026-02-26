@@ -6,7 +6,7 @@ from typing import Dict, Any
 from server.backend.config import ADMINS
 from server.backend.database.database import DatabaseReader
 from server.backend.orchestrator.state_manager import StateManager
-from server.backend.types.game_data import LoadedData
+from server.backend.types.json_types import LoadedData
 
 class DataLoader:
     """Loads all application data from JSON files and database."""

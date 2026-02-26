@@ -5,7 +5,9 @@
         "aliases": [
             "스1 테란",
             "SC1人类"
-        ]
+        ],
+        "is_bw_race": true,
+        "is_sc2_race": false
     },
     "bw_zerg": {
         "name": "BW Zerg",
@@ -13,7 +15,9 @@
         "aliases": [
             "스1 저그",
             "SC1异虫"
-        ]
+        ],
+        "is_bw_race": true,
+        "is_sc2_race": false
     },
     "bw_protoss": {
         "name": "BW Protoss",
@@ -21,7 +25,9 @@
         "aliases": [
             "스1 토스",
             "SC1星灵"
-        ]
+        ],
+        "is_bw_race": true,
+        "is_sc2_race": false
     },
     "sc2_terran": {
         "name": "SC2 Terran",
@@ -30,7 +36,9 @@
             "테란",
             "人类",
             "Терраны"
-        ]
+        ],
+        "is_bw_race": false,
+        "is_sc2_race": true
     },
     "sc2_zerg": {
         "name": "SC2 Zerg",
@@ -39,7 +47,9 @@
             "저그",
             "异虫",
             "Зерги"
-        ]
+        ],
+        "is_bw_race": false,
+        "is_sc2_race": true
     },
     "sc2_protoss": {
         "name": "SC2 Protoss",
@@ -48,6 +58,8 @@
             "토스",
             "星灵",
             "Протоссы"
-        ]
+        ],
+        "is_bw_race": false,
+        "is_sc2_race": true
     }
 }

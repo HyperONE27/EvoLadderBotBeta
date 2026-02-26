@@ -65,8 +65,7 @@ CREATE TABLE IF NOT EXISTS players (
 CREATE TABLE IF NOT EXISTS notifications (
     id                      SERIAL PRIMARY KEY,
     discord_uid             BIGINT NOT NULL UNIQUE,
-    quick_start_guide       BOOLEAN DEFAULT FALSE,
-    shield_battery_bug      BOOLEAN DEFAULT FALSE
+    read_quick_start_guide  BOOLEAN DEFAULT FALSE,
 );
 
 CREATE TABLE IF NOT EXISTS events (
@@ -81,6 +80,8 @@ CREATE TABLE IF NOT EXISTS matches_1v1 (
     id                      SERIAL PRIMARY KEY,
     player_1_discord_uid    BIGINT NOT NULL,
     player_2_discord_uid    BIGINT NOT NULL,
+    player_1_name           TEXT NOT NULL,
+    player_2_name           TEXT NOT NULL,
     player_1_race           TEXT NOT NULL,
     player_2_race           TEXT NOT NULL,
     player_1_mmr            INTEGER NOT NULL,

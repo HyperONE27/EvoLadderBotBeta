@@ -14,3 +14,5 @@ class PlayerCommandJSONB(TypedDict):
 class PlayerUpdateJSONB(TypedDict):
     setting_name: str
     old_value: str
+    new_value: str
+    performed_at: datetime

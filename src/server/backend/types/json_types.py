@@ -4,6 +4,7 @@ from typing import List, Dict, TypedDict
 # countries.json data structure
 # -----------------------------
 class Country(TypedDict):
+    code: str
     name: str
     common: bool
 
@@ -18,6 +19,7 @@ class CrossTableData(TypedDict):
 # emotes.json data structure
 # --------------------------
 class Emote(TypedDict):
+    name: str
     short_name: str
     markdown: str
 
@@ -60,6 +62,8 @@ class Race(TypedDict):
     name: str
     short_name: str
     aliases: List[str]
+    is_bw_race: bool
+    is_sc2_race: bool
 
 
 # regions.json data structure
