@@ -549,12 +549,10 @@ def validate_cross_references(state: StateManager) -> List[str]:
     errors = []
 
     # Build lookup maps for validation
-    game_servers_by_short_name = {}
+    game_servers_by_code = {}
     if hasattr(state, 'regions') and 'game_servers' in state.regions:
         for server_code, server_data in state.regions['game_servers'].items():
-            short_name = server_data.get('short_name', '')
-            if short_name:
-                game_servers_by_short_name[short_name] = server_code
+            game_servers_by_code[server_code] = server_data
 
     # Check if cross_table region_order references exist in geographic_regions
     if hasattr(state, 'cross_table') and 'region_order' in state.cross_table:
@@ -574,13 +572,13 @@ def validate_cross_references(state: StateManager) -> List[str]:
             if from_region not in geographic_regions:
                 errors.append(f"cross_table.mappings: source region '{from_region}' not found in regions.geographic_regions")
 
-            for to_region, server_short_name in mapping.items():
+            for to_region, server_code in mapping.items():
                 if to_region not in geographic_regions:
                     errors.append(f"cross_table.mappings.{from_region}: target region '{to_region}' not found in regions.geographic_regions")
 
-                # Check server_short_name exists in game_servers (by short_name)
-                if server_short_name not in game_servers_by_short_name:
-                    errors.append(f"cross_table.mappings.{from_region}.{to_region}: server '{server_short_name}' not found in regions.game_servers")
+                # Check server_code exists in game_servers
+                if server_code not in game_servers_by_code:
+                    errors.append(f"cross_table.mappings.{from_region}.{to_region}: server code '{server_code}' not found in regions.game_servers")
 
     return errors
 
