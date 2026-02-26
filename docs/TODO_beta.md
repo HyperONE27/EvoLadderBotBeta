@@ -124,6 +124,14 @@ CHECKLIST
         - 
         - 
         - 
+    - Utilities
+        - ✅ country_utils.py
+        - ⏰ cross_table_utils.py
+        - ✅ emote_utils.py
+        - ⏰ map_utils.py
+        - ✅ mod_utils.py
+        - ✅ race_utils.py
+        - ✅ region_utils.py
 - Bot
     - Config
         - Intents
@@ -153,4 +161,5 @@ CHECKLIST
 
 - Experiment Claude-Generated Modules to clean up later
     - src/server/backend/services/matchmaker_service.py
-    - src/server/backend/utils/*.py
+    - src/server/backend/utils/*
+        - map_utils.py

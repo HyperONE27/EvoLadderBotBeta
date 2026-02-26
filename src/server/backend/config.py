@@ -77,3 +77,7 @@ QUEUE: Dict[str, int] = {
     "expansion_step": 1,
     "match_interval": 45
 }
+
+# Other constants
+
+CURRENT_SEASON: str = "season_alpha"

@@ -1,105 +1,131 @@
 {
-    "season_alpha": {
-        "Celestial Enclave": {
-            "short_name": "Celestial Enclave",
-            "name": "Celestial Enclave LE",
-            "author": "Blizzard Entertainment",
-            "am_link": "battlenet:://starcraft/map/1/369157",
-            "eu_link": "battlenet:://starcraft/map/2/260081",
-            "as_link": "battlenet:://starcraft/map/3/186928",
-            "game": "sc2"
+    "1v1": {
+        "season_alpha": {
+            "Celestial Enclave": {
+                "short_name": "Celestial Enclave",
+                "name": "Celestial Enclave LE",
+                "author": "Blizzard Entertainment",
+                "am_link": "battlenet:://starcraft/map/1/369157",
+                "eu_link": "battlenet:://starcraft/map/2/260081",
+                "as_link": "battlenet:://starcraft/map/3/186928",
+                "game": "sc2"
+            },
+            "Holy World": {
+                "short_name": "Holy World",
+                "name": "[SC:Evo] Holy World (홀리월드)",
+                "author": "SCEvoLadder",
+                "am_link": "battlenet:://starcraft/map/1/367497",
+                "eu_link": "battlenet:://starcraft/map/2/258892",
+                "as_link": "battlenet:://starcraft/map/3/184687",
+                "game": "bw"
+            },
+            "Keres Passage": {
+                "short_name": "Keres Passage",
+                "name": "Keres Passage SEL",
+                "author": "HyperONE",
+                "am_link": "battlenet:://starcraft/map/1/367550",
+                "eu_link": "battlenet:://starcraft/map/2/258950",
+                "as_link": "battlenet:://starcraft/map/3/184790",
+                "game": "sc2"
+            },
+            "Khione": {
+                "short_name": "Khione",
+                "name": "Khione SEL",
+                "author": "HyperONE",
+                "am_link": "battlenet:://starcraft/map/1/367554",
+                "eu_link": "battlenet:://starcraft/map/2/258956",
+                "as_link": "battlenet:://starcraft/map/3/184800",
+                "game": "sc2"
+            },
+            "Mothership": {
+                "short_name": "Mothership",
+                "name": "Mothership LE",
+                "author": "Blizzard Entertainment",
+                "am_link": "battlenet:://starcraft/map/1/369158",
+                "eu_link": "battlenet:://starcraft/map/2/260082",
+                "as_link": "battlenet:://starcraft/map/3/186929",
+                "game": "sc2"
+            },
+            "Radeon": {
+                "short_name": "Radeon",
+                "name": "[SC:Evo] Radeon (라데온)",
+                "author": "SCEvoLadder",
+                "am_link": "battlenet:://starcraft/map/1/367506",
+                "eu_link": "battlenet:://starcraft/map/2/258902",
+                "as_link": "battlenet:://starcraft/map/3/184696",
+                "game": "bw"
+            },
+            "Ruby Rock": {
+                "short_name": "Ruby Rock",
+                "name": "Ruby Rock LE",
+                "author": "Blizzard Entertainment",
+                "am_link": "battlenet:://starcraft/map/1/369160",
+                "eu_link": "battlenet:://starcraft/map/2/260084",
+                "as_link": "battlenet:://starcraft/map/3/186931",
+                "game": "sc2"
+            },
+            "Sylphid": {
+                "short_name": "Sylphid",
+                "name": "[SC:Evo] Sylphid (실피드)",
+                "author": "SCEvoLadder",
+                "am_link": "battlenet:://starcraft/map/1/367510",
+                "eu_link": "battlenet:://starcraft/map/2/258906",
+                "as_link": "battlenet:://starcraft/map/3/184701",
+                "game": "bw"
+            },
+            "Vermeer": {
+                "short_name": "Vermeer",
+                "name": "[SC:Evo] Vermeer (버미어)",
+                "author": "SCEvoLadder",
+                "am_link": "battlenet:://starcraft/map/1/367512",
+                "eu_link": "battlenet:://starcraft/map/2/258908",
+                "as_link": "battlenet:://starcraft/map/3/184704",
+                "game": "bw"
+            }
         },
-        "Holy World": {
-            "short_name": "Holy World",
-            "name": "[SC:Evo] Holy World (홀리월드)",
-            "author": "SCEvoLadder",
-            "am_link": "battlenet:://starcraft/map/1/367497",
-            "eu_link": "battlenet:://starcraft/map/2/258892",
-            "as_link": "battlenet:://starcraft/map/3/184687",
-            "game": "bw"
+        "season_beta": {
+            "": {
+                "short_name": "",
+                "name": "",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+                "as_link": ""
+            }
         },
-        "Keres Passage": {
-            "short_name": "Keres Passage",
-            "name": "Keres Passage SEL",
-            "author": "HyperONE",
-            "am_link": "battlenet:://starcraft/map/1/367550",
-            "eu_link": "battlenet:://starcraft/map/2/258950",
-            "as_link": "battlenet:://starcraft/map/3/184790",
-            "game": "sc2"
-        },
-        "Khione": {
-            "short_name": "Khione",
-            "name": "Khione SEL",
-            "author": "HyperONE",
-            "am_link": "battlenet:://starcraft/map/1/367554",
-            "eu_link": "battlenet:://starcraft/map/2/258956",
-            "as_link": "battlenet:://starcraft/map/3/184800",
-            "game": "sc2"
-        },
-        "Mothership": {
-            "short_name": "Mothership",
-            "name": "Mothership LE",
-            "author": "Blizzard Entertainment",
-            "am_link": "battlenet:://starcraft/map/1/369158",
-            "eu_link": "battlenet:://starcraft/map/2/260082",
-            "as_link": "battlenet:://starcraft/map/3/186929",
-            "game": "sc2"
-        },
-        "Radeon": {
-            "short_name": "Radeon",
-            "name": "[SC:Evo] Radeon (라데온)",
-            "author": "SCEvoLadder",
-            "am_link": "battlenet:://starcraft/map/1/367506",
-            "eu_link": "battlenet:://starcraft/map/2/258902",
-            "as_link": "battlenet:://starcraft/map/3/184696",
-            "game": "bw"
-        },
-        "Ruby Rock": {
-            "short_name": "Ruby Rock",
-            "name": "Ruby Rock LE",
-            "author": "Blizzard Entertainment",
-            "am_link": "battlenet:://starcraft/map/1/369160",
-            "eu_link": "battlenet:://starcraft/map/2/260084",
-            "as_link": "battlenet:://starcraft/map/3/186931",
-            "game": "sc2"
-        },
-        "Sylphid": {
-            "short_name": "Sylphid",
-            "name": "[SC:Evo] Sylphid (실피드)",
-            "author": "SCEvoLadder",
-            "am_link": "battlenet:://starcraft/map/1/367510",
-            "eu_link": "battlenet:://starcraft/map/2/258906",
-            "as_link": "battlenet:://starcraft/map/3/184701",
-            "game": "bw"
-        },
-        "Vermeer": {
-            "short_name": "Vermeer",
-            "name": "[SC:Evo] Vermeer (버미어)",
-            "author": "SCEvoLadder",
-            "am_link": "battlenet:://starcraft/map/1/367512",
-            "eu_link": "battlenet:://starcraft/map/2/258908",
-            "as_link": "battlenet:://starcraft/map/3/184704",
-            "game": "bw"
+        "season_1": {
+            "": {
+                "short_name": "",
+                "name": "",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+                "as_link": ""
+            }
         }
     },
-    "season_beta": {
-        "": {
-            "short_name": "",
-            "name": "",
-            "author": "",
-            "am_link": "",
-            "eu_link": "",
-            "as_link": ""
+    "2v2": {
+        "season_beta": {
+            "": {
+                "short_name": "",
+                "name": "",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+                "as_link": ""
+            }
         }
     },
-    "season_1": {
-        "": {
-            "short_name": "",
-            "name": "",
-            "author": "",
-            "am_link": "",
-            "eu_link": "",
-            "as_link": ""
+    "FFA": {
+        "season_beta": {
+            "": {
+                "short_name": "",
+                "name": "",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+                "as_link": ""
+            }
         }
     }
 }

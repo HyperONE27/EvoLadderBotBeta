@@ -40,6 +40,10 @@ class SeasonData(TypedDict):
     maps: Dict[str, Map]
 
 
+class GameModeData(TypedDict):
+    seasons: Dict[str, SeasonData]
+
+
 # mods.json data structure
 # ------------------------
 class Mod(TypedDict):
@@ -101,7 +105,7 @@ class LoadedData(TypedDict):
     countries: Dict[str, Country]
     cross_table: CrossTableData
     emotes: Dict[str, Emote]
-    maps: Dict[str, SeasonData]
+    maps: Dict[str, GameModeData]
     mods: Dict[str, Mod]
     races: Dict[str, Race]
     regions: RegionData

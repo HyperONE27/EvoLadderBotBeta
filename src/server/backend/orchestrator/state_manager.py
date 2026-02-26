@@ -3,8 +3,8 @@ from typing import Dict, List
 
 from server.backend.config import Admin
 from server.backend.types.json_types import (
-    Country, CrossTableData, Emote, Map,
-    Mod, Race, RegionData, SeasonData
+    Country, CrossTableData, Emote, 
+    GameModeData, Mod, Race, RegionData
 )
 from server.backend.types.state_types import (
     QueueEntry1v1
@@ -22,7 +22,7 @@ class StateManager:
             "mappings": {}
         }
         self.emotes: Dict[str, Emote] = {}
-        self.maps: Dict[str, SeasonData] = {}
+        self.maps: Dict[str, GameModeData] = {}
         self.mods: Dict[str, Mod] = {}
         self.races: Dict[str, Race] = {}
         self.regions: RegionData = {
