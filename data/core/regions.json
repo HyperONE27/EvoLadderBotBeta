@@ -1,112 +1,137 @@
 {
     "geographic_regions": {
         "NAW": {
+            "code": "NAW",
             "name": "Western North America",
             "globe_emote_code": "AM"
         },
         "NAC": {
+            "code": "NAC",
             "name": "Central North America",
             "globe_emote_code": "AM"
         },
         "NAE": {
+            "code": "NAE",
             "name": "Eastern North America",
             "globe_emote_code": "AM"
         },
         "CAM": {
+            "code": "CAM",
             "name": "Central America and the Caribbean",
             "globe_emote_code": "AM"
         },
         "SAM": {
+            "code": "SAM",
             "name": "South America",
             "globe_emote_code": "AM"
         },
         "EUW": {
+            "code": "EUW",
             "name": "Western Europe",
             "globe_emote_code": "AF"
         },
         "EUE": {
+            "code": "EUE",
             "name": "Northern and Eastern Europe",
             "globe_emote_code": "AF"
         },
         "AFR": {
+            "code": "AFR",
             "name": "Africa",
             "globe_emote_code": "AF"
         },
         "MEA": {
+            "code": "MEA",
             "name": "Middle East and Central Asia",
             "globe_emote_code": "AF"
         },
         "SEA": {
+            "code": "SEA",
             "name": "South and Southeast Asia",
             "globe_emote_code": "AS"
         },
         "KRJ": {
+            "code": "KRJ",
             "name": "Korea and Japan",
             "globe_emote_code": "AS"
         },
         "CHN": {
+            "code": "CHN",
             "name": "China",
             "globe_emote_code": "AS"
         },
         "THM": {
+            "code": "THM",
             "name": "Taiwan, Hong Kong, and Macau",
             "globe_emote_code": "AS"
         },
         "OCE": {
+            "code": "OCE",
             "name": "Oceania",
             "globe_emote_code": "AS"
         },
         "USB": {
+            "code": "USB",
             "name": "Urals and Siberia",
             "globe_emote_code": "AS"
         },
         "FER": {
+            "code": "FER",
             "name": "Far East Russia",
             "globe_emote_code": "AS"
         }
     },
     "game_servers": {
         "USW": {
+            "code": "USW",
             "name": "Western United States",
             "short_name": "US West",
             "game_region_code": "AM"
         },
         "USC": {
+            "code": "USC",
             "name": "Central United States",
             "short_name": "US Central",
             "game_region_code": "AM"
         },
         "USE": {
+            "code": "USE",
             "name": "Eastern United States",
             "short_name": "US East",
             "game_region_code": "AM"
         },
         "BRZ": {
+            "code": "BRZ",
             "name": "Brazil",
             "short_name": "Brazil",
             "game_region_code": "AM"
         },
         "EUC": {
+            "code": "EUC",
             "name": "Central Europe",
             "short_name": "Europe",
             "game_region_code": "EU"
         },
         "SNG": {
+            "code": "SNG",
             "name": "Singapore",
             "short_name": "Singapore",
             "game_region_code": "AM"
         },
         "AUS": {
+            "code": "AUS",
             "name": "Australia",
             "short_name": "Australia",
             "game_region_code": "AM"
         },
         "KOR": {
+            "code": "KOR",
             "name": "Korea",
             "short_name": "Korea",
             "game_region_code": "AS"
         },
         "TWN": {
+            "code": "TWN",
             "name": "Taiwan",
             "short_name": "Taiwan",
             "game_region_code": "AS"
@@ -114,12 +139,15 @@
     },
     "game_regions": {
         "AM": {
+            "code": "AM",
             "name": "Americas"
         },
         "EU": {
+            "code": "EU",
             "name": "Europe"
         },
         "AS": {
+            "code": "AS",
             "name": "Asia"
         }
     }

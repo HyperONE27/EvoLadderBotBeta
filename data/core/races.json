@@ -1,5 +1,6 @@
 {
     "bw_terran": {
+        "code": "bw_terran",
         "name": "BW Terran",
         "short_name": "T1",
         "aliases": [
@@ -10,6 +11,7 @@
         "is_sc2_race": false
     },
     "bw_zerg": {
+        "code": "bw_zerg",
         "name": "BW Zerg",
         "short_name": "Z1",
         "aliases": [
@@ -20,6 +22,7 @@
         "is_sc2_race": false
     },
     "bw_protoss": {
+        "code": "bw_protoss",
         "name": "BW Protoss",
         "short_name": "P1",
         "aliases": [
@@ -30,6 +33,7 @@
         "is_sc2_race": false
     },
     "sc2_terran": {
+        "code": "sc2_terran",
         "name": "SC2 Terran",
         "short_name": "T2",
         "aliases": [
@@ -41,6 +45,7 @@
         "is_sc2_race": true
     },
     "sc2_zerg": {
+        "code": "sc2_zerg",
         "name": "SC2 Zerg",
         "short_name": "Z2",
         "aliases": [
@@ -52,6 +57,7 @@
         "is_sc2_race": true
     },
     "sc2_protoss": {
+        "code": "sc2_protoss",
         "name": "SC2 Protoss",
         "short_name": "P2",
         "aliases": [

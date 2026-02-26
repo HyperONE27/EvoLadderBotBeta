@@ -27,6 +27,7 @@ class Emote(TypedDict):
 # maps.json data structure
 # ------------------------
 class Map(TypedDict):
+    short_name: str
     name: str
     author: str
     am_link: str
@@ -42,6 +43,7 @@ class SeasonData(TypedDict):
 # mods.json data structure
 # ------------------------
 class Mod(TypedDict):
+    code: str
     name: str
     short_name: str
     author: str
@@ -59,6 +61,7 @@ class Mod(TypedDict):
 # races.json data structure
 # -------------------------
 class Race(TypedDict):
+    code: str
     name: str
     short_name: str
     aliases: List[str]
@@ -69,17 +72,20 @@ class Race(TypedDict):
 # regions.json data structure
 # ---------------------------
 class GeographicRegion(TypedDict):
+    code: str
     name: str
     globe_emote_code: str
 
 
 class GameServer(TypedDict):
+    code: str
     name: str
     short_name: str
     game_region_code: str
 
 
 class GameRegion(TypedDict):
+    code: str
     name: str
 
 

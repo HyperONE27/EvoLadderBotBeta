@@ -1,73 +1,91 @@
 {
     "bw_logo": {
+        "name": "bw_logo",
         "short_name": "s1",
         "markdown": "<:s1:1436456216787156992>"
     },
     "sc2_logo": {
+        "name": "sc2_logo",
         "short_name": "s2",
         "markdown": "<:s2:1436456219282903182>"
     },
     "bw_terran": {
+        "name": "bw_terran",
         "short_name": "t1",
         "markdown": "<:t1:1436766963652362362>"
     },
     "bw_zerg": {
+        "name": "bw_zerg",
         "short_name": "z1",
         "markdown": "<:z1:1436767288840949841>"
     },
     "bw_protoss": {
+        "name": "bw_protoss",
         "short_name": "p1",
         "markdown": "<:p1:1436767242103558235>"
     },
     "sc2_terran": {
+        "name": "sc2_terran",
         "short_name": "t2",
         "markdown": "<:t2:1421403242725769307>"
     },
     "sc2_zerg": {
+        "name": "sc2_zerg",
         "short_name": "z2",
         "markdown": "<:z2:1421403197775286292>"
     },
     "sc2_protoss": {
+        "name": "sc2_protoss",
         "short_name": "p2",
         "markdown": "<:p2:1421403291606192138>"
     },
     "flag_xx": {
+        "name": "flag_xx",
         "short_name": "xx",
         "markdown": "<:xx:1436456039921877164>"
     },
     "flag_zz": {
+        "name": "flag_zz",
         "short_name": "zz",
         "markdown": "<:zz:1436456042492989603>"
     },
     "s_rank": {
+        "name": "s_rank",
         "short_name": "s_",
         "markdown": "<:s_:1427477795843473521>"
     },
     "a_rank": {
+        "name": "a_rank",
         "short_name": "a_",
         "markdown": "<:a_:1427477815032418335>"
     },
     "b_rank": {
+        "name": "b_rank",
         "short_name": "b_",
         "markdown": "<:b_:1427477812113182730>"
     },
     "c_rank": {
+        "name": "c_rank",
         "short_name": "c_",
         "markdown": "<:c_:1427477810062299339>"
     },
     "d_rank": {
+        "name": "d_rank",
         "short_name": "d_",
         "markdown": "<:d_:1427477804198400080>"
     },
     "e_rank": {
+        "name": "e_rank",
         "short_name": "e_",
         "markdown": "<:e_:1427477801921024163>"
     },
     "f_rank": {
+        "name": "f_rank",
         "short_name": "f_",
         "markdown": "<:f_:1427477799207305246>"
     },
     "u_rank": {
+        "name": "u_rank",
         "short_name": "u_",
         "markdown": "<:u_:1427477794220412978>"
     }

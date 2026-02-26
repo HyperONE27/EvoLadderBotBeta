@@ -1,6 +1,7 @@
 {
     "season_alpha": {
         "Celestial Enclave": {
+            "short_name": "Celestial Enclave",
             "name": "Celestial Enclave LE",
             "author": "Blizzard Entertainment",
             "am_link": "battlenet:://starcraft/map/1/369157",
@@ -9,6 +10,7 @@
             "game": "sc2"
         },
         "Holy World": {
+            "short_name": "Holy World",
             "name": "[SC:Evo] Holy World (홀리월드)",
             "author": "SCEvoLadder",
             "am_link": "battlenet:://starcraft/map/1/367497",
@@ -17,6 +19,7 @@
             "game": "bw"
         },
         "Keres Passage": {
+            "short_name": "Keres Passage",
             "name": "Keres Passage SEL",
             "author": "HyperONE",
             "am_link": "battlenet:://starcraft/map/1/367550",
@@ -25,6 +28,7 @@
             "game": "sc2"
         },
         "Khione": {
+            "short_name": "Khione",
             "name": "Khione SEL",
             "author": "HyperONE",
             "am_link": "battlenet:://starcraft/map/1/367554",
@@ -33,6 +37,7 @@
             "game": "sc2"
         },
         "Mothership": {
+            "short_name": "Mothership",
             "name": "Mothership LE",
             "author": "Blizzard Entertainment",
             "am_link": "battlenet:://starcraft/map/1/369158",
@@ -41,6 +46,7 @@
             "game": "sc2"
         },
         "Radeon": {
+            "short_name": "Radeon",
             "name": "[SC:Evo] Radeon (라데온)",
             "author": "SCEvoLadder",
             "am_link": "battlenet:://starcraft/map/1/367506",
@@ -49,6 +55,7 @@
             "game": "bw"
         },
         "Ruby Rock": {
+            "short_name": "Ruby Rock",
             "name": "Ruby Rock LE",
             "author": "Blizzard Entertainment",
             "am_link": "battlenet:://starcraft/map/1/369160",
@@ -57,6 +64,7 @@
             "game": "sc2"
         },
         "Sylphid": {
+            "short_name": "Sylphid",
             "name": "[SC:Evo] Sylphid (실피드)",
             "author": "SCEvoLadder",
             "am_link": "battlenet:://starcraft/map/1/367510",
@@ -65,6 +73,7 @@
             "game": "bw"
         },
         "Vermeer": {
+            "short_name": "Vermeer",
             "name": "[SC:Evo] Vermeer (버미어)",
             "author": "SCEvoLadder",
             "am_link": "battlenet:://starcraft/map/1/367512",
@@ -75,6 +84,7 @@
     },
     "season_beta": {
         "": {
+            "short_name": "",
             "name": "",
             "author": "",
             "am_link": "",
@@ -84,6 +94,7 @@
     },
     "season_1": {
         "": {
+            "short_name": "",
             "name": "",
             "author": "",
             "am_link": "",

@@ -1,1005 +1,1256 @@
 {
     "AW": {
+        "code": "AW",
         "name": "Aruba",
         "common": false
     },
     "AF": {
+        "code": "AF",
         "name": "Afghanistan",
         "common": false
     },
     "AO": {
+        "code": "AO",
         "name": "Angola",
         "common": false
     },
     "AI": {
+        "code": "AI",
         "name": "Anguilla",
         "common": false
     },
     "AX": {
+        "code": "AX",
         "name": "Åland Islands",
         "common": false
     },
     "AL": {
+        "code": "AL",
         "name": "Albania",
         "common": false
     },
     "AD": {
+        "code": "AD",
         "name": "Andorra",
         "common": false
     },
     "AE": {
+        "code": "AE",
         "name": "United Arab Emirates",
         "common": false
     },
     "AR": {
+        "code": "AR",
         "name": "Argentina",
         "common": true
     },
     "AM": {
+        "code": "AM",
         "name": "Armenia",
         "common": false
     },
     "AS": {
+        "code": "AS",
         "name": "American Samoa",
         "common": false
     },
     "AQ": {
+        "code": "AQ",
         "name": "Antarctica",
         "common": false
     },
     "TF": {
+        "code": "TF",
         "name": "French Southern Territories",
         "common": false
     },
     "AG": {
+        "code": "AG",
         "name": "Antigua and Barbuda",
         "common": false
     },
     "AU": {
+        "code": "AU",
         "name": "Australia",
         "common": true
     },
     "AT": {
+        "code": "AT",
         "name": "Austria",
         "common": true
     },
     "AZ": {
+        "code": "AZ",
         "name": "Azerbaijan",
         "common": false
     },
     "BI": {
+        "code": "BI",
         "name": "Burundi",
         "common": false
     },
     "BE": {
+        "code": "BE",
         "name": "Belgium",
         "common": false
     },
     "BJ": {
+        "code": "BJ",
         "name": "Benin",
         "common": false
     },
     "BQ": {
+        "code": "BQ",
         "name": "Bonaire, St. Eustatius and Saba",
         "common": false
     },
     "BF": {
+        "code": "BF",
         "name": "Burkina Faso",
         "common": false
     },
     "BD": {
+        "code": "BD",
         "name": "Bangladesh",
         "common": false
     },
     "BG": {
+        "code": "BG",
         "name": "Bulgaria",
         "common": true
     },
     "BH": {
+        "code": "BH",
         "name": "Bahrain",
         "common": false
     },
     "BS": {
+        "code": "BS",
         "name": "Bahamas",
         "common": false
     },
     "BA": {
+        "code": "BA",
         "name": "Bosnia and Herzegovina",
         "common": true
     },
     "BL": {
+        "code": "BL",
         "name": "St. Barthélemy",
         "common": false
     },
     "BY": {
+        "code": "BY",
         "name": "Belarus",
         "common": true
     },
     "BZ": {
+        "code": "BZ",
         "name": "Belize",
         "common": false
     },
     "BM": {
+        "code": "BM",
         "name": "Bermuda",
         "common": false
     },
     "BO": {
+        "code": "BO",
         "name": "Bolivia",
         "common": true
     },
     "BR": {
+        "code": "BR",
         "name": "Brazil",
         "common": true
     },
     "BB": {
+        "code": "BB",
         "name": "Barbados",
         "common": false
     },
     "BN": {
+        "code": "BN",
         "name": "Brunei Darussalam",
         "common": false
     },
     "BT": {
+        "code": "BT",
         "name": "Bhutan",
         "common": false
     },
     "BV": {
+        "code": "BV",
         "name": "Bouvet Island",
         "common": false
     },
     "BW": {
+        "code": "BW",
         "name": "Botswana",
         "common": false
     },
     "CF": {
+        "code": "CF",
         "name": "Central African Republic",
         "common": false
     },
     "CA": {
+        "code": "CA",
         "name": "Canada",
         "common": true
     },
     "CC": {
+        "code": "CC",
         "name": "Cocos (Keeling) Islands",
         "common": false
     },
     "CH": {
+        "code": "CH",
         "name": "Switzerland",
         "common": false
     },
     "CL": {
+        "code": "CL",
         "name": "Chile",
         "common": true
     },
     "CN": {
+        "code": "CN",
         "name": "China",
         "common": true
     },
     "CI": {
+        "code": "CI",
         "name": "Côte d'Ivoire",
         "common": false
     },
     "CM": {
+        "code": "CM",
         "name": "Cameroon",
         "common": false
     },
     "CD": {
+        "code": "CD",
         "name": "Congo, The Democratic Republic of the",
         "common": false
     },
     "CG": {
+        "code": "CG",
         "name": "Congo",
         "common": false
     },
     "CK": {
+        "code": "CK",
         "name": "Cook Islands",
         "common": false
     },
     "CO": {
+        "code": "CO",
         "name": "Colombia",
         "common": true
     },
     "KM": {
+        "code": "KM",
         "name": "Comoros",
         "common": false
     },
     "CV": {
+        "code": "CV",
         "name": "Cabo Verde",
         "common": false
     },
     "CR": {
+        "code": "CR",
         "name": "Costa Rica",
         "common": true
     },
     "CU": {
+        "code": "CU",
         "name": "Cuba",
         "common": true
     },
     "CW": {
+        "code": "CW",
         "name": "Curaçao",
         "common": false
     },
     "CX": {
+        "code": "CX",
         "name": "Christmas Island",
         "common": false
     },
     "KY": {
+        "code": "KY",
         "name": "Cayman Islands",
         "common": false
     },
     "CY": {
+        "code": "CY",
         "name": "Cyprus",
         "common": false
     },
     "CZ": {
+        "code": "CZ",
         "name": "Czechia",
         "common": true
     },
     "DE": {
+        "code": "DE",
         "name": "Germany",
         "common": true
     },
     "DJ": {
+        "code": "DJ",
         "name": "Djibouti",
         "common": false
     },
     "DM": {
+        "code": "DM",
         "name": "Dominica",
         "common": false
     },
     "DK": {
+        "code": "DK",
         "name": "Denmark",
         "common": true
     },
     "DO": {
+        "code": "DO",
         "name": "Dominican Republic",
         "common": false
     },
     "DZ": {
+        "code": "DZ",
         "name": "Algeria",
         "common": false
     },
     "EC": {
+        "code": "EC",
         "name": "Ecuador",
         "common": true
     },
     "EG": {
+        "code": "EG",
         "name": "Egypt",
         "common": false
     },
     "ER": {
+        "code": "ER",
         "name": "Eritrea",
         "common": false
     },
     "EH": {
+        "code": "EH",
         "name": "Western Sahara",
         "common": false
     },
     "ES": {
+        "code": "ES",
         "name": "Spain",
         "common": true
     },
     "EE": {
+        "code": "EE",
         "name": "Estonia",
         "common": false
     },
     "ET": {
+        "code": "ET",
         "name": "Ethiopia",
         "common": false
     },
     "FI": {
+        "code": "FI",
         "name": "Finland",
         "common": true
     },
     "FJ": {
+        "code": "FJ",
         "name": "Fiji",
         "common": false
     },
     "FK": {
+        "code": "FK",
         "name": "Falkland Islands",
         "common": false
     },
     "FR": {
+        "code": "FR",
         "name": "France",
         "common": true
     },
     "FO": {
+        "code": "FO",
         "name": "Faroe Islands",
         "common": false
     },
     "FM": {
+        "code": "FM",
         "name": "Micronesia, Federated States of",
         "common": false
     },
     "GA": {
+        "code": "GA",
         "name": "Gabon",
         "common": false
     },
     "GB": {
+        "code": "GB",
         "name": "United Kingdom",
         "common": true
     },
     "GE": {
+        "code": "GE",
         "name": "Georgia",
         "common": false
     },
     "GG": {
+        "code": "GG",
         "name": "Guernsey",
         "common": false
     },
     "GH": {
+        "code": "GH",
         "name": "Ghana",
         "common": false
     },
     "GI": {
+        "code": "GI",
         "name": "Gibraltar",
         "common": false
     },
     "GN": {
+        "code": "GN",
         "name": "Guinea",
         "common": false
     },
     "GP": {
+        "code": "GP",
         "name": "Guadeloupe",
         "common": false
     },
     "GM": {
+        "code": "GM",
         "name": "Gambia",
         "common": false
     },
     "GW": {
+        "code": "GW",
         "name": "Guinea-Bissau",
         "common": false
     },
     "GQ": {
+        "code": "GQ",
         "name": "Equatorial Guinea",
         "common": false
     },
     "GR": {
+        "code": "GR",
         "name": "Greece",
         "common": false
     },
     "GD": {
+        "code": "GD",
         "name": "Grenada",
         "common": false
     },
     "GL": {
+        "code": "GL",
         "name": "Greenland",
         "common": false
     },
     "GT": {
+        "code": "GT",
         "name": "Guatemala",
         "common": false
     },
     "GF": {
+        "code": "GF",
         "name": "French Guiana",
         "common": false
     },
     "GU": {
+        "code": "GU",
         "name": "Guam",
         "common": false
     },
     "GY": {
+        "code": "GY",
         "name": "Guyana",
         "common": false
     },
     "HK": {
+        "code": "HK",
         "name": "Hong Kong",
         "common": true
     },
     "HM": {
+        "code": "HM",
         "name": "Heard Island and McDonald Islands",
         "common": false
     },
     "HN": {
+        "code": "HN",
         "name": "Honduras",
         "common": false
     },
     "HR": {
+        "code": "HR",
         "name": "Croatia",
         "common": true
     },
     "HT": {
+        "code": "HT",
         "name": "Haiti",
         "common": false
     },
     "HU": {
+        "code": "HU",
         "name": "Hungary",
         "common": true
     },
     "ID": {
+        "code": "ID",
         "name": "Indonesia",
         "common": true
     },
     "IM": {
+        "code": "IM",
         "name": "Isle of Man",
         "common": false
     },
     "IN": {
+        "code": "IN",
         "name": "India",
         "common": true
     },
     "IO": {
+        "code": "IO",
         "name": "British Indian Ocean Territory",
         "common": false
     },
     "IE": {
+        "code": "IE",
         "name": "Ireland",
         "common": false
     },
     "IR": {
+        "code": "IR",
         "name": "Iran",
         "common": false
     },
     "IQ": {
+        "code": "IQ",
         "name": "Iraq",
         "common": false
     },
     "IS": {
+        "code": "IS",
         "name": "Iceland",
         "common": false
     },
     "IL": {
+        "code": "IL",
         "name": "Israel",
         "common": true
     },
     "IT": {
+        "code": "IT",
         "name": "Italy",
         "common": true
     },
     "JM": {
+        "code": "JM",
         "name": "Jamaica",
         "common": false
     },
     "JE": {
+        "code": "JE",
         "name": "Jersey",
         "common": false
     },
     "JO": {
+        "code": "JO",
         "name": "Jordan",
         "common": false
     },
     "JP": {
+        "code": "JP",
         "name": "Japan",
         "common": true
     },
     "KZ": {
+        "code": "KZ",
         "name": "Kazakhstan",
         "common": true
     },
     "KE": {
+        "code": "KE",
         "name": "Kenya",
         "common": false
     },
     "KG": {
+        "code": "KG",
         "name": "Kyrgyzstan",
         "common": false
     },
     "KH": {
+        "code": "KH",
         "name": "Cambodia",
         "common": false
     },
     "KI": {
+        "code": "KI",
         "name": "Kiribati",
         "common": false
     },
     "KN": {
+        "code": "KN",
         "name": "St. Kitts and Nevis",
         "common": false
     },
     "KR": {
+        "code": "KR",
         "name": "South Korea",
         "common": true
     },
     "KW": {
+        "code": "KW",
         "name": "Kuwait",
         "common": false
     },
     "LA": {
+        "code": "LA",
         "name": "Laos",
         "common": false
     },
     "LB": {
+        "code": "LB",
         "name": "Lebanon",
         "common": false
     },
     "LR": {
+        "code": "LR",
         "name": "Liberia",
         "common": false
     },
     "LY": {
+        "code": "LY",
         "name": "Libya",
         "common": false
     },
     "LC": {
+        "code": "LC",
         "name": "St. Lucia",
         "common": false
     },
     "LI": {
+        "code": "LI",
         "name": "Liechtenstein",
         "common": false
     },
     "LK": {
+        "code": "LK",
         "name": "Sri Lanka",
         "common": false
     },
     "LS": {
+        "code": "LS",
         "name": "Lesotho",
         "common": false
     },
     "LT": {
+        "code": "LT",
         "name": "Lithuania",
         "common": true
     },
     "LU": {
+        "code": "LU",
         "name": "Luxembourg",
         "common": false
     },
     "LV": {
+        "code": "LV",
         "name": "Latvia",
         "common": false
     },
     "MO": {
+        "code": "MO",
         "name": "Macau",
         "common": false
     },
     "MF": {
+        "code": "MF",
         "name": "St. Martin",
         "common": false
     },
     "MA": {
+        "code": "MA",
         "name": "Morocco",
         "common": false
     },
     "MC": {
+        "code": "MC",
         "name": "Monaco",
         "common": false
     },
     "MD": {
+        "code": "MD",
         "name": "Moldova",
         "common": false
     },
     "MG": {
+        "code": "MG",
         "name": "Madagascar",
         "common": false
     },
     "MV": {
+        "code": "MV",
         "name": "Maldives",
         "common": false
     },
     "MX": {
+        "code": "MX",
         "name": "Mexico",
         "common": true
     },
     "MH": {
+        "code": "MH",
         "name": "Marshall Islands",
         "common": false
     },
     "MK": {
+        "code": "MK",
         "name": "North Macedonia",
         "common": false
     },
     "ML": {
+        "code": "ML",
         "name": "Mali",
         "common": false
     },
     "MT": {
+        "code": "MT",
         "name": "Malta",
         "common": false
     },
     "MM": {
+        "code": "MM",
         "name": "Myanmar",
         "common": false
     },
     "ME": {
+        "code": "ME",
         "name": "Montenegro",
         "common": false
     },
     "MN": {
+        "code": "MN",
         "name": "Mongolia",
         "common": false
     },
     "MP": {
+        "code": "MP",
         "name": "Northern Mariana Islands",
         "common": false
     },
     "MZ": {
+        "code": "MZ",
         "name": "Mozambique",
         "common": false
     },
     "MR": {
+        "code": "MR",
         "name": "Mauritania",
         "common": false
     },
     "MS": {
+        "code": "MS",
         "name": "Montserrat",
         "common": false
     },
     "MQ": {
+        "code": "MQ",
         "name": "Martinique",
         "common": false
     },
     "MU": {
+        "code": "MU",
         "name": "Mauritius",
         "common": false
     },
     "MW": {
+        "code": "MW",
         "name": "Malawi",
         "common": false
     },
     "MY": {
+        "code": "MY",
         "name": "Malaysia",
         "common": true
     },
     "YT": {
+        "code": "YT",
         "name": "Mayotte",
         "common": false
     },
     "NA": {
+        "code": "NA",
         "name": "Namibia",
         "common": false
     },
     "NC": {
+        "code": "NC",
         "name": "New Caledonia",
         "common": false
     },
     "NE": {
+        "code": "NE",
         "name": "Niger",
         "common": false
     },
     "NF": {
+        "code": "NF",
         "name": "Norfolk Island",
         "common": false
     },
     "NG": {
+        "code": "NG",
         "name": "Nigeria",
         "common": false
     },
     "NI": {
+        "code": "NI",
         "name": "Nicaragua",
         "common": false
     },
     "NU": {
+        "code": "NU",
         "name": "Niue",
         "common": false
     },
     "NL": {
+        "code": "NL",
         "name": "Netherlands",
         "common": true
     },
     "NO": {
+        "code": "NO",
         "name": "Norway",
         "common": true
     },
     "NP": {
+        "code": "NP",
         "name": "Nepal",
         "common": false
     },
     "NR": {
+        "code": "NR",
         "name": "Nauru",
         "common": false
     },
     "NZ": {
+        "code": "NZ",
         "name": "New Zealand",
         "common": true
     },
     "OM": {
+        "code": "OM",
         "name": "Oman",
         "common": false
     },
     "PK": {
+        "code": "PK",
         "name": "Pakistan",
         "common": false
     },
     "PA": {
+        "code": "PA",
         "name": "Panama",
         "common": false
     },
     "PN": {
+        "code": "PN",
         "name": "Pitcairn",
         "common": false
     },
     "PE": {
+        "code": "PE",
         "name": "Peru",
         "common": true
     },
     "PH": {
+        "code": "PH",
         "name": "Philippines",
         "common": true
     },
     "PW": {
+        "code": "PW",
         "name": "Palau",
         "common": false
     },
     "PG": {
+        "code": "PG",
         "name": "Papua New Guinea",
         "common": false
     },
     "PL": {
+        "code": "PL",
         "name": "Poland",
         "common": true
     },
     "PR": {
+        "code": "PR",
         "name": "Puerto Rico",
         "common": false
     },
     "KP": {
+        "code": "KP",
         "name": "North Korea",
         "common": false
     },
     "PT": {
+        "code": "PT",
         "name": "Portugal",
         "common": false
     },
     "PY": {
+        "code": "PY",
         "name": "Paraguay",
         "common": false
     },
     "PS": {
+        "code": "PS",
         "name": "Palestine, State of",
         "common": false
     },
     "PF": {
+        "code": "PF",
         "name": "French Polynesia",
         "common": false
     },
     "QA": {
+        "code": "QA",
         "name": "Qatar",
         "common": false
     },
     "RE": {
+        "code": "RE",
         "name": "Réunion",
         "common": false
     },
     "RO": {
+        "code": "RO",
         "name": "Romania",
         "common": true
     },
     "RU": {
+        "code": "RU",
         "name": "Russia",
         "common": true
     },
     "RW": {
+        "code": "RW",
         "name": "Rwanda",
         "common": false
     },
     "SA": {
+        "code": "SA",
         "name": "Saudi Arabia",
         "common": false
     },
     "SD": {
+        "code": "SD",
         "name": "Sudan",
         "common": false
     },
     "SN": {
+        "code": "SN",
         "name": "Senegal",
         "common": false
     },
     "SG": {
+        "code": "SG",
         "name": "Singapore",
         "common": true
     },
     "GS": {
+        "code": "GS",
         "name": "South Georgia and the South Sandwich Islands",
         "common": false
     },
     "SH": {
+        "code": "SH",
         "name": "St. Helena, Ascension and Tristan da Cunha",
         "common": false
     },
     "SJ": {
+        "code": "SJ",
         "name": "Svalbard and Jan Mayen",
         "common": false
     },
     "SB": {
+        "code": "SB",
         "name": "Solomon Islands",
         "common": false
     },
     "SL": {
+        "code": "SL",
         "name": "Sierra Leone",
         "common": false
     },
     "SV": {
+        "code": "SV",
         "name": "El Salvador",
         "common": false
     },
     "SM": {
+        "code": "SM",
         "name": "San Marino",
         "common": false
     },
     "SO": {
+        "code": "SO",
         "name": "Somalia",
         "common": false
     },
     "PM": {
+        "code": "PM",
         "name": "St. Pierre and Miquelon",
         "common": false
     },
     "RS": {
+        "code": "RS",
         "name": "Serbia",
         "common": false
     },
     "SS": {
+        "code": "SS",
         "name": "South Sudan",
         "common": false
     },
     "ST": {
+        "code": "ST",
         "name": "Sao Tome and Principe",
         "common": false
     },
     "SR": {
+        "code": "SR",
         "name": "Suriname",
         "common": false
     },
     "SK": {
+        "code": "SK",
         "name": "Slovakia",
         "common": false
     },
     "SI": {
+        "code": "SI",
         "name": "Slovenia",
         "common": false
     },
     "SE": {
+        "code": "SE",
         "name": "Sweden",
         "common": true
     },
     "SZ": {
+        "code": "SZ",
         "name": "Eswatini",
         "common": false
     },
     "SX": {
+        "code": "SX",
         "name": "St. Maarten",
         "common": false
     },
     "SC": {
+        "code": "SC",
         "name": "Seychelles",
         "common": false
     },
     "SY": {
+        "code": "SY",
         "name": "Syria",
         "common": false
     },
     "TC": {
+        "code": "TC",
         "name": "Turks and Caicos Islands",
         "common": false
     },
     "TD": {
+        "code": "TD",
         "name": "Chad",
         "common": false
     },
     "TG": {
+        "code": "TG",
         "name": "Togo",
         "common": false
     },
     "TH": {
+        "code": "TH",
         "name": "Thailand",
         "common": false
     },
     "TJ": {
+        "code": "TJ",
         "name": "Tajikistan",
         "common": false
     },
     "TK": {
+        "code": "TK",
         "name": "Tokelau",
         "common": false
     },
     "TM": {
+        "code": "TM",
         "name": "Turkmenistan",
         "common": false
     },
     "TL": {
+        "code": "TL",
         "name": "Timor-Leste",
         "common": false
     },
     "TO": {
+        "code": "TO",
         "name": "Tonga",
         "common": false
     },
     "TT": {
+        "code": "TT",
         "name": "Trinidad and Tobago",
         "common": false
     },
     "TN": {
+        "code": "TN",
         "name": "Tunisia",
         "common": false
     },
     "TR": {
+        "code": "TR",
         "name": "Türkiye",
         "common": false
     },
     "TV": {
+        "code": "TV",
         "name": "Tuvalu",
         "common": false
     },
     "TW": {
+        "code": "TW",
         "name": "Taiwan",
         "common": true
     },
     "TZ": {
+        "code": "TZ",
         "name": "Tanzania",
         "common": false
     },
     "UG": {
+        "code": "UG",
         "name": "Uganda",
         "common": false
     },
     "UA": {
+        "code": "UA",
         "name": "Ukraine",
         "common": true
     },
     "UM": {
+        "code": "UM",
         "name": "United States Minor Outlying Islands",
         "common": false
     },
     "UY": {
+        "code": "UY",
         "name": "Uruguay",
         "common": false
     },
     "US": {
+        "code": "US",
         "name": "United States",
         "common": true
     },
     "UZ": {
+        "code": "UZ",
         "name": "Uzbekistan",
         "common": false
     },
     "VA": {
+        "code": "VA",
         "name": "Vatican City",
         "common": false
     },
     "VC": {
+        "code": "VC",
         "name": "St. Vincent and the Grenadines",
         "common": false
     },
     "VE": {
+        "code": "VE",
         "name": "Venezuela",
         "common": false
     },
     "VG": {
+        "code": "VG",
         "name": "British Virgin Islands",
         "common": false
     },
     "VI": {
+        "code": "VI",
         "name": "United States Virgin Islands",
         "common": false
     },
     "VN": {
+        "code": "VN",
         "name": "Vietnam",
         "common": true
     },
     "VU": {
+        "code": "VU",
         "name": "Vanuatu",
         "common": false
     },
     "WF": {
+        "code": "WF",
         "name": "Wallis and Futuna",
         "common": false
     },
     "WS": {
+        "code": "WS",
         "name": "Samoa",
         "common": false
     },
     "YE": {
+        "code": "YE",
         "name": "Yemen",
         "common": false
     },
     "ZA": {
+        "code": "ZA",
         "name": "South Africa",
         "common": false
     },
     "ZM": {
+        "code": "ZM",
         "name": "Zambia",
         "common": false
     },
     "ZW": {
+        "code": "ZW",
         "name": "Zimbabwe",
         "common": false
     },
     "XX": {
+        "code": "XX",
         "name": "Nonrepresenting",
         "common": false
     },
     "ZZ": {
+        "code": "ZZ",
         "name": "Other",
         "common": true
     }
