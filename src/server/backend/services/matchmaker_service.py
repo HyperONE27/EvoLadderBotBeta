@@ -398,10 +398,10 @@ def run_matchmaking_wave(
     """
     if len(queue) < 2:
         # Not enough players – just increment wait_cycles and return.
-        remaining = [
-            {**entry, "wait_cycles": entry["wait_cycles"] + 1} for entry in queue
-        ]
-        return remaining, []
+        early_remaining: list[QueueEntry1v1] = deepcopy(queue)
+        for e in early_remaining:
+            e["wait_cycles"] = e["wait_cycles"] + 1
+        return early_remaining, []
 
     # Deep-copy so we never touch the caller's data.
     entries: list[QueueEntry1v1] = deepcopy(queue)

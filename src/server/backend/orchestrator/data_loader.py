@@ -1,12 +1,12 @@
 import json
 import polars as pl
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from server.backend.config import ADMINS
 from server.backend.database.database import DatabaseReader
 from server.backend.orchestrator.state_manager import StateManager
-from server.backend.types.json_types import LoadedData
+from server.backend.types.json_types import CrossTableData, LoadedData, RegionData
 
 
 class DataLoader:
@@ -34,12 +34,12 @@ class DataLoader:
         """Load all JSON data into typed structures."""
         return {
             "countries": self._load_json("countries.json"),
-            "cross_table": self._load_json("cross_table.json"),
+            "cross_table": cast(CrossTableData, self._load_json("cross_table.json")),
             "emotes": self._load_json("emotes.json"),
             "maps": self._load_json("maps.json"),
             "mods": self._load_json("mods.json"),
             "races": self._load_json("races.json"),
-            "regions": self._load_json("regions.json"),
+            "regions": cast(RegionData, self._load_json("regions.json")),
         }
 
     def _load_postgres_data(self) -> dict[str, pl.DataFrame]:
@@ -52,4 +52,4 @@ class DataLoader:
             raise FileNotFoundError(f"Required data file not found: {file_path}")
 
         with open(file_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            return cast(dict[str, Any], json.load(f))

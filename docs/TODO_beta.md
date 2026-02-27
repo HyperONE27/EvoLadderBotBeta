@@ -128,7 +128,7 @@ CHECKLIST
         - ✅ country_utils.py
         - ⏰ cross_table_utils.py
         - ✅ emote_utils.py
-        - ⏰ map_utils.py
+        - ✅ map_utils.py
         - ✅ mod_utils.py
         - ✅ race_utils.py
         - ✅ region_utils.py

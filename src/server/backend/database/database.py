@@ -29,7 +29,10 @@ class DatabaseReader:
 
     def _get_table_schema(self, table_name: str) -> dict[str, pl.DataType]:
         """Get the Polars schema for a table."""
-        return TABLE_SCHEMAS.get(table_name)
+        schema = TABLE_SCHEMAS.get(table_name)
+        if schema is None:
+            raise ValueError(f"No schema defined for table '{table_name}'")
+        return schema
 
     def _load_table(self, table_name: str) -> pl.DataFrame:
         """Load a single table with strict schema validation."""
@@ -73,7 +76,7 @@ class DatabaseReader:
             )
 
         try:
-            return df.cast(expected_schema)
+            return df.cast(pl.Schema(expected_schema))
         except Exception as e:
             raise ValueError(f"Table '{table_name}' schema validation failed: {e}")
 
