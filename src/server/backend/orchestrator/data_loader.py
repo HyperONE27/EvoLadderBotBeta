@@ -1,7 +1,7 @@
 import json
 import polars as pl
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 from server.backend.config import ADMINS
 from server.backend.database.database import DatabaseReader
@@ -11,8 +11,8 @@ from server.backend.types.json_types import LoadedData
 class DataLoader:
     """Loads all application data from JSON files and database."""
     
-    def __init__(self, data_dir: Path = Path("data/core")):
-        self.data_dir = data_dir
+    def __init__(self, data_dir: Path = Path("data/core")) -> None:
+        self.data_dir: Path = data_dir
     
     def populate_state_manager(self, state_manager: StateManager) -> None:
         json_data = self._load_json_data()
@@ -41,11 +41,11 @@ class DataLoader:
             "regions": self._load_json("regions.json"),
         }
     
-    def _load_postgres_data(self) -> Dict[str, pl.DataFrame]:
+    def _load_postgres_data(self) -> dict[str, pl.DataFrame]:
         """Load database tables into Polars DataFrames."""
         return DatabaseReader().load_all_tables()
 
-    def _load_json(self, file_name: str) -> Dict[str, Any]:
+    def _load_json(self, file_name: str) -> dict[str, Any]:
         file_path = self.data_dir / file_name
         if not file_path.exists():
             raise FileNotFoundError(f"Required data file not found: {file_path}")

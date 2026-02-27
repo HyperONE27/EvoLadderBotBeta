@@ -1,4 +1,4 @@
-from typing import List, Dict, TypedDict
+from typing import TypedDict
 
 
 # countries.json data structure
@@ -12,8 +12,8 @@ class Country(TypedDict):
 # cross_table.json data structure
 # -------------------------------
 class CrossTableData(TypedDict):
-    region_order: List[str]
-    mappings: Dict[str, Dict[str, str]]
+    region_order: list[str]
+    mappings: dict[str, dict[str, str]]
 
 
 # emotes.json data structure
@@ -37,11 +37,11 @@ class Map(TypedDict):
 
 
 class SeasonData(TypedDict):
-    maps: Dict[str, Map]
+    maps: dict[str, Map]
 
 
 class GameModeData(TypedDict):
-    seasons: Dict[str, SeasonData]
+    seasons: dict[str, SeasonData]
 
 
 # mods.json data structure
@@ -54,12 +54,12 @@ class Mod(TypedDict):
     am_link: str
     eu_link: str
     as_link: str
-    am_handles: List[str]
-    am_artmod_handles: List[str]
-    eu_handles: List[str]
-    eu_artmod_handles: List[str]
-    as_handles: List[str]
-    as_artmod_handles: List[str]
+    am_handles: list[str]
+    am_artmod_handles: list[str]
+    eu_handles: list[str]
+    eu_artmod_handles: list[str]
+    as_handles: list[str]
+    as_artmod_handles: list[str]
 
 
 # races.json data structure
@@ -68,7 +68,7 @@ class Race(TypedDict):
     code: str
     name: str
     short_name: str
-    aliases: List[str]
+    aliases: list[str]
     is_bw_race: bool
     is_sc2_race: bool
 
@@ -94,18 +94,18 @@ class GameRegion(TypedDict):
 
 
 class RegionData(TypedDict):
-    geographic_regions: Dict[str, GeographicRegion]
-    game_servers: Dict[str, GameServer]
-    game_regions: Dict[str, GameRegion]
+    geographic_regions: dict[str, GeographicRegion]
+    game_servers: dict[str, GameServer]
+    game_regions: dict[str, GameRegion]
 
 
 # Complete data structure for all data/core/* .json files
 # ------------------------------------------------------
 class LoadedData(TypedDict):
-    countries: Dict[str, Country]
+    countries: dict[str, Country]
     cross_table: CrossTableData
-    emotes: Dict[str, Emote]
-    maps: Dict[str, GameModeData]
-    mods: Dict[str, Mod]
-    races: Dict[str, Race]
+    emotes: dict[str, Emote]
+    maps: dict[str, GameModeData]
+    mods: dict[str, Mod]
+    races: dict[str, Race]
     regions: RegionData

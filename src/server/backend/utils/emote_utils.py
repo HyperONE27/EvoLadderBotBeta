@@ -1,8 +1,7 @@
-from typing import Dict
 from server.backend.orchestrator.state_manager import StateManager
 from server.backend.types.json_types import Emote
 
-ERROR_MODULE_NOT_INITIALIZED: str = f"{__name__} not initialized"
+_MODULE_NOT_INITIALIZED: str = f"{__name__} not initialized"
 
 _state_manager: StateManager | None = None
 
@@ -12,9 +11,9 @@ _state_manager: StateManager | None = None
 
 def _check_initialized() -> None:
     if _state_manager is None:
-        raise RuntimeError(ERROR_MODULE_NOT_INITIALIZED)
+        raise RuntimeError(_MODULE_NOT_INITIALIZED)
 
-def _get_emotes() -> Dict[str, Emote]:
+def _get_emotes() -> dict[str, Emote]:
     _check_initialized()
     return _state_manager.emotes
 

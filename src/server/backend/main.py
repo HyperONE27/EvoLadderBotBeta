@@ -1,8 +1,8 @@
 from server.backend.orchestrator.data_loader import DataLoader
-from server.backend.orchestrator.service_orchestrator import ServiceOrchestrator
+#from server.backend.orchestrator.service_orchestrator import ServiceOrchestrator
 from server.backend.orchestrator.state_manager import StateManager
-from server.backend.orchestrator.state_reader import StateReader
-from server.backend.orchestrator.transition_manager import TransitionManager
+# from server.backend.orchestrator.state_reader import StateReader
+# from server.backend.orchestrator.transition_manager import TransitionManager
 from server.backend.utils.country_utils import init_country_utils
 from server.backend.utils.cross_table_utils import init_cross_table_utils
 from server.backend.utils.emote_utils import init_emote_utils
@@ -12,7 +12,7 @@ from server.backend.utils.race_utils import init_race_utils
 from server.backend.utils.region_utils import init_region_utils
 
 class Application:
-    def __init__(self):
+    def __init__(self) -> None:
         # Initialize orchestrator components
         self.data_loader = DataLoader()
         # self.service_orchestrator = ServiceOrchestrator()
@@ -32,10 +32,10 @@ class Application:
         init_race_utils(self.state_manager)
         init_region_utils(self.state_manager)
 
-    def run(self):
+    def run(self) -> None:
         pass
 
-def main():
+def main() -> None:
     app = Application()
     app.run()
 

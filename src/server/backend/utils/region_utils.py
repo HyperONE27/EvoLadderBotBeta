@@ -1,8 +1,7 @@
-from typing import Dict
 from server.backend.orchestrator.state_manager import StateManager
 from server.backend.types.json_types import GeographicRegion, GameServer, GameRegion
 
-ERROR_MODULE_NOT_INITIALIZED: str = f"{__name__} not initialized"
+_MODULE_NOT_INITIALIZED: str = f"{__name__} not initialized"
 
 _state_manager: StateManager | None = None
 
@@ -12,7 +11,7 @@ _state_manager: StateManager | None = None
 
 def _check_initialized() -> None:
     if _state_manager is None:
-        raise RuntimeError(ERROR_MODULE_NOT_INITIALIZED)
+        raise RuntimeError(_MODULE_NOT_INITIALIZED)
 
 # ----------
 # Public API
@@ -24,7 +23,7 @@ def init_region_utils(state_manager: StateManager) -> None:
 
 # --- Geographic Regions ---
 
-def get_geographic_regions() -> Dict[str, GeographicRegion]:
+def get_geographic_regions() -> dict[str, GeographicRegion]:
     _check_initialized()
     return _state_manager.regions["geographic_regions"]
 
@@ -42,7 +41,7 @@ def get_geographic_region_by_globe_emote_code(globe_emote_code: str) -> Geograph
 
 # --- Game Servers ---
 
-def get_game_servers() -> Dict[str, GameServer]:
+def get_game_servers() -> dict[str, GameServer]:
     _check_initialized()
     return _state_manager.regions["game_servers"]
 
@@ -64,7 +63,7 @@ def get_game_server_by_game_region_code(game_region_code: str) -> GameServer | N
 
 # --- Game Regions ---
 
-def get_game_regions() -> Dict[str, GameRegion]:
+def get_game_regions() -> dict[str, GameRegion]:
     _check_initialized()
     return _state_manager.regions["game_regions"]
 

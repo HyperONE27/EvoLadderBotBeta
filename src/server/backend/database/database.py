@@ -1,8 +1,7 @@
 import polars as pl
-from server.backend.config import DATABASE
 from supabase import create_client, Client
-from typing import Dict
 
+from server.backend.config import DATABASE
 from server.backend.types.polars_dataframes import TABLE_SCHEMAS
 
 # Connection functions
@@ -14,19 +13,19 @@ def create_write_client() -> Client:
 
 
 class DatabaseReader:   
-    def __init__(self):
+    def __init__(self) -> None:
         self.client: Client = create_read_client()
 
-    def load_all_tables(self) -> Dict[str, pl.DataFrame]:
+    def load_all_tables(self) -> dict[str, pl.DataFrame]:
         """Load all database tables into Polars DataFrames."""
-        tables: Dict[str, pl.DataFrame] = {}
+        tables: dict[str, pl.DataFrame] = {}
         
         for table_name in TABLE_SCHEMAS.keys():
             tables[table_name] = self._load_table(table_name)
         
         return tables
 
-    def _get_table_schema(self, table_name: str) -> Dict[str, pl.DataType]:
+    def _get_table_schema(self, table_name: str) -> dict[str, pl.DataType]:
         """Get the Polars schema for a table."""
         return TABLE_SCHEMAS.get(table_name)
 
@@ -50,7 +49,7 @@ class DatabaseReader:
     def _validate_schema(
         self,
         df: pl.DataFrame,
-        expected_schema: Dict[str, pl.DataType],
+        expected_schema: dict[str, pl.DataType],
         table_name: str,
     ) -> pl.DataFrame:
         """Validate DataFrame matches expected schema and return the cast DataFrame."""
@@ -78,10 +77,7 @@ class DatabaseReader:
 
 
 class DatabaseWriter:
-    def __init__(self):
+    def __init__(self) -> None:
         self.client: Client = create_write_client()
 
     # All write operations here
-    
-    def insert_player(self, data: Dict) -> Dict:
-        pass

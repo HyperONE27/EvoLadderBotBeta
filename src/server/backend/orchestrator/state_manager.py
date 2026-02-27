@@ -1,5 +1,4 @@
 import polars as pl
-from typing import Dict, List
 
 from server.backend.config import Admin
 from server.backend.types.json_types import (
@@ -13,18 +12,18 @@ from server.backend.types.state_types import (
 class StateManager:
     def __init__(self) -> None:
         # Admins
-        self.admins: List[Admin] = []
+        self.admins: list[Admin] = []
 
         # Static data from JSON files for lookups
-        self.countries: Dict[str, Country] = {}
+        self.countries: dict[str, Country] = {}
         self.cross_table: CrossTableData = {
             "region_order": [],
             "mappings": {}
         }
-        self.emotes: Dict[str, Emote] = {}
-        self.maps: Dict[str, GameModeData] = {}
-        self.mods: Dict[str, Mod] = {}
-        self.races: Dict[str, Race] = {}
+        self.emotes: dict[str, Emote] = {}
+        self.maps: dict[str, GameModeData] = {}
+        self.mods: dict[str, Mod] = {}
+        self.races: dict[str, Race] = {}
         self.regions: RegionData = {
             "geographic_regions": {},
             "game_servers": {},
@@ -42,5 +41,5 @@ class StateManager:
         self.replays_1v1_df:        (pl.DataFrame | None) = None
 
         # Current application state
-        self.queue_1v1: List[QueueEntry1v1] = []
-        self.write_back_queue = []
+        self.queue_1v1: list[QueueEntry1v1] = []
+        # self.write_back_queue = []

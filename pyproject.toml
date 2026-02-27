@@ -1,0 +1,18 @@
+[tool.mypy]
+# Keep useful stuff, drop the most annoying strict parts
+mypy_path = "src"
+strict = false
+warn_return_any = true
+warn_unused_ignores = true
+show_error_codes = true
+pretty = true
+
+# Still catch most real bugs, but allow gradual typing
+# disallow_untyped_defs = false    # ← key relaxation
+# disallow_incomplete_defs = false
+# disallow_untyped_calls = false
+
+# Optional: silence the global None pain in utils only
+[[tool.mypy.overrides]]
+module = "server.backend.utils.*"
+disable_error_code = "union-attr,no-any-return,var-annotated"

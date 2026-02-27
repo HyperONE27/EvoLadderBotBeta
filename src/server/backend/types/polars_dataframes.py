@@ -1,8 +1,7 @@
-from typing import Dict
 import polars as pl
 
 # Polars DataFrame schema for storing PostgreSQL table "players"
-PLAYERS_SCHEMA: Dict[str, pl.DataType] = {
+PLAYERS_SCHEMA: dict[str, pl.DataType] = {
     "id": pl.Int32,
     "discord_uid": pl.Int64,
     "discord_username": pl.String,
@@ -21,13 +20,13 @@ PLAYERS_SCHEMA: Dict[str, pl.DataType] = {
     "current_match_id": pl.Int32,
 }
 
-NOTIFICATIONS_SCHEMA: Dict[str, pl.DataType] = {
+NOTIFICATIONS_SCHEMA: dict[str, pl.DataType] = {
     "id": pl.Int32,
     "discord_uid": pl.Int64,
     "read_quick_start_guide": pl.Boolean,
 }
 
-EVENTS_SCHEMA: Dict[str, pl.DataType] = {
+EVENTS_SCHEMA: dict[str, pl.DataType] = {
     "id": pl.Int32,
     "discord_uid": pl.Int64,
     "event_type": pl.String,
@@ -35,7 +34,7 @@ EVENTS_SCHEMA: Dict[str, pl.DataType] = {
     "performed_at": pl.Datetime,
 }
 
-MATCHES_1V1_SCHEMA: Dict[str, pl.DataType] = {
+MATCHES_1V1_SCHEMA: dict[str, pl.DataType] = {
     "id": pl.Int32,
     "player_1_discord_uid": pl.Int64,
     "player_2_discord_uid": pl.Int64,
@@ -59,7 +58,7 @@ MATCHES_1V1_SCHEMA: Dict[str, pl.DataType] = {
     "player_2_uploaded_at": pl.Datetime,
 }
 
-MMRS_1V1_SCHEMA: Dict[str, pl.DataType] = {
+MMRS_1V1_SCHEMA: dict[str, pl.DataType] = {
     "id": pl.Int32,
     "discord_uid": pl.Int64,
     "player_name": pl.String,
@@ -72,14 +71,14 @@ MMRS_1V1_SCHEMA: Dict[str, pl.DataType] = {
     "last_played_at": pl.Datetime,
 }
 
-PREFERENCES_1V1_SCHEMA: Dict[str, pl.DataType] = {
+PREFERENCES_1V1_SCHEMA: dict[str, pl.DataType] = {
     "id": pl.Int32,
     "discord_uid": pl.Int64,
     "last_chosen_races": pl.List(pl.String),
     "last_chosen_vetoes": pl.List(pl.String),
 }
 
-REPLAYS_1V1_SCHEMA: Dict[str, pl.DataType] = {
+REPLAYS_1V1_SCHEMA: dict[str, pl.DataType] = {
     "id": pl.Int32,
     "replay_path": pl.String,
     "replay_hash": pl.String,
@@ -102,7 +101,7 @@ REPLAYS_1V1_SCHEMA: Dict[str, pl.DataType] = {
     "cache_handles": pl.List(pl.String),
 }
 
-TABLE_SCHEMAS: Dict[str, Dict[str, pl.DataType]] = {
+TABLE_SCHEMAS: dict[str, dict[str, pl.DataType]] = {
     "players": PLAYERS_SCHEMA,
     "notifications": NOTIFICATIONS_SCHEMA,
     "events": EVENTS_SCHEMA,
