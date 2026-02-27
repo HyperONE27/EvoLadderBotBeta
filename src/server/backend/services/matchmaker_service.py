@@ -13,7 +13,6 @@ No global state, no singletons, no I/O, no mutation of the input list.
 
 from copy import deepcopy
 from datetime import datetime, timezone
-from typing import Optional, Tuple
 
 from server.backend.types.state_types import MatchCandidate1v1, QueueEntry1v1
 
@@ -47,7 +46,7 @@ DEFAULT_MMR: int = 1500
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-def _mmr_or_default(value: Optional[int]) -> int:
+def _mmr_or_default(value: int | None) -> int:
     return value if value is not None else DEFAULT_MMR
 
 
@@ -68,7 +67,7 @@ def _effective_mmr(entry: QueueEntry1v1, *, bw: bool) -> int:
     return _mmr_or_default(entry["bw_mmr"] if bw else entry["sc2_mmr"])
 
 
-def _race_for_match(entry: QueueEntry1v1, *, bw: bool) -> Optional[str]:
+def _race_for_match(entry: QueueEntry1v1, *, bw: bool) -> str | None:
     return entry["bw_race"] if bw else entry["sc2_race"]
 
 
@@ -83,7 +82,7 @@ def _skill_bias(entry: QueueEntry1v1) -> int:
 
 def _categorise(
     entries: list[QueueEntry1v1],
-) -> Tuple[list[QueueEntry1v1], list[QueueEntry1v1], list[QueueEntry1v1]]:
+) -> tuple[list[QueueEntry1v1], list[QueueEntry1v1], list[QueueEntry1v1]]:
     """Split entries into (bw_only, sc2_only, both) lists sorted by MMR."""
     bw_only: list[QueueEntry1v1] = []
     sc2_only: list[QueueEntry1v1] = []
@@ -119,7 +118,7 @@ def _equalise(
     bw_list: list[QueueEntry1v1],
     sc2_list: list[QueueEntry1v1],
     both_list: list[QueueEntry1v1],
-) -> Tuple[list[QueueEntry1v1], list[QueueEntry1v1]]:
+) -> tuple[list[QueueEntry1v1], list[QueueEntry1v1]]:
     """Assign *both_list* players into *bw_list* or *sc2_list* to balance sizes
     and, as a secondary objective, skill.  Returns new lists; inputs are not
     mutated."""
@@ -203,7 +202,7 @@ def _equalise(
 def _filter_by_priority(
     lead: list[QueueEntry1v1],
     follow: list[QueueEntry1v1],
-) -> Tuple[list[QueueEntry1v1], list[QueueEntry1v1]]:
+) -> tuple[list[QueueEntry1v1], list[QueueEntry1v1]]:
     """If one side is larger, trim it to match the smaller side, keeping the
     entries with the highest ``wait_cycles``."""
     if len(lead) == len(follow):
@@ -225,10 +224,10 @@ def _build_candidates(
     lead: list[QueueEntry1v1],
     follow: list[QueueEntry1v1],
     lead_is_bw: bool,
-) -> list[Tuple[float, QueueEntry1v1, QueueEntry1v1, int]]:
+) -> list[tuple[float, QueueEntry1v1, QueueEntry1v1, int]]:
     """Return ``(score, lead_entry, follow_entry, mmr_diff)`` for every valid
     pairing within either player's MMR window."""
-    candidates: list[Tuple[float, QueueEntry1v1, QueueEntry1v1, int]] = []
+    candidates: list[tuple[float, QueueEntry1v1, QueueEntry1v1, int]] = []
 
     for le in lead:
         le_mmr = _effective_mmr(le, bw=lead_is_bw)
@@ -251,13 +250,13 @@ def _build_candidates(
 
 
 def _select_greedy(
-    candidates: list[Tuple[float, QueueEntry1v1, QueueEntry1v1, int]],
-) -> list[Tuple[QueueEntry1v1, QueueEntry1v1]]:
+    candidates: list[tuple[float, QueueEntry1v1, QueueEntry1v1, int]],
+) -> list[tuple[QueueEntry1v1, QueueEntry1v1]]:
     """Greedily pick the best non-overlapping pairs from sorted candidates."""
     candidates_sorted = sorted(candidates, key=lambda c: c[0])
     used_lead: set[int] = set()
     used_follow: set[int] = set()
-    matches: list[Tuple[QueueEntry1v1, QueueEntry1v1]] = []
+    matches: list[tuple[QueueEntry1v1, QueueEntry1v1]] = []
 
     for _score, le, fe, _diff in candidates_sorted:
         if le["discord_uid"] not in used_lead and fe["discord_uid"] not in used_follow:
@@ -273,9 +272,9 @@ def _select_greedy(
 # ---------------------------------------------------------------------------
 
 def _refine_matches(
-    matches: list[Tuple[QueueEntry1v1, QueueEntry1v1]],
+    matches: list[tuple[QueueEntry1v1, QueueEntry1v1]],
     lead_is_bw: bool,
-) -> list[Tuple[QueueEntry1v1, QueueEntry1v1]]:
+) -> list[tuple[QueueEntry1v1, QueueEntry1v1]]:
     """Perform adjacent-swap passes to reduce the total squared MMR error."""
     if len(matches) < 2:
         return matches
@@ -358,7 +357,7 @@ def _to_match_candidate(
 
 def run_matchmaking_wave(
     queue: list[QueueEntry1v1],
-) -> Tuple[list[QueueEntry1v1], list[MatchCandidate1v1]]:
+) -> tuple[list[QueueEntry1v1], list[MatchCandidate1v1]]:
     """Execute one matchmaking wave.
 
     Parameters
@@ -401,7 +400,7 @@ def run_matchmaking_wave(
     assert not (bw_ids & sc2_ids), "Equalisation produced overlapping pools"
 
     # --- Determine lead / follow and match ----------------------------------
-    matched_pairs: list[Tuple[QueueEntry1v1, QueueEntry1v1]] = []
+    matched_pairs: list[tuple[QueueEntry1v1, QueueEntry1v1]] = []
     lead_is_bw: bool = True  # default; may be flipped below
 
     if bw_pool and sc2_pool:
