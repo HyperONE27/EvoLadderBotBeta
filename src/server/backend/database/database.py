@@ -4,25 +4,27 @@ from supabase import create_client, Client
 from server.backend.config import DATABASE
 from server.backend.types.polars_dataframes import TABLE_SCHEMAS
 
+
 # Connection functions
 def create_read_client() -> Client:
     return create_client(DATABASE["url"], DATABASE["anon_key"])
+
 
 def create_write_client() -> Client:
     return create_client(DATABASE["url"], DATABASE["service_role_key"])
 
 
-class DatabaseReader:   
+class DatabaseReader:
     def __init__(self) -> None:
         self.client: Client = create_read_client()
 
     def load_all_tables(self) -> dict[str, pl.DataFrame]:
         """Load all database tables into Polars DataFrames."""
         tables: dict[str, pl.DataFrame] = {}
-        
+
         for table_name in TABLE_SCHEMAS.keys():
             tables[table_name] = self._load_table(table_name)
-        
+
         return tables
 
     def _get_table_schema(self, table_name: str) -> dict[str, pl.DataType]:

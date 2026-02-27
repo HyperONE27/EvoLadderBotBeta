@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import TypeAlias, TypedDict
 
 
 # countries.json data structure
@@ -36,12 +36,9 @@ class Map(TypedDict):
     game: str
 
 
-class SeasonData(TypedDict):
-    maps: dict[str, Map]
-
-
-class GameModeData(TypedDict):
-    seasons: dict[str, SeasonData]
+# These are not TypedDict - they store arbitrary keys, not fixed members.
+SeasonData: TypeAlias = dict[str, Map]
+GameModeData: TypeAlias = dict[str, SeasonData]
 
 
 # mods.json data structure

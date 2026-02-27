@@ -7,10 +7,12 @@ load_dotenv()
 
 # Type-checking around loading environment variables
 
+
 class Admin(TypedDict):
     discord_id: int
     name: str
     role: str
+
 
 def _get_admins_env(key: str) -> list[Admin]:
     value = os.getenv(key)
@@ -19,17 +21,20 @@ def _get_admins_env(key: str) -> list[Admin]:
     data = json.loads(value)
     return cast(list[Admin], data)
 
+
 def _get_int_env(key: str) -> int:
     value = os.getenv(key)
     if not value:
         raise ValueError(f"Required environment variable {key} not set")
     return int(value)
 
+
 def _get_str_env(key: str) -> str:
     value = os.getenv(key)
     if not value:
         raise ValueError(f"Required environment variable {key} not set")
     return value
+
 
 # Environment variables
 
@@ -42,8 +47,8 @@ DATABASE: dict[str, str] = {
 }
 
 DISCORD: dict[str, (int | str)] = {
-    "bot_token" : _get_str_env("BOT_TOKEN"),
-    "match_log_channel_id": _get_int_env("MATCH_LOG_CHANNEL_ID")
+    "bot_token": _get_str_env("BOT_TOKEN"),
+    "match_log_channel_id": _get_int_env("MATCH_LOG_CHANNEL_ID"),
 }
 
 STORAGE: dict[str, str] = {
@@ -56,27 +61,23 @@ EXPECTED_LOBBY_SETTINGS: dict[str, str] = {
     "duration": "Infinite",
     "locked_alliances": "Yes",
     "privacy": "Normal",
-    "speed": "Faster"
+    "speed": "Faster",
 }
 
 MATCHMAKER: dict[str, (float | int)] = {
     "balance_threshold": 50,
     "refinement_passes": 2,
     "wait_cycle_priority_coefficient": 20,
-    "wait_cycle_priority_exponent": 1.25
+    "wait_cycle_priority_exponent": 1.25,
 }
 
-MMR: dict[str, int] = {
-    "default": 1500,
-    "divisor": 500,
-    "k_factor": 40
-}
+MMR: dict[str, int] = {"default": 1500, "divisor": 500, "k_factor": 40}
 
 QUEUE: dict[str, int] = {
     "abort_interval": 60,
     "activity_interval": 30,
     "expansion_step": 1,
-    "match_interval": 45
+    "match_interval": 45,
 }
 
 # Other constants

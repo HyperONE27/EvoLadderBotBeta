@@ -1,6 +1,8 @@
 from server.backend.orchestrator.data_loader import DataLoader
-#from server.backend.orchestrator.service_orchestrator import ServiceOrchestrator
+
+# from server.backend.orchestrator.service_orchestrator import ServiceOrchestrator
 from server.backend.orchestrator.state_manager import StateManager
+
 # from server.backend.orchestrator.state_reader import StateReader
 # from server.backend.orchestrator.transition_manager import TransitionManager
 from server.backend.utils.country_utils import init_country_utils
@@ -10,6 +12,7 @@ from server.backend.utils.map_utils import init_map_utils
 from server.backend.utils.mod_utils import init_mod_utils
 from server.backend.utils.race_utils import init_race_utils
 from server.backend.utils.region_utils import init_region_utils
+
 
 class Application:
     def __init__(self) -> None:
@@ -35,9 +38,11 @@ class Application:
     def run(self) -> None:
         pass
 
+
 def main() -> None:
     app = Application()
     app.run()
+
 
 if __name__ == "__main__":
     main()

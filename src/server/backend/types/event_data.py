@@ -1,15 +1,18 @@
 from datetime import datetime
 from typing import TypedDict
 
+
 class AdminCommandJSONB(TypedDict):
     command: str
     arguments: list[str]
     performed_at: datetime
 
+
 class PlayerCommandJSONB(TypedDict):
     command: str
     arguments: list[str]
     performed_at: datetime
+
 
 class PlayerUpdateJSONB(TypedDict):
     setting_name: str

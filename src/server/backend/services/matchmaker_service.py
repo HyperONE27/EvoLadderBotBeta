@@ -46,6 +46,7 @@ DEFAULT_MMR: int = 1500
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _mmr_or_default(value: int | None) -> int:
     return value if value is not None else DEFAULT_MMR
 
@@ -80,6 +81,7 @@ def _skill_bias(entry: QueueEntry1v1) -> int:
 # Categorise queue entries
 # ---------------------------------------------------------------------------
 
+
 def _categorise(
     entries: list[QueueEntry1v1],
 ) -> tuple[list[QueueEntry1v1], list[QueueEntry1v1], list[QueueEntry1v1]]:
@@ -113,6 +115,7 @@ def _categorise(
 # ---------------------------------------------------------------------------
 # Equalise BW / SC2 pools using "both" players
 # ---------------------------------------------------------------------------
+
 
 def _equalise(
     bw_list: list[QueueEntry1v1],
@@ -199,6 +202,7 @@ def _equalise(
 # Priority-based pre-filter
 # ---------------------------------------------------------------------------
 
+
 def _filter_by_priority(
     lead: list[QueueEntry1v1],
     follow: list[QueueEntry1v1],
@@ -209,16 +213,21 @@ def _filter_by_priority(
         return lead, follow
 
     if len(lead) > len(follow):
-        trimmed = sorted(lead, key=lambda p: p["wait_cycles"], reverse=True)[: len(follow)]
+        trimmed = sorted(lead, key=lambda p: p["wait_cycles"], reverse=True)[
+            : len(follow)
+        ]
         return trimmed, follow
     else:
-        trimmed = sorted(follow, key=lambda p: p["wait_cycles"], reverse=True)[: len(lead)]
+        trimmed = sorted(follow, key=lambda p: p["wait_cycles"], reverse=True)[
+            : len(lead)
+        ]
         return lead, trimmed
 
 
 # ---------------------------------------------------------------------------
 # Build candidate pairs and greedy selection
 # ---------------------------------------------------------------------------
+
 
 def _build_candidates(
     lead: list[QueueEntry1v1],
@@ -243,7 +252,7 @@ def _build_candidates(
 
             if diff <= le_window or diff <= fe_window:
                 wait_sum = le["wait_cycles"] + fe["wait_cycles"]
-                score = (diff ** 2) - (wait_sum * WAIT_PRIORITY_COEFFICIENT)
+                score = (diff**2) - (wait_sum * WAIT_PRIORITY_COEFFICIENT)
                 candidates.append((score, le, fe, diff))
 
     return candidates
@@ -270,6 +279,7 @@ def _select_greedy(
 # ---------------------------------------------------------------------------
 # Least-squares refinement (adjacent swaps)
 # ---------------------------------------------------------------------------
+
 
 def _refine_matches(
     matches: list[tuple[QueueEntry1v1, QueueEntry1v1]],
@@ -299,14 +309,21 @@ def _refine_matches(
                 continue
 
             # Prevent self-matches after swap.
-            if l1["discord_uid"] == f2["discord_uid"] or l2["discord_uid"] == f1["discord_uid"]:
+            if (
+                l1["discord_uid"] == f2["discord_uid"]
+                or l2["discord_uid"] == f1["discord_uid"]
+            ):
                 continue
 
             # Ensure both new pairings respect at least one player's window.
             d1 = abs(l1_mmr - f2_mmr)
             d2 = abs(l2_mmr - f1_mmr)
-            m1_ok = d1 <= _max_mmr_diff(l1["wait_cycles"]) or d1 <= _max_mmr_diff(f2["wait_cycles"])
-            m2_ok = d2 <= _max_mmr_diff(l2["wait_cycles"]) or d2 <= _max_mmr_diff(f1["wait_cycles"])
+            m1_ok = d1 <= _max_mmr_diff(l1["wait_cycles"]) or d1 <= _max_mmr_diff(
+                f2["wait_cycles"]
+            )
+            m2_ok = d2 <= _max_mmr_diff(l2["wait_cycles"]) or d2 <= _max_mmr_diff(
+                f1["wait_cycles"]
+            )
 
             if m1_ok and m2_ok:
                 result[i] = (l1, f2)
@@ -323,6 +340,7 @@ def _refine_matches(
 # Convert internal match tuples to MatchCandidate1v1
 # ---------------------------------------------------------------------------
 
+
 def _to_match_candidate(
     lead_entry: QueueEntry1v1,
     follow_entry: QueueEntry1v1,
@@ -333,8 +351,12 @@ def _to_match_candidate(
 
     # These should always be non-None given how categorisation works, but
     # guard defensively.
-    assert p1_race is not None, f"Lead player {lead_entry['discord_uid']} has no race for bw={lead_is_bw}"
-    assert p2_race is not None, f"Follow player {follow_entry['discord_uid']} has no race for bw={not lead_is_bw}"
+    assert p1_race is not None, (
+        f"Lead player {lead_entry['discord_uid']} has no race for bw={lead_is_bw}"
+    )
+    assert p2_race is not None, (
+        f"Follow player {follow_entry['discord_uid']} has no race for bw={not lead_is_bw}"
+    )
 
     return MatchCandidate1v1(
         player_1_discord_uid=lead_entry["discord_uid"],
@@ -354,6 +376,7 @@ def _to_match_candidate(
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def run_matchmaking_wave(
     queue: list[QueueEntry1v1],
@@ -376,8 +399,7 @@ def run_matchmaking_wave(
     if len(queue) < 2:
         # Not enough players – just increment wait_cycles and return.
         remaining = [
-            {**entry, "wait_cycles": entry["wait_cycles"] + 1}
-            for entry in queue
+            {**entry, "wait_cycles": entry["wait_cycles"] + 1} for entry in queue
         ]
         return remaining, []
 
