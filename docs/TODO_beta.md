@@ -126,7 +126,7 @@ CHECKLIST
         - 
     - Utilities
         - ✅ country_utils.py
-        - ⏰ cross_table_utils.py
+        - ✅ cross_table_utils.py
         - ✅ emote_utils.py
         - ✅ map_utils.py
         - ✅ mod_utils.py

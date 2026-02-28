@@ -68,7 +68,7 @@ def init_map_utils(state_manager: StateManager) -> None:
 
 
 def get_maps(
-    *, game_mode: (str | None) = None, season: (str | None) = None
+    *, game_mode: str | None = None, season: str | None = None
 ) -> dict[str, Map]:
     _check_initialized()
     if game_mode and season:

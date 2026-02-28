@@ -29,7 +29,7 @@ def _sort_region_pair(region_1: str, region_2: str) -> tuple[str, str]:
     region_order = _get_region_order()
     if region_1 not in region_order or region_2 not in region_order:
         raise ValueError(f"Region {region_1} or {region_2} not found in region_order")
-    if region_order.index(region_1) < region_order.index(region_2):
+    if region_order.index(region_1) <= region_order.index(region_2):
         return region_1, region_2
     return region_2, region_1
 
