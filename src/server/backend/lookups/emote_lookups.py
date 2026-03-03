@@ -25,7 +25,7 @@ def _get_emotes() -> dict[str, Emote]:
 # ----------
 
 
-def init_emote_utils(state_manager: StateManager) -> None:
+def init_emote_lookups(state_manager: StateManager) -> None:
     global _state_manager
     _state_manager = state_manager
 

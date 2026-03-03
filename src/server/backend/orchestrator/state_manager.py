@@ -20,7 +20,10 @@ class StateManager:
 
         # Static data from JSON files for lookups
         self.countries: dict[str, Country] = {}
-        self.cross_table: CrossTableData = {"region_order": [], "mappings": {}}
+        self.cross_table: CrossTableData = {
+            "region_order": [],
+            "mappings": {},
+        }
         self.emotes: dict[str, Emote] = {}
         self.maps: dict[str, GameModeData] = {}
         self.mods: dict[str, Mod] = {}
@@ -31,8 +34,7 @@ class StateManager:
             "game_regions": {},
         }
 
-        # In-memory DataFrames (cacshouhing the entire database).
-        # None until populate_state_manager() has been called by DataLoader.
+        # In-memory DataFrames (caching the entire database)
         self.players_df: pl.DataFrame | None = None
         self.notifications_df: pl.DataFrame | None = None
         self.events_df: pl.DataFrame | None = None
@@ -43,4 +45,6 @@ class StateManager:
 
         # Current application state
         self.queue_1v1: list[QueueEntry1v1] = []
+        # self.queue_2v2: list[QueueEntry2v2] = []
+        # self.queue_FFA: list[QueueEntryFFA] = []
         # self.write_back_queue = []

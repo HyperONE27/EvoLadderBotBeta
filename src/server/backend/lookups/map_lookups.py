@@ -62,7 +62,7 @@ def _get_game_mode_season_maps(game_mode: str, season: str) -> dict[str, Map]:
 # ----------
 
 
-def init_map_utils(state_manager: StateManager) -> None:
+def init_map_lookups(state_manager: StateManager) -> None:
     global _state_manager
     _state_manager = state_manager
 
@@ -86,8 +86,7 @@ def get_map_by_short_name(short_name: str) -> Map | None:
     _check_initialized()
     return next(
         (
-            map_data
-            for map_data in _get_maps().values()
+            map_data for map_data in _get_maps().values()
             if map_data["short_name"] == short_name
         ),
         None,
@@ -97,7 +96,10 @@ def get_map_by_short_name(short_name: str) -> Map | None:
 def get_map_by_name(name: str) -> Map | None:
     _check_initialized()
     return next(
-        (map_data for map_data in _get_maps().values() if map_data["name"] == name),
+        (
+            map_data for map_data in _get_maps().values()
+            if map_data["name"].lower() == name.lower()
+        ),
         None,
     )
 
@@ -106,8 +108,7 @@ def get_map_by_link(link: str) -> Map | None:
     _check_initialized()
     return next(
         (
-            map_data
-            for map_data in _get_maps().values()
+            map_data for map_data in _get_maps().values()
             if map_data["am_link"] == link
             or map_data["eu_link"] == link
             or map_data["as_link"] == link

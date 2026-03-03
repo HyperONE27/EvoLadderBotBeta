@@ -39,7 +39,7 @@ def _sort_region_pair(region_1: str, region_2: str) -> tuple[str, str]:
 # ----------
 
 
-def init_cross_table_utils(state_manager: StateManager) -> None:
+def init_cross_table_lookups(state_manager: StateManager) -> None:
     global _state_manager
     _state_manager = state_manager
 

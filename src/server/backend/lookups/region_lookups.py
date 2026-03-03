@@ -20,7 +20,7 @@ def _check_initialized() -> None:
 # ----------
 
 
-def init_region_utils(state_manager: StateManager) -> None:
+def init_region_lookups(state_manager: StateManager) -> None:
     global _state_manager
     _state_manager = state_manager
 

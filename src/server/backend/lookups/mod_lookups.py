@@ -25,7 +25,7 @@ def _get_mods() -> dict[str, Mod]:
 # ----------
 
 
-def init_mod_utils(state_manager: StateManager) -> None:
+def init_mod_lookups(state_manager: StateManager) -> None:
     global _state_manager
     _state_manager = state_manager
 

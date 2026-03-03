@@ -20,8 +20,8 @@ def _check_initialized() -> None:
 # ----------
 
 
-def init_country_utils(state_manager: StateManager) -> None:
-    """Initialize the country utils module."""
+def init_country_lookups(state_manager: StateManager) -> None:
+    """Initialize the country lookups module."""
     global _state_manager
     _state_manager = state_manager
 

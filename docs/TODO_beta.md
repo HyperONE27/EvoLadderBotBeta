@@ -125,13 +125,13 @@ CHECKLIST
         - 
         - 
     - Utilities
-        - ✅ country_utils.py
-        - ✅ cross_table_utils.py
-        - ✅ emote_utils.py
-        - ✅ map_utils.py
-        - ✅ mod_utils.py
-        - ✅ race_utils.py
-        - ✅ region_utils.py
+        - ✅ country_lookups.py
+        - ✅ cross_table_lookups.py
+        - ✅ emote_lookups.py
+        - ✅ map_lookups.py
+        - ✅ mod_lookups.py
+        - ✅ race_lookups.py
+        - ✅ region_lookups.py
 - Bot
     - Config
         - Intents
@@ -159,7 +159,65 @@ CHECKLIST
         - Dropdowns
         - Modals
 
+- End-to-End Flows
+    - Bot Command
+    - HTTP API Request to Backend
+    - HTTP API Request received by Backend
+    - HTTP API Request serialized by Backend
+    - ServiceOrchestrator processing:
+        - ServiceOrchestrator calls the relevant StateReader/service concerns
+        - ServiceOrchestrator calls the relevant TransitionManager concerns
+    - ServiceOrchestrator completes and returns
+    - HTTP response sent to bot middleware
+
 - Experiment Claude-Generated Modules to clean up later
     - src/server/backend/services/matchmaker_service.py
     - src/server/backend/utils/*
         - map_utils.py
+
+===
+
+❌⏰✅
+
+- Old Files to Convert:
+    - ⏰ src/backend/
+        - ❌ adapters/
+            - The need for these is completely antiquated
+                - We are no longer juggling both SQLite and PostgreSQL
+        - ⏰ services/
+            - ❌ admin_service.py
+            - ❌ app_context.py
+                - Necessary persistent data handled in backend/.../main.py
+                - Most backend modules are no longer instantiated as singletons
+            - ❌ base_config_service.py
+                - Lookups no longer inherit from a base class
+            - ❌ cache_service.py
+                - Deprecated; lookup data handled by state.py
+            - command_guard_service.py
+            - countries_service.py
+            - data_access_service.py
+            - leaderboard_service.py
+            - load_monitor.py
+            - localization_service.py
+            - maps_service.py
+            - match_completion_service.py
+            - matchmaking_service.py
+            - memory_monitor.py
+            - mmr_service.py
+            - mods_service.py
+            - notification_service.py
+            - performance_service.py
+            - process_pool_health.py
+            - races_service.py
+            - ranking_service.py
+            - regions_service.py
+            - replay_job_queue.py
+            - replay_parsing_timeout.py
+            - replay_service.py
+            - storage_service.py
+            - user_info_service.py
+            - validation_service.py
+    - src/bot/
+        - commands/
+        - components/
+        - utils/
