@@ -25,11 +25,6 @@ def _get_mods() -> dict[str, Mod]:
 # ----------
 
 
-def init_mod_lookups(state_manager: StateManager) -> None:
-    global _state_manager
-    _state_manager = state_manager
-
-
 def get_mod_by_code(code: str) -> Mod | None:
     return _get_mods().get(code)
 
@@ -55,3 +50,13 @@ def get_mod_by_link(link: str) -> Mod | None:
         ),
         None,
     )
+
+
+# ----------------
+# Module lifecycle
+# ----------------
+
+def init_mod_lookups(state_manager: StateManager) -> None:
+    """Initialize the mod lookups module."""
+    global _state_manager
+    _state_manager = state_manager

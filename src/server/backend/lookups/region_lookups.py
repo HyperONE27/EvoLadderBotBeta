@@ -21,11 +21,6 @@ def _get_state_manager() -> StateManager:
 # ----------
 
 
-def init_region_lookups(state_manager: StateManager) -> None:
-    global _state_manager
-    _state_manager = state_manager
-
-
 # --- Geographic Regions ---
 
 
@@ -117,3 +112,13 @@ def get_game_region_by_name(name: str) -> GameRegion | None:
         (region for region in get_game_regions().values() if region["name"] == name),
         None,
     )
+
+
+# ----------------
+# Module lifecycle
+# ----------------
+
+def init_region_lookups(state_manager: StateManager) -> None:
+    """Initialize the region lookups module."""
+    global _state_manager
+    _state_manager = state_manager

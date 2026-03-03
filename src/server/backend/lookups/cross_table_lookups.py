@@ -37,12 +37,17 @@ def _sort_region_pair(region_1: str, region_2: str) -> tuple[str, str]:
 # ----------
 
 
-def init_cross_table_lookups(state_manager: StateManager) -> None:
-    global _state_manager
-    _state_manager = state_manager
-
-
 def get_game_server_from_region_pair(region_1: str, region_2: str) -> str:
     region_1, region_2 = _sort_region_pair(region_1, region_2)
     mappings = _get_mappings()
     return mappings[region_1][region_2]
+
+
+# ----------------
+# Module lifecycle
+# ----------------
+
+def init_cross_table_lookups(state_manager: StateManager) -> None:
+    """Initialize the cross table lookups module."""
+    global _state_manager
+    _state_manager = state_manager

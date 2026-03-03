@@ -1,6 +1,10 @@
 import polars as pl
 
-# Polars DataFrame schema for storing PostgreSQL table "players"
+
+# ---------------------
+# DataFrame definitions
+# ---------------------
+
 PLAYERS_SCHEMA: dict[str, pl.DataType] = {
     "id": pl.Int64,
     "discord_uid": pl.Int64,
@@ -111,3 +115,102 @@ TABLE_SCHEMAS: dict[str, dict[str, pl.DataType]] = {
     "preferences_1v1": PREFERENCES_1V1_SCHEMA,
     "replays_1v1": REPLAYS_1V1_SCHEMA,
 }
+
+# -------------------
+# DataFrame row types
+# -------------------
+
+class PlayersRow(TypedDict):
+    id: int
+    discord_uid: int
+    discord_username: str
+    player_name: str | None
+    alt_player_names: list[str] | None
+    battletag: str | None
+    nationality: str | None
+    location: str | None
+    is_banned: bool
+    accepted_tos: bool
+    accepted_tos_at: datetime | None
+    completed_setup: bool
+    completed_setup_at: datetime | None
+    player_status: str
+    current_match_mode: str | None
+    current_match_id: int | None
+
+
+class NotificationsRow(TypedDict):
+    id: int
+    discord_uid: int
+    read_quick_start_guide: bool
+
+class EventsRow(TypedDict):
+    id: int
+    discord_uid: int
+    event_type: str
+    event_data: str
+    performed_at: datetime
+
+class Matches1v1Row(TypedDict):
+    id: int
+    player_1_discord_uid: int
+    player_2_discord_uid: int
+    player_1_name: str
+    player_2_name: str
+    player_1_race: str
+    player_2_race: str
+    player_1_mmr: int
+    player_2_mmr: int
+    player_1_report: str
+    player_2_report: str
+    match_result: str
+    player_1_mmr_change: int | None
+    player_2_mmr_change: int | None
+    map_name: str
+    server_name: str
+    assigned_at: datetime | None
+    completed_at: datetime | None
+    player_1_replay_path: str | None
+    player_1_uploaded_at: datetime | None
+    player_2_replay_path: str | None
+    player_2_uploaded_at: datetime | None
+
+class MMRs1v1Row(TypedDict):
+    id: int
+    discord_uid: int
+    player_name: str
+    race: str
+    mmr: int
+    games_played: int
+    games_won: int
+    games_lost: int
+    games_drawn: int
+    last_played_at: datetime
+
+class Preferences1v1Row(TypedDict):
+    id: int
+    discord_uid: int
+    last_chosen_races: list[str] | None
+    last_chosen_vetoes: list[str] | None
+
+class Replays1v1Row(TypedDict):
+    id: int
+    replay_path: str
+    replay_hash: str
+    replay_time: datetime
+    uploaded_at: datetime
+    player_1_name: str
+    player_2_name: str
+    player_1_race: str
+    player_2_race: str
+    match_result: str
+    player_1_handle: str
+    player_2_handle: str
+    observers: list[str]
+    map_name: str
+    game_duration_seconds: int
+    game_privacy: str
+    game_speed: str
+    game_duration_setting: str
+    locked_alliances: str
+    cache_handles: list[str]

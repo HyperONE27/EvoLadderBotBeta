@@ -25,11 +25,6 @@ def _get_emotes() -> dict[str, Emote]:
 # ----------
 
 
-def init_emote_lookups(state_manager: StateManager) -> None:
-    global _state_manager
-    _state_manager = state_manager
-
-
 def get_emote_by_name(name: str) -> Emote | None:
     return _get_emotes().get(name)
 
@@ -50,3 +45,13 @@ def get_emote_by_markdown(markdown: str) -> Emote | None:
         (emote for emote in _get_emotes().values() if emote["markdown"] == markdown),
         None,
     )
+
+
+# ----------------
+# Module lifecycle
+# ----------------
+
+def init_emote_lookups(state_manager: StateManager) -> None:
+    """Initialize the emote lookups module."""
+    global _state_manager
+    _state_manager = state_manager

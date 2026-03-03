@@ -59,11 +59,6 @@ def _get_game_mode_season_maps(game_mode: str, season: str) -> dict[str, Map]:
 # ----------
 
 
-def init_map_lookups(state_manager: StateManager) -> None:
-    global _state_manager
-    _state_manager = state_manager
-
-
 def get_maps(
     *, game_mode: str | None = None, season: str | None = None
 ) -> dict[str, Map]:
@@ -111,3 +106,13 @@ def get_map_by_link(link: str) -> Map | None:
         ),
         None,
     )
+
+
+# ----------------
+# Module lifecycle
+# ----------------
+
+def init_map_lookups(state_manager: StateManager) -> None:
+    """Initialize the map lookups module."""
+    global _state_manager
+    _state_manager = state_manager

@@ -25,11 +25,6 @@ def _get_races() -> dict[str, Race]:
 # ----------
 
 
-def init_race_lookups(state_manager: StateManager) -> None:
-    global _state_manager
-    _state_manager = state_manager
-
-
 def get_race_by_code(code: str) -> Race | None:
     return _get_races().get(code)
 
@@ -49,3 +44,13 @@ def get_race_by_alias(alias: str) -> Race | None:
     return next(
         (race for race in _get_races().values() if alias in race["aliases"]), None
     )
+
+
+# ----------------
+# Module lifecycle
+# ----------------
+
+def init_race_lookups(state_manager: StateManager) -> None:
+    """Initialize the race lookups module."""
+    global _state_manager
+    _state_manager = state_manager

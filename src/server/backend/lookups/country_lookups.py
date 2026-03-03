@@ -21,12 +21,6 @@ def _get_state_manager() -> StateManager:
 # ----------
 
 
-def init_country_lookups(state_manager: StateManager) -> None:
-    """Initialize the country lookups module."""
-    global _state_manager
-    _state_manager = state_manager
-
-
 def get_countries() -> dict[str, Country]:
     return _get_state_manager().countries
 
@@ -65,3 +59,13 @@ def search_countries_by_partial_name(partial_name: str) -> dict[str, Country]:
         for code, country in get_countries().items()
         if partial_name.lower() in country["name"].lower()
     }
+
+
+# ----------------
+# Module lifecycle
+# ----------------
+
+def init_country_lookups(state_manager: StateManager) -> None:
+    """Initialize the country lookups module."""
+    global _state_manager
+    _state_manager = state_manager
