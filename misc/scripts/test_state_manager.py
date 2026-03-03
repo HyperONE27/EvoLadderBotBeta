@@ -37,8 +37,8 @@ load_dotenv(REPO_ROOT / "secrets" / ".env")
 
 import polars as pl  # noqa: E402
 
-from server.backend.orchestrator.data_loader import DataLoader  # noqa: E402
-from server.backend.orchestrator.state_manager import StateManager  # noqa: E402
+from server.backend.orchestrator.loader import DataLoader  # noqa: E402
+from server.backend.orchestrator.state import StateManager  # noqa: E402
 from server.backend.types.json_types import (  # noqa: E402
     Country, CrossTableData, Emote, GameModeData, LoadedData, Map,
     Mod, Race, RegionData, SeasonData, GeographicRegion, GameServer,
