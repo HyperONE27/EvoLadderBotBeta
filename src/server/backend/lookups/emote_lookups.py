@@ -10,14 +10,14 @@ _state_manager: StateManager | None = None
 # ----------------
 
 
-def _check_initialized() -> None:
+def _get_state_manager() -> StateManager:
     if _state_manager is None:
         raise RuntimeError(_MODULE_NOT_INITIALIZED)
+    return _state_manager
 
 
 def _get_emotes() -> dict[str, Emote]:
-    _check_initialized()
-    return _state_manager.emotes
+    return _get_state_manager().emotes
 
 
 # ----------
@@ -31,12 +31,10 @@ def init_emote_lookups(state_manager: StateManager) -> None:
 
 
 def get_emote_by_name(name: str) -> Emote | None:
-    _check_initialized()
     return _get_emotes().get(name)
 
 
 def get_emote_by_short_name(short_name: str) -> Emote | None:
-    _check_initialized()
     return next(
         (
             emote
@@ -48,7 +46,6 @@ def get_emote_by_short_name(short_name: str) -> Emote | None:
 
 
 def get_emote_by_markdown(markdown: str) -> Emote | None:
-    _check_initialized()
     return next(
         (emote for emote in _get_emotes().values() if emote["markdown"] == markdown),
         None,

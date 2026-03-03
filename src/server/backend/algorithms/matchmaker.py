@@ -12,7 +12,6 @@ No global state, no singletons, no I/O, no mutation of the input list.
 """
 
 from copy import deepcopy
-from datetime import datetime, timezone
 
 from server.backend.types.state_types import MatchCandidate1v1, QueueEntry1v1
 
@@ -26,12 +25,13 @@ BASE_MMR_WINDOW: int = 100
 MMR_WINDOW_GROWTH_PER_CYCLE: int = 50
 
 # When scoring candidate pairs a lower score is better.
-# score = mmr_diff² − (combined_wait_cycles × WAIT_PRIORITY_COEFFICIENT)
+# score = mmr_diff² − (2^wait_factor × WAIT_PRIORITY_COEFFICIENT)
+# where wait_factor = max(lead_wait_cycles, follow_wait_cycles).
+#
+# The exponential term ensures that long-waiting players dominate the
+# scoring function after a modest number of cycles regardless of MMR gap,
+# effectively guaranteeing them a match.
 WAIT_PRIORITY_COEFFICIENT: float = 20.0
-
-# Number of adjacent-swap refinement passes after the initial greedy match
-# selection (least-squares improvement).
-REFINEMENT_PASSES: int = 2
 
 # When rebalancing "both-race" players between the BW and SC2 pools, only
 # attempt a swap if the mean-MMR difference between the two pools exceeds
@@ -99,9 +99,7 @@ def _categorise(
             sc2_only.append(e)
         elif has_bw and has_sc2:
             both.append(e)
-        else:
-            # This should never happen
-            print(f"QueueEntry1v1 {e['discord_uid']} has no race")
+        # else: entry has no race — silently skip.
 
     bw_only.sort(key=lambda p: _mmr_or_default(p["bw_mmr"]), reverse=True)
     sc2_only.sort(key=lambda p: _mmr_or_default(p["sc2_mmr"]), reverse=True)
@@ -199,33 +197,7 @@ def _equalise(
 
 
 # ---------------------------------------------------------------------------
-# Priority-based pre-filter
-# ---------------------------------------------------------------------------
-
-
-def _filter_by_priority(
-    lead: list[QueueEntry1v1],
-    follow: list[QueueEntry1v1],
-) -> tuple[list[QueueEntry1v1], list[QueueEntry1v1]]:
-    """If one side is larger, trim it to match the smaller side, keeping the
-    entries with the highest ``wait_cycles``."""
-    if len(lead) == len(follow):
-        return lead, follow
-
-    if len(lead) > len(follow):
-        trimmed = sorted(lead, key=lambda p: p["wait_cycles"], reverse=True)[
-            : len(follow)
-        ]
-        return trimmed, follow
-    else:
-        trimmed = sorted(follow, key=lambda p: p["wait_cycles"], reverse=True)[
-            : len(lead)
-        ]
-        return lead, trimmed
-
-
-# ---------------------------------------------------------------------------
-# Build candidate pairs and greedy selection
+# Build candidate pairs
 # ---------------------------------------------------------------------------
 
 
@@ -235,7 +207,18 @@ def _build_candidates(
     lead_is_bw: bool,
 ) -> list[tuple[float, QueueEntry1v1, QueueEntry1v1, int]]:
     """Return ``(score, lead_entry, follow_entry, mmr_diff)`` for every valid
-    pairing within either player's MMR window."""
+    pairing within either player's MMR window.
+
+    The score for a candidate pair is::
+
+        wait_factor = max(lead_wait_cycles, follow_wait_cycles)
+        score       = mmr_diff² − 2^wait_factor × WAIT_PRIORITY_COEFFICIENT
+
+    Using the *max* of the two wait counts means that a long-waiting player
+    pulls the score down for every pair they appear in, regardless of the
+    opponent's tenure in the queue.  The exponential term ensures that after
+    a modest number of cycles the wait bonus dominates any MMR gap.
+    """
     candidates: list[tuple[float, QueueEntry1v1, QueueEntry1v1, int]] = []
 
     for le in lead:
@@ -251,89 +234,152 @@ def _build_candidates(
             diff = abs(le_mmr - fe_mmr)
 
             if diff <= le_window or diff <= fe_window:
-                wait_sum = le["wait_cycles"] + fe["wait_cycles"]
-                score = (diff**2) - (wait_sum * WAIT_PRIORITY_COEFFICIENT)
+                wait_factor = max(le["wait_cycles"], fe["wait_cycles"])
+                score = (diff**2) - ((2**wait_factor) * WAIT_PRIORITY_COEFFICIENT)
                 candidates.append((score, le, fe, diff))
 
     return candidates
 
 
-def _select_greedy(
-    candidates: list[tuple[float, QueueEntry1v1, QueueEntry1v1, int]],
-) -> list[tuple[QueueEntry1v1, QueueEntry1v1]]:
-    """Greedily pick the best non-overlapping pairs from sorted candidates."""
-    candidates_sorted = sorted(candidates, key=lambda c: c[0])
-    used_lead: set[int] = set()
-    used_follow: set[int] = set()
-    matches: list[tuple[QueueEntry1v1, QueueEntry1v1]] = []
-
-    for _score, le, fe, _diff in candidates_sorted:
-        if le["discord_uid"] not in used_lead and fe["discord_uid"] not in used_follow:
-            matches.append((le, fe))
-            used_lead.add(le["discord_uid"])
-            used_follow.add(fe["discord_uid"])
-
-    return matches
-
-
 # ---------------------------------------------------------------------------
-# Least-squares refinement (adjacent swaps)
+# O(n³) Hungarian algorithm (Kuhn–Munkres)
 # ---------------------------------------------------------------------------
 
 
-def _refine_matches(
-    matches: list[tuple[QueueEntry1v1, QueueEntry1v1]],
-    lead_is_bw: bool,
-) -> list[tuple[QueueEntry1v1, QueueEntry1v1]]:
-    """Perform adjacent-swap passes to reduce the total squared MMR error."""
-    if len(matches) < 2:
-        return matches
+def _hungarian_minimize(cost: list[list[float]], n: int) -> list[int]:
+    """Minimum-cost assignment for an *n × n* cost matrix.
 
-    result = list(matches)
+    Returns a list *assignment* of length *n* where ``assignment[i]`` is the
+    column assigned to row *i*.  Uses the shortest-augmenting-path variant
+    which runs in O(n³) time — perfectly adequate for n ≤ 100.
+    """
+    INF = float("inf")
 
-    for _ in range(REFINEMENT_PASSES):
-        swapped = False
-        for i in range(len(result) - 1):
-            l1, f1 = result[i]
-            l2, f2 = result[i + 1]
+    # Dual variables (potentials), 1-indexed.
+    u = [0.0] * (n + 1)
+    v = [0.0] * (n + 1)
+    # p[j] = row currently assigned to column j (1-indexed; 0 = free).
+    p = [0] * (n + 1)
+    # way[j] = predecessor column on the shortest-path tree.
+    way = [0] * (n + 1)
 
-            l1_mmr = _effective_mmr(l1, bw=lead_is_bw)
-            f1_mmr = _effective_mmr(f1, bw=not lead_is_bw)
-            l2_mmr = _effective_mmr(l2, bw=lead_is_bw)
-            f2_mmr = _effective_mmr(f2, bw=not lead_is_bw)
+    for i in range(1, n + 1):
+        # Introduce row i; start augmenting from virtual column 0.
+        p[0] = i
+        j0 = 0
+        min_to = [INF] * (n + 1)
+        used = [False] * (n + 1)
 
-            err_before = (l1_mmr - f1_mmr) ** 2 + (l2_mmr - f2_mmr) ** 2
-            err_after = (l1_mmr - f2_mmr) ** 2 + (l2_mmr - f1_mmr) ** 2
+        while True:
+            used[j0] = True
+            i0 = p[j0]
+            delta = INF
+            j1 = -1
 
-            if err_after >= err_before:
-                continue
+            for j in range(1, n + 1):
+                if used[j]:
+                    continue
+                reduced = cost[i0 - 1][j - 1] - u[i0] - v[j]
+                if reduced < min_to[j]:
+                    min_to[j] = reduced
+                    way[j] = j0
+                if min_to[j] < delta:
+                    delta = min_to[j]
+                    j1 = j
 
-            # Prevent self-matches after swap.
-            if (
-                l1["discord_uid"] == f2["discord_uid"]
-                or l2["discord_uid"] == f1["discord_uid"]
-            ):
-                continue
+            # Update potentials along the alternating tree.
+            for j in range(n + 1):
+                if used[j]:
+                    u[p[j]] += delta
+                    v[j] -= delta
+                else:
+                    min_to[j] -= delta
 
-            # Ensure both new pairings respect at least one player's window.
-            d1 = abs(l1_mmr - f2_mmr)
-            d2 = abs(l2_mmr - f1_mmr)
-            m1_ok = d1 <= _max_mmr_diff(l1["wait_cycles"]) or d1 <= _max_mmr_diff(
-                f2["wait_cycles"]
-            )
-            m2_ok = d2 <= _max_mmr_diff(l2["wait_cycles"]) or d2 <= _max_mmr_diff(
-                f1["wait_cycles"]
-            )
+            j0 = j1
+            if p[j0] == 0:
+                break
 
-            if m1_ok and m2_ok:
-                result[i] = (l1, f2)
-                result[i + 1] = (l2, f1)
-                swapped = True
+        # Unwind the augmenting path.
+        while j0:
+            p[j0] = p[way[j0]]
+            j0 = way[j0]
 
-        if not swapped:
-            break
+    # Convert to 0-indexed result.
+    result = [-1] * n
+    for j in range(1, n + 1):
+        if p[j] != 0:
+            result[p[j] - 1] = j - 1
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# Optimal pair selection via Hungarian algorithm
+# ---------------------------------------------------------------------------
+
+# Sentinel cost for infeasible / padding cells.  Must exceed the absolute
+# value of any valid score.  With the exponential wait term 2^w × 20, a
+# player at wait_cycles=40 produces a bonus of ~2.2 × 10¹³, so 10¹⁸ leaves
+# ample headroom.
+_SENTINEL: float = 1e18
+
+
+def _select_optimal(
+    candidates: list[tuple[float, QueueEntry1v1, QueueEntry1v1, int]],
+) -> list[tuple[QueueEntry1v1, QueueEntry1v1]]:
+    """Find the minimum-weight maximum-cardinality bipartite matching.
+
+    Because every infeasible or padding cell carries a cost of ``_SENTINEL``
+    (far exceeding any valid score), the Hungarian algorithm will maximise
+    the number of real matches first, then minimise total score among all
+    maximum-cardinality matchings.
+    """
+    if not candidates:
+        return []
+
+    # Collect unique lead and follow players that appear in at least one
+    # feasible candidate pair.
+    lead_by_uid: dict[int, QueueEntry1v1] = {}
+    follow_by_uid: dict[int, QueueEntry1v1] = {}
+    for _score, le, fe, _diff in candidates:
+        lead_by_uid[le["discord_uid"]] = le
+        follow_by_uid[fe["discord_uid"]] = fe
+
+    lead_uids = sorted(lead_by_uid)
+    follow_uids = sorted(follow_by_uid)
+    n_lead = len(lead_uids)
+    n_follow = len(follow_uids)
+
+    if n_lead == 0 or n_follow == 0:
+        return []
+
+    lead_idx = {uid: i for i, uid in enumerate(lead_uids)}
+    follow_idx = {uid: i for i, uid in enumerate(follow_uids)}
+
+    # Build a square cost matrix padded with _SENTINEL.
+    n = max(n_lead, n_follow)
+    cost: list[list[float]] = [[_SENTINEL] * n for _ in range(n)]
+
+    for score, le, fe, _diff in candidates:
+        i = lead_idx[le["discord_uid"]]
+        j = follow_idx[fe["discord_uid"]]
+        # If multiple candidate entries exist for the same pair (shouldn't
+        # happen, but guard defensively), keep the lowest score.
+        if score < cost[i][j]:
+            cost[i][j] = score
+
+    col_for_row = _hungarian_minimize(cost, n)
+
+    # Extract valid matches (ignore padding rows/columns and sentinel costs).
+    matches: list[tuple[QueueEntry1v1, QueueEntry1v1]] = []
+    for i, j in enumerate(col_for_row):
+        if i >= n_lead or j < 0 or j >= n_follow:
+            continue
+        if cost[i][j] >= _SENTINEL:
+            continue
+        matches.append((lead_by_uid[lead_uids[i]], follow_by_uid[follow_uids[j]]))
+
+    return matches
 
 
 # ---------------------------------------------------------------------------
@@ -369,7 +415,6 @@ def _to_match_candidate(
         player_2_mmr=_effective_mmr(follow_entry, bw=not lead_is_bw),
         player_1_map_vetoes=list(lead_entry["map_vetoes"]),
         player_2_map_vetoes=list(follow_entry["map_vetoes"]),
-        assigned_at=datetime.now(timezone.utc),
     )
 
 
@@ -433,10 +478,8 @@ def run_matchmaking_wave(
             lead, follow = sc2_pool, bw_pool
             lead_is_bw = False
 
-        lead, follow = _filter_by_priority(lead, follow)
         candidates = _build_candidates(lead, follow, lead_is_bw)
-        matched_pairs = _select_greedy(candidates)
-        matched_pairs = _refine_matches(matched_pairs, lead_is_bw)
+        matched_pairs = _select_optimal(candidates)
 
     # --- Build outputs ------------------------------------------------------
     matched_uids: set[int] = set()

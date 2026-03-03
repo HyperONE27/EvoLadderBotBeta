@@ -10,14 +10,14 @@ _state_manager: StateManager | None = None
 # ----------------
 
 
-def _check_initialized() -> None:
+def _get_state_manager() -> StateManager:
     if _state_manager is None:
         raise RuntimeError(_MODULE_NOT_INITIALIZED)
+    return _state_manager
 
 
 def _get_races() -> dict[str, Race]:
-    _check_initialized()
-    return _state_manager.races
+    return _get_state_manager().races
 
 
 # ----------
@@ -31,17 +31,14 @@ def init_race_lookups(state_manager: StateManager) -> None:
 
 
 def get_race_by_code(code: str) -> Race | None:
-    _check_initialized()
     return _get_races().get(code)
 
 
 def get_race_by_name(name: str) -> Race | None:
-    _check_initialized()
     return next((race for race in _get_races().values() if race["name"] == name), None)
 
 
 def get_race_by_short_name(short_name: str) -> Race | None:
-    _check_initialized()
     return next(
         (race for race in _get_races().values() if race["short_name"] == short_name),
         None,
@@ -49,7 +46,6 @@ def get_race_by_short_name(short_name: str) -> Race | None:
 
 
 def get_race_by_alias(alias: str) -> Race | None:
-    _check_initialized()
     return next(
         (race for race in _get_races().values() if alias in race["aliases"]), None
     )

@@ -10,9 +10,10 @@ _state_manager: StateManager | None = None
 # ----------------
 
 
-def _check_initialized() -> None:
+def _get_state_manager() -> StateManager:
     if _state_manager is None:
         raise RuntimeError(_MODULE_NOT_INITIALIZED)
+    return _state_manager
 
 
 # ----------
@@ -27,25 +28,21 @@ def init_country_lookups(state_manager: StateManager) -> None:
 
 
 def get_countries() -> dict[str, Country]:
-    _check_initialized()
-    return _state_manager.countries
+    return _get_state_manager().countries
 
 
 def get_common_countries() -> dict[str, Country]:
     """Get only common countries."""
-    _check_initialized()
     return {
         code: country for code, country in get_countries().items() if country["common"]
     }
 
 
 def get_country_by_code(code: str) -> Country | None:
-    _check_initialized()
     return get_countries().get(code)
 
 
 def get_country_by_name(name: str) -> Country | None:
-    _check_initialized()
     return next(
         (country for country in get_countries().values() if country["name"] == name),
         None,
@@ -54,7 +51,6 @@ def get_country_by_name(name: str) -> Country | None:
 
 def search_countries_by_partial_code(partial_code: str) -> dict[str, Country]:
     """Search countries by partial code."""
-    _check_initialized()
     return {
         code: country
         for code, country in get_countries().items()
@@ -64,7 +60,6 @@ def search_countries_by_partial_code(partial_code: str) -> dict[str, Country]:
 
 def search_countries_by_partial_name(partial_name: str) -> dict[str, Country]:
     """Search countries by partial name."""
-    _check_initialized()
     return {
         code: country
         for code, country in get_countries().items()

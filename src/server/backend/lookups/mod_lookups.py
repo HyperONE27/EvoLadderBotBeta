@@ -10,14 +10,14 @@ _state_manager: StateManager | None = None
 # ----------------
 
 
-def _check_initialized() -> None:
+def _get_state_manager() -> StateManager:
     if _state_manager is None:
         raise RuntimeError(_MODULE_NOT_INITIALIZED)
+    return _state_manager
 
 
 def _get_mods() -> dict[str, Mod]:
-    _check_initialized()
-    return _state_manager.mods
+    return _get_state_manager().mods
 
 
 # ----------
@@ -31,24 +31,20 @@ def init_mod_lookups(state_manager: StateManager) -> None:
 
 
 def get_mod_by_code(code: str) -> Mod | None:
-    _check_initialized()
     return _get_mods().get(code)
 
 
 def get_mod_by_name(name: str) -> Mod | None:
-    _check_initialized()
     return next((mod for mod in _get_mods().values() if mod["name"] == name), None)
 
 
 def get_mod_by_short_name(short_name: str) -> Mod | None:
-    _check_initialized()
     return next(
         (mod for mod in _get_mods().values() if mod["short_name"] == short_name), None
     )
 
 
 def get_mod_by_link(link: str) -> Mod | None:
-    _check_initialized()
     return next(
         (
             mod
