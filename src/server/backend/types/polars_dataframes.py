@@ -2,7 +2,7 @@ import polars as pl
 
 # Polars DataFrame schema for storing PostgreSQL table "players"
 PLAYERS_SCHEMA: dict[str, pl.DataType] = {
-    "id": pl.Int32,
+    "id": pl.Int64,
     "discord_uid": pl.Int64,
     "discord_username": pl.String,
     "player_name": pl.String,
@@ -17,17 +17,17 @@ PLAYERS_SCHEMA: dict[str, pl.DataType] = {
     "completed_setup_at": pl.Datetime,
     "player_status": pl.String,
     "current_match_mode": pl.String,
-    "current_match_id": pl.Int32,
+    "current_match_id": pl.Int64,
 }
 
 NOTIFICATIONS_SCHEMA: dict[str, pl.DataType] = {
-    "id": pl.Int32,
+    "id": pl.Int64,
     "discord_uid": pl.Int64,
     "read_quick_start_guide": pl.Boolean,
 }
 
 EVENTS_SCHEMA: dict[str, pl.DataType] = {
-    "id": pl.Int32,
+    "id": pl.Int64,
     "discord_uid": pl.Int64,
     "event_type": pl.String,
     "event_data": pl.String,
@@ -35,7 +35,7 @@ EVENTS_SCHEMA: dict[str, pl.DataType] = {
 }
 
 MATCHES_1V1_SCHEMA: dict[str, pl.DataType] = {
-    "id": pl.Int32,
+    "id": pl.Int64,
     "player_1_discord_uid": pl.Int64,
     "player_2_discord_uid": pl.Int64,
     "player_1_name": pl.String,
@@ -47,7 +47,8 @@ MATCHES_1V1_SCHEMA: dict[str, pl.DataType] = {
     "player_1_report": pl.String,
     "player_2_report": pl.String,
     "match_result": pl.String,
-    "mmr_change": pl.Int32,
+    "player_1_mmr_change": pl.Int16,
+    "player_2_mmr_change": pl.Int16,
     "map_name": pl.String,
     "server_name": pl.String,
     "assigned_at": pl.Datetime,
@@ -59,7 +60,7 @@ MATCHES_1V1_SCHEMA: dict[str, pl.DataType] = {
 }
 
 MMRS_1V1_SCHEMA: dict[str, pl.DataType] = {
-    "id": pl.Int32,
+    "id": pl.Int64,
     "discord_uid": pl.Int64,
     "player_name": pl.String,
     "race": pl.String,
@@ -72,14 +73,14 @@ MMRS_1V1_SCHEMA: dict[str, pl.DataType] = {
 }
 
 PREFERENCES_1V1_SCHEMA: dict[str, pl.DataType] = {
-    "id": pl.Int32,
+    "id": pl.Int64,
     "discord_uid": pl.Int64,
     "last_chosen_races": pl.List(pl.String),
     "last_chosen_vetoes": pl.List(pl.String),
 }
 
 REPLAYS_1V1_SCHEMA: dict[str, pl.DataType] = {
-    "id": pl.Int32,
+    "id": pl.Int64,
     "replay_path": pl.String,
     "replay_hash": pl.String,
     "replay_time": pl.Datetime,
@@ -93,7 +94,7 @@ REPLAYS_1V1_SCHEMA: dict[str, pl.DataType] = {
     "player_2_handle": pl.String,
     "observers": pl.List(pl.String),
     "map_name": pl.String,
-    "game_duration": pl.Int32,
+    "game_duration_seconds": pl.Int32,
     "game_privacy": pl.String,
     "game_speed": pl.String,
     "game_duration_setting": pl.String,

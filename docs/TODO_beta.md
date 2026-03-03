@@ -177,11 +177,11 @@ CHECKLIST
 
 ===
 
-❌⏰✅
+❌⏰✅❓
 
 - Old Files to Convert:
     - ⏰ src/backend/
-        - ❌ adapters/
+        - ❌ adapters/*
             - The need for these is completely antiquated
                 - We are no longer juggling both SQLite and PostgreSQL
         - ⏰ services/
@@ -193,29 +193,45 @@ CHECKLIST
                 - Lookups no longer inherit from a base class
             - ❌ cache_service.py
                 - Deprecated; lookup data handled by state.py
-            - command_guard_service.py
-            - countries_service.py
-            - data_access_service.py
+            - ⏰ command_guard_service.py
+                - Needs to exist in some form
+                - backend/orchestrator/ now contains authorization.py
+            - ✅❓ countries_service.py
+                - Replaced by country_lookup.py
+            - ❌ data_access_service.py
+                - Replaced by orchestrator/state/reader model
             - leaderboard_service.py
-            - load_monitor.py
-            - localization_service.py
-            - maps_service.py
+            - ⏰ load_monitor.py
+                - Maybe useful?
+            - ❌ localization_service.py
+                - This is mostly a frontend concern
+                - Retrieving the user's locale preference might belong in backend
+            - ✅❓ maps_service.py
+                - Replaced by map_lookup.py
             - match_completion_service.py
             - matchmaking_service.py
-            - memory_monitor.py
+                - Replaced by 
+            - ❌ memory_monitor.py
+                - Use Railway instead
             - mmr_service.py
-            - mods_service.py
+            - ✅❓ mods_service.py
+                - Replaced by map_lookup.py
             - notification_service.py
             - performance_service.py
             - process_pool_health.py
-            - races_service.py
+            - ✅❓ races_service.py
+                - Replaced by race_lookup.py
             - ranking_service.py
-            - regions_service.py
+            - ✅❓ regions_service.py
+                - Replaced by cross_table_lookup.py and region_lookup.py
             - replay_job_queue.py
             - replay_parsing_timeout.py
-            - replay_service.py
-            - storage_service.py
-            - user_info_service.py
+            - ⏰ replay_service.py
+                - Definitely need this
+            - ⏰ storage_service.py
+                - 
+            -⏰ user_info_service.py
+                - Being replaced by player_lookup.py
             - validation_service.py
     - src/bot/
         - commands/

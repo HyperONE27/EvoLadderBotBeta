@@ -21,3 +21,8 @@ disable_error_code = "union-attr,no-any-return,var-annotated"
 [[tool.mypy.overrides]]
 module = "server.backend.types.polars_dataframes"
 disable_error_code = "dict-item"
+
+# Silence checks on miscellaneous modules
+[[tool.mypy.overrides]]
+module = "misc.*"
+ignore_errors = true

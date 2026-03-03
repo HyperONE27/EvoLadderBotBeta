@@ -1,42 +1,30 @@
 -- =============================================
--- ENUM TYPES
+-- CHECK CONSTRAINTS
+-- (Postgres is a persistence layer here so we won't use enums)
 -- =============================================
 
-CREATE TYPE event_type AS ENUM (
-    'admin_command',
-    'player_command',
-    'player_update'
+event_type TEXT CHECK (event_type IN 
+    ('admin_command', 'player_command', 'player_update'))
 );
 
-CREATE TYPE player_status_type as ENUM (
-    'idle',
-    'queueing',
-    'in_match',
-    'timed_out'
+player_status_type TEXT CHECK
+    (player_status_type IN 
+    ('idle', 'queueing', 'in_match', 'timed_out'))
 );
 
-CREATE TYPE match_mode_type as ENUM (
-    '1v1',
-    '2v2',
-    'FFA'
+match_mode_type TEXT CHECK
+    (match_mode_type IN
+    ('1v1', '2v2', 'FFA'))
 );
 
-CREATE TYPE player_report_type as ENUM (
-    'win',
-    'loss',
-    'draw',
-    'abort',
-    'abandoned',
-    'no_report'
+player_report_type TEXT CHECK
+    (player_report_type IN
+    ('win', 'loss', 'draw', 'abort', 'abandoned', 'no_report'))
 );
 
-CREATE TYPE match_result_type as ENUM (
-    'player_1_win',
-    'player_2_win',
-    'draw',
-    'abort',
-    'abandoned',
-    'no_report'
+match_result_type TEXT CHECK
+    (match_result_type IN
+    ('player_1_win', 'player_2_win', 'draw', 'abort', 'abandoned', 'no_report'))
 );
 
 -- =============================================
@@ -44,7 +32,7 @@ CREATE TYPE match_result_type as ENUM (
 -- =============================================
 
 CREATE TABLE IF NOT EXISTS players (
-    id                      SERIAL PRIMARY KEY,
+    id                      BIGINT PRIMARY KEY,
     discord_uid             BIGINT NOT NULL UNIQUE,
     discord_username        TEXT NOT NULL,
     player_name             TEXT,
@@ -57,43 +45,65 @@ CREATE TABLE IF NOT EXISTS players (
     accepted_tos_at         TIMESTAMPTZ,
     completed_setup         BOOLEAN DEFAULT FALSE,
     completed_setup_at      TIMESTAMPTZ,
-    player_status           player_status_type DEFAULT 'idle',
-    current_match_mode      match_mode_type DEFAULT NULL,
-    current_match_id        INTEGER DEFAULT NULL
+    player_status           TEXT DEFAULT 'idle'
+        CHECK (player_status IN 
+            ('idle', 'queueing', 'in_match', 'timed_out')
+        ),
+    current_match_mode      TEXT DEFAULT NULL
+        CHECK (current_match_mode IN 
+            ('1v1', '2v2', 'FFA')
+        ),
+    current_match_id        BIGINT DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS notifications (
-    id                      SERIAL PRIMARY KEY,
+    id                      BIGINT PRIMARY KEY,
     discord_uid             BIGINT NOT NULL UNIQUE,
-    read_quick_start_guide  BOOLEAN DEFAULT FALSE,
+    read_quick_start_guide  BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS events (
-    id                      SERIAL PRIMARY KEY,
+    id                      BIGINT PRIMARY KEY,
     discord_uid             BIGINT NOT NULL,
-    event_type              event_type NOT NULL,
+    event_type              TEXT NOT NULL
+        CHECK (event_type IN 
+            ('admin_command', 'player_command', 'player_update')
+        ),
     event_data              JSONB NOT NULL,
     performed_at            TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS matches_1v1 (
-    id                      SERIAL PRIMARY KEY,
+    id                      BIGINT PRIMARY KEY,
     player_1_discord_uid    BIGINT NOT NULL,
     player_2_discord_uid    BIGINT NOT NULL,
     player_1_name           TEXT NOT NULL,
     player_2_name           TEXT NOT NULL,
     player_1_race           TEXT NOT NULL,
     player_2_race           TEXT NOT NULL,
-    player_1_mmr            INTEGER NOT NULL,
-    player_2_mmr            INTEGER NOT NULL,
-    player_1_report         player_report_type,  -- -4 indicates the player did not confirm the match in time
-    player_2_report         player_report_type,  -- -4 indicates the player did not confirm the match in time
-    match_result            match_result_type,  -- -1 indicates match was aborted
-    mmr_change              INTEGER,
+    player_1_mmr            SMALLINT NOT NULL,
+    player_2_mmr            SMALLINT NOT NULL,
+    player_1_report         TEXT NOT NULL
+        CHECK (player_1_report IN 
+            ('win', 'loss', 'draw', 
+            'abort', 'abandoned', 'invalidated', 'no_report')
+        ),
+    player_2_report         TEXT NOT NULL
+        CHECK (player_2_report IN 
+            ('win', 'loss', 'draw', 
+            'abort', 'abandoned', 'invalidated', 'no_report')
+        ),
+    match_result            TEXT NOT NULL
+        CHECK (match_result IN 
+            ('player_1_win', 'player_2_win', 'draw', 
+            'abort', 'abandoned', 'invalidated', 'no_report')
+        ),
+    player_1_mmr_change     SMALLINT,
+    player_2_mmr_change     SMALLINT,
     map_name                TEXT NOT NULL,
     server_name             TEXT NOT NULL,
-    assigned_at             TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    completed_at            TIMESTAMPTZ DEFAULT NULL,
+    assigned_at             TIMESTAMPTZ,
+    completed_at            TIMESTAMPTZ,
     player_1_replay_path    TEXT,
     player_1_uploaded_at    TIMESTAMPTZ,
     player_2_replay_path    TEXT,
@@ -101,11 +111,11 @@ CREATE TABLE IF NOT EXISTS matches_1v1 (
 );
 
 CREATE TABLE IF NOT EXISTS mmrs_1v1 (
-    id                      SERIAL PRIMARY KEY,
+    id                      BIGINT PRIMARY KEY,
     discord_uid             BIGINT NOT NULL,
     player_name             TEXT NOT NULL,
     race                    TEXT NOT NULL,
-    mmr                     INTEGER NOT NULL,
+    mmr                     SMALLINT NOT NULL,
     games_played            INTEGER DEFAULT 0,
     games_won               INTEGER DEFAULT 0,
     games_lost              INTEGER DEFAULT 0,
@@ -115,14 +125,14 @@ CREATE TABLE IF NOT EXISTS mmrs_1v1 (
 );
 
 CREATE TABLE IF NOT EXISTS preferences_1v1 (
-    id                      SERIAL PRIMARY KEY,
+    id                      BIGINT PRIMARY KEY,
     discord_uid             BIGINT NOT NULL UNIQUE,
     last_chosen_races       TEXT[],
     last_chosen_vetoes      TEXT[]
 );
 
 CREATE TABLE IF NOT EXISTS replays_1v1 (
-    id                      SERIAL PRIMARY KEY,
+    id                      BIGINT PRIMARY KEY,
     replay_path             TEXT NOT NULL UNIQUE,
     replay_hash             TEXT NOT NULL,
     replay_time             TIMESTAMPTZ NOT NULL,
@@ -131,12 +141,15 @@ CREATE TABLE IF NOT EXISTS replays_1v1 (
     player_2_name           TEXT NOT NULL,
     player_1_race           TEXT NOT NULL,
     player_2_race           TEXT NOT NULL,
-    match_result            match_result_type NOT NULL,
+    match_result            TEXT NOT NULL
+        CHECK (match_result IN 
+            ('player_1_win', 'player_2_win', 'draw')
+        ),
     player_1_handle         TEXT NOT NULL,
     player_2_handle         TEXT NOT NULL,
     observers               TEXT[] NOT NULL DEFAULT '{}',
     map_name                TEXT NOT NULL,
-    game_duration           INTEGER NOT NULL,
+    game_duration_seconds   INTEGER NOT NULL,
     game_privacy            TEXT NOT NULL,
     game_speed              TEXT NOT NULL,
     game_duration_setting   TEXT NOT NULL,
