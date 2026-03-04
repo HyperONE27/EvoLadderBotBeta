@@ -12,7 +12,14 @@ from server.backend.types.json_types import CrossTableData, LoadedData, RegionDa
 class DataLoader:
     """Loads all application data from JSON files and database."""
 
-    def __init__(self, data_dir: Path = Path("data/core")) -> None:
+    def __init__(
+        self,
+        data_dir: Path = Path(
+            Path(__file__).resolve().parent.parent.parent.parent.parent
+            / "data"
+            / "core"
+        ),
+    ) -> None:
         self.data_dir: Path = data_dir
 
     def populate_state_manager(self, state_manager: StateManager) -> None:

@@ -64,12 +64,3 @@ class Application:
 
     def run(self) -> None:
         pass
-
-
-def main() -> None:
-    app = Application()
-    app.run()
-
-
-if __name__ == "__main__":
-    main()

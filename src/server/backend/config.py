@@ -5,7 +5,9 @@ from typing import cast, TypedDict
 
 load_dotenv()
 
-# Type-checking around loading environment variables
+# ----------------
+# Internal helpers
+# ----------------
 
 
 class Admin(TypedDict):
@@ -36,7 +38,9 @@ def _get_str_env(key: str) -> str:
     return value
 
 
+# ---------------------
 # Environment variables
+# ---------------------
 
 ADMINS: list[Admin] = _get_admins_env("ADMINS")
 
@@ -55,7 +59,9 @@ STORAGE: dict[str, str] = {
     "bucket_name": _get_str_env("SUPABASE_BUCKET_NAME"),
 }
 
+# ---------------------
 # Application constants
+# ---------------------
 
 EXPECTED_LOBBY_SETTINGS: dict[str, str] = {
     "duration": "Infinite",
@@ -84,6 +90,8 @@ QUEUE: dict[str, int] = {
     "match_interval": 45,
 }
 
+# ---------------
 # Other constants
+# ---------------
 
 CURRENT_SEASON: str = "season_alpha"
