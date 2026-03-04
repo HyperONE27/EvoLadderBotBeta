@@ -278,9 +278,26 @@ Isolate concerns based on what the backend must fetch, update, and coordinate.
         - Write: Update the current state of the user
 - User Commands
     - /help
+        - Read: Retrieve /help information
     - /leaderboard
+        - Read: Retrieve leaderboard information
     - /profile
+        - Read: Retrieve user information
+            - Discord UID, Discord username, player name, alt player names
+            - BattleTag
+            - Nationality, location
+            - Statistics (overall + by race)
+                - Total games + W-L-D record
+                - Win rates
+                - Last Played
+            - Account Status
+                - ToS accepted
+                - Setup completed
+                - Abort counts (deprecated)
     - /prune
     - /queue
+        - Read: 
     - /setcountry
+        - Read
     - /setup
+        - 
