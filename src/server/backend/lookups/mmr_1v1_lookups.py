@@ -30,7 +30,7 @@ def _get_mmrs_1v1() -> pl.DataFrame:
 def get_mmrs_1v1_by_discord_uid(discord_uid: int) -> list[MMRs1v1Row] | None:
     """Get all MMRS by a Discord UID."""
     df = _get_mmrs_1v1()
-    if df is None:
+    if df.is_empty():
         return []
 
     rows = df.filter(pl.col("discord_uid") == discord_uid).to_dicts()
@@ -43,7 +43,7 @@ def get_mmrs_1v1_by_discord_uid(discord_uid: int) -> list[MMRs1v1Row] | None:
 def get_mmrs_1v1_by_race(race: str) -> list[MMRs1v1Row] | None:
     """Get all MMRS by a race."""
     df = _get_mmrs_1v1()
-    if df is None:
+    if df.is_empty():
         return []
 
     rows = df.filter(pl.col("race") == race).to_dicts()
@@ -58,16 +58,16 @@ def get_mmr_1v1_by_discord_uid_and_race(
 ) -> MMRs1v1Row | None:
     """Get a MMR by a Discord UID and race."""
     df = _get_mmrs_1v1()
-    if df is None:
+    if df.is_empty():
         return None
 
-    row = df.filter(
+    rows = df.filter(
         pl.col("discord_uid") == discord_uid, pl.col("race") == race
     ).to_dicts()
-    if not row:
+    if not rows:
         return None
 
-    return MMRs1v1Row(**row)  # type: ignore[no-any-return, typeddict-item]
+    return MMRs1v1Row(**rows[0])  # type: ignore[no-any-return, typeddict-item]
 
 
 # ----------------

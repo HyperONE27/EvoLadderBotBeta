@@ -30,14 +30,14 @@ def _get_preferences_1v1() -> pl.DataFrame:
 def get_preferences_1v1_by_discord_uid(discord_uid: int) -> Preferences1v1Row | None:
     """Get a player's preferences by their Discord UID."""
     df = _get_preferences_1v1()
-    if df is None:
+    if df.is_empty():
         return None
 
-    row = df.filter(pl.col("discord_uid") == discord_uid).to_dicts()
-    if not row:
+    rows = df.filter(pl.col("discord_uid") == discord_uid).to_dicts()
+    if not rows:
         return None
 
-    return Preferences1v1Row(**row)  # type: ignore[no-any-return, typeddict-item]
+    return Preferences1v1Row(**rows[0])  # type: ignore[no-any-return, typeddict-item]
 
 
 # ----------------

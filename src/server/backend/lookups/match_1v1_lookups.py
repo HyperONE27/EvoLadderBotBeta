@@ -30,20 +30,20 @@ def _get_matches_1v1() -> pl.DataFrame:
 def get_match_1v1_by_id(id: int) -> Matches1v1Row | None:
     """Get a match by its ID."""
     df = _get_matches_1v1()
-    if df is None:
+    if df.is_empty():
         return None
 
-    row = df.filter(pl.col("id") == id).to_dicts()[0]
-    if not row:
+    rows = df.filter(pl.col("id") == id).to_dicts()
+    if not rows:
         return None
 
-    return Matches1v1Row(**row)  # type: ignore[no-any-return, typeddict-item]
+    return Matches1v1Row(**rows[0])  # type: ignore[no-any-return, typeddict-item]
 
 
 def get_matches_1v1_by_discord_uid(discord_uid: int) -> list[Matches1v1Row] | None:
     """Get all matches by a Discord UID."""
     df = _get_matches_1v1()
-    if df is None:
+    if df.is_empty():
         return []
 
     rows = df.filter(
@@ -59,7 +59,7 @@ def get_matches_1v1_by_discord_uid(discord_uid: int) -> list[Matches1v1Row] | No
 def get_matches_1v1_by_race(race: str) -> list[Matches1v1Row] | None:
     """Get all matches by a race."""
     df = _get_matches_1v1()
-    if df is None:
+    if df.is_empty():
         return []
 
     rows = df.filter(
@@ -74,7 +74,7 @@ def get_matches_1v1_by_race(race: str) -> list[Matches1v1Row] | None:
 def get_matches_1v1_by_map_name(map_name: str) -> list[Matches1v1Row] | None:
     """Get all matches by a map name."""
     df = _get_matches_1v1()
-    if df is None:
+    if df.is_empty():
         return []
 
     rows = df.filter(pl.col("map_name") == map_name).to_dicts()
@@ -87,10 +87,28 @@ def get_matches_1v1_by_map_name(map_name: str) -> list[Matches1v1Row] | None:
 def get_matches_1v1_by_server_name(server_name: str) -> list[Matches1v1Row] | None:
     """Get all matches by a server name."""
     df = _get_matches_1v1()
-    if df is None:
+    if df.is_empty():
         return []
 
     rows = df.filter(pl.col("server_name") == server_name).to_dicts()
+    if not rows:
+        return None
+
+    return [Matches1v1Row(**row) for row in rows]  # type: ignore[typeddict-item]
+
+
+def get_matches_1v1_by_two_discord_uids(
+    discord_uid_1: int, discord_uid_2: int
+) -> list[Matches1v1Row] | None:
+    """Get all matches by two Discord UIDs."""
+    df = _get_matches_1v1()
+    if df.is_empty():
+        return []
+
+    rows = df.filter(
+        (pl.col("player_1_discord_uid") == discord_uid_1)
+        & (pl.col("player_2_discord_uid") == discord_uid_2)
+    ).to_dicts()
     if not rows:
         return None
 

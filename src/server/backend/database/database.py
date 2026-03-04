@@ -6,17 +6,17 @@ from server.backend.types.polars_dataframes import TABLE_SCHEMAS
 
 
 # Connection functions
-def create_read_client() -> Client:
+def _create_read_client() -> Client:
     return create_client(DATABASE["url"], DATABASE["anon_key"])
 
 
-def create_write_client() -> Client:
+def _create_write_client() -> Client:
     return create_client(DATABASE["url"], DATABASE["service_role_key"])
 
 
 class DatabaseReader:
     def __init__(self) -> None:
-        self.client: Client = create_read_client()
+        self.client: Client = _create_read_client()
 
     def load_all_tables(self) -> dict[str, pl.DataFrame]:
         """Load all database tables into Polars DataFrames."""
@@ -83,6 +83,6 @@ class DatabaseReader:
 
 class DatabaseWriter:
     def __init__(self) -> None:
-        self.client: Client = create_write_client()
+        self.client: Client = _create_write_client()
 
     # All write operations here
