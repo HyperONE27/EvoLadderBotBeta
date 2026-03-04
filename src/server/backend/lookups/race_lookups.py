@@ -50,6 +50,7 @@ def get_race_by_alias(alias: str) -> Race | None:
 # Module lifecycle
 # ----------------
 
+
 def init_race_lookups(state_manager: StateManager) -> None:
     """Initialize the race lookups module."""
     global _state_manager

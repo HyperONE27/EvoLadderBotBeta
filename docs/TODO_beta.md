@@ -198,7 +198,7 @@ CHECKLIST
                 - backend/orchestrator/ now contains authorization.py
             - ✅❓ countries_service.py
                 - Replaced by country_lookup.py
-            - ❌ data_access_service.py
+            - ✅❓ data_access_service.py
                 - Replaced by orchestrator/state/reader model
             - leaderboard_service.py
             - ⏰ load_monitor.py
@@ -213,12 +213,15 @@ CHECKLIST
                 - Replaced by 
             - ❌ memory_monitor.py
                 - Use Railway instead
-            - mmr_service.py
+            - ✅❓ mmr_service.py
+                - Replaced by mmr_1v1_lookup.py and ratings.py
             - ✅❓ mods_service.py
                 - Replaced by map_lookup.py
             - notification_service.py
-            - performance_service.py
-            - process_pool_health.py
+            - ⏰ performance_service.py
+                - Might be useful
+            - ⏰ process_pool_health.py
+                - Might be useful
             - ✅❓ races_service.py
                 - Replaced by race_lookup.py
             - ranking_service.py
@@ -226,11 +229,11 @@ CHECKLIST
                 - Replaced by cross_table_lookup.py and region_lookup.py
             - replay_job_queue.py
             - replay_parsing_timeout.py
-            - ⏰ replay_service.py
+            - ✅❓ replay_service.py
                 - Definitely need this
             - ⏰ storage_service.py
                 - 
-            -⏰ user_info_service.py
+            - ✅❓ user_info_service.py
                 - Being replaced by player_lookup.py
             - validation_service.py
     - src/bot/

@@ -112,6 +112,7 @@ def get_map_by_link(link: str) -> Map | None:
 # Module lifecycle
 # ----------------
 
+
 def init_map_lookups(state_manager: StateManager) -> None:
     """Initialize the map lookups module."""
     global _state_manager

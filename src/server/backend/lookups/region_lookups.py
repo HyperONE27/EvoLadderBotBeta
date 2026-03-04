@@ -118,6 +118,7 @@ def get_game_region_by_name(name: str) -> GameRegion | None:
 # Module lifecycle
 # ----------------
 
+
 def init_region_lookups(state_manager: StateManager) -> None:
     """Initialize the region lookups module."""
     global _state_manager

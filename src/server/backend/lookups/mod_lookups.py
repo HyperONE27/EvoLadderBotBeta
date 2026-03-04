@@ -56,6 +56,7 @@ def get_mod_by_link(link: str) -> Mod | None:
 # Module lifecycle
 # ----------------
 
+
 def init_mod_lookups(state_manager: StateManager) -> None:
     """Initialize the mod lookups module."""
     global _state_manager

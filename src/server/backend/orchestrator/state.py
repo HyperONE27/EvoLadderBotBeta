@@ -35,13 +35,13 @@ class StateManager:
         }
 
         # In-memory DataFrames (caching the entire database)
-        self.players_df: pl.DataFrame | None = None
-        self.notifications_df: pl.DataFrame | None = None
-        self.events_df: pl.DataFrame | None = None
-        self.matches_1v1_df: pl.DataFrame | None = None
-        self.mmrs_1v1_df: pl.DataFrame | None = None
-        self.preferences_1v1_df: pl.DataFrame | None = None
-        self.replays_1v1_df: pl.DataFrame | None = None
+        self.players_df: pl.DataFrame = pl.DataFrame()
+        self.notifications_df: pl.DataFrame = pl.DataFrame()
+        self.events_df: pl.DataFrame = pl.DataFrame()
+        self.matches_1v1_df: pl.DataFrame = pl.DataFrame()
+        self.mmrs_1v1_df: pl.DataFrame = pl.DataFrame()
+        self.preferences_1v1_df: pl.DataFrame = pl.DataFrame()
+        self.replays_1v1_df: pl.DataFrame = pl.DataFrame()
 
         # Current application state
         self.queue_1v1: list[QueueEntry1v1] = []

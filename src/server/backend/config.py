@@ -71,7 +71,11 @@ MATCHMAKER: dict[str, (float | int)] = {
     "wait_cycle_priority_exponent": 1.25,
 }
 
-MMR: dict[str, int] = {"default": 1500, "divisor": 500, "k_factor": 40}
+MMR: dict[str, int] = {
+    "default": 1500,
+    "divisor": 500,
+    "k_factor": 40,
+}
 
 QUEUE: dict[str, int] = {
     "abort_interval": 60,

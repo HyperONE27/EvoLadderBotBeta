@@ -51,6 +51,7 @@ def get_emote_by_markdown(markdown: str) -> Emote | None:
 # Module lifecycle
 # ----------------
 
+
 def init_emote_lookups(state_manager: StateManager) -> None:
     """Initialize the emote lookups module."""
     global _state_manager

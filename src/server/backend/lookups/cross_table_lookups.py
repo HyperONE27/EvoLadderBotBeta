@@ -47,6 +47,7 @@ def get_game_server_from_region_pair(region_1: str, region_2: str) -> str:
 # Module lifecycle
 # ----------------
 
+
 def init_cross_table_lookups(state_manager: StateManager) -> None:
     """Initialize the cross table lookups module."""
     global _state_manager

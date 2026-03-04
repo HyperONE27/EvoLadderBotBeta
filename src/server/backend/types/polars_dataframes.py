@@ -1,5 +1,7 @@
 import polars as pl
 
+from datetime import datetime
+from typing import TypedDict
 
 # ---------------------
 # DataFrame definitions
@@ -120,6 +122,7 @@ TABLE_SCHEMAS: dict[str, dict[str, pl.DataType]] = {
 # DataFrame row types
 # -------------------
 
+
 class PlayersRow(TypedDict):
     id: int
     discord_uid: int
@@ -144,12 +147,14 @@ class NotificationsRow(TypedDict):
     discord_uid: int
     read_quick_start_guide: bool
 
+
 class EventsRow(TypedDict):
     id: int
     discord_uid: int
     event_type: str
     event_data: str
     performed_at: datetime
+
 
 class Matches1v1Row(TypedDict):
     id: int
@@ -175,6 +180,7 @@ class Matches1v1Row(TypedDict):
     player_2_replay_path: str | None
     player_2_uploaded_at: datetime | None
 
+
 class MMRs1v1Row(TypedDict):
     id: int
     discord_uid: int
@@ -187,11 +193,13 @@ class MMRs1v1Row(TypedDict):
     games_drawn: int
     last_played_at: datetime
 
+
 class Preferences1v1Row(TypedDict):
     id: int
     discord_uid: int
     last_chosen_races: list[str] | None
     last_chosen_vetoes: list[str] | None
+
 
 class Replays1v1Row(TypedDict):
     id: int

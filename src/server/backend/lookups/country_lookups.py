@@ -65,6 +65,7 @@ def search_countries_by_partial_name(partial_name: str) -> dict[str, Country]:
 # Module lifecycle
 # ----------------
 
+
 def init_country_lookups(state_manager: StateManager) -> None:
     """Initialize the country lookups module."""
     global _state_manager
