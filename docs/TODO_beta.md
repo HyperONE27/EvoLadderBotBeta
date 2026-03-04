@@ -98,6 +98,11 @@ CHECKLIST
 - Backend
     - API
         - Schema
+            - /countries/
+            - 
+            - /matches/
+            - /players/
+            - /
         - GET: Retrieve data from the server
             - 
         - POST: Create a new resource or submit data
@@ -114,17 +119,14 @@ CHECKLIST
         - TransitionManager
             - Add initialization
             - Set up 
-    - Services
+    - Algorithms
         - 
         - 
         - 
         - 
         - 
         - 
-        - 
-        - 
-        - 
-    - Utilities
+    - Lookups
         - ✅ country_lookups.py
         - ✅ cross_table_lookups.py
         - ✅ emote_lookups.py
@@ -213,7 +215,7 @@ CHECKLIST
                 - Replaced by 
             - ❌ memory_monitor.py
                 - Use Railway instead
-            - ✅❓ mmr_service.py
+            - ✅ mmr_service.py
                 - Replaced by mmr_1v1_lookup.py and ratings.py
             - ✅❓ mods_service.py
                 - Replaced by map_lookup.py
@@ -236,7 +238,49 @@ CHECKLIST
             - ✅❓ user_info_service.py
                 - Being replaced by player_lookup.py
             - validation_service.py
+                - 
     - src/bot/
         - commands/
         - components/
         - utils/
+
+===
+
+Describe what the workflows of each command are, from the perspective of the backend.
+
+Don't worry for now what the bot middleware needs to do.
+
+Isolate concerns based on what the backend must fetch, update, and coordinate.
+(Preferably in chronological order.)
+
+- Admin Commands
+    - /owner admin {discord_uid}
+        - Read: Retrieve the current list of admins and see if the user is there
+        - Write: Toggle the user's admin status
+    - /owner mmr
+    - /owner profile
+        - Read: Retrieve the user's information
+        - Write: Update the user's information
+    - /admin ban
+        - Read: Retrieve the user's ban status
+        - Write: Toggle the user's ban status
+    - /admin match
+        - Read: Retrieve the match information and replays
+    - /admin profile {discord_uid}
+        - Read: Retrieve the user's information
+    - /admin resolve {match_id} {match_result}
+        - Read: Retrieve the match information
+        - Write: Update the match information
+    - /admin snapshot
+        - Read: Retrieve the current state of the application
+    - /admin status {discord_uid}
+        - Read: Retrieve the current state of the user
+        - Write: Update the current state of the user
+- User Commands
+    - /help
+    - /leaderboard
+    - /profile
+    - /prune
+    - /queue
+    - /setcountry
+    - /setup
