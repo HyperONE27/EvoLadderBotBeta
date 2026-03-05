@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from backend.api.app import get_application
+from backend.api.dependencies import get_application
 from backend.api.models import GreetingResponse
 from backend.bootstrap import Application
 

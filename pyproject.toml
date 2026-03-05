@@ -1,6 +1,5 @@
 [tool.mypy]
 # Keep useful stuff, drop the most annoying strict parts
-mypy_path = "backend:bot"
 strict = false
 warn_return_any = true
 warn_unused_ignores = true
