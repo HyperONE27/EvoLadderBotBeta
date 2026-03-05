@@ -5,36 +5,94 @@ class GreetingResponse(BaseModel):
     message: str
 
 
-# /owner admin
+# --- /owner admin ---
 
-# /owner mmr
+# --- /owner mmr ---
 
-# /owner profile
+# --- /owner profile ---
 
-# /admin ban
+# --- /admin ban ---
 
-# /admin match
+# --- /admin match ---
 
-# /admin profile
+# --- /admin profile ---
 
-# /admin resolve
+# --- /admin resolve ---
 
-# /admin snapshot
+# --- /admin snapshot ---
 
-# /admin status
+# --- /admin status ---
 
-# /help
+# --- /help ---
 
-# /leaderboard
+# --- /leaderboard ---
 
-# /profile
 
-# /prune
+class LeaderboardRequest(BaseModel):
+    discord_uid: int
+    game_mode: str
 
-# /queue
 
-# /setcountry
+class LeaderboardResponse(BaseModel):
+    pass
 
-# /setup
 
-# /termsofservice
+# --- /profile ---
+
+# --- /prune ---
+
+# --- /queue ---
+
+# --- /setcountry ---
+
+
+class SetCountryConfirmRequest(BaseModel):
+    discord_uid: int
+    country_name: str
+
+
+class SetCountryConfirmResponse(BaseModel):
+    success: bool
+    message: str | None
+
+
+# --- /setup ---
+
+
+class SetupInitRequest(BaseModel):
+    discord_uid: int
+
+
+class SetupInitResponse(BaseModel):
+    player_name: str | None
+    alt_player_names: list[str] | None
+    battletag: str | None
+    nationality: str | None
+    location: str | None
+
+
+class SetupConfirmRequest(BaseModel):
+    discord_uid: int
+    player_name: str
+    alt_player_names: list[str] | None
+    battletag: str
+    nationality: str
+    location: str
+
+
+class SetupConfirmResponse(BaseModel):
+    success: bool
+    message: str | None
+
+
+# --- /termsofservice ---
+
+
+class TermsOfServiceConfirmRequest(BaseModel):
+    discord_uid: int
+    accepted: bool
+
+
+class TermsOfServiceConfirmResponse(BaseModel):
+    success: bool
+    message: str | None

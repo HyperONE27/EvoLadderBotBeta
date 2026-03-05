@@ -1,21 +1,20 @@
 from backend.orchestrator.loader import DataLoader
-
-# from server.backend.orchestrator.orchestrator import ServiceOrchestrator
+from backend.orchestrator.orchestrator import Orchestrator
+from backend.orchestrator.reader import StateReader
 from backend.orchestrator.state import StateManager
+from backend.orchestrator.transitions import TransitionManager
 
-# from server.backend.orchestrator.reader import StateReader
-# from server.backend.orchestrator.transitions import TransitionManager
 from backend.lookups.country_lookups import init_country_lookups
 from backend.lookups.cross_table_lookups import init_cross_table_lookups
 from backend.lookups.emote_lookups import init_emote_lookups
 
-# from server.backend.lookups.event_lookups import init_event_lookups
+# from backend.lookups.event_lookups import init_event_lookups
 from backend.lookups.map_lookups import init_map_lookups
 from backend.lookups.match_1v1_lookups import init_match_1v1_lookups
 from backend.lookups.mmr_1v1_lookups import init_mmr_1v1_lookups
 from backend.lookups.mod_lookups import init_mod_lookups
 
-# from server.backend.lookups.notification_lookups import init_notification_lookups
+# from backend.lookups.notification_lookups import init_notification_lookups
 from backend.lookups.player_lookups import init_player_lookups
 
 from backend.lookups.preferences_1v1_lookups import init_preferences_1v1_lookups
@@ -33,10 +32,10 @@ class Application:
     def _initialize_orchestrator(self) -> None:
         # Initialize orchestrator components
         self.data_loader = DataLoader()
-        # self.service_orchestrator = ServiceOrchestrator()
+        self.orchestrator = Orchestrator()
         self.state_manager = StateManager()
-        # self.state_reader = StateReader()
-        # self.transition_manager = TransitionManager()
+        self.state_reader = StateReader()
+        self.transition_manager = TransitionManager()
 
     def _load_data(self) -> None:
         # Load application data

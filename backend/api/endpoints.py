@@ -1,7 +1,11 @@
 from fastapi import APIRouter, Depends
 
 from backend.api.dependencies import get_application
-from backend.api.models import GreetingResponse
+from backend.api.models import (
+    GreetingResponse,
+    SetCountryConfirmRequest,
+    SetCountryConfirmResponse,
+)
 from backend.bootstrap import Application
 
 router = APIRouter()
@@ -15,36 +19,49 @@ async def greet(
     return GreetingResponse(message=f"👋 Hello, {discord_uid}!")
 
 
-# /owner admin
+# --- /owner admin ---
 
-# /owner mmr
+# --- /owner mmr ---
 
-# /owner profile
+# --- /owner profile ---
 
-# /admin ban
+# --- /admin ban ---
 
-# /admin match
+# --- /admin match ---
 
-# /admin profile
+# --- /admin profile ---
 
-# /admin resolve
+# --- /admin resolve ---
 
-# /admin snapshot
+# --- /admin snapshot ---
 
-# /admin status
+# --- /admin status ---
 
-# /help
+# --- /help ---
 
-# /leaderboard
+# --- /leaderboard ---
 
-# /profile
+# --- /profile ---
 
-# /prune
+# --- /prune ---
 
-# /queue
+# --- /queue ---
 
-# /setcountry
+# --- /setcountry ---
 
-# /setup
 
-# /termsofservice
+@router.put(
+    "/commands/setcountry/{discord_uid}", response_model=SetCountryConfirmResponse
+)
+async def setcountry(
+    discord_uid: int,
+    request: SetCountryConfirmRequest,
+    app: Application = Depends(get_application),
+) -> SetCountryConfirmResponse:
+    success, message = app.orchestrator.setcountry(discord_uid, request.country_name)
+    return SetCountryConfirmResponse(success=success, message=message)
+
+
+# --- /setup ---
+
+# --- /termsofservice ---
