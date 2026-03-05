@@ -1,5 +1,3 @@
-from typing import TypedDict
-
 from common.json_types import (
     Country,
     CrossTableData,
@@ -10,7 +8,8 @@ from common.json_types import (
     RegionData,
 )
 
-class Cache(TypedDict):
+
+class Cache:
     def __init__(self) -> None:
         # Static data from JSON files for lookups
         self.countries: dict[str, Country] = {}

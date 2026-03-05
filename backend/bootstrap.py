@@ -1,8 +1,6 @@
 from backend.orchestrator.loader import DataLoader
 from backend.orchestrator.orchestrator import Orchestrator
-from backend.orchestrator.reader import StateReader
 from backend.orchestrator.state import StateManager
-from backend.orchestrator.transitions import TransitionManager
 
 from backend.lookups.country_lookups import init_country_lookups
 from backend.lookups.cross_table_lookups import init_cross_table_lookups
@@ -32,10 +30,8 @@ class Application:
     def _initialize_orchestrator(self) -> None:
         # Initialize orchestrator components
         self.data_loader = DataLoader()
-        self.orchestrator = Orchestrator()
         self.state_manager = StateManager()
-        self.state_reader = StateReader()
-        self.transition_manager = TransitionManager()
+        self.orchestrator = Orchestrator(self.state_manager)
 
     def _load_data(self) -> None:
         # Load application data
