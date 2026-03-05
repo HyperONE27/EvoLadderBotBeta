@@ -1,7 +1,9 @@
 import polars as pl
 
 from backend.config import Admin
-from backend.domain_types.json_types import (
+from backend.domain_types.state_types import QueueEntry1v1
+
+from common.json_types import (
     Country,
     CrossTableData,
     Emote,
@@ -10,7 +12,6 @@ from backend.domain_types.json_types import (
     Race,
     RegionData,
 )
-from backend.domain_types.state_types import QueueEntry1v1
 
 
 class StateManager:

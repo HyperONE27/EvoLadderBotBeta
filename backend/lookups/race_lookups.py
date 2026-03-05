@@ -1,5 +1,5 @@
 from backend.orchestrator.state import StateManager
-from backend.domain_types.json_types import Race
+from common.json_types import Race
 
 _MODULE_NOT_INITIALIZED: str = f"{__name__} not initialized"
 
