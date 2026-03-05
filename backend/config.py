@@ -50,11 +50,6 @@ DATABASE: dict[str, str] = {
     "service_role_key": _get_str_env("SUPABASE_SERVICE_ROLE_KEY"),
 }
 
-DISCORD: dict[str, (int | str)] = {
-    "bot_token": _get_str_env("BOT_TOKEN"),
-    "match_log_channel_id": _get_int_env("MATCH_LOG_CHANNEL_ID"),
-}
-
 STORAGE: dict[str, str] = {
     "bucket_name": _get_str_env("SUPABASE_BUCKET_NAME"),
 }
@@ -70,7 +65,7 @@ EXPECTED_LOBBY_SETTINGS: dict[str, str] = {
     "speed": "Faster",
 }
 
-MATCHMAKER: dict[str, (float | int)] = {
+MATCHMAKER: dict[str, float | int] = {
     "balance_threshold": 50,
     "refinement_passes": 2,
     "wait_cycle_priority_coefficient": 20,

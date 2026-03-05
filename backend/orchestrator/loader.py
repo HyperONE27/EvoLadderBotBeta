@@ -29,10 +29,14 @@ class DataLoader:
 
         # Load JSON data
         for key, value in json_data.items():
+            if not hasattr(state_manager, key):
+                raise ValueError(f"StateManager does not have attribute {key}")
             setattr(state_manager, key, value)
 
         # Load Postgres data
         for table_name, df in db_data.items():
+            if not hasattr(state_manager, f"{table_name}_df"):
+                raise ValueError(f"StateManager does not have attribute {table_name}_df")
             setattr(state_manager, f"{table_name}_df", df)
 
     def _load_json_data(self) -> LoadedData:

@@ -11,6 +11,8 @@ def get_session() -> aiohttp.ClientSession:
 
 async def init_session() -> None:
     global _session
+    if _session is not None:
+        return
     _session = aiohttp.ClientSession()
 
 

@@ -36,7 +36,6 @@ def _register_commands(client: discord.Client) -> None:
     """
     register_greeting_command(tree)
     register_setcountry_command(tree)
-    pass
 
 
 # --------------------
@@ -48,6 +47,7 @@ def _register_commands(client: discord.Client) -> None:
 async def on_message(message: discord.Message) -> None:
     if message.author == client.user:
         return
+    # Remove this when we have actual things to do here
     if message.content.startswith("!"):
         await message.channel.send("Hello, world!")
 

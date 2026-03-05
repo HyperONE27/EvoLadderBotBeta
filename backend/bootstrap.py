@@ -61,6 +61,3 @@ class Application:
         ]
         for init_func in modules:
             init_func(self.state_manager)
-
-    def run(self) -> None:
-        pass
