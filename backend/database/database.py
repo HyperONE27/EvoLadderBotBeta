@@ -7,7 +7,7 @@ from backend.domain_types.polars_dataframes import TABLE_SCHEMAS
 
 # Connection functions
 def _create_read_client() -> Client:
-    return create_client(DATABASE["url"], DATABASE["anon_key"])
+    return create_client(DATABASE["url"], DATABASE["service_role_key"])
 
 
 def _create_write_client() -> Client:
