@@ -20,4 +20,4 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Ruff + mypy in one go
-        run: ruff check --fix --diff . && ruff format --check . && mypy src
+        run: ruff check --fix --diff . && ruff format --check . && mypy backend bot
