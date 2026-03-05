@@ -12,7 +12,7 @@ async def greet(
     discord_uid: int,
     app: Application = Depends(get_application),
 ) -> GreetingResponse:
-    return GreetingResponse(message=f"Hello, {discord_uid}!")
+    return GreetingResponse(message=f"👋 Hello, {discord_uid}!")
 
 
 # /owner admin
