@@ -10,7 +10,9 @@ _application: Application | None = None
 async def lifespan(app: FastAPI):
     global _application
     _application = Application()
+    print("⚙️ [Backend] Application initialized.")
     yield
+    print("🛑 [Backend] Application shutting down...")
 
 
 app = FastAPI(lifespan=lifespan)
@@ -21,3 +23,13 @@ def get_application() -> Application:
     if _application is None:
         raise RuntimeError("Application not initialized")
     return _application
+
+# ----------------------------
+# Include API routers
+# (Keep this section here; 
+# it breaks a circular import)
+# ----------------------------
+
+
+from backend.api.endpoints import router
+app.include_router(router)

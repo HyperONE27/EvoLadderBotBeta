@@ -15,9 +15,7 @@ class DataLoader:
     def __init__(
         self,
         data_dir: Path = Path(
-            Path(__file__).resolve().parent.parent.parent.parent.parent
-            / "data"
-            / "core"
+            Path(__file__).resolve().parent.parent.parent / "data" / "core"
         ),
     ) -> None:
         self.data_dir: Path = data_dir

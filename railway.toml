@@ -1,5 +1,5 @@
 [services.backend]
-startCommand = "PYTHONPATH=src uvicorn server.backend.api.app:app --host 0.0.0.0 --port $PORT"
+startCommand = "uvicorn backend.api.app:app --host 0.0.0.0 --port $PORT"
 
 [services.bot]
-startCommand = "PYTHONPATH=src python -m server.bot.main"
+startCommand = "python -m bot.main"

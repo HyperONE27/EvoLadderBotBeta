@@ -5,7 +5,10 @@ from discord import app_commands
 
 from bot.config import BOT_TOKEN
 
+from bot.commands.user.greeting_command import register_greeting_command
 from bot.commands.user.setcountry_command import register_setcountry_command
+
+from bot.http import init_session, close_session
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -15,8 +18,6 @@ intents.members = True
 client = discord.Client(intents=intents)
 
 tree = app_commands.CommandTree(client)
-
-http_session: aiohttp.ClientSession | None = None
 
 # ----------------
 # Internal helpers
@@ -34,6 +35,7 @@ def _register_commands(client: discord.Client) -> None:
     register_setup_command(tree)
     register_termsofservice_command(tree)
     """
+    register_greeting_command(tree)
     register_setcountry_command(tree)
     pass
 
@@ -58,33 +60,37 @@ async def on_connect() -> None:
 
 @client.event
 async def on_ready() -> None:
-    global http_session
-    http_session = aiohttp.ClientSession()
-
+    await init_session()
     try:
         _register_commands(client)
         synced = await tree.sync()
         print(f"⌚ [Discord Gateway] Synced {len(synced)} commands.")
-        
-        print(f"✅ [Discord Gateway] Bot is ready!")
+
+        print("✅ [Discord Gateway] Bot is ready!")
     except Exception as e:
         print(f"❌ [Discord Gateway] Error during initialization: {e}")
         raise e
 
+
 @client.event
 async def on_disconnect() -> None:
-    print(f"⚠️ [Discord Gateway] Bot disconnected.")
+    print("⚠️ [Discord Gateway] Bot disconnected.")
 
 
 @client.event
 async def on_resumed() -> None:
-    print(f"▶️ [Discord Gateway] Bot resumed.")
+    print("▶️ [Discord Gateway] Bot resumed.")
+
+
+# ---------------
+# Bot entry point
+# ---------------
 
 
 async def main() -> None:
     async with client:
-        await client.start(BOT_TOKEN)
-
+        await client.start(token=BOT_TOKEN, reconnect=True)
+    await close_session()
 
 if __name__ == "__main__":
     asyncio.run(main())

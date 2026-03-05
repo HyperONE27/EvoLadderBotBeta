@@ -8,7 +8,6 @@ from discord import app_commands
 
 def register_setcountry_command(tree: app_commands.CommandTree) -> None:
     @tree.command(name="setcountry", description="Set your country")
-    @app_commands.describe(country="The country you want to set")
     async def setcountry_command(
         interaction: discord.Interaction, country: str
     ) -> None:

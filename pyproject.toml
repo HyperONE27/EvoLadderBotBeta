@@ -1,6 +1,6 @@
 [tool.mypy]
 # Keep useful stuff, drop the most annoying strict parts
-mypy_path = "src"
+mypy_path = "backend:bot"
 strict = false
 warn_return_any = true
 warn_unused_ignores = true
@@ -14,12 +14,12 @@ pretty = true
 
 # Optional: silence the global None pain in utils only
 [[tool.mypy.overrides]]
-module = "server.backend.utils.*"
+module = "backend.utils.*"
 disable_error_code = "union-attr,no-any-return,var-annotated"
 
 # Silence polars type issues in dataframe schemas
 [[tool.mypy.overrides]]
-module = "server.backend.types.polars_dataframes"
+module = "backend.domain_types.polars_dataframes"
 disable_error_code = "dict-item"
 
 # Silence checks on miscellaneous modules
