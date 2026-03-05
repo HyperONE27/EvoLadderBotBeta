@@ -217,7 +217,7 @@ __marimo__/
 
 # Secrets
 secrets/*
-misc/
+misc/*
 
 # Cursor
 .cursor/*
