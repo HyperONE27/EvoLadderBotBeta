@@ -40,7 +40,7 @@ _spec.loader.exec_module(_mod)  # type: ignore[union-attr]
 
 run_matchmaking = _mod.run_matchmaking
 
-from server.backend.types.state_types import MatchCandidate1v1, QueueEntry1v1  # noqa: E402
+from backend.domain_types.state_types import MatchCandidate1v1, QueueEntry1v1  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Helpers

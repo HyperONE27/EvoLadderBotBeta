@@ -1,6 +1,6 @@
 import discord
 
-from server.bot.helpers.decorators import dm_only
+from bot.helpers.decorators import dm_only
 
 # def register_profile_command()
 

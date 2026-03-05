@@ -1,27 +1,27 @@
-from server.backend.orchestrator.loader import DataLoader
+from backend.orchestrator.loader import DataLoader
 
 # from server.backend.orchestrator.orchestrator import ServiceOrchestrator
-from server.backend.orchestrator.state import StateManager
+from backend.orchestrator.state import StateManager
 
 # from server.backend.orchestrator.reader import StateReader
 # from server.backend.orchestrator.transitions import TransitionManager
-from server.backend.lookups.country_lookups import init_country_lookups
-from server.backend.lookups.cross_table_lookups import init_cross_table_lookups
-from server.backend.lookups.emote_lookups import init_emote_lookups
+from backend.lookups.country_lookups import init_country_lookups
+from backend.lookups.cross_table_lookups import init_cross_table_lookups
+from backend.lookups.emote_lookups import init_emote_lookups
 
 # from server.backend.lookups.event_lookups import init_event_lookups
-from server.backend.lookups.map_lookups import init_map_lookups
-from server.backend.lookups.match_1v1_lookups import init_match_1v1_lookups
-from server.backend.lookups.mmr_1v1_lookups import init_mmr_1v1_lookups
-from server.backend.lookups.mod_lookups import init_mod_lookups
+from backend.lookups.map_lookups import init_map_lookups
+from backend.lookups.match_1v1_lookups import init_match_1v1_lookups
+from backend.lookups.mmr_1v1_lookups import init_mmr_1v1_lookups
+from backend.lookups.mod_lookups import init_mod_lookups
 
 # from server.backend.lookups.notification_lookups import init_notification_lookups
-from server.backend.lookups.player_lookups import init_player_lookups
+from backend.lookups.player_lookups import init_player_lookups
 
-from server.backend.lookups.preferences_1v1_lookups import init_preferences_1v1_lookups
-from server.backend.lookups.race_lookups import init_race_lookups
-from server.backend.lookups.region_lookups import init_region_lookups
-from server.backend.lookups.replay_1v1_lookups import init_replay_1v1_lookups
+from backend.lookups.preferences_1v1_lookups import init_preferences_1v1_lookups
+from backend.lookups.race_lookups import init_race_lookups
+from backend.lookups.region_lookups import init_region_lookups
+from backend.lookups.replay_1v1_lookups import init_replay_1v1_lookups
 
 
 class Application:

@@ -1,4 +1,4 @@
-from server.backend.config import MMR
+from backend.config import MMR
 
 _DEFAULT_MMR: int = MMR["default"]
 _DIVISOR: int = MMR["divisor"]

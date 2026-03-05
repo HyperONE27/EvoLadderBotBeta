@@ -1,4 +1,4 @@
-from server.backend.orchestrator.state import StateManager
+from backend.orchestrator.state import StateManager
 
 _MODULE_NOT_INITIALIZED: str = f"{__name__} not initialized"
 

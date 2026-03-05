@@ -1,8 +1,8 @@
 import polars as pl
 from supabase import create_client, Client
 
-from server.backend.config import DATABASE
-from server.backend.types.polars_dataframes import TABLE_SCHEMAS
+from backend.config import DATABASE
+from backend.domain_types.polars_dataframes import TABLE_SCHEMAS
 
 
 # Connection functions

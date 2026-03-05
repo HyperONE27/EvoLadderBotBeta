@@ -1,5 +1,5 @@
-from server.backend.orchestrator.state import StateManager
-from server.backend.types.json_types import Country
+from backend.orchestrator.state import StateManager
+from backend.domain_types.json_types import Country
 
 _MODULE_NOT_INITIALIZED: str = f"{__name__} not initialized"
 

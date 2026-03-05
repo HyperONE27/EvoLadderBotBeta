@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
-from server.backend.bootstrap import Application
+from backend.bootstrap import Application
 
 _application: Application | None = None
 

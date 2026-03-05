@@ -3,9 +3,9 @@ import asyncio
 import discord
 from discord import app_commands
 
-from server.bot.config import BOT_TOKEN
+from bot.config import BOT_TOKEN
 
-from server.bot.commands.user.setcountry_command import register_setcountry_command
+from bot.commands.user.setcountry_command import register_setcountry_command
 
 intents = discord.Intents.default()
 intents.messages = True

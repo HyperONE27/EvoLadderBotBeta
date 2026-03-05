@@ -3,10 +3,10 @@ import polars as pl
 from pathlib import Path
 from typing import Any, cast
 
-from server.backend.config import ADMINS
-from server.backend.database.database import DatabaseReader
-from server.backend.orchestrator.state import StateManager
-from server.backend.types.json_types import CrossTableData, LoadedData, RegionData
+from backend.config import ADMINS
+from backend.database.database import DatabaseReader
+from backend.orchestrator.state import StateManager
+from backend.domain_types.json_types import CrossTableData, LoadedData, RegionData
 
 
 class DataLoader:

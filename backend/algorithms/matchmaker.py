@@ -13,7 +13,7 @@ No global state, no singletons, no I/O, no mutation of the input list.
 
 from copy import deepcopy
 
-from server.backend.types.state_types import MatchCandidate1v1, QueueEntry1v1
+from backend.domain_types.state_types import MatchCandidate1v1, QueueEntry1v1
 
 # ---------------------------------------------------------------------------
 # Tuning constants
