@@ -44,14 +44,6 @@ def _register_commands(client: discord.Client) -> None:
 
 
 @client.event
-async def on_ready() -> None:
-    global http_session
-    http_session = aiohttp.ClientSession()
-    await tree.sync()
-    print(f"[Discord Gateway] Bot is ready! Connected as {client.user}.")
-
-
-@client.event
 async def on_message(message: discord.Message) -> None:
     if message.author == client.user:
         return
@@ -61,17 +53,32 @@ async def on_message(message: discord.Message) -> None:
 
 @client.event
 async def on_connect() -> None:
-    print("✅ [Discord Gateway] Bot connected.")
+    print(f"🔗 [Discord Gateway] Bot established connection as {client.user}.")
 
 
 @client.event
+async def on_ready() -> None:
+    global http_session
+    http_session = aiohttp.ClientSession()
+
+    try:
+        _register_commands(client)
+        synced = await tree.sync()
+        print(f"⌚ [Discord Gateway] Synced {len(synced)} commands.")
+        
+        print(f"✅ [Discord Gateway] Bot is ready!")
+    except Exception as e:
+        print(f"❌ [Discord Gateway] Error during initialization: {e}")
+        raise e
+
+@client.event
 async def on_disconnect() -> None:
-    print("⚠️ [Discord Gateway] Bot disconnected.")
+    print(f"⚠️ [Discord Gateway] Bot disconnected.")
 
 
 @client.event
 async def on_resumed() -> None:
-    print("✅ [Discord Gateway] Bot resumed.")
+    print(f"▶️ [Discord Gateway] Bot resumed.")
 
 
 async def main() -> None:
