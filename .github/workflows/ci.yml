@@ -19,7 +19,7 @@ jobs:
       - name: Install developer dependencies
         run: pip install -r requirements-dev.txt
 
-      - name: Run check
+      - name: ruff check
         run: ruff check . && ruff format --check .
 
       - name: mypy
