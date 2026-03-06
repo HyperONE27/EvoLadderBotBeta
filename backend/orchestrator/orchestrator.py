@@ -16,4 +16,7 @@ class Orchestrator:
         self._transition_manager.set_country_for_player(
             discord_uid, discord_username, country_name
         )
-        return False, None
+        return (
+            True,
+            f"Successfully set country {country_name}\nfor player {discord_username}",
+        )
