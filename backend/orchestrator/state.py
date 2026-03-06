@@ -1,6 +1,7 @@
 import polars as pl
 
 from backend.config import Admin
+from backend.database.database import DatabaseReader
 from backend.domain_types.state_types import QueueEntry1v1
 
 from common.json_types import (
@@ -12,6 +13,8 @@ from common.json_types import (
     Race,
     RegionData,
 )
+
+from common.loader import JSONLoader
 
 
 class StateManager:
@@ -50,3 +53,24 @@ class StateManager:
         # self.queue_FFA: list[QueueEntryFFA] = []
         # self.timed_out_players: list[int] = []
         # self.write_back_queue = []
+
+        self._populate_json_data()
+        self._populate_postgres_data()
+
+    def _populate_json_data(self) -> None:
+        json_data = JSONLoader().load_core_data()
+
+        for key, value in json_data.items():
+            if not hasattr(self, key):
+                raise ValueError(f"StateManager does not have attribute {key}")
+            setattr(self, key, value)
+
+    def _populate_postgres_data(self) -> None:
+        db_data = DatabaseReader().load_all_tables()
+
+        for table_name, df in db_data.items():
+            if not hasattr(self, f"{table_name}_df"):
+                raise ValueError(
+                    f"StateManager does not have attribute {table_name}_df"
+                )
+            setattr(self, f"{table_name}_df", df)

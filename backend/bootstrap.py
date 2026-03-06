@@ -19,24 +19,16 @@ from backend.lookups.race_lookups import init_race_lookups
 from backend.lookups.region_lookups import init_region_lookups
 from backend.lookups.replay_1v1_lookups import init_replay_1v1_lookups
 
-from common.loader import DataLoader
-
 
 class Backend:
     def __init__(self) -> None:
         self._initialize_orchestrator()
-        self._load_data()
         self._initialize_lookups()
 
     def _initialize_orchestrator(self) -> None:
         # Initialize orchestrator components
-        self.data_loader = DataLoader()
         self.state_manager = StateManager()
         self.orchestrator = Orchestrator(self.state_manager)
-
-    def _load_data(self) -> None:
-        # Load application data
-        self.data_loader.populate_state_manager(self.state_manager)
 
     def _initialize_lookups(self) -> None:
         modules = [
