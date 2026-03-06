@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends
 
-from backend.api.dependencies import get_application
+from backend.api.dependencies import get_backend
 from backend.api.models import (
     GreetingResponse,
     SetCountryConfirmRequest,
     SetCountryConfirmResponse,
 )
-from backend.bootstrap import Application
+from backend.bootstrap import Backend
 
 router = APIRouter()
 
@@ -14,7 +14,7 @@ router = APIRouter()
 @router.get("/commands/greet/{discord_uid}", response_model=GreetingResponse)
 async def greet(
     discord_uid: int,
-    app: Application = Depends(get_application),
+    app: Backend = Depends(get_backend),
 ) -> GreetingResponse:
     return GreetingResponse(message=f"👋 Hello, {discord_uid}!")
 
@@ -53,7 +53,7 @@ async def greet(
 @router.put("/commands/setcountry")
 async def setcountry(
     request: SetCountryConfirmRequest,
-    app: Application = Depends(get_application),
+    app: Backend = Depends(get_backend),
 ) -> SetCountryConfirmResponse:
     success, message = app.orchestrator.setcountry(
         request.discord_uid,

@@ -1,14 +1,14 @@
-from backend.bootstrap import Application
+from backend.bootstrap import Backend
 
-_application: Application | None = None
-
-
-def set_application(app: Application) -> None:
-    global _application
-    _application = app
+_backend: Backend | None = None
 
 
-def get_application() -> Application:
-    if _application is None:
-        raise RuntimeError("Application not initialized")
-    return _application
+def set_backend(app: Backend) -> None:
+    global _backend
+    _backend = app
+
+
+def get_backend() -> Backend:
+    if _backend is None:
+        raise RuntimeError("Backend not initialized")
+    return _backend

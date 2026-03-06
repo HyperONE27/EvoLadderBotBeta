@@ -55,7 +55,7 @@ STORAGE: dict[str, str] = {
 }
 
 # ---------------------
-# Application constants
+# Backend constants
 # ---------------------
 
 EXPECTED_LOBBY_SETTINGS: dict[str, str] = {

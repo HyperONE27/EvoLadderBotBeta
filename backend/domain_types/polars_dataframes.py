@@ -16,6 +16,7 @@ PLAYERS_SCHEMA: dict[str, pl.DataType] = {
     "battletag": pl.String,
     "nationality": pl.String,
     "location": pl.String,
+    "language": pl.String,
     "is_banned": pl.Boolean,
     "accepted_tos": pl.Boolean,
     "accepted_tos_at": pl.Datetime,

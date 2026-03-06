@@ -1,4 +1,3 @@
-from backend.orchestrator.loader import DataLoader
 from backend.orchestrator.orchestrator import Orchestrator
 from backend.orchestrator.state import StateManager
 
@@ -20,8 +19,10 @@ from backend.lookups.race_lookups import init_race_lookups
 from backend.lookups.region_lookups import init_region_lookups
 from backend.lookups.replay_1v1_lookups import init_replay_1v1_lookups
 
+from common.loader import DataLoader
 
-class Application:
+
+class Backend:
     def __init__(self) -> None:
         self._initialize_orchestrator()
         self._load_data()

@@ -11,6 +11,10 @@ CREATE TABLE IF NOT EXISTS players (
     battletag               TEXT,
     nationality             TEXT,
     location                TEXT,
+    language                TEXT DEFAULT 'enUS'
+        CHECK (language IN
+            ('enUS', 'esMX', 'koKR', 'ruRU', 'zhCN')
+        ),
     is_banned               BOOLEAN DEFAULT FALSE,
     accepted_tos            BOOLEAN DEFAULT FALSE,
     accepted_tos_at         TIMESTAMPTZ,

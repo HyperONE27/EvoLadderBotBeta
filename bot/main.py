@@ -90,6 +90,7 @@ async def main() -> None:
     async with client:
         await client.start(token=BOT_TOKEN, reconnect=True)
     await close_session()
+    print("🛑 [Discord Gateway] Bot shutting down...")
 
 
 if __name__ == "__main__":

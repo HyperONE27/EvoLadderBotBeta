@@ -30,6 +30,7 @@ class TransitionManager:
                     "battletag": None,
                     "nationality": None,
                     "location": None,
+                    "language": "enUS",
                     "is_banned": False,
                     "accepted_tos": False,
                     "accepted_tos_at": None,
@@ -56,4 +57,4 @@ class TransitionManager:
             .then(pl.lit(country_name))
             .otherwise(pl.col("nationality"))
         )
-        return True, None
+        return True, f"Country successfully set to {country_name}."

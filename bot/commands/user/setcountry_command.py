@@ -4,6 +4,11 @@ from discord import app_commands
 from bot.config import BACKEND_URL
 from bot.http import get_session
 
+# ----------------
+# Internal helpers
+# ----------------
+
+
 # --------------------
 # Command registration
 # --------------------

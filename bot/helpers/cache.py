@@ -26,5 +26,3 @@ class Cache:
             "game_servers": {},
             "game_regions": {},
         }
-
-        # Current application state
