@@ -50,15 +50,16 @@ async def greet(
 # --- /setcountry ---
 
 
-@router.put(
-    "/commands/setcountry/{discord_uid}", response_model=SetCountryConfirmResponse
-)
+@router.put("/commands/setcountry")
 async def setcountry(
-    discord_uid: int,
     request: SetCountryConfirmRequest,
     app: Application = Depends(get_application),
 ) -> SetCountryConfirmResponse:
-    success, message = app.orchestrator.setcountry(discord_uid, request.country_name)
+    success, message = app.orchestrator.setcountry(
+        request.discord_uid,
+        request.discord_username,
+        request.country_name,
+    )
     return SetCountryConfirmResponse(success=success, message=message)
 
 

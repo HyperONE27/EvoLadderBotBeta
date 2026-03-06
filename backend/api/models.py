@@ -48,6 +48,7 @@ class LeaderboardResponse(BaseModel):
 
 class SetCountryConfirmRequest(BaseModel):
     discord_uid: int
+    discord_username: str
     country_name: str
 
 
@@ -61,6 +62,7 @@ class SetCountryConfirmResponse(BaseModel):
 
 class SetupInitRequest(BaseModel):
     discord_uid: int
+    discord_username: str
 
 
 class SetupInitResponse(BaseModel):
@@ -73,6 +75,7 @@ class SetupInitResponse(BaseModel):
 
 class SetupConfirmRequest(BaseModel):
     discord_uid: int
+    discord_username: str
     player_name: str
     alt_player_names: list[str] | None
     battletag: str
@@ -90,6 +93,7 @@ class SetupConfirmResponse(BaseModel):
 
 class TermsOfServiceConfirmRequest(BaseModel):
     discord_uid: int
+    discord_username: str
     accepted: bool
 
 

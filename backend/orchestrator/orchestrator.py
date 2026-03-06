@@ -9,8 +9,11 @@ class Orchestrator:
         self._transition_manager = TransitionManager(state_manager)
 
     def setcountry(
-        self, discord_uid: int, country_name: str
+        self, discord_uid: int, discord_username: str, country_name: str
     ) -> tuple[bool, str | None]:
         """Set the country for a player."""
-
+        # This is a write operation, go straight to the transition manager
+        self._transition_manager.set_country_for_player(
+            discord_uid, discord_username, country_name
+        )
         return False, None
