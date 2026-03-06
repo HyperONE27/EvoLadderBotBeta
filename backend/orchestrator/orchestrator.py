@@ -13,10 +13,6 @@ class Orchestrator:
     ) -> tuple[bool, str | None]:
         """Set the country for a player."""
         # This is a write operation, go straight to the transition manager
-        self._transition_manager.set_country_for_player(
+        return self._transition_manager.set_country_for_player(
             discord_uid, discord_username, country_name
-        )
-        return (
-            True,
-            f"Successfully set country {country_name}\nfor player {discord_username}",
         )

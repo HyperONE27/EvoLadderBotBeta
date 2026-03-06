@@ -22,24 +22,22 @@ class TransitionManager:
         new_row_df = pl.DataFrame(
             [
                 {
-                    {
-                        "id": new_row_id,
-                        "discord_uid": discord_uid,
-                        "discord_username": discord_username,
-                        "player_name": None,
-                        "alt_player_names": None,
-                        "battletag": None,
-                        "nationality": None,
-                        "location": None,
-                        "is_banned": False,
-                        "accepted_tos": False,
-                        "accepted_tos_at": None,
-                        "completed_setup": False,
-                        "completed_setup_at": None,
-                        "player_status": "idle",
-                        "current_match_mode": None,
-                        "current_match_id": None,
-                    }
+                    "id": new_row_id,
+                    "discord_uid": discord_uid,
+                    "discord_username": discord_username,
+                    "player_name": None,
+                    "alt_player_names": None,
+                    "battletag": None,
+                    "nationality": None,
+                    "location": None,
+                    "is_banned": False,
+                    "accepted_tos": False,
+                    "accepted_tos_at": None,
+                    "completed_setup": False,
+                    "completed_setup_at": None,
+                    "player_status": "idle",
+                    "current_match_mode": None,
+                    "current_match_id": None,
                 }
             ]
         ).cast(df.schema)
