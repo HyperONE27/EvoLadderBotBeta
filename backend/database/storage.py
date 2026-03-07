@@ -1,6 +1,6 @@
 from supabase import create_client, Client
 
-from backend.config import DATABASE, STORAGE
+from backend.core.config import DATABASE, STORAGE
 
 
 # Connection functions

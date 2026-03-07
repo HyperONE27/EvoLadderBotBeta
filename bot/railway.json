@@ -4,7 +4,7 @@
         "builder": "Railpack"
     },
     "deploy": {
-        "startCommand": "python -m bot.app",
+        "startCommand": "python -m bot.core.app",
         "restartPolicyType": "ON_FAILURE",
         "restartPolicyMaxRetries": 10
     }

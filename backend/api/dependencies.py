@@ -1,4 +1,4 @@
-from backend.bootstrap import Backend
+from backend.core.bootstrap import Backend
 
 _backend: Backend | None = None
 

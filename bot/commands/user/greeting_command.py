@@ -1,8 +1,8 @@
 import discord
 from discord import app_commands
 
-from bot.config import BACKEND_URL
-from bot.http import get_session
+from bot.core.config import BACKEND_URL
+from bot.core.http import get_session
 
 # --------------------
 # Command registration

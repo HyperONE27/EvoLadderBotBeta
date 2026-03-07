@@ -7,18 +7,15 @@ from common.json_types import (
     Race,
     RegionData,
 )
+from common.loader import JSONLoader
 
 
 class Bot:
     def __init__(self) -> None:
         self._initialize_cache()
-        self._load_data()
 
     def _initialize_cache(self) -> None:
-        pass
-
-    def _load_data(self) -> None:
-        pass
+        self.cache = Cache()
 
 
 class Cache:
@@ -41,3 +38,16 @@ class Cache:
 
         # Localization
         # self.locales: dict[str, Locale] = {}
+
+        self._populate_json_data()
+
+    def _populate_json_data(self) -> None:
+        json_data = JSONLoader().load_core_data()
+
+        for key, value in json_data.items():
+            if not hasattr(self, key):
+                raise ValueError(f"Cache does not have attribute {key}")
+            setattr(self, key, value)
+
+    def _populate_locale_data(self) -> None:
+        pass

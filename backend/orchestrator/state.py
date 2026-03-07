@@ -1,6 +1,6 @@
 import polars as pl
 
-from backend.config import Admin
+from backend.core.config import Admin
 from backend.database.database import DatabaseReader
 from backend.domain_types.state_types import QueueEntry1v1
 

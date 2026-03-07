@@ -3,7 +3,7 @@ from fastapi import FastAPI
 
 from backend.api.dependencies import set_backend
 from backend.api.endpoints import router
-from backend.bootstrap import Backend
+from backend.core.bootstrap import Backend
 
 
 @asynccontextmanager

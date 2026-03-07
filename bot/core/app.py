@@ -2,12 +2,13 @@ import asyncio
 import discord
 from discord import app_commands
 
-from bot.config import BOT_TOKEN
+from bot.core.bootstrap import Bot
+from bot.core.config import BOT_TOKEN
+from bot.core.dependencies import set_bot
+from bot.core.http import init_session, close_session
 
 from bot.commands.user.greeting_command import register_greeting_command
 from bot.commands.user.setcountry_command import register_setcountry_command
-
-from bot.http import init_session, close_session
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -15,7 +16,6 @@ intents.message_content = True
 intents.members = True
 
 client = discord.Client(intents=intents)
-
 tree = app_commands.CommandTree(client)
 
 # ----------------
@@ -25,6 +25,13 @@ tree = app_commands.CommandTree(client)
 
 def _register_commands(client: discord.Client) -> None:
     """
+    register_admin_ban_command(tree)
+    register_admin_match_command(tree)
+    register_admin_resolve_command(tree)
+    register_admin_snapshot_command(tree)
+    register_admin_status_command(tree)
+    reigster_owner_admin_command(tree)
+    register_owner_mmr_command(tree)
     register_help_command(tree)
     register_leaderboard_command(tree)
     register_profile_command(tree)
@@ -73,7 +80,7 @@ async def on_ready() -> None:
 
 @client.event
 async def on_disconnect() -> None:
-    print("⚠️ [Discord Gateway] Bot disconnected.")
+    print("⏸️ [Discord Gateway] Bot disconnected.")
 
 
 @client.event
@@ -87,6 +94,9 @@ async def on_resumed() -> None:
 
 
 async def main() -> None:
+    bot = Bot()
+    set_bot(bot)
+    print("⚙️ [Bot] Bot initialized. Attempting to connect to Discord...")
     async with client:
         await client.start(token=BOT_TOKEN, reconnect=True)
     await close_session()

@@ -6,7 +6,7 @@ from backend.api.models import (
     SetCountryConfirmRequest,
     SetCountryConfirmResponse,
 )
-from backend.bootstrap import Backend
+from backend.core.bootstrap import Backend
 
 router = APIRouter()
 
