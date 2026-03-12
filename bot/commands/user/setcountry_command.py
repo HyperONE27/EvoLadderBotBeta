@@ -12,6 +12,7 @@ from bot.helpers.decorators import dm_only
 # --- Embeds ---
 
 
+
 # --- Views ---
 
 # ----------------
@@ -20,7 +21,8 @@ from bot.helpers.decorators import dm_only
 
 async def _autocomplete_country(
     partial_country: str
-)
+):
+    pass
 
 
 # --------------------
@@ -35,8 +37,6 @@ def register_setcountry_command(tree: app_commands.CommandTree) -> None:
         interaction: discord.Interaction, country: str
     ) -> None:
         await interaction.response.defer()
-
-        await 
 
         async with get_session().put(
             f"{BACKEND_URL}/commands/setcountry",

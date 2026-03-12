@@ -1,7 +1,7 @@
 import polars as pl
 
+from backend.domain_types.dataframes import Preferences1v1Row
 from backend.orchestrator.state import StateManager
-from backend.domain_types.polars_dataframes import Preferences1v1Row
 
 _MODULE_NOT_INITIALIZED: str = f"{__name__} not initialized"
 

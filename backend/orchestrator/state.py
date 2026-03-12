@@ -2,7 +2,7 @@ import polars as pl
 
 from backend.core.config import Admin
 from backend.database.database import DatabaseReader
-from backend.domain_types.state_types import QueueEntry1v1
+from backend.domain_types.ephemeral import QueueEntry1v1
 
 from common.json_types import (
     Country,
