@@ -5,14 +5,22 @@ from bot.core.config import BACKEND_URL
 from bot.core.http import get_session
 from bot.helpers.decorators import dm_only
 
+# ----------
+# Components
+# ----------
+
+# --- Embeds ---
+
+
+# --- Views ---
+
 # ----------------
 # Internal helpers
 # ----------------
 
-
-# ------------------
-# Command definition
-# ------------------
+async def _autocomplete_country(
+    partial_country: str
+)
 
 
 # --------------------
@@ -27,6 +35,8 @@ def register_setcountry_command(tree: app_commands.CommandTree) -> None:
         interaction: discord.Interaction, country: str
     ) -> None:
         await interaction.response.defer()
+
+        await 
 
         async with get_session().put(
             f"{BACKEND_URL}/commands/setcountry",

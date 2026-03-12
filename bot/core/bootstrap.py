@@ -40,6 +40,7 @@ class Cache:
         # self.locales: dict[str, Locale] = {}
 
         self._populate_json_data()
+        self._populate_locale_data()
 
     def _populate_json_data(self) -> None:
         json_data = JSONLoader().load_core_data()
