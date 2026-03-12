@@ -12,16 +12,14 @@ from bot.helpers.decorators import dm_only
 # --- Embeds ---
 
 
-
 # --- Views ---
 
 # ----------------
 # Internal helpers
 # ----------------
 
-async def _autocomplete_country(
-    partial_country: str
-):
+
+async def _autocomplete_country(partial_country: str):
     pass
 
 

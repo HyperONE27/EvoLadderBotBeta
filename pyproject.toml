@@ -11,7 +11,7 @@ disallow_untyped_calls = false
 
 # Silence polars type issues in dataframe schemas
 [[tool.mypy.overrides]]
-module = "backend.domain_types.polars_dataframes"
+module = "backend.domain_types.dataframes"
 disable_error_code = "dict-item"
 
 # Silence checks on miscellaneous modules
