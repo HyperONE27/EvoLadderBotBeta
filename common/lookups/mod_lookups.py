@@ -1,23 +1,23 @@
-from backend.orchestrator.state import StateManager
 from common.json_types import Mod
+from common.protocols import StaticDataSource
 
 _MODULE_NOT_INITIALIZED: str = f"{__name__} not initialized"
 
-_state_manager: StateManager | None = None
+_source: StaticDataSource | None = None
 
 # ----------------
 # Internal helpers
 # ----------------
 
 
-def _get_state_manager() -> StateManager:
-    if _state_manager is None:
+def _get_source() -> StaticDataSource:
+    if _source is None:
         raise RuntimeError(_MODULE_NOT_INITIALIZED)
-    return _state_manager
+    return _source
 
 
 def _get_mods() -> dict[str, Mod]:
-    return _get_state_manager().mods
+    return _get_source().mods
 
 
 # ----------
@@ -57,7 +57,7 @@ def get_mod_by_link(link: str) -> Mod | None:
 # ----------------
 
 
-def init_mod_lookups(state_manager: StateManager) -> None:
+def init_mod_lookups(source: StaticDataSource) -> None:
     """Initialize the mod lookups module."""
-    global _state_manager
-    _state_manager = state_manager
+    global _source
+    _source = source

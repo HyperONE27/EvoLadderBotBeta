@@ -1,23 +1,21 @@
-from backend.orchestrator.orchestrator import Orchestrator
-from backend.orchestrator.state import StateManager
-
-from backend.lookups.country_lookups import init_country_lookups
-from backend.lookups.cross_table_lookups import init_cross_table_lookups
-from backend.lookups.emote_lookups import init_emote_lookups
-
-# from backend.lookups.event_lookups import init_event_lookups
-from backend.lookups.map_lookups import init_map_lookups
 from backend.lookups.match_1v1_lookups import init_match_1v1_lookups
 from backend.lookups.mmr_1v1_lookups import init_mmr_1v1_lookups
-from backend.lookups.mod_lookups import init_mod_lookups
 
 # from backend.lookups.notification_lookups import init_notification_lookups
 from backend.lookups.player_lookups import init_player_lookups
-
 from backend.lookups.preferences_1v1_lookups import init_preferences_1v1_lookups
-from backend.lookups.race_lookups import init_race_lookups
-from backend.lookups.region_lookups import init_region_lookups
 from backend.lookups.replay_1v1_lookups import init_replay_1v1_lookups
+from backend.orchestrator.orchestrator import Orchestrator
+from backend.orchestrator.state import StateManager
+from common.lookups.country_lookups import init_country_lookups
+from common.lookups.cross_table_lookups import init_cross_table_lookups
+from common.lookups.emote_lookups import init_emote_lookups
+
+# from common.lookups.event_lookups import init_event_lookups
+from common.lookups.map_lookups import init_map_lookups
+from common.lookups.mod_lookups import init_mod_lookups
+from common.lookups.race_lookups import init_race_lookups
+from common.lookups.region_lookups import init_region_lookups
 
 
 class Backend:

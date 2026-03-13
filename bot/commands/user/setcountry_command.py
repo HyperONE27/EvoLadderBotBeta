@@ -2,9 +2,12 @@ import discord
 from discord import app_commands
 
 from bot.core.config import BACKEND_URL
-from bot.core.dependencies import get_cache
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_dm
+from common.lookups.country_lookups import (
+    get_countries,
+    search_countries_by_partial_name,
+)
 
 # ----------
 # Components
@@ -24,20 +27,14 @@ async def _autocomplete_country(
     interaction: discord.Interaction,
     partial_country: str,
 ) -> list[app_commands.Choice[str]]:
-    countries = get_cache().countries
-
-    # Get all countries if no partial input, otherwise filter by name
-    if partial_country:
-        filtered_countries = [
-            country
-            for country in countries.values()
-            if partial_country.lower() in country["name"].lower()
-        ]
-    else:
-        filtered_countries = [country for country in countries.values()]
+    countries = (
+        search_countries_by_partial_name(partial_country)
+        if partial_country
+        else get_countries()
+    )
 
     # Sort alphabetically by name and take up to 25
-    sorted_countries = sorted(filtered_countries, key=lambda c: c["name"])[:25]
+    sorted_countries = sorted(countries.values(), key=lambda c: c["name"])[:25]
 
     return [
         app_commands.Choice(name=country["name"], value=country["code"])

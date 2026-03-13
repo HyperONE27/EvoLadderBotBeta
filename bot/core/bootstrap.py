@@ -8,14 +8,35 @@ from common.json_types import (
     RegionData,
 )
 from common.loader import JSONLoader
+from common.lookups.country_lookups import init_country_lookups
+from common.lookups.cross_table_lookups import init_cross_table_lookups
+from common.lookups.emote_lookups import init_emote_lookups
+from common.lookups.map_lookups import init_map_lookups
+from common.lookups.mod_lookups import init_mod_lookups
+from common.lookups.race_lookups import init_race_lookups
+from common.lookups.region_lookups import init_region_lookups
 
 
 class Bot:
     def __init__(self) -> None:
         self._initialize_cache()
+        self._initialize_lookups()
 
     def _initialize_cache(self) -> None:
         self.cache = Cache()
+
+    def _initialize_lookups(self) -> None:
+        modules = [
+            init_country_lookups,
+            init_cross_table_lookups,
+            init_emote_lookups,
+            init_map_lookups,
+            init_mod_lookups,
+            init_race_lookups,
+            init_region_lookups,
+        ]
+        for init_func in modules:
+            init_func(self.cache)
 
 
 class Cache:

@@ -103,14 +103,14 @@ async def on_tree_error(
         embed = discord.Embed(
             title="🚫 Unauthorized Command Usage",
             description=description,
-            color=discord.Color.red()
+            color=discord.Color.red(),
         )
     else:
         embed = discord.Embed(
             title="❓ Unexpected Error",
             description="An unexpected error occurred. Please try again later.\n"
             "If the problem persists, please contact the developer.",
-            color=discord.Color.red()
+            color=discord.Color.red(),
         )
 
     if interaction.response.is_done():

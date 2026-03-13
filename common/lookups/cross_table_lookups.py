@@ -1,26 +1,26 @@
-from backend.orchestrator.state import StateManager
+from common.protocols import StaticDataSource
 
 _MODULE_NOT_INITIALIZED: str = f"{__name__} not initialized"
 
-_state_manager: StateManager | None = None
+_source: StaticDataSource | None = None
 
 # ----------------
 # Internal helpers
 # ----------------
 
 
-def _get_state_manager() -> StateManager:
-    if _state_manager is None:
+def _get_source() -> StaticDataSource:
+    if _source is None:
         raise RuntimeError(_MODULE_NOT_INITIALIZED)
-    return _state_manager
+    return _source
 
 
 def _get_region_order() -> list[str]:
-    return _get_state_manager().cross_table["region_order"]
+    return _get_source().cross_table["region_order"]
 
 
 def _get_mappings() -> dict[str, dict[str, str]]:
-    return _get_state_manager().cross_table["mappings"]
+    return _get_source().cross_table["mappings"]
 
 
 def _sort_region_pair(region_1: str, region_2: str) -> tuple[str, str]:
@@ -48,7 +48,7 @@ def get_game_server_from_region_pair(region_1: str, region_2: str) -> str:
 # ----------------
 
 
-def init_cross_table_lookups(state_manager: StateManager) -> None:
+def init_cross_table_lookups(source: StaticDataSource) -> None:
     """Initialize the cross table lookups module."""
-    global _state_manager
-    _state_manager = state_manager
+    global _source
+    _source = source

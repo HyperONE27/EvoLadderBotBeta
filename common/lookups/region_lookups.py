@@ -1,19 +1,19 @@
-from backend.orchestrator.state import StateManager
-from common.json_types import GeographicRegion, GameServer, GameRegion
+from common.json_types import GameRegion, GameServer, GeographicRegion
+from common.protocols import StaticDataSource
 
 _MODULE_NOT_INITIALIZED: str = f"{__name__} not initialized"
 
-_state_manager: StateManager | None = None
+_source: StaticDataSource | None = None
 
 # ----------------
 # Internal helpers
 # ----------------
 
 
-def _get_state_manager() -> StateManager:
-    if _state_manager is None:
+def _get_source() -> StaticDataSource:
+    if _source is None:
         raise RuntimeError(_MODULE_NOT_INITIALIZED)
-    return _state_manager
+    return _source
 
 
 # ----------
@@ -25,7 +25,7 @@ def _get_state_manager() -> StateManager:
 
 
 def get_geographic_regions() -> dict[str, GeographicRegion]:
-    return _get_state_manager().regions["geographic_regions"]
+    return _get_source().regions["geographic_regions"]
 
 
 def get_geographic_region_by_code(code: str) -> GeographicRegion | None:
@@ -60,7 +60,7 @@ def get_geographic_region_by_globe_emote_code(
 
 
 def get_game_servers() -> dict[str, GameServer]:
-    return _get_state_manager().regions["game_servers"]
+    return _get_source().regions["game_servers"]
 
 
 def get_game_server_by_code(code: str) -> GameServer | None:
@@ -100,7 +100,7 @@ def get_game_server_by_game_region_code(game_region_code: str) -> GameServer | N
 
 
 def get_game_regions() -> dict[str, GameRegion]:
-    return _get_state_manager().regions["game_regions"]
+    return _get_source().regions["game_regions"]
 
 
 def get_game_region_by_code(code: str) -> GameRegion | None:
@@ -119,7 +119,7 @@ def get_game_region_by_name(name: str) -> GameRegion | None:
 # ----------------
 
 
-def init_region_lookups(state_manager: StateManager) -> None:
+def init_region_lookups(source: StaticDataSource) -> None:
     """Initialize the region lookups module."""
-    global _state_manager
-    _state_manager = state_manager
+    global _source
+    _source = source
