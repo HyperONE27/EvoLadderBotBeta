@@ -88,6 +88,37 @@ async def on_resumed() -> None:
     print("▶️ [Discord Gateway] Bot resumed.")
 
 
+@tree.error
+async def on_tree_error(
+    interaction: discord.Interaction,
+    error: app_commands.AppCommandError,
+) -> None:
+    if isinstance(error, app_commands.CheckFailure):
+        description = (
+            str(error)
+            if str(error)
+            else "You do not have permission to use this command."
+        )
+
+        embed = discord.Embed(
+            title="🚫 Unauthorized Command Usage",
+            description=description,
+            color=discord.Color.red()
+        )
+    else:
+        embed = discord.Embed(
+            title="❓ Unexpected Error",
+            description="An unexpected error occurred. Please try again later.\n"
+            "If the problem persists, please contact the developer.",
+            color=discord.Color.red()
+        )
+
+    if interaction.response.is_done():
+        await interaction.followup.send(embed=embed)
+    else:
+        await interaction.response.send_message(embed=embed)
+
+
 # ---------------
 # Bot entry point
 # ---------------

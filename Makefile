@@ -2,6 +2,6 @@
 quality:
 	ruff check --fix . && ruff format . && mypy backend bot common
 
-.PHONY: dev
-dev:
+.PHONY: run
+run:
 	./run_local.sh
