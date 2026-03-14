@@ -61,6 +61,14 @@ def search_countries_by_partial_name(partial_name: str) -> dict[str, Country]:
     }
 
 
+def get_first_country_by_partial_name(partial_name: str) -> Country | None:
+    countries = sorted(
+        search_countries_by_partial_name(partial_name).items(),
+        key=lambda c: c[1]["name"],
+    )
+    return countries[0][1] if countries else None
+
+
 # ----------------
 # Module lifecycle
 # ----------------

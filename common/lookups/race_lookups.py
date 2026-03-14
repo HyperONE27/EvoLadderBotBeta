@@ -16,33 +16,33 @@ def _get_source() -> StaticDataSource:
     return _source
 
 
-def _get_races() -> dict[str, Race]:
-    return _get_source().races
-
-
 # ----------
 # Public API
 # ----------
 
 
+def get_races() -> dict[str, Race]:
+    return _get_source().races
+
+
 def get_race_by_code(code: str) -> Race | None:
-    return _get_races().get(code)
+    return get_races().get(code)
 
 
 def get_race_by_name(name: str) -> Race | None:
-    return next((race for race in _get_races().values() if race["name"] == name), None)
+    return next((race for race in get_races().values() if race["name"] == name), None)
 
 
 def get_race_by_short_name(short_name: str) -> Race | None:
     return next(
-        (race for race in _get_races().values() if race["short_name"] == short_name),
+        (race for race in get_races().values() if race["short_name"] == short_name),
         None,
     )
 
 
 def get_race_by_alias(alias: str) -> Race | None:
     return next(
-        (race for race in _get_races().values() if alias in race["aliases"]), None
+        (race for race in get_races().values() if alias in race["aliases"]), None
     )
 
 

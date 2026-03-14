@@ -66,15 +66,21 @@ async def on_connect() -> None:
 
 @client.event
 async def on_ready() -> None:
+    configure_structlog(service_name="discord-bot")
     await init_session()
     try:
         _register_commands(client)
         synced = await tree.sync()
-        print(f"⌚ [Discord Gateway] Synced {len(synced)} commands.")
-
-        print("✅ [Discord Gateway] Bot is ready!")
+        structlog.get_logger(__name__).info(
+            f"⌚ [Discord Gateway] Synced {len(synced)} commands.""
+        )
+        structlog.get_logger(__name__).info(
+            f"✅ [Discord Gateway] Bot is ready!"
+        )
     except Exception as e:
-        print(f"❌ [Discord Gateway] Error during initialization: {e}")
+        structlog.get_logger(__name__).error(
+            f"❌ [Discord Gateway] Error during initialization: {e}"
+        )
         raise e
 
 
@@ -109,7 +115,8 @@ async def on_tree_error(
         embed = discord.Embed(
             title="❓ Unexpected Error",
             description="An unexpected error occurred. Please try again later.\n"
-            "If the problem persists, please contact the developer.",
+            "If the problem persists, please contact the developer.\n"
+            f"Error: {error!r}",
             color=discord.Color.red(),
         )
 
