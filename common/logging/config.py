@@ -3,6 +3,14 @@ import structlog
 import sys
 
 
+def _make_add_service_processor(service_name: str) -> structlog.types.Processor:
+    def add_service(logger, method, event_dict):
+        event_dict.setdefault("service", service_name)
+        return event_dict
+
+    return add_service
+
+
 def configure_structlog(
     service_name: str = "unknown-service",
     # json_logs: bool = os.getenv("ENV", "dev").lower() in ("prod", "staging"),
@@ -19,6 +27,7 @@ def configure_structlog(
     level = logging.INFO
 
     shared_processors: list[structlog.types.Processor] = [
+        _make_add_service_processor(service_name),
         structlog.contextvars.merge_contextvars,  # ← crucial for request/command context
         structlog.processors.add_log_level,
         structlog.processors.StackInfoRenderer(),
