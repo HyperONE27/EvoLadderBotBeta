@@ -65,3 +65,5 @@ def configure_structlog(
         "uvicorn.access",
     ):
         logging.getLogger(logger_name).setLevel(logging.WARNING)
+
+    logging.getLogger().setLevel(logging.WARNING)

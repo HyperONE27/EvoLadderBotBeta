@@ -88,7 +88,7 @@ async def _autocomplete_country(
     sorted_countries = sorted(countries.values(), key=lambda c: c["name"])[:25]
 
     return [
-        app_commands.Choice(name=country["name"], value=country["code"])
+        app_commands.Choice(name=country["name"], value=country["name"])
         for country in sorted_countries
     ]
 

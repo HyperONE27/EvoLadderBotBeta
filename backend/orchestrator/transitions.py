@@ -4,6 +4,8 @@ from typing import cast
 
 from backend.orchestrator.state import StateManager
 
+from common.lookups.country_lookups import get_country_by_name
+
 
 logger = structlog.get_logger(__name__)
 
@@ -64,14 +66,20 @@ class TransitionManager:
     ) -> tuple[bool, str | None]:
         self._handle_missing_player(discord_uid, discord_username)
 
+        country = get_country_by_name(country_name)
+        if country is None:
+            return False, f"Country {country_name} not found."
+        country_code = country["code"]
+
         df: pl.DataFrame = self._state_manager.players_df
         self._state_manager.players_df = df.with_columns(
             nationality=pl.when(pl.col("discord_uid") == discord_uid)
-            .then(pl.lit(country_name))
+            .then(pl.lit(country_code))
             .otherwise(pl.col("nationality"))
         )
 
         logger.info(
-            f"Successfully set country for player {discord_username} to {country_name}"
+            f"Successfully set country for player {discord_username}"
+            f"to {country_name} ({country_code})"
         )
         return True, f"Country successfully set to {country_name}."
