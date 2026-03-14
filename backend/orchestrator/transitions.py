@@ -1,7 +1,11 @@
 import polars as pl
+import structlog
 from typing import cast
 
 from backend.orchestrator.state import StateManager
+
+
+logger = structlog.get_logger(__name__)
 
 
 class TransitionManager:
@@ -15,9 +19,15 @@ class TransitionManager:
         rows = df.filter(pl.col("discord_uid") == discord_uid)
         if not rows.is_empty():
             # Player already exists, do nothing
+            logger.info(
+                f"Player {discord_username} with ID {discord_uid} already exists"
+            )
             return
 
         # Player does not exist, create their row
+        logger.info(
+            f"Creating new player row for {discord_username} with ID {discord_uid}"
+        )
         new_row_id = (cast(int, df["id"].max()) + 1) if not df.is_empty() else 1
         new_row_df = pl.DataFrame(
             [
@@ -44,6 +54,9 @@ class TransitionManager:
         ).cast(df.schema)
 
         self._state_manager.players_df = df.vstack(new_row_df)
+        logger.info(
+            f"Successfully created new player row for {discord_username} with ID {discord_uid}"
+        )
         return
 
     def set_country_for_player(
@@ -51,10 +64,14 @@ class TransitionManager:
     ) -> tuple[bool, str | None]:
         self._handle_missing_player(discord_uid, discord_username)
 
-        df = self._state_manager.players_df
+        df: pl.DataFrame = self._state_manager.players_df
         self._state_manager.players_df = df.with_columns(
             nationality=pl.when(pl.col("discord_uid") == discord_uid)
             .then(pl.lit(country_name))
             .otherwise(pl.col("nationality"))
+        )
+
+        logger.info(
+            f"Successfully set country for player {discord_username} to {country_name}"
         )
         return True, f"Country successfully set to {country_name}."

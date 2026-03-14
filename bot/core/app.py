@@ -1,5 +1,6 @@
 import asyncio
 import discord
+import structlog
 from discord import app_commands
 
 from bot.core.bootstrap import Bot
@@ -9,6 +10,10 @@ from bot.core.http import init_session, close_session
 
 from bot.commands.user.greeting_command import register_greeting_command
 from bot.commands.user.setcountry_command import register_setcountry_command
+
+from common.logging.config import configure_structlog
+
+logger = structlog.get_logger(__name__)
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -61,37 +66,30 @@ async def on_message(message: discord.Message) -> None:
 
 @client.event
 async def on_connect() -> None:
-    print(f"🔗 [Discord Gateway] Bot established connection as {client.user}.")
+    logger.info(f"🔗 [Discord Gateway] Bot established connection as {client.user}.")
 
 
 @client.event
 async def on_ready() -> None:
-    configure_structlog(service_name="discord-bot")
     await init_session()
     try:
         _register_commands(client)
         synced = await tree.sync()
-        structlog.get_logger(__name__).info(
-            f"⌚ [Discord Gateway] Synced {len(synced)} commands.""
-        )
-        structlog.get_logger(__name__).info(
-            f"✅ [Discord Gateway] Bot is ready!"
-        )
+        logger.info(f"⌚ [Discord Gateway] Synced {len(synced)} commands.")
+        logger.info("✅ [Discord Gateway] Bot is ready!")
     except Exception as e:
-        structlog.get_logger(__name__).error(
-            f"❌ [Discord Gateway] Error during initialization: {e}"
-        )
+        logger.error(f"❌ [Discord Gateway] Error during initialization: {e}")
         raise e
 
 
 @client.event
 async def on_disconnect() -> None:
-    print("⏸️ [Discord Gateway] Bot disconnected.")
+    logger.info("⏸️ [Discord Gateway] Bot disconnected.")
 
 
 @client.event
 async def on_resumed() -> None:
-    print("▶️ [Discord Gateway] Bot resumed.")
+    logger.info("▶️ [Discord Gateway] Bot resumed.")
 
 
 @tree.error
@@ -132,13 +130,14 @@ async def on_tree_error(
 
 
 async def main() -> None:
+    configure_structlog(service_name="discord-bot")
     bot = Bot()
     set_bot(bot)
-    print("⚙️ [Bot] Bot initialized. Attempting to connect to Discord...")
+    logger.info("⚙️ [Bot] Bot initialized. Attempting to connect to Discord...")
     async with client:
         await client.start(token=BOT_TOKEN, reconnect=True)
     await close_session()
-    print("🛑 [Discord Gateway] Bot shutting down...")
+    logger.info("🛑 [Discord Gateway] Bot shutting down...")
 
 
 if __name__ == "__main__":
