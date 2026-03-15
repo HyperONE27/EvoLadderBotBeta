@@ -111,11 +111,24 @@ async def _send_tos_request(
         },
     ) as response:
         data = await response.json()
-        logger.info(
-            f"TOS upsert response for {discord_username} ({discord_uid}): {data}"
-        )
 
-    # Remove the buttons from the TOS message, then send the result as a followup
+    if not data.get("success"):
+        logger.error(
+            f"TOS upsert failed for {discord_username} ({discord_uid}): {data.get('message')}"
+        )
+        await interaction.response.edit_message(
+            embed=discord.Embed(
+                title="❌ Error",
+                description=data.get("message") or "An unexpected error occurred.",
+                color=discord.Color.red(),
+            ),
+            view=None,
+        )
+        return
+
+    logger.info(
+        f"TOS upsert succeeded for {discord_username} ({discord_uid}): accepted={accepted}"
+    )
     embed = TermsOfServiceAcceptedEmbed() if accepted else TermsOfServiceDeclinedEmbed()
     await interaction.response.edit_message(embed=embed, view=None)
 

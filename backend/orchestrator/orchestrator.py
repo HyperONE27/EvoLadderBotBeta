@@ -23,12 +23,12 @@ class Orchestrator:
         return self._state_reader.get_player(discord_uid)
 
     def setcountry(
-        self, discord_uid: int, discord_username: str, country_name: str
+        self, discord_uid: int, discord_username: str, country_code: str
     ) -> tuple[bool, str | None]:
         """Set the country for a player."""
         # This is a write operation, go straight to the transition manager
         return self._transition_manager.set_country_for_player(
-            discord_uid, discord_username, country_name
+            discord_uid, discord_username, country_code
         )
 
     def set_tos(

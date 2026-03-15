@@ -1,3 +1,4 @@
+import structlog
 import discord
 from discord import app_commands
 
@@ -12,6 +13,8 @@ from common.lookups.country_lookups import (
     get_first_country_by_partial_name,
     search_countries_by_partial_name,
 )
+
+logger = structlog.get_logger(__name__)
 
 # ----------
 # Components
@@ -112,16 +115,29 @@ async def _send_setcountry_request(
         json={
             "discord_uid": interaction.user.id,
             "discord_username": interaction.user.name,
-            "country_name": country["name"],
+            "country_code": country["code"],
         },
     ) as response:
         data = await response.json()
 
+    if not data.get("success"):
+        logger.error(
+            f"setcountry backend failure for user={interaction.user.id}: {data.get('message')}"
+        )
         await interaction.response.edit_message(
-            content=data["message"],
-            embed=SetCountryConfirmEmbed(country),
+            embed=discord.Embed(
+                title="❌ Update Failed",
+                description=data.get("message") or "An unexpected error occurred.",
+                color=discord.Color.red(),
+            ),
             view=None,
         )
+        return
+
+    await interaction.response.edit_message(
+        embed=SetCountryConfirmEmbed(country),
+        view=None,
+    )
 
 
 # --------------------

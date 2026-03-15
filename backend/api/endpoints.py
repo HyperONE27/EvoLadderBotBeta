@@ -65,7 +65,7 @@ async def setcountry(
     success, message = app.orchestrator.setcountry(
         request.discord_uid,
         request.discord_username,
-        request.country_name,
+        request.country_code,
     )
     return SetCountryConfirmResponse(success=success, message=message)
 

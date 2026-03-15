@@ -1,6 +1,7 @@
-import logging
 import re
 from typing import Any
+
+import structlog
 
 import discord
 from discord import app_commands
@@ -18,7 +19,7 @@ from common.lookups.region_lookups import (
     get_geographic_regions,
 )
 
-log = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # ----------
 # Components
@@ -196,8 +197,8 @@ class SetupIntroView(discord.ui.View):
         super().__init__()
 
         async def on_begin(interaction: discord.Interaction) -> None:
-            log.debug(
-                "SetupIntroView: begin setup clicked by user=%s", interaction.user.id
+            logger.debug(
+                f"SetupIntroView: begin setup clicked by user={interaction.user.id}"
             )
             modal = SetupModal(
                 presets=modal_presets,
@@ -567,12 +568,9 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
         battletag = self.battletag_input.value.strip()
         raw_alt_ids = self.alt_ids_input.value.strip()
 
-        log.debug(
-            "SetupModal.on_submit: user=%s player_name=%r battletag=%r alt_ids=%r",
-            interaction.user.id,
-            player_name,
-            battletag,
-            raw_alt_ids,
+        logger.debug(
+            f"SetupModal.on_submit: user={interaction.user.id} "
+            f"player_name={player_name!r} battletag={battletag!r} alt_ids={raw_alt_ids!r}"
         )
 
         current_presets: dict[str, str] = {
@@ -583,7 +581,7 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
 
         ok, error = _validate_player_name(player_name)
         if not ok:
-            log.debug("SetupModal validation failed (player_name): %s", error)
+            logger.debug(f"SetupModal validation failed (player_name): {error}")
             await self._edit(
                 interaction,
                 embed=SetupValidationErrorEmbed("Invalid User ID", error or ""),
@@ -593,7 +591,7 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
 
         ok, error = _validate_battletag(battletag)
         if not ok:
-            log.debug("SetupModal validation failed (battletag): %s", error)
+            logger.debug(f"SetupModal validation failed (battletag): {error}")
             await self._edit(
                 interaction,
                 embed=SetupValidationErrorEmbed("Invalid BattleTag", error or ""),
@@ -605,7 +603,9 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
         for token in raw_alt_ids.split():
             ok, error = _validate_player_name(token, allow_international=True)
             if not ok:
-                log.debug("SetupModal validation failed (alt_id %r): %s", token, error)
+                logger.debug(
+                    f"SetupModal validation failed (alt_id {token!r}): {error}"
+                )
                 await self._edit(
                     interaction,
                     embed=SetupValidationErrorEmbed(
@@ -617,7 +617,7 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
             alt_ids.append(token)
 
         if len({player_name, *alt_ids}) != len([player_name, *alt_ids]):
-            log.debug("SetupModal validation failed: duplicate IDs")
+            logger.debug("SetupModal validation failed: duplicate IDs")
             await self._edit(
                 interaction,
                 embed=SetupValidationErrorEmbed(
@@ -627,9 +627,8 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
             )
             return
 
-        log.debug(
-            "SetupModal.on_submit: validation passed for user=%s, showing selection",
-            interaction.user.id,
+        logger.debug(
+            f"SetupModal.on_submit: validation passed for user={interaction.user.id}, showing selection"
         )
         preselected_country = (
             get_country_by_code(self._preselected_nationality)
@@ -669,9 +668,8 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
         item: discord.ui.Item[Any] | None = None,
         /,
     ) -> None:
-        log.exception(
-            "SetupModal.on_error: unhandled exception for user=%s",
-            interaction.user.id,
+        logger.exception(
+            f"SetupModal.on_error: unhandled exception for user={interaction.user.id}",
             exc_info=error,
         )
         try:
@@ -755,15 +753,10 @@ async def _send_setup_request(
     region: GeographicRegion,
     language: str,
 ) -> None:
-    log.info(
-        "_send_setup_request: user=%s player_name=%r battletag=%r alt_ids=%r nationality=%s location=%s language=%s",
-        interaction.user.id,
-        player_name,
-        battletag,
-        alt_ids,
-        country["code"],
-        region["code"],
-        language,
+    logger.info(
+        f"_send_setup_request: user={interaction.user.id} player_name={player_name!r} "
+        f"battletag={battletag!r} alt_ids={alt_ids!r} "
+        f"nationality={country['code']} location={region['code']} language={language}"
     )
     async with get_session().put(
         f"{BACKEND_URL}/commands/setup",
@@ -781,10 +774,8 @@ async def _send_setup_request(
         data = await response.json()
 
     if not data.get("success"):
-        log.error(
-            "_send_setup_request: backend returned failure for user=%s: %s",
-            interaction.user.id,
-            data.get("message"),
+        logger.error(
+            f"_send_setup_request: backend returned failure for user={interaction.user.id}: {data.get('message')}"
         )
         await interaction.response.edit_message(
             embed=SetupValidationErrorEmbed(
@@ -813,7 +804,7 @@ def register_setup_command(tree: app_commands.CommandTree) -> None:
     )
     @app_commands.check(check_if_dm)
     async def setup_command(interaction: discord.Interaction) -> None:
-        log.debug("setup_command invoked by user=%s", interaction.user.id)
+        logger.debug(f"setup_command invoked by user={interaction.user.id}")
         await interaction.response.defer()
 
         modal_presets: dict[str, str] | None = None
@@ -836,14 +827,12 @@ def register_setup_command(tree: app_commands.CommandTree) -> None:
                     preselected_nationality = player.get("nationality")
                     preselected_location = player.get("location")
                     preselected_language = player.get("language")
-                    log.debug(
-                        "setup_command: pre-populated data for user=%s",
-                        interaction.user.id,
+                    logger.debug(
+                        f"setup_command: pre-populated data for user={interaction.user.id}"
                     )
         except Exception:
-            log.warning(
-                "setup_command: failed to fetch player data for user=%s, proceeding without pre-population",
-                interaction.user.id,
+            logger.warning(
+                f"setup_command: failed to fetch player data for user={interaction.user.id}, proceeding without pre-population",
                 exc_info=True,
             )
 

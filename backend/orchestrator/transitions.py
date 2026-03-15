@@ -6,7 +6,7 @@ import structlog
 from backend.database.database import DatabaseWriter
 from backend.orchestrator.state import StateManager
 
-from common.lookups.country_lookups import get_country_by_name
+from common.lookups.country_lookups import get_country_by_code
 
 
 logger = structlog.get_logger(__name__)
@@ -41,14 +41,13 @@ class TransitionManager:
         return created
 
     def set_country_for_player(
-        self, discord_uid: int, discord_username: str, country_name: str
+        self, discord_uid: int, discord_username: str, country_code: str
     ) -> tuple[bool, str | None]:
         player = self._handle_missing_player(discord_uid, discord_username)
 
-        country = get_country_by_name(country_name)
+        country = get_country_by_code(country_code)
         if country is None:
-            return False, f"Country {country_name} not found."
-        country_code = country["code"]
+            return False, f"Country code {country_code!r} not found."
 
         player_id: int = player["id"]
         df: pl.DataFrame = self._state_manager.players_df
@@ -61,10 +60,10 @@ class TransitionManager:
         )
 
         logger.info(
-            f"Successfully set country for player {discord_username}"
-            f"to {country_name} ({country_code})"
+            f"Successfully set country for player {discord_username} "
+            f"to {country['name']} ({country_code})"
         )
-        return True, f"Country successfully set to {country_name}."
+        return True, f"Country successfully set to {country['name']}."
 
     def setup_player(
         self,

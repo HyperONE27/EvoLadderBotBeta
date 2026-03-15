@@ -54,7 +54,7 @@ class LeaderboardResponse(BaseModel):
 class SetCountryConfirmRequest(BaseModel):
     discord_uid: int
     discord_username: str
-    country_name: str
+    country_code: str
 
 
 class SetCountryConfirmResponse(BaseModel):
