@@ -6,6 +6,7 @@ from backend.api.models import (
     Matches1v1Response,
     MMRs1v1Response,
     PlayersResponse,
+    ProfileResponse,
     SetCountryConfirmRequest,
     SetCountryConfirmResponse,
     SetupConfirmRequest,
@@ -49,6 +50,16 @@ async def greet(
 # --- /leaderboard ---
 
 # --- /profile ---
+
+
+@router.get("/profile/{discord_uid}", response_model=ProfileResponse)
+async def profile(
+    discord_uid: int,
+    app: Backend = Depends(get_backend),
+) -> ProfileResponse:
+    player, mmrs = app.orchestrator.get_profile(discord_uid)
+    return ProfileResponse(player=player, mmrs_1v1=mmrs)
+
 
 # --- /prune ---
 

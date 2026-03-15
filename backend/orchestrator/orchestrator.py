@@ -22,6 +22,14 @@ class Orchestrator:
         """Get a player by their Discord UID."""
         return self._state_reader.get_player(discord_uid)
 
+    def get_profile(
+        self, discord_uid: int
+    ) -> tuple[PlayersRow | None, list[MMRs1v1Row]]:
+        """Get a player's profile: their player row and all 1v1 MMR rows."""
+        player = self._state_reader.get_player(discord_uid)
+        mmrs = self._state_reader.get_all_mmrs_1v1(discord_uid)
+        return player, mmrs
+
     def setcountry(
         self, discord_uid: int, discord_username: str, country_code: str
     ) -> tuple[bool, str | None]:

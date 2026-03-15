@@ -44,6 +44,12 @@ class LeaderboardResponse(BaseModel):
 
 # --- /profile ---
 
+
+class ProfileResponse(BaseModel):
+    player: PlayersRow | None
+    mmrs_1v1: list[MMRs1v1Row]
+
+
 # --- /prune ---
 
 # --- /queue ---

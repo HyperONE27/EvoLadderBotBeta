@@ -9,6 +9,7 @@ from bot.core.dependencies import set_bot
 from bot.core.http import init_session, close_session
 
 from bot.commands.user.greeting_command import register_greeting_command
+from bot.commands.user.profile_command import register_profile_command
 from bot.commands.user.setcountry_command import register_setcountry_command
 from bot.commands.user.setup_command import register_setup_command
 from bot.commands.user.termsofservice_command import register_termsofservice_command
@@ -48,6 +49,7 @@ def _register_commands(client: discord.Client) -> None:
     register_termsofservice_command(tree)
     """
     register_greeting_command(tree)
+    register_profile_command(tree)
     register_setcountry_command(tree)
     register_setup_command(tree)
     register_termsofservice_command(tree)
