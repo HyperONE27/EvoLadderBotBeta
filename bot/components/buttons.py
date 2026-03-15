@@ -9,9 +9,10 @@ class ConfirmButton(discord.ui.Button):
         callback: Callable,
         label: str = "Confirm",
         style: discord.ButtonStyle = discord.ButtonStyle.green,
+        emoji: str | discord.PartialEmoji | discord.Emoji = "✅",
         row: int = 0,
     ):
-        super().__init__(label=label, style=style, emoji="✅", row=row)
+        super().__init__(label=label, style=style, emoji=emoji, row=row)
         self.callback_func = callback
 
     async def callback(self, interaction: discord.Interaction) -> None:

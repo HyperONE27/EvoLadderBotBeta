@@ -11,6 +11,7 @@ from bot.core.http import init_session, close_session
 from bot.commands.user.greeting_command import register_greeting_command
 from bot.commands.user.setcountry_command import register_setcountry_command
 from bot.commands.user.setup_command import register_setup_command
+from bot.commands.user.termsofservice_command import register_termsofservice_command
 from common.logging.config import configure_structlog
 
 logger = structlog.get_logger(__name__)
@@ -49,6 +50,7 @@ def _register_commands(client: discord.Client) -> None:
     register_greeting_command(tree)
     register_setcountry_command(tree)
     register_setup_command(tree)
+    register_termsofservice_command(tree)
 
 
 # --------------------

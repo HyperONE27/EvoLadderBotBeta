@@ -31,6 +31,17 @@ class Orchestrator:
             discord_uid, discord_username, country_name
         )
 
+    def set_tos(
+        self,
+        discord_uid: int,
+        discord_username: str,
+        accepted: bool,
+    ) -> tuple[bool, str | None]:
+        """Upsert a player's TOS acceptance and record the UTC timestamp."""
+        return self._transition_manager.set_tos_for_player(
+            discord_uid, discord_username, accepted
+        )
+
     def setup(
         self,
         discord_uid: int,

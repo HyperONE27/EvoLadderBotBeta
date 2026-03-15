@@ -10,6 +10,8 @@ from backend.api.models import (
     SetCountryConfirmResponse,
     SetupConfirmRequest,
     SetupConfirmResponse,
+    TermsOfServiceConfirmRequest,
+    TermsOfServiceConfirmResponse,
 )
 from backend.core.bootstrap import Backend
 
@@ -88,6 +90,19 @@ async def setup(
 
 
 # --- /termsofservice ---
+
+
+@router.put("/commands/termsofservice")
+async def termsofservice(
+    request: TermsOfServiceConfirmRequest,
+    app: Backend = Depends(get_backend),
+) -> TermsOfServiceConfirmResponse:
+    success, message = app.orchestrator.set_tos(
+        request.discord_uid,
+        request.discord_username,
+        request.accepted,
+    )
+    return TermsOfServiceConfirmResponse(success=success, message=message)
 
 
 # --- General endpoints ---

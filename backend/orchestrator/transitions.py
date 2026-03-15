@@ -116,3 +116,33 @@ class TransitionManager:
             f"Successfully completed setup for player {discord_username} ({discord_uid})"
         )
         return True, f"Setup complete for {player_name}."
+
+    def set_tos_for_player(
+        self,
+        discord_uid: int,
+        discord_username: str,
+        accepted: bool,
+    ) -> tuple[bool, str | None]:
+        player = self._handle_missing_player(discord_uid, discord_username)
+        player_id: int = player["id"]
+        accepted_tos_at = datetime.now(timezone.utc)
+
+        self._db_writer.upsert_player_tos(player_id, accepted, accepted_tos_at)
+
+        df = self._state_manager.players_df
+        updated = df.filter(pl.col("id") == player_id).to_dicts()[0]
+        updated.update(
+            {
+                "accepted_tos": accepted,
+                "accepted_tos_at": accepted_tos_at,
+            }
+        )
+        self._state_manager.players_df = df.filter(pl.col("id") != player_id).vstack(
+            pl.DataFrame([updated]).cast(df.schema)
+        )
+
+        verb = "accepted" if accepted else "declined"
+        logger.info(
+            f"Player {discord_username} ({discord_uid}) {verb} the terms of service"
+        )
+        return True, None

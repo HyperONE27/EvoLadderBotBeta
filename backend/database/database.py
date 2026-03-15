@@ -143,3 +143,17 @@ class DatabaseWriter:
                 "completed_setup_at": completed_setup_at.isoformat(),
             }
         ).eq("id", player_id).execute()
+
+    def upsert_player_tos(
+        self,
+        player_id: int,
+        accepted: bool,
+        accepted_tos_at: datetime,
+    ) -> None:
+        """Write the TOS acceptance decision and timestamp for a player row."""
+        self.client.table("players").update(
+            {
+                "accepted_tos": accepted,
+                "accepted_tos_at": accepted_tos_at.isoformat(),
+            }
+        ).eq("id", player_id).execute()
