@@ -1,12 +1,13 @@
+from backend.database.database import DatabaseWriter
 from backend.orchestrator.reader import StateReader
 from backend.orchestrator.state import StateManager
 from backend.orchestrator.transitions import TransitionManager
 
 
 class Orchestrator:
-    def __init__(self, state_manager: StateManager) -> None:
+    def __init__(self, state_manager: StateManager, db_writer: DatabaseWriter) -> None:
         self._state_reader = StateReader(state_manager)
-        self._transition_manager = TransitionManager(state_manager)
+        self._transition_manager = TransitionManager(state_manager, db_writer)
 
     def setcountry(
         self, discord_uid: int, discord_username: str, country_name: str

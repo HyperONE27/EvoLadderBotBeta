@@ -1,3 +1,4 @@
+from backend.database.database import DatabaseWriter
 from backend.lookups.match_1v1_lookups import init_match_1v1_lookups
 from backend.lookups.mmr_1v1_lookups import init_mmr_1v1_lookups
 
@@ -26,7 +27,8 @@ class Backend:
     def _initialize_orchestrator(self) -> None:
         # Initialize orchestrator components
         self.state_manager = StateManager()
-        self.orchestrator = Orchestrator(self.state_manager)
+        self.db_writer = DatabaseWriter()
+        self.orchestrator = Orchestrator(self.state_manager, self.db_writer)
 
     def _initialize_lookups(self) -> None:
         modules = [

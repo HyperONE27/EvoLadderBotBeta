@@ -99,3 +99,7 @@ Locale strings are under `data/locales/` (enUS, koKR, zhCN, esMX, ruRU) — not 
 - Default MMR: 1500; divisor: 500; K-factor: 40 (ELO-like, configured in `backend/core/config.py`).
 - Matchmaker runs in waves every 45 seconds. Window expands dynamically based on active player count.
 - Server assignment is determined from `data/core/cross_table.json` which maps region pairs to recommended game servers.
+
+### When Making Changes
+
+- Don't forget to run `make quality` to run local CI and make sure all your changes pass!

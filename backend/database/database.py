@@ -1,5 +1,6 @@
 import polars as pl
 from supabase import create_client, Client
+from typing import Any, cast
 
 from backend.core.config import DATABASE
 from backend.domain_types.dataframes import TABLE_SCHEMAS
@@ -85,4 +86,31 @@ class DatabaseWriter:
     def __init__(self) -> None:
         self.client: Client = _create_write_client()
 
-    # All write operations here
+    def add_player(self, discord_uid: int, discord_username: str) -> dict:
+        """Insert a new player row and return the created row (with DB-assigned id)."""
+        data: dict[str, Any] = {
+            "discord_uid": discord_uid,
+            "discord_username": discord_username,
+            "player_name": None,
+            "alt_player_names": None,
+            "battletag": None,
+            "nationality": None,
+            "location": None,
+            "language": "enUS",
+            "is_banned": False,
+            "accepted_tos": False,
+            "accepted_tos_at": None,
+            "completed_setup": False,
+            "completed_setup_at": None,
+            "player_status": "idle",
+            "current_match_mode": None,
+            "current_match_id": None,
+        }
+        response = self.client.table("players").insert(data).execute()
+        return cast(dict[str, Any], response.data[0])
+
+    def update_player_nationality(self, player_id: int, country_code: str) -> None:
+        """Update the nationality field for a player row."""
+        self.client.table("players").update({"nationality": country_code}).eq(
+            "id", player_id
+        ).execute()

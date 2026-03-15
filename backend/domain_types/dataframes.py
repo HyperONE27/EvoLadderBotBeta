@@ -19,9 +19,9 @@ PLAYERS_SCHEMA: dict[str, pl.DataType] = {
     "language": pl.String,
     "is_banned": pl.Boolean,
     "accepted_tos": pl.Boolean,
-    "accepted_tos_at": pl.Datetime,
+    "accepted_tos_at": pl.Datetime("us", "utc"),
     "completed_setup": pl.Boolean,
-    "completed_setup_at": pl.Datetime,
+    "completed_setup_at": pl.Datetime("us", "utc"),
     "player_status": pl.String,
     "current_match_mode": pl.String,
     "current_match_id": pl.Int64,
@@ -38,7 +38,7 @@ EVENTS_SCHEMA: dict[str, pl.DataType] = {
     "discord_uid": pl.Int64,
     "event_type": pl.String,
     "event_data": pl.String,
-    "performed_at": pl.Datetime,
+    "performed_at": pl.Datetime("us", "utc"),
 }
 
 MATCHES_1V1_SCHEMA: dict[str, pl.DataType] = {
@@ -58,12 +58,12 @@ MATCHES_1V1_SCHEMA: dict[str, pl.DataType] = {
     "player_2_mmr_change": pl.Int16,
     "map_name": pl.String,
     "server_name": pl.String,
-    "assigned_at": pl.Datetime,
-    "completed_at": pl.Datetime,
+    "assigned_at": pl.Datetime("us", "utc"),
+    "completed_at": pl.Datetime("us", "utc"),
     "player_1_replay_path": pl.String,
-    "player_1_uploaded_at": pl.Datetime,
+    "player_1_uploaded_at": pl.Datetime("us", "utc"),
     "player_2_replay_path": pl.String,
-    "player_2_uploaded_at": pl.Datetime,
+    "player_2_uploaded_at": pl.Datetime("us", "utc"),
 }
 
 MMRS_1V1_SCHEMA: dict[str, pl.DataType] = {
@@ -76,7 +76,7 @@ MMRS_1V1_SCHEMA: dict[str, pl.DataType] = {
     "games_won": pl.Int32,
     "games_lost": pl.Int32,
     "games_drawn": pl.Int32,
-    "last_played_at": pl.Datetime,
+    "last_played_at": pl.Datetime("us", "utc"),
 }
 
 PREFERENCES_1V1_SCHEMA: dict[str, pl.DataType] = {
@@ -90,8 +90,8 @@ REPLAYS_1V1_SCHEMA: dict[str, pl.DataType] = {
     "id": pl.Int64,
     "replay_path": pl.String,
     "replay_hash": pl.String,
-    "replay_time": pl.Datetime,
-    "uploaded_at": pl.Datetime,
+    "replay_time": pl.Datetime("us", "utc"),
+    "uploaded_at": pl.Datetime("us", "utc"),
     "player_1_name": pl.String,
     "player_2_name": pl.String,
     "player_1_race": pl.String,

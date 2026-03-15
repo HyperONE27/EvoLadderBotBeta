@@ -1,7 +1,7 @@
 import polars as pl
 import structlog
-from typing import cast
 
+from backend.database.database import DatabaseWriter
 from backend.orchestrator.state import StateManager
 
 from common.lookups.country_lookups import get_country_by_name
@@ -11,69 +11,49 @@ logger = structlog.get_logger(__name__)
 
 
 class TransitionManager:
-    def __init__(self, state_manager: StateManager) -> None:
+    def __init__(self, state_manager: StateManager, db_writer: DatabaseWriter) -> None:
         self._state_manager = state_manager
+        self._db_writer = db_writer
 
-    def _handle_missing_player(self, discord_uid: int, discord_username: str) -> None:
+    def _handle_missing_player(self, discord_uid: int, discord_username: str) -> dict:
+        """Return the player row, creating it in the DB and cache if it doesn't exist."""
         df = self._state_manager.players_df
 
-        # Check if row for player already exists
         rows = df.filter(pl.col("discord_uid") == discord_uid)
         if not rows.is_empty():
-            # Player already exists, do nothing
             logger.info(
                 f"Player {discord_username} with ID {discord_uid} already exists"
             )
-            return
+            return rows.row(0, named=True)
 
-        # Player does not exist, create their row
         logger.info(
             f"Creating new player row for {discord_username} with ID {discord_uid}"
         )
-        new_row_id = (cast(int, df["id"].max()) + 1) if not df.is_empty() else 1
-        new_row_df = pl.DataFrame(
-            [
-                {
-                    "id": new_row_id,
-                    "discord_uid": discord_uid,
-                    "discord_username": discord_username,
-                    "player_name": None,
-                    "alt_player_names": None,
-                    "battletag": None,
-                    "nationality": None,
-                    "location": None,
-                    "language": "enUS",
-                    "is_banned": False,
-                    "accepted_tos": False,
-                    "accepted_tos_at": None,
-                    "completed_setup": False,
-                    "completed_setup_at": None,
-                    "player_status": "idle",
-                    "current_match_mode": None,
-                    "current_match_id": None,
-                }
-            ]
-        ).cast(df.schema)
-
-        self._state_manager.players_df = df.vstack(new_row_df)
+        created = self._db_writer.add_player(discord_uid, discord_username)
+        self._state_manager.players_df = df.vstack(
+            pl.DataFrame([created]).cast(df.schema)
+        )
         logger.info(
             f"Successfully created new player row for {discord_username} with ID {discord_uid}"
         )
-        return
+        return created
 
     def set_country_for_player(
         self, discord_uid: int, discord_username: str, country_name: str
     ) -> tuple[bool, str | None]:
-        self._handle_missing_player(discord_uid, discord_username)
+        player = self._handle_missing_player(discord_uid, discord_username)
 
         country = get_country_by_name(country_name)
         if country is None:
             return False, f"Country {country_name} not found."
         country_code = country["code"]
 
+        player_id: int = player["id"]
         df: pl.DataFrame = self._state_manager.players_df
+        self._db_writer.update_player_nationality(player_id, country_code)
+
         self._state_manager.players_df = df.with_columns(
-            nationality=pl.when(pl.col("discord_uid") == discord_uid)
+            nationality=pl.when(pl.col("id") == player_id)
             .then(pl.lit(country_code))
             .otherwise(pl.col("nationality"))
         )
