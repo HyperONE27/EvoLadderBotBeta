@@ -3,7 +3,7 @@
 -- =============================================
 
 CREATE TABLE IF NOT EXISTS players (
-    id                      BIGINT PRIMARY KEY,
+    id                      BIGSERIAL PRIMARY KEY,
     discord_uid             BIGINT NOT NULL UNIQUE,
     discord_username        TEXT NOT NULL,
     player_name             TEXT,
@@ -32,13 +32,13 @@ CREATE TABLE IF NOT EXISTS players (
 );
 
 CREATE TABLE IF NOT EXISTS notifications (
-    id                      BIGINT PRIMARY KEY,
+    id                      BIGSERIAL PRIMARY KEY,
     discord_uid             BIGINT NOT NULL UNIQUE,
     read_quick_start_guide  BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS events (
-    id                      BIGINT PRIMARY KEY,
+    id                      BIGSERIAL PRIMARY KEY,
     discord_uid             BIGINT NOT NULL,
     event_type              TEXT NOT NULL
         CHECK (event_type IN 
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 CREATE TABLE IF NOT EXISTS matches_1v1 (
-    id                      BIGINT PRIMARY KEY,
+    id                      BIGSERIAL PRIMARY KEY,
     player_1_discord_uid    BIGINT NOT NULL,
     player_2_discord_uid    BIGINT NOT NULL,
     player_1_name           TEXT NOT NULL,
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS matches_1v1 (
 );
 
 CREATE TABLE IF NOT EXISTS mmrs_1v1 (
-    id                      BIGINT PRIMARY KEY,
+    id                      BIGSERIAL PRIMARY KEY,
     discord_uid             BIGINT NOT NULL,
     player_name             TEXT NOT NULL,
     race                    TEXT NOT NULL,
@@ -100,14 +100,14 @@ CREATE TABLE IF NOT EXISTS mmrs_1v1 (
 );
 
 CREATE TABLE IF NOT EXISTS preferences_1v1 (
-    id                      BIGINT PRIMARY KEY,
+    id                      BIGSERIAL PRIMARY KEY,
     discord_uid             BIGINT NOT NULL UNIQUE,
     last_chosen_races       TEXT[],
     last_chosen_vetoes      TEXT[]
 );
 
 CREATE TABLE IF NOT EXISTS replays_1v1 (
-    id                      BIGINT PRIMARY KEY,
+    id                      BIGSERIAL PRIMARY KEY,
     replay_path             TEXT NOT NULL UNIQUE,
     replay_hash             TEXT NOT NULL,
     replay_time             TIMESTAMPTZ NOT NULL,
