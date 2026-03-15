@@ -73,6 +73,7 @@ ARCHITECTURE
     - Built to be dumb: all data, no logic
 - StateReader:
     - Handles all read operations on StateManager
+    - Composes atomic lookups operations
 - TransitionManager:
     - Handles all write operations on StateManager
     - Responsible for validating and applying all state changes

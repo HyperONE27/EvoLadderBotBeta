@@ -24,9 +24,9 @@ python -m bot.core.app
 
 ## Linting / Type Checking
 
+Run local CI with:
 ```bash
-ruff check .
-mypy .
+make quality
 ```
 
 Install dev dependencies with:

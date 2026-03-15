@@ -63,3 +63,16 @@ class TransitionManager:
             f"to {country_name} ({country_code})"
         )
         return True, f"Country successfully set to {country_name}."
+
+    def setup_player(
+        self,
+        discord_uid: int,
+        discord_username: str,
+        player_name: str,
+        alt_player_names: list[str] | None,
+        battletag: str,
+        country_name: str,
+        region_name: str,
+        language: str,
+    ) -> tuple[bool, str | None]:
+        return True, f"Player {discord_username} successfully setup."

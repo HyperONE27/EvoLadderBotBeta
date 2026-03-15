@@ -1,4 +1,9 @@
 from pydantic import BaseModel
+from backend.domain_types.dataframes import (
+    Matches1v1Row,
+    MMRs1v1Row,
+    PlayersRow,
+)
 
 
 class GreetingResponse(BaseModel):
@@ -81,6 +86,7 @@ class SetupConfirmRequest(BaseModel):
     battletag: str
     nationality: str
     location: str
+    language: str
 
 
 class SetupConfirmResponse(BaseModel):
@@ -100,3 +106,18 @@ class TermsOfServiceConfirmRequest(BaseModel):
 class TermsOfServiceConfirmResponse(BaseModel):
     success: bool
     message: str | None
+
+
+# --- General endpoints ---
+
+
+class PlayersResponse(BaseModel):
+    player: PlayersRow | None
+
+
+class Matches1v1Response(BaseModel):
+    match: Matches1v1Row | None
+
+
+class MMRs1v1Response(BaseModel):
+    mmr: MMRs1v1Row | None
