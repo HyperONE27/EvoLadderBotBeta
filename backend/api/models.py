@@ -76,6 +76,7 @@ class SetupInitResponse(BaseModel):
     battletag: str | None
     nationality: str | None
     location: str | None
+    language: str | None
 
 
 class SetupConfirmRequest(BaseModel):

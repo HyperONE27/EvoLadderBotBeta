@@ -133,6 +133,7 @@ class PlayersRow(TypedDict):
     battletag: str | None
     nationality: str | None
     location: str | None
+    language: str
     is_banned: bool
     accepted_tos: bool
     accepted_tos_at: datetime | None

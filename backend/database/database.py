@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import polars as pl
 from supabase import create_client, Client
 from typing import Any, cast
@@ -114,3 +116,30 @@ class DatabaseWriter:
         self.client.table("players").update({"nationality": country_code}).eq(
             "id", player_id
         ).execute()
+
+    def upsert_player_setup(
+        self,
+        player_id: int,
+        discord_username: str,
+        player_name: str,
+        alt_player_names: list[str] | None,
+        battletag: str,
+        nationality_code: str,
+        location_code: str,
+        language_code: str,
+        completed_setup_at: datetime,
+    ) -> None:
+        """Write all setup fields for a player and mark setup as complete."""
+        self.client.table("players").update(
+            {
+                "discord_username": discord_username,
+                "player_name": player_name,
+                "alt_player_names": alt_player_names,
+                "battletag": battletag,
+                "nationality": nationality_code,
+                "location": location_code,
+                "language": language_code,
+                "completed_setup": True,
+                "completed_setup_at": completed_setup_at.isoformat(),
+            }
+        ).eq("id", player_id).execute()

@@ -6,12 +6,17 @@ import discord
 from discord import app_commands
 
 from bot.components.buttons import CancelButton, ConfirmButton, RestartButton
+from bot.core.config import BACKEND_URL
+from bot.core.http import get_session
 from bot.helpers.checks import check_if_dm
 from bot.helpers.emotes import get_flag_emote, get_globe_emote
 from bot.helpers.i18n import LOCALE_DISPLAY_NAMES, get_available_locales
 from common.json_types import Country, GeographicRegion
-from common.lookups.country_lookups import get_common_countries
-from common.lookups.region_lookups import get_geographic_regions
+from common.lookups.country_lookups import get_common_countries, get_country_by_code
+from common.lookups.region_lookups import (
+    get_geographic_region_by_code,
+    get_geographic_regions,
+)
 
 log = logging.getLogger(__name__)
 
@@ -135,7 +140,7 @@ class SetupPreviewEmbed(discord.Embed):
             value=f"`{LOCALE_DISPLAY_NAMES[language][0] if language in LOCALE_DISPLAY_NAMES else language}`",
             inline=False,
         )
-        alt_display = ", ".join(f"`{a}`" for a in alt_ids) if alt_ids else "None"
+        alt_display = ", ".join(f"`{a}`" for a in alt_ids) if alt_ids else "`None`"
         self.add_field(name=":id: **Alternative IDs**", value=alt_display, inline=False)
 
 
@@ -181,14 +186,26 @@ class SetupSuccessEmbed(discord.Embed):
 
 
 class SetupIntroView(discord.ui.View):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        modal_presets: dict[str, str] | None = None,
+        preselected_nationality: str | None = None,
+        preselected_location: str | None = None,
+        preselected_language: str | None = None,
+    ) -> None:
         super().__init__()
 
         async def on_begin(interaction: discord.Interaction) -> None:
             log.debug(
                 "SetupIntroView: begin setup clicked by user=%s", interaction.user.id
             )
-            modal = SetupModal(message=interaction.message)
+            modal = SetupModal(
+                presets=modal_presets,
+                message=interaction.message,
+                preselected_nationality=preselected_nationality,
+                preselected_location=preselected_location,
+                preselected_language=preselected_language,
+            )
             await interaction.response.send_modal(modal)
 
         self.add_item(ConfirmButton(callback=on_begin, label="Begin Setup"))
@@ -495,9 +512,15 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
         self,
         presets: dict[str, str] | None = None,
         message: discord.Message | None = None,
+        preselected_nationality: str | None = None,
+        preselected_location: str | None = None,
+        preselected_language: str | None = None,
     ) -> None:
         super().__init__()
         self._message = message
+        self._preselected_nationality = preselected_nationality
+        self._preselected_location = preselected_location
+        self._preselected_language = preselected_language
         p = presets or {}
 
         self.player_name_input = discord.ui.TextInput(
@@ -596,14 +619,34 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
             "SetupModal.on_submit: validation passed for user=%s, showing selection",
             interaction.user.id,
         )
+        preselected_country = (
+            get_country_by_code(self._preselected_nationality)
+            if self._preselected_nationality
+            else None
+        )
+        preselected_region = (
+            get_geographic_region_by_code(self._preselected_location)
+            if self._preselected_location
+            else None
+        )
+        page1_code, page2_code = _country_page_codes(
+            preselected_country["code"] if preselected_country else None
+        )
         await self._edit(
             interaction,
-            embed=SetupSelectionEmbed(),
+            embed=SetupSelectionEmbed(
+                preselected_country, preselected_region, self._preselected_language
+            ),
             view=SetupSelectionView(
                 player_name=player_name,
                 battletag=battletag,
                 alt_ids=alt_ids,
                 message=self._message,  # type: ignore[arg-type]
+                selected_country=preselected_country,
+                selected_region=preselected_region,
+                selected_language=self._preselected_language,
+                country_page1_code=page1_code,
+                country_page2_code=page2_code,
             ),
         )
 
@@ -650,6 +693,22 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
 # ----------------
 
 
+def _country_page_codes(
+    nationality_code: str | None,
+) -> tuple[str | None, str | None]:
+    """Return (page1_code, page2_code) for pre-selecting a country in the dropdowns."""
+    if not nationality_code:
+        return None, None
+    countries = sorted(get_common_countries().values(), key=lambda c: c["name"])
+    page1 = {c["code"] for c in countries[:25]}
+    page2 = {c["code"] for c in countries[25:50]}
+    if nationality_code in page1:
+        return nationality_code, None
+    if nationality_code in page2:
+        return None, nationality_code
+    return None, None
+
+
 _PLAYER_NAME_RE = re.compile(r"^[A-Za-z0-9_\-\.]{3,12}$")
 _PLAYER_NAME_INTL_RE = re.compile(r"^[\w\-\.]{3,12}$", re.UNICODE)
 _BATTLETAG_RE = re.compile(r"^.{1,12}#\d{3,12}$")
@@ -685,7 +744,7 @@ async def _send_setup_request(
     language: str,
 ) -> None:
     log.info(
-        "_send_setup_request: user=%s player_name=%r battletag=%r alt_ids=%r country=%s region=%s language=%s",
+        "_send_setup_request: user=%s player_name=%r battletag=%r alt_ids=%r nationality=%s location=%s language=%s",
         interaction.user.id,
         player_name,
         battletag,
@@ -694,6 +753,35 @@ async def _send_setup_request(
         region["code"],
         language,
     )
+    async with get_session().put(
+        f"{BACKEND_URL}/commands/setup",
+        json={
+            "discord_uid": interaction.user.id,
+            "discord_username": interaction.user.name,
+            "player_name": player_name,
+            "alt_player_names": alt_ids if alt_ids else None,
+            "battletag": battletag,
+            "nationality": country["code"],
+            "location": region["code"],
+            "language": language,
+        },
+    ) as response:
+        data = await response.json()
+
+    if not data.get("success"):
+        log.error(
+            "_send_setup_request: backend returned failure for user=%s: %s",
+            interaction.user.id,
+            data.get("message"),
+        )
+        await interaction.response.edit_message(
+            embed=SetupValidationErrorEmbed(
+                "Setup Failed", data.get("message") or "An unexpected error occurred."
+            ),
+            view=None,
+        )
+        return
+
     await interaction.response.edit_message(
         embed=SetupSuccessEmbed(
             player_name, battletag, alt_ids, country, region, language
@@ -715,7 +803,44 @@ def register_setup_command(tree: app_commands.CommandTree) -> None:
     async def setup_command(interaction: discord.Interaction) -> None:
         log.debug("setup_command invoked by user=%s", interaction.user.id)
         await interaction.response.defer()
+
+        modal_presets: dict[str, str] | None = None
+        preselected_nationality: str | None = None
+        preselected_location: str | None = None
+        preselected_language: str | None = None
+
+        try:
+            async with get_session().get(
+                f"{BACKEND_URL}/players/{interaction.user.id}"
+            ) as response:
+                data = await response.json()
+                player = data.get("player")
+                if player:
+                    modal_presets = {
+                        "player_name": player.get("player_name") or "",
+                        "alt_ids": " ".join(player.get("alt_player_names") or []),
+                        "battletag": player.get("battletag") or "",
+                    }
+                    preselected_nationality = player.get("nationality")
+                    preselected_location = player.get("location")
+                    preselected_language = player.get("language")
+                    log.debug(
+                        "setup_command: pre-populated data for user=%s",
+                        interaction.user.id,
+                    )
+        except Exception:
+            log.warning(
+                "setup_command: failed to fetch player data for user=%s, proceeding without pre-population",
+                interaction.user.id,
+                exc_info=True,
+            )
+
         await interaction.followup.send(
             embed=SetupIntroEmbed(),
-            view=SetupIntroView(),
+            view=SetupIntroView(
+                modal_presets=modal_presets,
+                preselected_nationality=preselected_nationality,
+                preselected_location=preselected_location,
+                preselected_language=preselected_language,
+            ),
         )

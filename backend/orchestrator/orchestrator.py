@@ -38,18 +38,18 @@ class Orchestrator:
         player_name: str,
         alt_player_names: list[str] | None,
         battletag: str,
-        country_name: str,
-        region_name: str,
-        language: str,
+        nationality_code: str,
+        location_code: str,
+        language_code: str,
     ) -> tuple[bool, str | None]:
-        """Setup a new player."""
+        """Upsert a player's setup information."""
         return self._transition_manager.setup_player(
             discord_uid,
             discord_username,
             player_name,
             alt_player_names,
             battletag,
-            country_name,
-            region_name,
-            language,
+            nationality_code,
+            location_code,
+            language_code,
         )

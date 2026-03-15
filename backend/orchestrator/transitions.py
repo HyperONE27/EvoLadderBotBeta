@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import polars as pl
 import structlog
 
@@ -71,8 +73,46 @@ class TransitionManager:
         player_name: str,
         alt_player_names: list[str] | None,
         battletag: str,
-        country_name: str,
-        region_name: str,
-        language: str,
+        nationality_code: str,
+        location_code: str,
+        language_code: str,
     ) -> tuple[bool, str | None]:
-        return True, f"Player {discord_username} successfully setup."
+        player = self._handle_missing_player(discord_uid, discord_username)
+        player_id: int = player["id"]
+        completed_setup_at = datetime.now(timezone.utc)
+
+        self._db_writer.upsert_player_setup(
+            player_id=player_id,
+            discord_username=discord_username,
+            player_name=player_name,
+            alt_player_names=alt_player_names,
+            battletag=battletag,
+            nationality_code=nationality_code,
+            location_code=location_code,
+            language_code=language_code,
+            completed_setup_at=completed_setup_at,
+        )
+
+        df = self._state_manager.players_df
+        updated = df.filter(pl.col("id") == player_id).to_dicts()[0]
+        updated.update(
+            {
+                "discord_username": discord_username,
+                "player_name": player_name,
+                "alt_player_names": alt_player_names,
+                "battletag": battletag,
+                "nationality": nationality_code,
+                "location": location_code,
+                "language": language_code,
+                "completed_setup": True,
+                "completed_setup_at": completed_setup_at,
+            }
+        )
+        self._state_manager.players_df = df.filter(pl.col("id") != player_id).vstack(
+            pl.DataFrame([updated]).cast(df.schema)
+        )
+
+        logger.info(
+            f"Successfully completed setup for player {discord_username} ({discord_uid})"
+        )
+        return True, f"Setup complete for {player_name}."
