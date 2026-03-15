@@ -2,7 +2,7 @@ import polars as pl
 
 from backend.core.config import Admin
 from backend.database.database import DatabaseReader
-from backend.domain_types.ephemeral import QueueEntry1v1
+from backend.domain_types.ephemeral import LeaderboardEntry1v1, QueueEntry1v1
 
 from common.json_types import (
     Country,
@@ -48,6 +48,9 @@ class StateManager:
         self.replays_1v1_df: pl.DataFrame = pl.DataFrame()
 
         # Current application state
+        self.leaderboard_1v1: list[LeaderboardEntry1v1] = []
+        # self.leaderboard_2v2: list[LeaderboardEntry2v2] = []
+        # self.leaderboard_FFA: list[LeaderboardEntryFFA] = []
         self.queue_1v1: list[QueueEntry1v1] = []
         # self.queue_2v2: list[QueueEntry2v2] = []
         # self.queue_FFA: list[QueueEntryFFA] = []

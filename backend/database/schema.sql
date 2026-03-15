@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS players (
     alt_player_names        TEXT[],
     battletag               TEXT,       -- 1-12 letters + "#" + 3-5 digits
     nationality             TEXT,       -- ISO 3166-1 alpha-2 code
-    location                TEXT,   
+    location                TEXT,       -- regions.json geographic region code
     language                TEXT DEFAULT 'enUS'
         CHECK (language IN
             ('enUS', 'esMX', 'koKR', 'ruRU', 'zhCN')

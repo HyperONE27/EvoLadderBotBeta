@@ -178,7 +178,7 @@ class SetupSuccessEmbed(discord.Embed):
             value=f"`{LOCALE_DISPLAY_NAMES[language][0] if language in LOCALE_DISPLAY_NAMES else language}`",
             inline=False,
         )
-        alt_display = ", ".join(f"`{a}`" for a in alt_ids) if alt_ids else "None"
+        alt_display = ", ".join(f"`{a}`" for a in alt_ids) if alt_ids else "`None`"
         self.add_field(name=":id: **Alternative IDs**", value=alt_display, inline=False)
 
 
@@ -420,15 +420,23 @@ class SetupSelectionView(discord.ui.View):
             )
 
         async def on_restart(interaction: discord.Interaction) -> None:
-            modal = SetupModal(
-                presets={
-                    "player_name": self.player_name,
-                    "battletag": self.battletag,
-                    "alt_ids": " ".join(self.alt_ids),
-                },
-                message=self.message,
+            await interaction.response.edit_message(
+                embed=SetupIntroEmbed(),
+                view=SetupIntroView(
+                    modal_presets={
+                        "player_name": self.player_name,
+                        "battletag": self.battletag,
+                        "alt_ids": " ".join(self.alt_ids),
+                    },
+                    preselected_nationality=self.selected_country["code"]
+                    if self.selected_country
+                    else None,
+                    preselected_location=self.selected_region["code"]
+                    if self.selected_region
+                    else None,
+                    preselected_language=self.selected_language,
+                ),
             )
-            await interaction.response.send_modal(modal)
 
         self.add_item(ConfirmButton(callback=on_confirm, row=4))
         self.add_item(RestartButton(callback=on_restart, row=4))
@@ -473,15 +481,19 @@ class SetupPreviewView(discord.ui.View):
             )
 
         async def on_restart(interaction: discord.Interaction) -> None:
-            modal = SetupModal(
-                presets={
-                    "player_name": player_name,
-                    "battletag": battletag,
-                    "alt_ids": " ".join(alt_ids),
-                },
-                message=message,
+            await interaction.response.edit_message(
+                embed=SetupIntroEmbed(),
+                view=SetupIntroView(
+                    modal_presets={
+                        "player_name": player_name,
+                        "battletag": battletag,
+                        "alt_ids": " ".join(alt_ids),
+                    },
+                    preselected_nationality=country["code"],
+                    preselected_location=region["code"],
+                    preselected_language=language,
+                ),
             )
-            await interaction.response.send_modal(modal)
 
         self.add_item(ConfirmButton(callback=on_confirm))
         self.add_item(RestartButton(callback=on_restart))

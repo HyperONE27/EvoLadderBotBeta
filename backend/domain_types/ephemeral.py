@@ -2,6 +2,30 @@ from datetime import datetime
 from typing import TypedDict
 
 
+class LeaderboardEntry1v1(TypedDict):
+    discord_uid: int
+    player_name: str
+    ordinal_rank: int
+    letter_rank: str
+    race: str
+    nationality: str
+    mmr: int
+    last_played_at: datetime
+
+
+class MatchCandidate1v1(TypedDict):
+    player_1_discord_uid: int
+    player_2_discord_uid: int
+    player_1_name: str
+    player_2_name: str
+    player_1_race: str  # Must be a key in state_manager.races
+    player_2_race: str  # Must be a key in state_manager.races
+    player_1_mmr: int
+    player_2_mmr: int
+    player_1_map_vetoes: list[str]
+    player_2_map_vetoes: list[str]
+
+
 class QueueEntry1v1(TypedDict):
     discord_uid: int
     player_name: str
@@ -16,16 +40,3 @@ class QueueEntry1v1(TypedDict):
     map_vetoes: list[str]  # Must be a key in state_manager.maps
     joined_at: datetime
     wait_cycles: int
-
-
-class MatchCandidate1v1(TypedDict):
-    player_1_discord_uid: int
-    player_2_discord_uid: int
-    player_1_name: str
-    player_2_name: str
-    player_1_race: str  # Must be a key in state_manager.races
-    player_2_race: str  # Must be a key in state_manager.races
-    player_1_mmr: int
-    player_2_mmr: int
-    player_1_map_vetoes: list[str]
-    player_2_map_vetoes: list[str]
