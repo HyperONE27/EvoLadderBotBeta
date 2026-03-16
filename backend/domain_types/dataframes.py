@@ -61,8 +61,10 @@ MATCHES_1V1_SCHEMA: dict[str, pl.DataType] = {
     "assigned_at": pl.Datetime("us", "utc"),
     "completed_at": pl.Datetime("us", "utc"),
     "player_1_replay_path": pl.String,
+    "player_1_replay_row_id": pl.Int64,
     "player_1_uploaded_at": pl.Datetime("us", "utc"),
     "player_2_replay_path": pl.String,
+    "player_2_replay_row_id": pl.Int64,
     "player_2_uploaded_at": pl.Datetime("us", "utc"),
 }
 
@@ -88,6 +90,7 @@ PREFERENCES_1V1_SCHEMA: dict[str, pl.DataType] = {
 
 REPLAYS_1V1_SCHEMA: dict[str, pl.DataType] = {
     "id": pl.Int64,
+    "matches_1v1_id": pl.Int64,
     "replay_path": pl.String,
     "replay_hash": pl.String,
     "replay_time": pl.Datetime("us", "utc"),
@@ -107,6 +110,7 @@ REPLAYS_1V1_SCHEMA: dict[str, pl.DataType] = {
     "game_duration_setting": pl.String,
     "locked_alliances": pl.String,
     "cache_handles": pl.List(pl.String),
+    "upload_status": pl.String,
 }
 
 TABLE_SCHEMAS: dict[str, dict[str, pl.DataType]] = {

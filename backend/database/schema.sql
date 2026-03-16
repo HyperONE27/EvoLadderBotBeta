@@ -88,8 +88,10 @@ CREATE TABLE IF NOT EXISTS matches_1v1 (
     assigned_at             TIMESTAMPTZ,
     completed_at            TIMESTAMPTZ,
     player_1_replay_path    TEXT,
+    player_1_replay_row_id  BIGINT,
     player_1_uploaded_at    TIMESTAMPTZ,
     player_2_replay_path    TEXT,
+    player_2_replay_row_id  BIGINT,
     player_2_uploaded_at    TIMESTAMPTZ
 );
 
@@ -120,6 +122,7 @@ CREATE TABLE IF NOT EXISTS preferences_1v1 (
 
 CREATE TABLE IF NOT EXISTS replays_1v1 (
     id                      BIGSERIAL PRIMARY KEY,
+    matches_1v1_id          BIGINT NOT NULL,
     replay_path             TEXT NOT NULL UNIQUE,
     replay_hash             TEXT NOT NULL,
     replay_time             TIMESTAMPTZ NOT NULL,
