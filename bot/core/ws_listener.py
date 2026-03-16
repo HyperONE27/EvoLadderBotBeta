@@ -133,12 +133,6 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
     p1_name_log = match_data.get("player_1_name", "?")
     p2_name_log = match_data.get("player_2_name", "?")
     map_name_log = match_data.get("map_name", "?")
-    log_embed = discord.Embed(
-        title="Match Started",
-        description=f"**Match #{match_id_log}**\n{p1_name_log} vs {p2_name_log}\nMap: {map_name_log}",
-        color=discord.Color.blue(),
-    )
-    await _post_to_match_log(client, log_embed)
 
 
 async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
