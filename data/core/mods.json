@@ -10,50 +10,43 @@
         "am_handles": [
             "https://us-s2-depot.classic.blizzard.com/b7d36bc55a372aa70cf7487201ece8cd4c8ec556b2f8bc9cf23c58f824a2fa37.s2ma",
             "https://us-s2-depot.classic.blizzard.com/2e154e624504f224c71fdd906b28b5838e75570d8ec00fedac5628d48986e3f0.s2ma",
-            "https://us-s2-depot.classic.blizzard.com/3cf63ac85997c731faa8912f85eb7b7cf29c283d207eb8b1795efad68e3fc40d.s2ma",
-            "https://us-s2-depot.classic.blizzard.com/7ee88ffcec2c30bfe1de55ab7c3529daad47034dba6ea31c3c6a7e87dcb49d0e.s2ma",
-            "https://us-s2-depot.classic.blizzard.com/22d5e623eda52554adb437bf479b30b8949e7b1166cf97176a76e5c985e44de4.s2ma",
-            "https://us-s2-depot.classic.blizzard.com/84cfc99c1c0940c6e901c68ff4d7be9a82eada8a7c671f4a37ecc1ced5f16c60.s2ma",
-            "https://us-s2-depot.classic.blizzard.com/4adfa218e4508c3d0e5704e052c5bf7cff7302aa9a5f7ab4dfb8695d8be5dd4e.s2ma",
-            "https://us-s2-depot.classic.blizzard.com/785bdfceb92ebe200131404b09aa667fa937c379a772937107f19c4957ef28cb.s2ma",
+            "https://us-s2-depot.classic.blizzard.com/ce14502f0c8ec287e90e8886d1b1fc9395662f2f0742a5975cc250acc0f64610.s2ma",
+            "https://us-s2-depot.classic.blizzard.com/cf699d9cfe05a532532a28f0687ebcc966538efaf5bb5507f6c804d170f3aab2.s2ma",
+            "https://us-s2-depot.classic.blizzard.com/de30b8061fa5cd8217c01adf8d36e0d399360eff2b21b3e854fd52d9de1514eb.s2ma",
+            "https://us-s2-depot.classic.blizzard.com/0daf773ab0539ce5d163a96d756c4b61446de167597ec6438963ec54c97a7091.s2ma",
+            "https://us-s2-depot.classic.blizzard.com/3098a16080b28be96e06ab369a28dface8807bed83bafc55811d2c0734a14b8b.s2ma",
+            "https://us-s2-depot.classic.blizzard.com/6f1a32b5609436d978823a42ac1fe1d07614ca52483a2d617db6ea4daa951495.s2ma",
             "https://us-s2-depot.classic.blizzard.com/7da3f4fbfd974d7e74f8ab36482c2e1bf647be886c1cfcc543e692fd56be7845.s2ma"
         ],
         "am_artmod_handles": [
-            "https://us-s2-depot.classic.blizzard.com/62a93c838ed30973b590ce216ad194ceab18cde326458a0e647757bb8e19fbb8.s2ma",
-            "https://us-s2-depot.classic.blizzard.com/9a34fa229d4cfecf7b0a7e2d1d569c04d788536b10b8c51c29f20671f680e3b7.s2ma"
+            "https://us-s2-depot.classic.blizzard.com/6062b70f1485cf2320631d0f32a649c6b24af534ce087166d07cb7c4babdc92a.s2ma",
+            "https://us-s2-depot.classic.blizzard.com/62a93c838ed30973b590ce216ad194ceab18cde326458a0e647757bb8e19fbb8.s2ma"
         ],
         "eu_handles": [
             "https://eu-s2-depot.classic.blizzard.com/b7d36bc55a372aa70cf7487201ece8cd4c8ec556b2f8bc9cf23c58f824a2fa37.s2ma",
             "https://eu-s2-depot.classic.blizzard.com/2e154e624504f224c71fdd906b28b5838e75570d8ec00fedac5628d48986e3f0.s2ma",
-            "https://eu-s2-depot.classic.blizzard.com/3cf63ac85997c731faa8912f85eb7b7cf29c283d207eb8b1795efad68e3fc40d.s2ma",
-            "https://eu-s2-depot.classic.blizzard.com/7ee88ffcec2c30bfe1de55ab7c3529daad47034dba6ea31c3c6a7e87dcb49d0e.s2ma",
-            "https://eu-s2-depot.classic.blizzard.com/22d5e623eda52554adb437bf479b30b8949e7b1166cf97176a76e5c985e44de4.s2ma",
-            "https://eu-s2-depot.classic.blizzard.com/84cfc99c1c0940c6e901c68ff4d7be9a82eada8a7c671f4a37ecc1ced5f16c60.s2ma",
-            "https://eu-s2-depot.classic.blizzard.com/2850ae24b296784df2465824b620c55cb0bab0c9ef90c64dd76395c06287fb54.s2ma",
-            "https://eu-s2-depot.classic.blizzard.com/785bdfceb92ebe200131404b09aa667fa937c379a772937107f19c4957ef28cb.s2ma",
+            "https://eu-s2-depot.classic.blizzard.com/ce14502f0c8ec287e90e8886d1b1fc9395662f2f0742a5975cc250acc0f64610.s2ma",
+            "https://eu-s2-depot.classic.blizzard.com/cf699d9cfe05a532532a28f0687ebcc966538efaf5bb5507f6c804d170f3aab2.s2ma",
+            "https://eu-s2-depot.classic.blizzard.com/de30b8061fa5cd8217c01adf8d36e0d399360eff2b21b3e854fd52d9de1514eb.s2ma",
+            "https://eu-s2-depot.classic.blizzard.com/0daf773ab0539ce5d163a96d756c4b61446de167597ec6438963ec54c97a7091.s2ma",
+            "https://eu-s2-depot.classic.blizzard.com/3098a16080b28be96e06ab369a28dface8807bed83bafc55811d2c0734a14b8b.s2ma",
+            "https://eu-s2-depot.classic.blizzard.com/6f1a32b5609436d978823a42ac1fe1d07614ca52483a2d617db6ea4daa951495.s2ma",
             "https://eu-s2-depot.classic.blizzard.com/71ed5f976646faf269911c66c23a011f785bff41fa7101f76347e0385f07d700.s2ma"
         ],
         "eu_artmod_handles": [
-            "https://eu-s2-depot.classic.blizzard.com/62a93c838ed30973b590ce216ad194ceab18cde326458a0e647757bb8e19fbb8.s2ma",
-            "https://eu-s2-depot.classic.blizzard.com/9a34fa229d4cfecf7b0a7e2d1d569c04d788536b10b8c51c29f20671f680e3b7.s2ma"
+            "https://eu-s2-depot.classic.blizzard.com/6062b70f1485cf2320631d0f32a649c6b24af534ce087166d07cb7c4babdc92a.s2ma",
+            "https://eu-s2-depot.classic.blizzard.com/62a93c838ed30973b590ce216ad194ceab18cde326458a0e647757bb8e19fbb8.s2ma"
         ],
         "as_handles": [
             "https://kr-s2-depot.classic.blizzard.com/03f1f49a5bed617f65e05ed69a90f174366e2c088d00cdf41b387f5420498ce0.s2ma",
-            "https://kr-s2-depot.classic.blizzard.com/7810afa3149da5e7af2c300f53e40bd4fc58c5d2f9792662a6473deef3470fda.s2ma",
-            "https://kr-s2-depot.classic.blizzard.com/ddfabbff28769e8a38b0eacb7157749057eaaefbe5386679b045886d5a50b72c.s2ma",
-            "https://kr-s2-depot.classic.blizzard.com/878293c6362942b2be1e9faac6247f813ef95997a165dfbcfb8e3d61bbd0a4a4.s2ma",
-            "https://kr-s2-depot.classic.blizzard.com/b3ac615c87268581b0fb0f5be6f53c5b83f5507ecbe9f48b1c23186fa121cb2f.s2ma",
-            "https://kr-s2-depot.classic.blizzard.com/e41a761ee12e590a4ee2843456af9d83ec5d729cf0ddb7421d0ff99e584aee74.s2ma",
-            "https://kr-s2-depot.classic.blizzard.com/cdeee52b8bd6c17c11a457f6c90eef008ec92aa1dd08e59852799983508211d4.s2ma",
-            "https://kr-s2-depot.classic.blizzard.com/d65ac18a52c92c37b5fb2cb6034b1c81f9f719267eb1022fb963e44d4fd58819.s2ma",
-            "https://kr-s2-depot.classic.blizzard.com/cee430374020ed96a759d66bf5d8fc746b3223952f44ed1e11c243ac7a7721a7.s2ma",
-            "https://kr-s2-depot.classic.blizzard.com/469a68a9a2054ace31339b63984bb07cde1ce2d1d14459d1731bd1452e5a6f06.s2ma",
-            "https://kr-s2-depot.classic.blizzard.com/21c96950ffa1a6757f3e40201448490aaba0a64a3bdcddefbd8dcd08aa979ae6.s2ma",
-            "https://kr-s2-depot.classic.blizzard.com/4d9f6773aa99ca7031d84fcf5ded99132aa87969cc55f2b83b8bb6217c47e6b5.s2ma",
-            "https://kr-s2-depot.classic.blizzard.com/22d5e623eda52554adb437bf479b30b8949e7b1166cf97176a76e5c985e44de4.s2ma",
-            "https://kr-s2-depot.classic.blizzard.com/84cfc99c1c0940c6e901c68ff4d7be9a82eada8a7c671f4a37ecc1ced5f16c60.s2ma",
-            "https://kr-s2-depot.classic.blizzard.com/2850ae24b296784df2465824b620c55cb0bab0c9ef90c64dd76395c06287fb54.s2ma",
-            "https://kr-s2-depot.classic.blizzard.com/9cbbe014baec25f9ebd85b6085110c3dda9a3f42d57c8d13f771b434802a14cb.s2ma"
+            "https://kr-s2-depot.classic.blizzard.com/2e154e624504f224c71fdd906b28b5838e75570d8ec00fedac5628d48986e3f0.s2ma",
+            "https://kr-s2-depot.classic.blizzard.com/ce14502f0c8ec287e90e8886d1b1fc9395662f2f0742a5975cc250acc0f64610.s2ma",
+            "https://kr-s2-depot.classic.blizzard.com/cf699d9cfe05a532532a28f0687ebcc966538efaf5bb5507f6c804d170f3aab2.s2ma",
+            "https://kr-s2-depot.classic.blizzard.com/de30b8061fa5cd8217c01adf8d36e0d399360eff2b21b3e854fd52d9de1514eb.s2ma",
+            "https://kr-s2-depot.classic.blizzard.com/0daf773ab0539ce5d163a96d756c4b61446de167597ec6438963ec54c97a7091.s2ma",
+            "https://kr-s2-depot.classic.blizzard.com/3098a16080b28be96e06ab369a28dface8807bed83bafc55811d2c0734a14b8b.s2ma",
+            "https://kr-s2-depot.classic.blizzard.com/6f1a32b5609436d978823a42ac1fe1d07614ca52483a2d617db6ea4daa951495.s2ma",
+            "https://kr-s2-depot.classic.blizzard.com/0c6f9f96dff2e8828a5022b9c00f62f3284cdc0fea6f3fefe0fb614ad1c67c2b.s2ma"
         ],
         "as_artmod_handles": [
             "https://kr-s2-depot.classic.blizzard.com/e0115753c097dbb9000ed88684e7cc5dfb9bff1d63299f30613d593b27ce0151.s2ma",
@@ -62,7 +55,7 @@
             "https://kr-s2-depot.classic.blizzard.com/53c43fd3b0bfcfd8681576b68a50409d72d356a862d43db7c35bfcad40164f6b.s2ma",
             "https://kr-s2-depot.classic.blizzard.com/595d32d1f8beb45e8724a88c1bb5bed5c82dba23b611f22250320efe8e3dfcc7.s2ma",
             "https://kr-s2-depot.classic.blizzard.com/0771cbe9d5f50fee07939f6c725649f8a0ec7b030e9af7be3ea29e0fe00fe0f5.s2ma",
-            "https://kr-s2-depot.classic.blizzard.com/bc2da9277ed9b7125043e9f90405e16b937cff47f5b7366d0037e2a9aa5e8203.s2ma"
+            "https://kr-s2-depot.classic.blizzard.com/833b04ccfa140b896e4eadd844d1fa2391571c799252b04a32ed6fe2fb18a216.s2ma"
         ]
     }
 }
