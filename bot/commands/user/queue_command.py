@@ -248,6 +248,7 @@ class MatchConfirmedEmbed(discord.Embed):
         match_data: dict,
         p1_info: dict[str, Any] | None = None,
         p2_info: dict[str, Any] | None = None,
+        pending_report: str | None = None,
     ) -> None:
         match_id = match_data.get("id", "?")
         p1_name = match_data.get("player_1_name", "Player 1")
@@ -380,9 +381,16 @@ class MatchConfirmedEmbed(discord.Embed):
         self.add_field(name="", value="", inline=False)
 
         # --- Match Result ---
+        if pending_report is not None:
+            result_value = (
+                f"- Result: `{_report_display(pending_report)}` ✅\n"
+                "- Waiting for opponent to report..."
+            )
+        else:
+            result_value = "- Result: `Not selected`"
         self.add_field(
             name="**🏆 Match Result:**",
-            value="- Result: `Not selected`",
+            value=result_value,
             inline=False,
         )
 
@@ -403,66 +411,255 @@ class MatchConfirmedEmbed(discord.Embed):
         )
 
 
-class MatchReportedEmbed(discord.Embed):
-    def __init__(self, report: str) -> None:
+def _player_header(
+    rank_emote: str | discord.PartialEmoji,
+    flag_emote: str | discord.PartialEmoji,
+    race_emote: str | discord.PartialEmoji,
+    name: str,
+    mmr: int | str,
+    new_mmr: int | str | None = None,
+) -> str:
+    """Return '{rank} {flag} {race} {name} ({mmr})' or '({mmr}→{new_mmr})'."""
+    mmr_part = f"({mmr}→{new_mmr})" if new_mmr is not None else f"({mmr})"
+    return f"{rank_emote} {flag_emote} {race_emote} {name} {mmr_part}"
+
+
+class MatchAbortedEmbed(discord.Embed):
+    def __init__(
+        self,
+        match_data: dict,
+        p1_info: dict[str, Any] | None = None,
+        p2_info: dict[str, Any] | None = None,
+    ) -> None:
+        match_id = match_data.get("id", "?")
+        p1_name = match_data.get("player_1_name", "Player 1")
+        p2_name = match_data.get("player_2_name", "Player 2")
+        p1_race = match_data.get("player_1_race", "")
+        p2_race = match_data.get("player_2_race", "")
+        p1_mmr = match_data.get("player_1_mmr", "?")
+        p2_mmr = match_data.get("player_2_mmr", "?")
+
+        p1_country = (p1_info.get("nationality") or "XX") if p1_info else "XX"
+        p2_country = (p2_info.get("nationality") or "XX") if p2_info else "XX"
+
+        p1_hdr = _player_header(
+            get_rank_emote("U"),
+            get_flag_emote(p1_country),
+            get_race_emote(p1_race) if p1_race else "",
+            p1_name,
+            p1_mmr,
+        )
+        p2_hdr = _player_header(
+            get_rank_emote("U"),
+            get_flag_emote(p2_country),
+            get_race_emote(p2_race) if p2_race else "",
+            p2_name,
+            p2_mmr,
+        )
+
+        # Determine who aborted
+        if match_data.get("player_1_report") == "abort":
+            aborter = p1_name
+        else:
+            aborter = p2_name
+
         super().__init__(
-            title="Report Submitted",
-            description=(
-                f"You reported: **{_report_display(report)}**\n\n"
-                "Waiting for your opponent to report..."
-            ),
-            color=discord.Color.gold(),
+            title=f"🛑 Match #{match_id} Aborted",
+            description=f"{p1_hdr} vs {p2_hdr}",
+            color=discord.Color.red(),
+        )
+        self.add_field(
+            name="**MMR Changes:**",
+            value=f"• {p1_name}: `+0 ({p1_mmr})`\n• {p2_name}: `+0 ({p2_mmr})`",
+            inline=False,
+        )
+        self.add_field(
+            name="**Reason:**",
+            value=f"The match was aborted by **{aborter}**. No MMR changes were applied.",
+            inline=False,
         )
 
 
-class MatchCompletedEmbed(discord.Embed):
-    def __init__(self, match_data: dict) -> None:
+class MatchAbandonedEmbed(discord.Embed):
+    def __init__(
+        self,
+        match_data: dict,
+        p1_info: dict[str, Any] | None = None,
+        p2_info: dict[str, Any] | None = None,
+    ) -> None:
+        match_id = match_data.get("id", "?")
+        p1_name = match_data.get("player_1_name", "Player 1")
+        p2_name = match_data.get("player_2_name", "Player 2")
+        p1_race = match_data.get("player_1_race", "")
+        p2_race = match_data.get("player_2_race", "")
+        p1_mmr = match_data.get("player_1_mmr", "?")
+        p2_mmr = match_data.get("player_2_mmr", "?")
+
+        p1_country = (p1_info.get("nationality") or "XX") if p1_info else "XX"
+        p2_country = (p2_info.get("nationality") or "XX") if p2_info else "XX"
+
+        p1_hdr = _player_header(
+            get_rank_emote("U"),
+            get_flag_emote(p1_country),
+            get_race_emote(p1_race) if p1_race else "",
+            p1_name,
+            p1_mmr,
+        )
+        p2_hdr = _player_header(
+            get_rank_emote("U"),
+            get_flag_emote(p2_country),
+            get_race_emote(p2_race) if p2_race else "",
+            p2_name,
+            p2_mmr,
+        )
+
+        # Determine who failed to confirm (has "abandoned" as their report)
+        if match_data.get("player_1_report") == "abandoned":
+            abandoner = p1_name
+        else:
+            abandoner = p2_name
+
+        super().__init__(
+            title=f"🛑 Match #{match_id} Abandoned",
+            description=f"{p1_hdr} vs {p2_hdr}",
+            color=discord.Color.red(),
+        )
+        self.add_field(
+            name="**MMR Changes:**",
+            value=f"• {p1_name}: `+0 ({p1_mmr})`\n• {p2_name}: `+0 ({p2_mmr})`",
+            inline=False,
+        )
+        self.add_field(
+            name="**Reason:**",
+            value=(
+                f"The match was automatically abandoned because **{abandoner}** "
+                "did not confirm in time."
+            ),
+            inline=False,
+        )
+
+
+class MatchFinalizedEmbed(discord.Embed):
+    def __init__(
+        self,
+        match_data: dict,
+        p1_info: dict[str, Any] | None = None,
+        p2_info: dict[str, Any] | None = None,
+    ) -> None:
         match_id = match_data.get("id", "?")
         result = match_data.get("match_result", "unknown")
         p1_name = match_data.get("player_1_name", "Player 1")
         p2_name = match_data.get("player_2_name", "Player 2")
+        p1_race = match_data.get("player_1_race", "")
+        p2_race = match_data.get("player_2_race", "")
         p1_mmr = match_data.get("player_1_mmr", 0)
         p2_mmr = match_data.get("player_2_mmr", 0)
-        p1_change = match_data.get("player_1_mmr_change")
-        p2_change = match_data.get("player_2_mmr_change")
+        p1_change = match_data.get("player_1_mmr_change") or 0
+        p2_change = match_data.get("player_2_mmr_change") or 0
+        p1_new = p1_mmr + p1_change
+        p2_new = p2_mmr + p2_change
 
-        if result == "invalidated":
-            color = discord.Color.orange()
-            title = f"Match #{match_id} Result Conflict"
-        else:
-            color = discord.Color.gold()
-            title = f"Match #{match_id} Result Finalized"
+        p1_country = (p1_info.get("nationality") or "XX") if p1_info else "XX"
+        p2_country = (p2_info.get("nationality") or "XX") if p2_info else "XX"
+        p1_rank = get_rank_emote("U")
+        p2_rank = get_rank_emote("U")
+        p1_flag = get_flag_emote(p1_country)
+        p2_flag = get_flag_emote(p2_country)
+        p1_race_emote = get_race_emote(p1_race) if p1_race else ""
+        p2_race_emote = get_race_emote(p2_race) if p2_race else ""
 
-        super().__init__(title=title, color=color)
-
-        self.add_field(
-            name="**Result:**", value=f"`{_report_display(result)}`", inline=True
+        p1_hdr = _player_header(
+            p1_rank, p1_flag, p1_race_emote, p1_name, p1_mmr, p1_new
+        )
+        p2_hdr = _player_header(
+            p2_rank, p2_flag, p2_race_emote, p2_name, p2_mmr, p2_new
         )
 
-        if p1_change is not None and p2_change is not None:
-            p1_sign = "+" if p1_change >= 0 else ""
-            p2_sign = "+" if p2_change >= 0 else ""
-            p1_new = p1_mmr + p1_change
-            p2_new = p2_mmr + p2_change
-            self.add_field(
-                name="**MMR Changes:**",
-                value=(
-                    f"- {p1_name}: `{p1_sign}{p1_change} ({p1_mmr} -> {p1_new})`\n"
-                    f"- {p2_name}: `{p2_sign}{p2_change} ({p2_mmr} -> {p2_new})`"
-                ),
-                inline=True,
-            )
-
-
-class MatchAbortedEmbed(discord.Embed):
-    def __init__(self, match_data: dict | None = None, reason: str = "aborted") -> None:
-        match_id = match_data.get("id", "?") if match_data else "?"
-        result = match_data.get("match_result", reason) if match_data else reason
-        title_action = "Abandoned" if result == "abandoned" else "Aborted"
         super().__init__(
-            title=f"🛑 Match #{match_id} {title_action}",
-            description=f"The match was {title_action.lower()}. No MMR changes were applied.",
-            color=discord.Color.red(),
+            title=f"🏆 Match #{match_id} Result Finalized",
+            description=f"{p1_hdr} vs {p2_hdr}",
+            color=discord.Color.gold(),
+        )
+
+        # Result field
+        if result == "draw":
+            result_value = "⚖️ **Draw**"
+        elif result == "player_1_win":
+            result_value = f"🏆 {p1_rank} {p1_flag} {p1_race_emote} {p1_name}"
+        else:
+            result_value = f"🏆 {p2_rank} {p2_flag} {p2_race_emote} {p2_name}"
+
+        p1_sign = "+" if p1_change >= 0 else ""
+        p2_sign = "+" if p2_change >= 0 else ""
+
+        self.add_field(name="**Result:**", value=result_value, inline=True)
+        self.add_field(
+            name="**MMR Changes:**",
+            value=(
+                f"• {p1_name}: `{p1_sign}{p1_change} ({p1_mmr}→{p1_new})`\n"
+                f"• {p2_name}: `{p2_sign}{p2_change} ({p2_mmr}→{p2_new})`"
+            ),
+            inline=True,
+        )
+
+
+class MatchConflictEmbed(discord.Embed):
+    def __init__(
+        self,
+        match_data: dict,
+        p1_info: dict[str, Any] | None = None,
+        p2_info: dict[str, Any] | None = None,
+    ) -> None:
+        match_id = match_data.get("id", "?")
+        p1_name = match_data.get("player_1_name", "Player 1")
+        p2_name = match_data.get("player_2_name", "Player 2")
+        p1_race = match_data.get("player_1_race", "")
+        p2_race = match_data.get("player_2_race", "")
+        p1_mmr = match_data.get("player_1_mmr", "?")
+        p2_mmr = match_data.get("player_2_mmr", "?")
+
+        p1_country = (p1_info.get("nationality") or "XX") if p1_info else "XX"
+        p2_country = (p2_info.get("nationality") or "XX") if p2_info else "XX"
+
+        p1_hdr = _player_header(
+            get_rank_emote("U"),
+            get_flag_emote(p1_country),
+            get_race_emote(p1_race) if p1_race else "",
+            p1_name,
+            p1_mmr,
+        )
+        p2_hdr = _player_header(
+            get_rank_emote("U"),
+            get_flag_emote(p2_country),
+            get_race_emote(p2_race) if p2_race else "",
+            p2_name,
+            p2_mmr,
+        )
+
+        p1_report = match_data.get("player_1_report", "?")
+        p2_report = match_data.get("player_2_report", "?")
+
+        super().__init__(
+            title=f"⚠️ Match #{match_id} — Conflicting Reports",
+            description=f"{p1_hdr} vs {p2_hdr}",
+            color=discord.Color.orange(),
+        )
+        self.add_field(
+            name="**Reports:**",
+            value=(
+                f"• {p1_name}: `{_report_display(p1_report)}`\n"
+                f"• {p2_name}: `{_report_display(p2_report)}`"
+            ),
+            inline=False,
+        )
+        self.add_field(
+            name="**Reason:**",
+            value=(
+                "Both players submitted conflicting reports. "
+                "The match has been **invalidated** and no MMR changes were applied. "
+                "Please contact an admin to resolve this."
+            ),
+            inline=False,
         )
 
 
@@ -730,10 +927,22 @@ class MatchFoundView(discord.ui.View):
 
 
 class MatchReportView(discord.ui.View):
-    def __init__(self, match_id: int, p1_name: str, p2_name: str) -> None:
+    def __init__(
+        self,
+        match_id: int,
+        p1_name: str,
+        p2_name: str,
+        match_data: dict | None = None,
+        p1_info: dict[str, Any] | None = None,
+        p2_info: dict[str, Any] | None = None,
+    ) -> None:
         super().__init__(timeout=None)
         self.match_id = match_id
-        self.add_item(MatchReportSelect(match_id, p1_name, p2_name))
+        self._match_data = match_data or {}
+        self._p1_info = p1_info
+        self._p2_info = p2_info
+        self.report_select = MatchReportSelect(match_id, p1_name, p2_name)
+        self.add_item(self.report_select)
 
     async def submit_report(
         self, interaction: discord.Interaction, report: str
@@ -758,11 +967,13 @@ class MatchReportView(discord.ui.View):
                 )
                 return
 
-            # Report recorded — show waiting embed. The WS listener will handle
-            # the final result notification as a separate message.
-            await interaction.edit_original_response(
-                embed=MatchReportedEmbed(report), view=None
+            # Update embed in-place: show the submitted report and lock the dropdown.
+            # The WS listener will send the final result as a separate message.
+            self.report_select.disabled = True
+            new_embed = MatchConfirmedEmbed(
+                self._match_data, self._p1_info, self._p2_info, pending_report=report
             )
+            await interaction.edit_original_response(embed=new_embed, view=self)
 
         except Exception:
             logger.exception("Failed to submit match report")
@@ -929,7 +1140,14 @@ async def _abort_match(interaction: discord.Interaction, match_id: int) -> None:
             )
             return
 
-        await interaction.edit_original_response(embed=MatchAbortedEmbed(), view=None)
+        await interaction.edit_original_response(
+            embed=discord.Embed(
+                title="🛑 Match Aborted",
+                description="You have aborted the match. You will receive a summary shortly.",
+                color=discord.Color.red(),
+            ),
+            view=None,
+        )
 
     except Exception:
         logger.exception("Failed to abort match")

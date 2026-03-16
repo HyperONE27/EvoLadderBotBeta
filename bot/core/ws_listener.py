@@ -17,7 +17,9 @@ import structlog
 
 from bot.commands.user.queue_command import (
     MatchAbortedEmbed,
-    MatchCompletedEmbed,
+    MatchAbandonedEmbed,
+    MatchFinalizedEmbed,
+    MatchConflictEmbed,
     MatchConfirmedEmbed,
     MatchFoundEmbed,
     MatchFoundView,
@@ -120,12 +122,23 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
             user = await client.fetch_user(uid)
             await user.send(
                 embed=embed,
-                view=MatchReportView(match_id, p1_name, p2_name),
+                view=MatchReportView(
+                    match_id, p1_name, p2_name, match_data, p1_info, p2_info
+                ),
             )
         except Exception:
             logger.exception(f"[WS] Failed to DM user {uid} for both_confirmed")
 
-    await _post_to_match_log(client, match_id, match_data, "Match Started")
+    match_id_log = match_data.get("id", "?")
+    p1_name_log = match_data.get("player_1_name", "?")
+    p2_name_log = match_data.get("player_2_name", "?")
+    map_name_log = match_data.get("map_name", "?")
+    log_embed = discord.Embed(
+        title="Match Started",
+        description=f"**Match #{match_id_log}**\n{p1_name_log} vs {p2_name_log}\nMap: {map_name_log}",
+        color=discord.Color.blue(),
+    )
+    await _post_to_match_log(client, log_embed)
 
 
 async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
@@ -133,16 +146,20 @@ async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
     p1_uid = match_data.get("player_1_discord_uid")
     p2_uid = match_data.get("player_2_discord_uid")
 
+    p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
+    p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
+    embed = MatchAbortedEmbed(match_data, p1_info, p2_info)
+
     for uid in (p1_uid, p2_uid):
         if uid is None:
             continue
         try:
             user = await client.fetch_user(uid)
-            await user.send(embed=MatchAbortedEmbed(match_data=match_data))
+            await user.send(embed=embed)
         except Exception:
             logger.exception(f"[WS] Failed to DM user {uid} for match_aborted")
 
-    await _post_to_match_log(client, match_data.get("id"), match_data, "Match Aborted")
+    await _post_to_match_log(client, embed)
 
 
 async def _on_match_abandoned(client: discord.Client, match_data: dict) -> None:
@@ -150,65 +167,69 @@ async def _on_match_abandoned(client: discord.Client, match_data: dict) -> None:
     p1_uid = match_data.get("player_1_discord_uid")
     p2_uid = match_data.get("player_2_discord_uid")
 
+    p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
+    p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
+    embed = MatchAbandonedEmbed(match_data, p1_info, p2_info)
+
     for uid in (p1_uid, p2_uid):
         if uid is None:
             continue
         try:
             user = await client.fetch_user(uid)
-            await user.send(embed=MatchAbortedEmbed(match_data=match_data))
+            await user.send(embed=embed)
         except Exception:
             logger.exception(f"[WS] Failed to DM user {uid} for match_abandoned")
 
-    await _post_to_match_log(
-        client, match_data.get("id"), match_data, "Match Abandoned"
-    )
+    await _post_to_match_log(client, embed)
 
 
 async def _on_match_completed(client: discord.Client, match_data: dict) -> None:
     """Notify both players of the completed match and post to match log."""
-    match_id: int = match_data["id"]
     p1_uid = match_data.get("player_1_discord_uid")
     p2_uid = match_data.get("player_2_discord_uid")
+
+    p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
+    p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
+    embed = MatchFinalizedEmbed(match_data, p1_info, p2_info)
 
     for uid in (p1_uid, p2_uid):
         if uid is None:
             continue
         try:
             user = await client.fetch_user(uid)
-            await user.send(embed=MatchCompletedEmbed(match_data))
+            await user.send(embed=embed)
         except Exception:
             logger.exception(f"[WS] Failed to DM user {uid} for match_completed")
 
-    await _post_to_match_log(client, match_id, match_data, "Match Completed")
+    await _post_to_match_log(client, embed)
 
 
 async def _on_match_conflict(client: discord.Client, match_data: dict) -> None:
     """Notify both players of the conflicting reports and post to match log."""
-    match_id: int = match_data["id"]
     p1_uid = match_data.get("player_1_discord_uid")
     p2_uid = match_data.get("player_2_discord_uid")
+
+    p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
+    p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
+    embed = MatchConflictEmbed(match_data, p1_info, p2_info)
 
     for uid in (p1_uid, p2_uid):
         if uid is None:
             continue
         try:
             user = await client.fetch_user(uid)
-            await user.send(embed=MatchCompletedEmbed(match_data))
+            await user.send(embed=embed)
         except Exception:
             logger.exception(f"[WS] Failed to DM user {uid} for match_conflict")
 
-    await _post_to_match_log(
-        client, match_id, match_data, "Match Conflict (Invalidated)"
-    )
+    await _post_to_match_log(client, embed)
 
 
 async def _post_to_match_log(
     client: discord.Client,
-    match_id: int | None,
-    match_data: dict,
-    title: str,
+    embed: discord.Embed,
 ) -> None:
-    """Post a match summary to the configured match log channel."""
+    """Post a pre-built embed to the configured match log channel."""
     try:
         channel = client.get_channel(MATCH_LOG_CHANNEL_ID)
         if channel is None:
@@ -216,34 +237,6 @@ async def _post_to_match_log(
         if channel is None or not isinstance(channel, discord.TextChannel):
             logger.warning("[WS] Match log channel not found or not a text channel")
             return
-
-        p1_name = match_data.get("player_1_name", "?")
-        p2_name = match_data.get("player_2_name", "?")
-        map_name = match_data.get("map_name", "?")
-
-        embed = discord.Embed(
-            title=title,
-            description=(
-                f"**Match #{match_id}**\n{p1_name} vs {p2_name}\nMap: {map_name}"
-            ),
-            color=discord.Color.blue(),
-        )
-
-        result = match_data.get("match_result")
-        if result:
-            embed.add_field(name="Result", value=result, inline=True)
-
-        p1_change = match_data.get("player_1_mmr_change")
-        p2_change = match_data.get("player_2_mmr_change")
-        if p1_change is not None and p2_change is not None:
-            sign1 = "+" if p1_change >= 0 else ""
-            sign2 = "+" if p2_change >= 0 else ""
-            embed.add_field(
-                name="MMR Changes",
-                value=f"{p1_name}: {sign1}{p1_change}\n{p2_name}: {sign2}{p2_change}",
-                inline=True,
-            )
-
         await channel.send(embed=embed)
     except Exception:
         logger.exception("[WS] Failed to post to match log channel")
