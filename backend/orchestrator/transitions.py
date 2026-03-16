@@ -503,11 +503,12 @@ class TransitionManager:
 
         now = datetime.now(timezone.utc)
 
-        self._db_writer.update_match_1v1_report(
-            match_id, player_1_report=p1_report, player_2_report=p2_report
-        )
-        self._db_writer.update_match_1v1_result(
-            match_id, match_result="abort", completed_at=now
+        self._db_writer.finalise_match_1v1(
+            match_id,
+            match_result="abort",
+            player_1_report=p1_report,
+            player_2_report=p2_report,
+            completed_at=now,
         )
 
         self._update_match_cache(
@@ -551,11 +552,12 @@ class TransitionManager:
 
         now = datetime.now(timezone.utc)
 
-        self._db_writer.update_match_1v1_report(
-            match_id, player_1_report=p1_report, player_2_report=p2_report
-        )
-        self._db_writer.update_match_1v1_result(
-            match_id, match_result="abandoned", completed_at=now
+        self._db_writer.finalise_match_1v1(
+            match_id,
+            match_result="abandoned",
+            player_1_report=p1_report,
+            player_2_report=p2_report,
+            completed_at=now,
         )
 
         self._update_match_cache(
@@ -656,8 +658,21 @@ class TransitionManager:
         p1_change = new_p1_mmr - match["player_1_mmr"]
         p2_change = new_p2_mmr - match["player_2_mmr"]
 
-        # Write match result.
-        self._db_writer.update_match_1v1_result(
+        p1_uid = match["player_1_discord_uid"]
+        p2_uid = match["player_2_discord_uid"]
+        p1_race = match["player_1_race"]
+        p2_race = match["player_2_race"]
+
+        # Compute new MMR rows before any writes.
+        p1_mmr_update = self._compute_mmr_update(
+            p1_uid, p1_race, new_p1_mmr, agreed_result, is_player_1=True, now=now
+        )
+        p2_mmr_update = self._compute_mmr_update(
+            p2_uid, p2_race, new_p2_mmr, agreed_result, is_player_1=False, now=now
+        )
+
+        # Write match result (single UPDATE).
+        self._db_writer.finalise_match_1v1(
             match_id,
             match_result=agreed_result,
             player_1_mmr_change=p1_change,
@@ -665,6 +680,12 @@ class TransitionManager:
             completed_at=now,
         )
 
+        # Write both MMR rows in a single upsert.
+        mmr_updates = [u for u in (p1_mmr_update, p2_mmr_update) if u is not None]
+        if mmr_updates:
+            self._db_writer.batch_update_mmrs_1v1(mmr_updates)
+
+        # Update caches.
         self._update_match_cache(
             match_id,
             match_result=agreed_result,
@@ -672,19 +693,10 @@ class TransitionManager:
             player_2_mmr_change=p2_change,
             completed_at=now,
         )
-
-        # Update MMR rows for both players.
-        p1_uid = match["player_1_discord_uid"]
-        p2_uid = match["player_2_discord_uid"]
-        p1_race = match["player_1_race"]
-        p2_race = match["player_2_race"]
-
-        self._update_player_mmr_after_match(
-            p1_uid, p1_race, new_p1_mmr, agreed_result, is_player_1=True, now=now
-        )
-        self._update_player_mmr_after_match(
-            p2_uid, p2_race, new_p2_mmr, agreed_result, is_player_1=False, now=now
-        )
+        if p1_mmr_update is not None:
+            self._apply_mmr_cache_update(p1_uid, p1_race, p1_mmr_update)
+        if p2_mmr_update is not None:
+            self._apply_mmr_cache_update(p2_uid, p2_race, p2_mmr_update)
 
         # Return both players to idle.
         self._set_player_status(p1_uid, "idle")
@@ -705,7 +717,7 @@ class TransitionManager:
         """Reports disagree — mark as conflict, no MMR changes, return to idle."""
         now = datetime.now(timezone.utc)
 
-        self._db_writer.update_match_1v1_result(
+        self._db_writer.finalise_match_1v1(
             match_id,
             match_result="conflict",
             player_1_mmr_change=0,
@@ -731,7 +743,7 @@ class TransitionManager:
         assert updated is not None
         return updated
 
-    def _update_player_mmr_after_match(
+    def _compute_mmr_update(
         self,
         discord_uid: int,
         race: str,
@@ -740,48 +752,36 @@ class TransitionManager:
         *,
         is_player_1: bool,
         now: datetime,
-    ) -> None:
-        """Increment game counters and write the new MMR for one player."""
+    ) -> dict | None:
+        """Return a fully-populated MMR row dict for the given player, or None if
+        no row exists.  Does not touch the DB or the cache."""
         df = self._state_manager.mmrs_1v1_df
         rows = df.filter(
             (pl.col("discord_uid") == discord_uid) & (pl.col("race") == race)
         )
         if rows.is_empty():
-            return
+            return None
 
         current = rows.row(0, named=True)
         won = agreed_result == ("player_1_win" if is_player_1 else "player_2_win")
         lost = agreed_result == ("player_2_win" if is_player_1 else "player_1_win")
         drawn = agreed_result == "draw"
 
-        new_played = current["games_played"] + 1
-        new_won = current["games_won"] + (1 if won else 0)
-        new_lost = current["games_lost"] + (1 if lost else 0)
-        new_drawn = current["games_drawn"] + (1 if drawn else 0)
+        return {
+            **current,
+            "mmr": new_mmr,
+            "games_played": current["games_played"] + 1,
+            "games_won": current["games_won"] + (1 if won else 0),
+            "games_lost": current["games_lost"] + (1 if lost else 0),
+            "games_drawn": current["games_drawn"] + (1 if drawn else 0),
+            "last_played_at": now,
+        }
 
-        self._db_writer.update_mmr_1v1(
-            discord_uid,
-            race,
-            mmr=new_mmr,
-            games_played=new_played,
-            games_won=new_won,
-            games_lost=new_lost,
-            games_drawn=new_drawn,
-            last_played_at=now,
-        )
-
-        # Update cache.
-        updated = dict(current)
-        updated.update(
-            {
-                "mmr": new_mmr,
-                "games_played": new_played,
-                "games_won": new_won,
-                "games_lost": new_lost,
-                "games_drawn": new_drawn,
-                "last_played_at": now,
-            }
-        )
+    def _apply_mmr_cache_update(
+        self, discord_uid: int, race: str, updated: dict
+    ) -> None:
+        """Swap in a pre-computed MMR row in the in-memory cache."""
+        df = self._state_manager.mmrs_1v1_df
         self._state_manager.mmrs_1v1_df = df.filter(
             ~((pl.col("discord_uid") == discord_uid) & (pl.col("race") == race))
         ).vstack(pl.DataFrame([updated]).cast(df.schema))

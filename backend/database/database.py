@@ -339,3 +339,43 @@ class DatabaseWriter:
         if completed_at is not None:
             updates["completed_at"] = completed_at.isoformat()
         self.client.table("matches_1v1").update(updates).eq("id", match_id).execute()
+
+    def finalise_match_1v1(
+        self,
+        match_id: int,
+        *,
+        match_result: str,
+        player_1_report: str | None = None,
+        player_2_report: str | None = None,
+        player_1_mmr_change: int | None = None,
+        player_2_mmr_change: int | None = None,
+        completed_at: datetime,
+    ) -> None:
+        """Write all terminal match fields in a single UPDATE."""
+        updates: dict[str, Any] = {
+            "match_result": match_result,
+            "completed_at": completed_at.isoformat(),
+        }
+        if player_1_report is not None:
+            updates["player_1_report"] = player_1_report
+        if player_2_report is not None:
+            updates["player_2_report"] = player_2_report
+        if player_1_mmr_change is not None:
+            updates["player_1_mmr_change"] = player_1_mmr_change
+        if player_2_mmr_change is not None:
+            updates["player_2_mmr_change"] = player_2_mmr_change
+        self.client.table("matches_1v1").update(updates).eq("id", match_id).execute()
+
+    def batch_update_mmrs_1v1(self, rows: list[dict[str, Any]]) -> None:
+        """Upsert multiple MMR rows in a single round-trip.
+
+        Each dict must include ``discord_uid``, ``race``, and all other
+        non-null columns so the INSERT branch of the upsert cannot fail.
+        ``last_played_at`` may be a ``datetime`` — it is serialised here.
+        """
+        serialised = [
+            {**row, "last_played_at": row["last_played_at"].isoformat()} for row in rows
+        ]
+        self.client.table("mmrs_1v1").upsert(
+            serialised, on_conflict="discord_uid,race"
+        ).execute()
