@@ -28,6 +28,10 @@ class Orchestrator:
         """Get a 1v1 MMR for a player by their Discord UID and race."""
         return self._state_reader.get_mmr_1v1(discord_uid, race)
 
+    def get_mmrs_1v1(self, discord_uid: int) -> list[MMRs1v1Row]:
+        """Get all 1v1 MMRs for a player by their Discord UID."""
+        return self._state_reader.get_all_mmrs_1v1(discord_uid)
+
     def get_player(self, discord_uid: int) -> PlayersRow | None:
         """Get a player by their Discord UID."""
         return self._state_reader.get_player(discord_uid)

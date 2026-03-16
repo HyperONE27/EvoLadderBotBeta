@@ -1,7 +1,11 @@
 """
 WebSocket listener that connects to the backend and dispatches real-time events
-(match_found, both_confirmed, match_aborted, match_completed, match_conflict)
-to the appropriate Discord users via DM.
+(match_found, both_confirmed, match_aborted, match_abandoned, match_completed,
+match_conflict) to the appropriate Discord users via DM.
+
+Event semantics:
+  match_aborted   — a player explicitly pressed Abort Match
+  match_abandoned — the confirmation window expired (no response from one/both players)
 """
 
 import asyncio
@@ -18,6 +22,7 @@ from bot.commands.user.queue_command import (
     MatchFoundEmbed,
     MatchFoundView,
     MatchReportView,
+    _fetch_player_info,
 )
 from bot.core.config import BACKEND_URL, MATCH_LOG_CHANNEL_ID
 
@@ -67,6 +72,8 @@ async def _handle_message(client: discord.Client, raw: str) -> None:
         await _on_both_confirmed(client, data)
     elif event == "match_aborted":
         await _on_match_aborted(client, data)
+    elif event == "match_abandoned":
+        await _on_match_abandoned(client, data)
     elif event == "match_completed":
         await _on_match_completed(client, data)
     elif event == "match_conflict":
@@ -102,13 +109,17 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
     p1_name = match_data.get("player_1_name", "Player 1")
     p2_name = match_data.get("player_2_name", "Player 2")
 
+    p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
+    p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
+    embed = MatchConfirmedEmbed(match_data, p1_info, p2_info)
+
     for uid in (p1_uid, p2_uid):
         if uid is None:
             continue
         try:
             user = await client.fetch_user(uid)
             await user.send(
-                embed=MatchConfirmedEmbed(match_data),
+                embed=embed,
                 view=MatchReportView(match_id, p1_name, p2_name),
             )
         except Exception:
@@ -118,7 +129,7 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
 
 
 async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
-    """Notify both players that the match was aborted/abandoned."""
+    """Notify both players that the match was explicitly aborted by a player."""
     p1_uid = match_data.get("player_1_discord_uid")
     p2_uid = match_data.get("player_2_discord_uid")
 
@@ -131,10 +142,26 @@ async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
         except Exception:
             logger.exception(f"[WS] Failed to DM user {uid} for match_aborted")
 
-    match_id = match_data.get("id")
-    result = match_data.get("match_result", "aborted")
-    title_action = "Abandoned" if result == "abandoned" else "Aborted"
-    await _post_to_match_log(client, match_id, match_data, f"Match {title_action}")
+    await _post_to_match_log(client, match_data.get("id"), match_data, "Match Aborted")
+
+
+async def _on_match_abandoned(client: discord.Client, match_data: dict) -> None:
+    """Notify both players that the match was abandoned (confirmation timeout)."""
+    p1_uid = match_data.get("player_1_discord_uid")
+    p2_uid = match_data.get("player_2_discord_uid")
+
+    for uid in (p1_uid, p2_uid):
+        if uid is None:
+            continue
+        try:
+            user = await client.fetch_user(uid)
+            await user.send(embed=MatchAbortedEmbed(match_data=match_data))
+        except Exception:
+            logger.exception(f"[WS] Failed to DM user {uid} for match_abandoned")
+
+    await _post_to_match_log(
+        client, match_data.get("id"), match_data, "Match Abandoned"
+    )
 
 
 async def _on_match_completed(client: discord.Client, match_data: dict) -> None:

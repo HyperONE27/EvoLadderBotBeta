@@ -10,6 +10,7 @@ from backend.api.models import (
     Matches1v1Response,
     MatchReportRequest,
     MatchReportResponse,
+    MMRs1v1AllResponse,
     MMRs1v1Response,
     PlayersResponse,
     Preferences1v1Response,
@@ -265,6 +266,14 @@ async def matches_1v1(
     app: Backend = Depends(get_backend),
 ) -> Matches1v1Response:
     return Matches1v1Response(match=app.orchestrator.get_match_1v1(match_id))
+
+
+@router.get("/mmrs_1v1/{discord_uid}", response_model=MMRs1v1AllResponse)
+async def mmrs_1v1_all(
+    discord_uid: int,
+    app: Backend = Depends(get_backend),
+) -> MMRs1v1AllResponse:
+    return MMRs1v1AllResponse(mmrs=app.orchestrator.get_mmrs_1v1(discord_uid))
 
 
 @router.get("/mmrs_1v1/{discord_uid}/{race}", response_model=MMRs1v1Response)

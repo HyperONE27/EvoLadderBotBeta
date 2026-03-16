@@ -156,20 +156,6 @@ class SetCountryConfirmResponse(BaseModel):
 # --- /setup ---
 
 
-class SetupInitRequest(BaseModel):
-    discord_uid: int
-    discord_username: str
-
-
-class SetupInitResponse(BaseModel):
-    player_name: str | None
-    alt_player_names: list[str] | None
-    battletag: str | None
-    nationality: str | None
-    location: str | None
-    language: str | None
-
-
 class SetupConfirmRequest(BaseModel):
     discord_uid: int
     discord_username: str
@@ -213,3 +199,7 @@ class Matches1v1Response(BaseModel):
 
 class MMRs1v1Response(BaseModel):
     mmr: MMRs1v1Row | None
+
+
+class MMRs1v1AllResponse(BaseModel):
+    mmrs: list[MMRs1v1Row]
