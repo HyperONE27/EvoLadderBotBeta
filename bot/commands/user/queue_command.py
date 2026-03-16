@@ -15,7 +15,7 @@ from bot.helpers.emotes import (
     get_race_emote,
     get_rank_emote,
 )
-from common.lookups.map_lookups import get_map_by_name, get_maps
+from common.lookups.map_lookups import get_map_by_short_name, get_maps
 from common.lookups.mod_lookups import get_mod_by_code
 from common.lookups.race_lookups import get_races
 from common.lookups.region_lookups import (
@@ -92,11 +92,13 @@ def _server_display(server_code: str) -> str:
 
 def _get_map_link(map_name: str, server_code: str) -> str:
     """Get the appropriate battlenet map link based on server region."""
-    map_data = get_map_by_name(map_name)
+    map_data = get_map_by_short_name(map_name)
     if not map_data:
         return "Unavailable"
     server = get_game_server_by_code(server_code)
-    region_code = server["game_region_code"] if server else "AM"
+    game_region_code = server["game_region_code"] if server else "AM"
+    region = get_game_region_by_code(game_region_code)
+    region_code = region["code"] if region else game_region_code
     link_key = {"AM": "am_link", "EU": "eu_link", "AS": "as_link"}.get(
         region_code, "am_link"
     )
@@ -240,7 +242,7 @@ class MatchWaitingConfirmEmbed(discord.Embed):
         )
 
 
-class MatchConfirmedEmbed(discord.Embed):
+class MatchInfoEmbed(discord.Embed):
     """Full match details embed matching the alpha UI layout."""
 
     def __init__(
@@ -333,7 +335,7 @@ class MatchConfirmedEmbed(discord.Embed):
         self.add_field(name="", value="\u3164", inline=False)
 
         # --- Match Information and Settings ---
-        map_info = get_map_by_name(map_name)
+        map_info = get_map_by_short_name(map_name)
         map_author = map_info["author"] if map_info else "Unknown"
         map_link = _get_map_link(map_name, server_code)
 
@@ -420,8 +422,8 @@ def _player_header(
     new_mmr: int | str | None = None,
 ) -> str:
     """Return '{rank} {flag} {race} {name} ({mmr})' or '({mmr}→{new_mmr})'."""
-    mmr_part = f"({mmr}→{new_mmr})" if new_mmr is not None else f"({mmr})"
-    return f"{rank_emote} {flag_emote} {race_emote} {name} {mmr_part}"
+    mmr_part = f"({mmr} → {new_mmr})" if new_mmr is not None else f"({mmr})"
+    return f"{rank_emote} {flag_emote} {race_emote} **{name} {mmr_part}**"
 
 
 class MatchAbortedEmbed(discord.Embed):
@@ -596,8 +598,8 @@ class MatchFinalizedEmbed(discord.Embed):
         self.add_field(
             name="**MMR Changes:**",
             value=(
-                f"• {p1_name}: `{p1_sign}{p1_change} ({p1_mmr}→{p1_new})`\n"
-                f"• {p2_name}: `{p2_sign}{p2_change} ({p2_mmr}→{p2_new})`"
+                f"- {p1_name}: `{p1_sign}{p1_change} ({p1_mmr} → {p1_new})`\n"
+                f"- {p2_name}: `{p2_sign}{p2_change} ({p2_mmr} → {p2_new})`"
             ),
             inline=True,
         )
@@ -647,8 +649,8 @@ class MatchConflictEmbed(discord.Embed):
         self.add_field(
             name="**Reports:**",
             value=(
-                f"• {p1_name}: `{_report_display(p1_report)}`\n"
-                f"• {p2_name}: `{_report_display(p2_report)}`"
+                f"- {p1_name}: `{_report_display(p1_report)}`\n"
+                f"- {p2_name}: `{_report_display(p2_report)}`"
             ),
             inline=False,
         )
@@ -969,8 +971,10 @@ class MatchReportView(discord.ui.View):
 
             # Update embed in-place: show the submitted report and lock the dropdown.
             # The WS listener will send the final result as a separate message.
+            for option in self.report_select.options:
+                option.default = option.value == report
             self.report_select.disabled = True
-            new_embed = MatchConfirmedEmbed(
+            new_embed = MatchInfoEmbed(
                 self._match_data, self._p1_info, self._p2_info, pending_report=report
             )
             await interaction.edit_original_response(embed=new_embed, view=self)

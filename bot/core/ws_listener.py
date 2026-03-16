@@ -20,7 +20,7 @@ from bot.commands.user.queue_command import (
     MatchAbandonedEmbed,
     MatchFinalizedEmbed,
     MatchConflictEmbed,
-    MatchConfirmedEmbed,
+    MatchInfoEmbed,
     MatchFoundEmbed,
     MatchFoundView,
     MatchReportView,
@@ -113,7 +113,7 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
 
     p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
     p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
-    embed = MatchConfirmedEmbed(match_data, p1_info, p2_info)
+    embed = MatchInfoEmbed(match_data, p1_info, p2_info)
 
     for uid in (p1_uid, p2_uid):
         if uid is None:
