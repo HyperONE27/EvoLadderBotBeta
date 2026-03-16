@@ -157,3 +157,185 @@ class DatabaseWriter:
                 "accepted_tos_at": accepted_tos_at.isoformat(),
             }
         ).eq("id", player_id).execute()
+
+    # ------------------------------------------------------------------
+    # Player status
+    # ------------------------------------------------------------------
+
+    def update_player_status(
+        self,
+        player_id: int,
+        player_status: str,
+        current_match_mode: str | None,
+        current_match_id: int | None,
+    ) -> None:
+        """Update player_status, current_match_mode, and current_match_id."""
+        self.client.table("players").update(
+            {
+                "player_status": player_status,
+                "current_match_mode": current_match_mode,
+                "current_match_id": current_match_id,
+            }
+        ).eq("id", player_id).execute()
+
+    # ------------------------------------------------------------------
+    # MMR 1v1
+    # ------------------------------------------------------------------
+
+    def add_mmr_1v1(
+        self,
+        discord_uid: int,
+        player_name: str,
+        race: str,
+        mmr: int,
+    ) -> dict:
+        """Insert a new MMR row with default stats and return the created row."""
+        data: dict[str, Any] = {
+            "discord_uid": discord_uid,
+            "player_name": player_name,
+            "race": race,
+            "mmr": mmr,
+            "games_played": 0,
+            "games_won": 0,
+            "games_lost": 0,
+            "games_drawn": 0,
+        }
+        response = self.client.table("mmrs_1v1").insert(data).execute()
+        return cast(dict[str, Any], response.data[0])
+
+    def update_mmr_1v1(
+        self,
+        discord_uid: int,
+        race: str,
+        *,
+        mmr: int,
+        games_played: int,
+        games_won: int,
+        games_lost: int,
+        games_drawn: int,
+        last_played_at: datetime,
+    ) -> None:
+        """Update an existing MMR row after a match completes."""
+        self.client.table("mmrs_1v1").update(
+            {
+                "mmr": mmr,
+                "games_played": games_played,
+                "games_won": games_won,
+                "games_lost": games_lost,
+                "games_drawn": games_drawn,
+                "last_played_at": last_played_at.isoformat(),
+            }
+        ).eq("discord_uid", discord_uid).eq("race", race).execute()
+
+    # ------------------------------------------------------------------
+    # Matches 1v1
+    # ------------------------------------------------------------------
+
+    def add_match_1v1(
+        self,
+        player_1_discord_uid: int,
+        player_2_discord_uid: int,
+        player_1_name: str,
+        player_2_name: str,
+        player_1_race: str,
+        player_2_race: str,
+        player_1_mmr: int,
+        player_2_mmr: int,
+        map_name: str,
+        server_name: str,
+        assigned_at: datetime,
+    ) -> dict:
+        """Insert a new match row and return the created row (with DB-assigned id)."""
+        data: dict[str, Any] = {
+            "player_1_discord_uid": player_1_discord_uid,
+            "player_2_discord_uid": player_2_discord_uid,
+            "player_1_name": player_1_name,
+            "player_2_name": player_2_name,
+            "player_1_race": player_1_race,
+            "player_2_race": player_2_race,
+            "player_1_mmr": player_1_mmr,
+            "player_2_mmr": player_2_mmr,
+            "map_name": map_name,
+            "server_name": server_name,
+            "assigned_at": assigned_at.isoformat(),
+        }
+        response = self.client.table("matches_1v1").insert(data).execute()
+        return cast(dict[str, Any], response.data[0])
+
+    def update_match_1v1_report(
+        self,
+        match_id: int,
+        *,
+        player_1_report: str | None = None,
+        player_2_report: str | None = None,
+    ) -> None:
+        """Set one or both report columns on a match row."""
+        updates: dict[str, Any] = {}
+        if player_1_report is not None:
+            updates["player_1_report"] = player_1_report
+        if player_2_report is not None:
+            updates["player_2_report"] = player_2_report
+        if updates:
+            self.client.table("matches_1v1").update(updates).eq(
+                "id", match_id
+            ).execute()
+
+    # ------------------------------------------------------------------
+    # Preferences 1v1
+    # ------------------------------------------------------------------
+
+    def upsert_preferences_1v1(
+        self,
+        discord_uid: int,
+        last_chosen_races: list[str],
+        last_chosen_vetoes: list[str],
+    ) -> dict:
+        """Upsert a player's 1v1 queue preferences."""
+        data: dict[str, Any] = {
+            "discord_uid": discord_uid,
+            "last_chosen_races": last_chosen_races,
+            "last_chosen_vetoes": last_chosen_vetoes,
+        }
+        response = (
+            self.client.table("preferences_1v1")
+            .upsert(data, on_conflict="discord_uid")
+            .execute()
+        )
+        return cast(dict[str, Any], response.data[0])
+
+    # ------------------------------------------------------------------
+    # Player status (bulk)
+    # ------------------------------------------------------------------
+
+    def reset_all_player_statuses(self) -> None:
+        """Reset all players to idle status with no active match."""
+        self.client.table("players").update(
+            {
+                "player_status": "idle",
+                "current_match_mode": None,
+                "current_match_id": None,
+            }
+        ).neq("player_status", "idle").execute()
+
+    # ------------------------------------------------------------------
+    # Matches 1v1 (continued)
+    # ------------------------------------------------------------------
+
+    def update_match_1v1_result(
+        self,
+        match_id: int,
+        *,
+        match_result: str,
+        player_1_mmr_change: int | None = None,
+        player_2_mmr_change: int | None = None,
+        completed_at: datetime | None = None,
+    ) -> None:
+        """Finalise a match with the resolved result and optional MMR deltas."""
+        updates: dict[str, Any] = {"match_result": match_result}
+        if player_1_mmr_change is not None:
+            updates["player_1_mmr_change"] = player_1_mmr_change
+        if player_2_mmr_change is not None:
+            updates["player_2_mmr_change"] = player_2_mmr_change
+        if completed_at is not None:
+            updates["completed_at"] = completed_at.isoformat()
+        self.client.table("matches_1v1").update(updates).eq("id", match_id).execute()

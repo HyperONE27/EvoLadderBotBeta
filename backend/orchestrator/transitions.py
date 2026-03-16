@@ -3,7 +3,17 @@ from datetime import datetime, timezone
 import polars as pl
 import structlog
 
+from backend.algorithms.match_params import resolve_match_params
+from backend.algorithms.matchmaker import run_matchmaking_wave
+from backend.algorithms.ratings_1v1 import get_default_mmr, get_new_ratings
+from backend.core.config import CURRENT_SEASON
 from backend.database.database import DatabaseWriter
+from backend.domain_types.dataframes import Matches1v1Row
+from backend.domain_types.ephemeral import (
+    MatchCandidate1v1,
+    MatchParams1v1,
+    QueueEntry1v1,
+)
 from backend.orchestrator.state import StateManager
 
 from common.lookups.country_lookups import get_country_by_code
@@ -16,6 +26,8 @@ class TransitionManager:
     def __init__(self, state_manager: StateManager, db_writer: DatabaseWriter) -> None:
         self._state_manager = state_manager
         self._db_writer = db_writer
+        # Track match confirmations: match_id → set of discord_uids
+        self._confirmations: dict[int, set[int]] = {}
 
     def _handle_missing_player(self, discord_uid: int, discord_username: str) -> dict:
         """Return the player row, creating it in the DB and cache if it doesn't exist."""
@@ -145,3 +157,655 @@ class TransitionManager:
             f"Player {discord_username} ({discord_uid}) {verb} the terms of service"
         )
         return True, None
+
+    # ==================================================================
+    # Startup reset
+    # ==================================================================
+
+    def reset_all_player_statuses(self) -> None:
+        """Reset all players to idle with no active match (called at startup)."""
+        self._db_writer.reset_all_player_statuses()
+
+        df = self._state_manager.players_df
+        self._state_manager.players_df = df.with_columns(
+            player_status=pl.lit("idle"),
+            current_match_mode=pl.lit(None),
+            current_match_id=pl.lit(None),
+        )
+        logger.info("Reset all player statuses to idle")
+
+    # ==================================================================
+    # Preferences 1v1
+    # ==================================================================
+
+    def upsert_preferences_1v1(
+        self,
+        discord_uid: int,
+        last_chosen_races: list[str],
+        last_chosen_vetoes: list[str],
+    ) -> None:
+        """Create or update a player's 1v1 queue preferences."""
+        created = self._db_writer.upsert_preferences_1v1(
+            discord_uid, last_chosen_races, last_chosen_vetoes
+        )
+
+        df = self._state_manager.preferences_1v1_df
+        # Remove any existing row for this user, then add the new one.
+        self._state_manager.preferences_1v1_df = df.filter(
+            pl.col("discord_uid") != discord_uid
+        ).vstack(pl.DataFrame([created]).cast(df.schema))
+
+        logger.info(f"Upserted preferences for player {discord_uid}")
+
+    # ==================================================================
+    # MMR helpers
+    # ==================================================================
+
+    def _handle_missing_mmr_1v1(
+        self, discord_uid: int, player_name: str, race: str
+    ) -> dict:
+        """Return the MMR row, creating it with default MMR if it doesn't exist."""
+        df = self._state_manager.mmrs_1v1_df
+
+        rows = df.filter(
+            (pl.col("discord_uid") == discord_uid) & (pl.col("race") == race)
+        )
+        if not rows.is_empty():
+            return rows.row(0, named=True)
+
+        logger.info(
+            f"Creating default MMR row for {player_name} ({discord_uid}), race={race}"
+        )
+        created = self._db_writer.add_mmr_1v1(
+            discord_uid, player_name, race, get_default_mmr()
+        )
+        self._state_manager.mmrs_1v1_df = df.vstack(
+            pl.DataFrame([created]).cast(df.schema)
+        )
+        return created
+
+    # ==================================================================
+    # Player status helpers
+    # ==================================================================
+
+    def _set_player_status(
+        self,
+        discord_uid: int,
+        status: str,
+        match_mode: str | None = None,
+        match_id: int | None = None,
+    ) -> None:
+        """Update player_status (and match columns) in both cache and DB."""
+        df = self._state_manager.players_df
+        rows = df.filter(pl.col("discord_uid") == discord_uid)
+        if rows.is_empty():
+            return
+
+        player_id: int = rows.row(0, named=True)["id"]
+        self._db_writer.update_player_status(player_id, status, match_mode, match_id)
+
+        self._state_manager.players_df = df.with_columns(
+            player_status=pl.when(pl.col("discord_uid") == discord_uid)
+            .then(pl.lit(status))
+            .otherwise(pl.col("player_status")),
+            current_match_mode=pl.when(pl.col("discord_uid") == discord_uid)
+            .then(pl.lit(match_mode))
+            .otherwise(pl.col("current_match_mode")),
+            current_match_id=pl.when(pl.col("discord_uid") == discord_uid)
+            .then(pl.lit(match_id))
+            .otherwise(pl.col("current_match_id")),
+        )
+
+    # ==================================================================
+    # Queue 1v1
+    # ==================================================================
+
+    def join_queue_1v1(
+        self,
+        discord_uid: int,
+        discord_username: str,
+        bw_race: str | None,
+        sc2_race: str | None,
+        bw_mmr: int | None,
+        sc2_mmr: int | None,
+        map_vetoes: list[str],
+    ) -> tuple[bool, str | None]:
+        """Add a player to the 1v1 queue.
+
+        Validates that the player is idle, ensures MMR rows exist for the
+        chosen races, then appends a ``QueueEntry1v1`` to the in-memory
+        queue and sets ``player_status`` to ``'queueing'``.
+        """
+        player = self._handle_missing_player(discord_uid, discord_username)
+        if player["player_status"] != "idle":
+            return False, f"Cannot queue: player status is '{player['player_status']}'."
+
+        if bw_race is None and sc2_race is None:
+            return False, "At least one race must be selected."
+
+        player_name: str = player.get("player_name") or discord_username
+
+        # Ensure MMR rows exist; use provided values if given, else look up/create.
+        actual_bw_mmr: int | None = None
+        actual_sc2_mmr: int | None = None
+
+        if bw_race is not None:
+            mmr_row = self._handle_missing_mmr_1v1(discord_uid, player_name, bw_race)
+            actual_bw_mmr = bw_mmr if bw_mmr is not None else mmr_row["mmr"]
+
+        if sc2_race is not None:
+            mmr_row = self._handle_missing_mmr_1v1(discord_uid, player_name, sc2_race)
+            actual_sc2_mmr = sc2_mmr if sc2_mmr is not None else mmr_row["mmr"]
+
+        entry = QueueEntry1v1(
+            discord_uid=discord_uid,
+            player_name=player_name,
+            bw_race=bw_race,
+            sc2_race=sc2_race,
+            bw_mmr=actual_bw_mmr,
+            sc2_mmr=actual_sc2_mmr,
+            map_vetoes=map_vetoes,
+            joined_at=datetime.now(timezone.utc),
+            wait_cycles=0,
+        )
+        self._state_manager.queue_1v1.append(entry)
+        self._set_player_status(discord_uid, "queueing", match_mode="1v1")
+
+        logger.info(f"Player {player_name} ({discord_uid}) joined the 1v1 queue")
+        return True, None
+
+    def leave_queue_1v1(self, discord_uid: int) -> tuple[bool, str | None]:
+        """Remove a player from the 1v1 queue and reset their status to idle."""
+        queue = self._state_manager.queue_1v1
+        before = len(queue)
+        self._state_manager.queue_1v1 = [
+            e for e in queue if e["discord_uid"] != discord_uid
+        ]
+        if len(self._state_manager.queue_1v1) == before:
+            return False, "Player is not in the queue."
+
+        self._set_player_status(discord_uid, "idle")
+        logger.info(f"Player {discord_uid} left the 1v1 queue")
+        return True, None
+
+    # ==================================================================
+    # Matchmaking wave
+    # ==================================================================
+
+    def run_matchmaking_wave(
+        self,
+        queue_snapshot: list[QueueEntry1v1],
+    ) -> list[Matches1v1Row]:
+        """Run one matchmaking wave and create match rows for every pair found.
+
+        1. Calls ``algorithms/matchmaker.run_matchmaking_wave`` (pure).
+        2. For each candidate, calls ``algorithms/match_params.resolve_match_params`` (pure).
+        3. Creates DB + cache rows for every match; updates player statuses;
+           removes matched players from the queue.
+
+        Returns the list of newly created ``Matches1v1Row`` dicts.
+        """
+        remaining, candidates = run_matchmaking_wave(queue_snapshot)
+
+        # Replace the queue with unmatched players (wait_cycles already incremented).
+        self._state_manager.queue_1v1 = remaining
+
+        if not candidates:
+            return []
+
+        created_matches: list[Matches1v1Row] = []
+
+        for candidate in candidates:
+            try:
+                match_row = self._create_match_from_candidate(candidate)
+                created_matches.append(match_row)
+            except Exception:
+                logger.exception(
+                    "Failed to create match for candidate "
+                    f"{candidate['player_1_discord_uid']} vs "
+                    f"{candidate['player_2_discord_uid']}"
+                )
+
+        logger.info(
+            f"Matchmaking wave complete: {len(created_matches)} matches created, "
+            f"{len(remaining)} players still in queue"
+        )
+        return created_matches
+
+    def _create_match_from_candidate(
+        self, candidate: MatchCandidate1v1
+    ) -> Matches1v1Row:
+        """Resolve parameters, write the match row, and update player states."""
+        p1_uid = candidate["player_1_discord_uid"]
+        p2_uid = candidate["player_2_discord_uid"]
+
+        # Resolve locations — fall back to opponent's location if missing.
+        p1_loc = self._get_player_location(p1_uid)
+        p2_loc = self._get_player_location(p2_uid)
+
+        if p1_loc is None and p2_loc is not None:
+            p1_loc = p2_loc
+        elif p2_loc is None and p1_loc is not None:
+            p2_loc = p1_loc
+        elif p1_loc is None and p2_loc is None:
+            # Both missing — pick a sensible fallback.  The cross-table
+            # requires valid region codes so we can't just pass None.
+            p1_loc = "NA"
+            p2_loc = "NA"
+
+        # At this point both are guaranteed non-None by the if/elif chain.
+        assert p1_loc is not None
+        assert p2_loc is not None
+
+        params: MatchParams1v1 = resolve_match_params(
+            candidate,
+            player_1_location=p1_loc,
+            player_2_location=p2_loc,
+            maps=self._state_manager.maps,
+            cross_table=self._state_manager.cross_table,
+            season=CURRENT_SEASON,
+        )
+
+        now = datetime.now(timezone.utc)
+
+        created = self._db_writer.add_match_1v1(
+            player_1_discord_uid=p1_uid,
+            player_2_discord_uid=p2_uid,
+            player_1_name=candidate["player_1_name"],
+            player_2_name=candidate["player_2_name"],
+            player_1_race=candidate["player_1_race"],
+            player_2_race=candidate["player_2_race"],
+            player_1_mmr=candidate["player_1_mmr"],
+            player_2_mmr=candidate["player_2_mmr"],
+            map_name=params["map_name"],
+            server_name=params["server_name"],
+            assigned_at=now,
+        )
+
+        # Update in-memory matches DataFrame.
+        df = self._state_manager.matches_1v1_df
+        self._state_manager.matches_1v1_df = df.vstack(
+            pl.DataFrame([created]).cast(df.schema)
+        )
+
+        match_id: int = created["id"]
+
+        # Update both players to in_match.
+        self._set_player_status(p1_uid, "in_match", match_mode="1v1", match_id=match_id)
+        self._set_player_status(p2_uid, "in_match", match_mode="1v1", match_id=match_id)
+
+        # Initialise confirmation tracking.
+        self._confirmations[match_id] = set()
+
+        logger.info(
+            f"Match #{match_id} created: "
+            f"{candidate['player_1_name']} vs {candidate['player_2_name']} "
+            f"on {params['map_name']} @ {params['server_name']}"
+        )
+
+        return Matches1v1Row(**created)  # type: ignore[typeddict-item, no-any-return]
+
+    def _get_player_location(self, discord_uid: int) -> str | None:
+        df = self._state_manager.players_df
+        rows = df.filter(pl.col("discord_uid") == discord_uid)
+        if rows.is_empty():
+            return None
+        return rows.row(0, named=True).get("location")
+
+    # ==================================================================
+    # Match confirmation
+    # ==================================================================
+
+    def confirm_match(self, match_id: int, discord_uid: int) -> tuple[bool, bool]:
+        """Record that a player has confirmed a match.
+
+        Returns ``(success, both_confirmed)``.
+        """
+        if match_id not in self._confirmations:
+            self._confirmations[match_id] = set()
+
+        self._confirmations[match_id].add(discord_uid)
+        both = len(self._confirmations[match_id]) >= 2
+
+        logger.info(
+            f"Player {discord_uid} confirmed match #{match_id} (both_confirmed={both})"
+        )
+        return True, both
+
+    def is_match_confirmed(self, match_id: int) -> bool:
+        return len(self._confirmations.get(match_id, set())) >= 2
+
+    # ==================================================================
+    # Match abort
+    # ==================================================================
+
+    def abort_match(self, match_id: int, discord_uid: int) -> tuple[bool, str | None]:
+        """Abort a match.  The aborting player gets ``'abort'``, the opponent
+        gets ``'no_report'``, and ``match_result`` is set to ``'abort'``.
+        Both players are returned to idle.
+        """
+        match = self._get_match_row(match_id)
+        if match is None:
+            return False, "Match not found."
+
+        if match["match_result"] is not None:
+            return False, "Match already resolved."
+
+        p1_uid = match["player_1_discord_uid"]
+        p2_uid = match["player_2_discord_uid"]
+
+        if discord_uid == p1_uid:
+            p1_report, p2_report = "abort", "no_report"
+        elif discord_uid == p2_uid:
+            p1_report, p2_report = "no_report", "abort"
+        else:
+            return False, "Player is not part of this match."
+
+        now = datetime.now(timezone.utc)
+
+        self._db_writer.update_match_1v1_report(
+            match_id, player_1_report=p1_report, player_2_report=p2_report
+        )
+        self._db_writer.update_match_1v1_result(
+            match_id, match_result="abort", completed_at=now
+        )
+
+        self._update_match_cache(
+            match_id,
+            player_1_report=p1_report,
+            player_2_report=p2_report,
+            match_result="abort",
+            completed_at=now,
+        )
+
+        self._set_player_status(p1_uid, "idle")
+        self._set_player_status(p2_uid, "idle")
+        self._confirmations.pop(match_id, None)
+
+        logger.info(f"Match #{match_id} aborted by player {discord_uid}")
+        return True, None
+
+    # ==================================================================
+    # Confirmation timeout (abandoned)
+    # ==================================================================
+
+    def handle_confirmation_timeout(self, match_id: int) -> tuple[bool, str | None]:
+        """Handle expiry of the confirmation window.
+
+        Players who did *not* confirm get ``'abandoned'``; players who did
+        confirm get ``'no_report'``.  ``match_result`` is set to ``'abandoned'``.
+        """
+        match = self._get_match_row(match_id)
+        if match is None:
+            return False, "Match not found."
+
+        if match["match_result"] is not None:
+            return False, "Match already resolved."
+
+        confirmed = self._confirmations.get(match_id, set())
+        p1_uid = match["player_1_discord_uid"]
+        p2_uid = match["player_2_discord_uid"]
+
+        p1_report = "no_report" if p1_uid in confirmed else "abandoned"
+        p2_report = "no_report" if p2_uid in confirmed else "abandoned"
+
+        now = datetime.now(timezone.utc)
+
+        self._db_writer.update_match_1v1_report(
+            match_id, player_1_report=p1_report, player_2_report=p2_report
+        )
+        self._db_writer.update_match_1v1_result(
+            match_id, match_result="abandoned", completed_at=now
+        )
+
+        self._update_match_cache(
+            match_id,
+            player_1_report=p1_report,
+            player_2_report=p2_report,
+            match_result="abandoned",
+            completed_at=now,
+        )
+
+        self._set_player_status(p1_uid, "idle")
+        self._set_player_status(p2_uid, "idle")
+        self._confirmations.pop(match_id, None)
+
+        logger.info(f"Match #{match_id} abandoned (confirmation timeout)")
+        return True, None
+
+    # ==================================================================
+    # Match result reporting
+    # ==================================================================
+
+    def report_match_result(
+        self,
+        match_id: int,
+        discord_uid: int,
+        report: str,
+    ) -> tuple[bool, str | None, Matches1v1Row | None]:
+        """Record one player's result report.
+
+        If both players have now reported and agree, MMR is calculated, the
+        match is finalised, and both players return to idle.
+
+        Returns ``(success, message, finalised_match_or_none)``.
+        """
+        valid_reports = {"player_1_win", "player_2_win", "draw"}
+        if report not in valid_reports:
+            return False, f"Invalid report value: {report!r}", None
+
+        match = self._get_match_row(match_id)
+        if match is None:
+            return False, "Match not found.", None
+        if match["match_result"] is not None:
+            return False, "Match already resolved.", None
+
+        p1_uid = match["player_1_discord_uid"]
+        p2_uid = match["player_2_discord_uid"]
+
+        # Determine which column to write.
+        if discord_uid == p1_uid:
+            self._db_writer.update_match_1v1_report(match_id, player_1_report=report)
+            self._update_match_cache(match_id, player_1_report=report)
+        elif discord_uid == p2_uid:
+            self._db_writer.update_match_1v1_report(match_id, player_2_report=report)
+            self._update_match_cache(match_id, player_2_report=report)
+        else:
+            return False, "Player is not part of this match.", None
+
+        # Re-fetch to see both reports.
+        match = self._get_match_row(match_id)
+        assert match is not None
+
+        p1_report = match["player_1_report"]
+        p2_report = match["player_2_report"]
+
+        # If only one player has reported so far, wait.
+        if p1_report is None or p2_report is None:
+            logger.info(
+                f"Match #{match_id}: player {discord_uid} reported '{report}', "
+                "waiting for opponent"
+            )
+            return True, None, None
+
+        # Both reports are in — check agreement.
+        if p1_report == p2_report:
+            finalised = self._finalise_match(match_id, match, p1_report)
+            return True, None, finalised
+        else:
+            # Conflict — mark as invalidated, no MMR changes.
+            finalised = self._handle_conflict(match_id, match)
+            return True, "Reports conflict — match invalidated.", finalised
+
+    def _finalise_match(
+        self,
+        match_id: int,
+        match: Matches1v1Row,
+        agreed_result: str,
+    ) -> Matches1v1Row:
+        """Both players agree — calculate MMR, write everything, return to idle."""
+        now = datetime.now(timezone.utc)
+
+        # Map string result to the integer code that ratings_1v1 expects.
+        result_code_map = {"player_1_win": 1, "player_2_win": 2, "draw": 0}
+        result_code = result_code_map[agreed_result]
+
+        new_p1_mmr, new_p2_mmr = get_new_ratings(
+            match["player_1_mmr"], match["player_2_mmr"], result_code
+        )
+        p1_change = new_p1_mmr - match["player_1_mmr"]
+        p2_change = new_p2_mmr - match["player_2_mmr"]
+
+        # Write match result.
+        self._db_writer.update_match_1v1_result(
+            match_id,
+            match_result=agreed_result,
+            player_1_mmr_change=p1_change,
+            player_2_mmr_change=p2_change,
+            completed_at=now,
+        )
+
+        self._update_match_cache(
+            match_id,
+            match_result=agreed_result,
+            player_1_mmr_change=p1_change,
+            player_2_mmr_change=p2_change,
+            completed_at=now,
+        )
+
+        # Update MMR rows for both players.
+        p1_uid = match["player_1_discord_uid"]
+        p2_uid = match["player_2_discord_uid"]
+        p1_race = match["player_1_race"]
+        p2_race = match["player_2_race"]
+
+        self._update_player_mmr_after_match(
+            p1_uid, p1_race, new_p1_mmr, agreed_result, is_player_1=True, now=now
+        )
+        self._update_player_mmr_after_match(
+            p2_uid, p2_race, new_p2_mmr, agreed_result, is_player_1=False, now=now
+        )
+
+        # Return both players to idle.
+        self._set_player_status(p1_uid, "idle")
+        self._set_player_status(p2_uid, "idle")
+        self._confirmations.pop(match_id, None)
+
+        logger.info(
+            f"Match #{match_id} finalised: {agreed_result} "
+            f"(p1 {match['player_1_mmr']}→{new_p1_mmr}, "
+            f"p2 {match['player_2_mmr']}→{new_p2_mmr})"
+        )
+
+        updated_match = self._get_match_row(match_id)
+        assert updated_match is not None
+        return updated_match
+
+    def _handle_conflict(self, match_id: int, match: Matches1v1Row) -> Matches1v1Row:
+        """Reports disagree — mark invalidated, no MMR changes, return to idle."""
+        now = datetime.now(timezone.utc)
+
+        self._db_writer.update_match_1v1_result(
+            match_id,
+            match_result="invalidated",
+            player_1_mmr_change=0,
+            player_2_mmr_change=0,
+            completed_at=now,
+        )
+
+        self._update_match_cache(
+            match_id,
+            match_result="invalidated",
+            player_1_mmr_change=0,
+            player_2_mmr_change=0,
+            completed_at=now,
+        )
+
+        self._set_player_status(match["player_1_discord_uid"], "idle")
+        self._set_player_status(match["player_2_discord_uid"], "idle")
+        self._confirmations.pop(match_id, None)
+
+        logger.info(f"Match #{match_id} invalidated (conflicting reports)")
+
+        updated = self._get_match_row(match_id)
+        assert updated is not None
+        return updated
+
+    def _update_player_mmr_after_match(
+        self,
+        discord_uid: int,
+        race: str,
+        new_mmr: int,
+        agreed_result: str,
+        *,
+        is_player_1: bool,
+        now: datetime,
+    ) -> None:
+        """Increment game counters and write the new MMR for one player."""
+        df = self._state_manager.mmrs_1v1_df
+        rows = df.filter(
+            (pl.col("discord_uid") == discord_uid) & (pl.col("race") == race)
+        )
+        if rows.is_empty():
+            return
+
+        current = rows.row(0, named=True)
+        won = agreed_result == ("player_1_win" if is_player_1 else "player_2_win")
+        lost = agreed_result == ("player_2_win" if is_player_1 else "player_1_win")
+        drawn = agreed_result == "draw"
+
+        new_played = current["games_played"] + 1
+        new_won = current["games_won"] + (1 if won else 0)
+        new_lost = current["games_lost"] + (1 if lost else 0)
+        new_drawn = current["games_drawn"] + (1 if drawn else 0)
+
+        self._db_writer.update_mmr_1v1(
+            discord_uid,
+            race,
+            mmr=new_mmr,
+            games_played=new_played,
+            games_won=new_won,
+            games_lost=new_lost,
+            games_drawn=new_drawn,
+            last_played_at=now,
+        )
+
+        # Update cache.
+        updated = dict(current)
+        updated.update(
+            {
+                "mmr": new_mmr,
+                "games_played": new_played,
+                "games_won": new_won,
+                "games_lost": new_lost,
+                "games_drawn": new_drawn,
+                "last_played_at": now,
+            }
+        )
+        self._state_manager.mmrs_1v1_df = df.filter(
+            ~((pl.col("discord_uid") == discord_uid) & (pl.col("race") == race))
+        ).vstack(pl.DataFrame([updated]).cast(df.schema))
+
+    # ==================================================================
+    # Cache helpers
+    # ==================================================================
+
+    def _get_match_row(self, match_id: int) -> Matches1v1Row | None:
+        df = self._state_manager.matches_1v1_df
+        rows = df.filter(pl.col("id") == match_id)
+        if rows.is_empty():
+            return None
+        return Matches1v1Row(**rows.row(0, named=True))  # type: ignore[typeddict-item, no-any-return]
+
+    def _update_match_cache(self, match_id: int, **updates: object) -> None:
+        """Patch specific columns on a cached match row."""
+        df = self._state_manager.matches_1v1_df
+        rows = df.filter(pl.col("id") == match_id)
+        if rows.is_empty():
+            return
+
+        row = rows.row(0, named=True)
+        row.update(updates)
+        self._state_manager.matches_1v1_df = df.filter(pl.col("id") != match_id).vstack(
+            pl.DataFrame([row]).cast(df.schema)
+        )

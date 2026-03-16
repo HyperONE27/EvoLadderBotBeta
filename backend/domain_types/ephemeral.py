@@ -26,6 +26,12 @@ class MatchCandidate1v1(TypedDict):
     player_2_map_vetoes: list[str]
 
 
+class MatchParams1v1(TypedDict):
+    map_name: str
+    server_name: str
+    in_game_channel: str
+
+
 class QueueEntry1v1(TypedDict):
     discord_uid: int
     player_name: str

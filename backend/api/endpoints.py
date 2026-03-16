@@ -3,10 +3,24 @@ from fastapi import APIRouter, Depends
 from backend.api.dependencies import get_backend
 from backend.api.models import (
     GreetingResponse,
+    MatchAbortRequest,
+    MatchAbortResponse,
+    MatchConfirmRequest,
+    MatchConfirmResponse,
     Matches1v1Response,
+    MatchReportRequest,
+    MatchReportResponse,
     MMRs1v1Response,
     PlayersResponse,
+    Preferences1v1Response,
+    PreferencesUpsertRequest,
+    PreferencesUpsertResponse,
     ProfileResponse,
+    QueueJoinRequest,
+    QueueJoinResponse,
+    QueueLeaveRequest,
+    QueueLeaveResponse,
+    QueueStatsResponse,
     SetCountryConfirmRequest,
     SetCountryConfirmResponse,
     SetupConfirmRequest,
@@ -64,6 +78,124 @@ async def profile(
 # --- /prune ---
 
 # --- /queue ---
+
+
+@router.post("/queue_1v1/join", response_model=QueueJoinResponse)
+async def queue_join(
+    request: QueueJoinRequest,
+    app: Backend = Depends(get_backend),
+) -> QueueJoinResponse:
+    success, message = app.orchestrator.join_queue_1v1(
+        request.discord_uid,
+        request.discord_username,
+        request.bw_race,
+        request.sc2_race,
+        request.bw_mmr,
+        request.sc2_mmr,
+        request.map_vetoes,
+    )
+    return QueueJoinResponse(success=success, message=message)
+
+
+@router.delete("/queue_1v1/leave", response_model=QueueLeaveResponse)
+async def queue_leave(
+    request: QueueLeaveRequest,
+    app: Backend = Depends(get_backend),
+) -> QueueLeaveResponse:
+    success, message = app.orchestrator.leave_queue_1v1(request.discord_uid)
+    return QueueLeaveResponse(success=success, message=message)
+
+
+@router.get("/queue_1v1/stats", response_model=QueueStatsResponse)
+async def queue_stats(
+    app: Backend = Depends(get_backend),
+) -> QueueStatsResponse:
+    stats = app.orchestrator.get_queue_stats()
+    return QueueStatsResponse(**stats)
+
+
+# --- /preferences_1v1 ---
+
+
+@router.get("/preferences_1v1/{discord_uid}", response_model=Preferences1v1Response)
+async def get_preferences(
+    discord_uid: int,
+    app: Backend = Depends(get_backend),
+) -> Preferences1v1Response:
+    prefs = app.orchestrator.get_preferences_1v1(discord_uid)
+    return Preferences1v1Response(preferences=prefs)
+
+
+@router.put("/preferences_1v1", response_model=PreferencesUpsertResponse)
+async def upsert_preferences(
+    request: PreferencesUpsertRequest,
+    app: Backend = Depends(get_backend),
+) -> PreferencesUpsertResponse:
+    app.orchestrator.upsert_preferences_1v1(
+        request.discord_uid,
+        request.last_chosen_races,
+        request.last_chosen_vetoes,
+    )
+    return PreferencesUpsertResponse(success=True)
+
+
+# --- /matches_1v1 actions ---
+
+
+@router.put("/matches_1v1/{match_id}/confirm", response_model=MatchConfirmResponse)
+async def match_confirm(
+    match_id: int,
+    request: MatchConfirmRequest,
+    app: Backend = Depends(get_backend),
+) -> MatchConfirmResponse:
+    success, both_confirmed = app.orchestrator.confirm_match(
+        match_id, request.discord_uid
+    )
+    if success and both_confirmed:
+        # Both players confirmed — broadcast so bot can send match details.
+        from backend.api.app import ws_manager
+
+        match = app.orchestrator.get_match_1v1(match_id)
+        if match is not None:
+            await ws_manager.broadcast("both_confirmed", dict(match))
+    return MatchConfirmResponse(success=success, both_confirmed=both_confirmed)
+
+
+@router.put("/matches_1v1/{match_id}/abort", response_model=MatchAbortResponse)
+async def match_abort(
+    match_id: int,
+    request: MatchAbortRequest,
+    app: Backend = Depends(get_backend),
+) -> MatchAbortResponse:
+    success, message = app.orchestrator.abort_match(match_id, request.discord_uid)
+    if success:
+        from backend.api.app import ws_manager
+
+        match = app.orchestrator.get_match_1v1(match_id)
+        if match is not None:
+            await ws_manager.broadcast("match_aborted", dict(match))
+    return MatchAbortResponse(success=success, message=message)
+
+
+@router.put("/matches_1v1/{match_id}/report", response_model=MatchReportResponse)
+async def match_report(
+    match_id: int,
+    request: MatchReportRequest,
+    app: Backend = Depends(get_backend),
+) -> MatchReportResponse:
+    success, message, match = app.orchestrator.report_match_result(
+        match_id, request.discord_uid, request.report
+    )
+    if success and match is not None:
+        from backend.api.app import ws_manager
+
+        result = match.get("match_result")
+        if result == "invalidated":
+            await ws_manager.broadcast("match_conflict", dict(match))
+        elif result is not None:
+            await ws_manager.broadcast("match_completed", dict(match))
+    return MatchReportResponse(success=success, message=message, match=match)
+
 
 # --- /setcountry ---
 

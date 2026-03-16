@@ -82,8 +82,11 @@ QUEUE: dict[str, int] = {
     "abort_interval": 60,
     "activity_interval": 30,
     "expansion_step": 1,
-    "match_interval": 45,
+    "match_interval": 60,
+    "confirmation_timeout": 60,
 }
+
+IN_GAME_CHANNEL: str = "SCEvoLadder"
 
 # ---------------
 # Other constants

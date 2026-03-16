@@ -51,9 +51,9 @@ MATCHES_1V1_SCHEMA: dict[str, pl.DataType] = {
     "player_2_race": pl.String,
     "player_1_mmr": pl.Int16,
     "player_2_mmr": pl.Int16,
-    "player_1_report": pl.String,
-    "player_2_report": pl.String,
-    "match_result": pl.String,
+    "player_1_report": pl.String,  # nullable — NULL until player reports
+    "player_2_report": pl.String,  # nullable — NULL until player reports
+    "match_result": pl.String,  # nullable — NULL until resolved
     "player_1_mmr_change": pl.Int16,
     "player_2_mmr_change": pl.Int16,
     "map_name": pl.String,
@@ -168,9 +168,9 @@ class Matches1v1Row(TypedDict):
     player_2_race: str
     player_1_mmr: int
     player_2_mmr: int
-    player_1_report: str
-    player_2_report: str
-    match_result: str
+    player_1_report: str | None
+    player_2_report: str | None
+    match_result: str | None
     player_1_mmr_change: int | None
     player_2_mmr_change: int | None
     map_name: str

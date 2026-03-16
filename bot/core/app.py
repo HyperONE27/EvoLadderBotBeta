@@ -10,9 +10,11 @@ from bot.core.http import init_session, close_session
 
 from bot.commands.user.greeting_command import register_greeting_command
 from bot.commands.user.profile_command import register_profile_command
+from bot.commands.user.queue_command import register_queue_command
 from bot.commands.user.setcountry_command import register_setcountry_command
 from bot.commands.user.setup_command import register_setup_command
 from bot.commands.user.termsofservice_command import register_termsofservice_command
+from bot.core.ws_listener import start_ws_listener
 from common.logging.config import configure_structlog
 
 logger = structlog.get_logger(__name__)
@@ -50,6 +52,7 @@ def _register_commands(client: discord.Client) -> None:
     """
     register_greeting_command(tree)
     register_profile_command(tree)
+    register_queue_command(tree)
     register_setcountry_command(tree)
     register_setup_command(tree)
     register_termsofservice_command(tree)
@@ -80,10 +83,12 @@ async def on_ready() -> None:
     try:
         _register_commands(client)
         synced = await tree.sync()
-        logger.info(f"⌚ [Discord Gateway] Synced {len(synced)} commands.")
-        logger.info("✅ [Discord Gateway] Bot is ready!")
+        logger.info(f"[Discord Gateway] Synced {len(synced)} commands.")
+        logger.info("[Discord Gateway] Bot is ready!")
+        # Start WebSocket listener for real-time backend events.
+        asyncio.create_task(start_ws_listener(client))
     except Exception as e:
-        logger.error(f"❌ [Discord Gateway] Error during initialization: {e}")
+        logger.error(f"[Discord Gateway] Error during initialization: {e}")
         raise e
 
 
