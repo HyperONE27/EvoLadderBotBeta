@@ -55,7 +55,15 @@ CREATE TABLE IF NOT EXISTS matches_1v1 (
     player_1_name           TEXT NOT NULL,
     player_2_name           TEXT NOT NULL,
     player_1_race           TEXT NOT NULL,
+        CHECK (player_1_race IN
+            ('bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss')
+        ),
     player_2_race           TEXT NOT NULL,
+        CHECK (player_2_race IN
+            ('bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss')
+        ),
     player_1_mmr            SMALLINT NOT NULL,
     player_2_mmr            SMALLINT NOT NULL,
     player_1_report         TEXT
@@ -90,6 +98,10 @@ CREATE TABLE IF NOT EXISTS mmrs_1v1 (
     discord_uid             BIGINT NOT NULL,
     player_name             TEXT NOT NULL,
     race                    TEXT NOT NULL,
+        CHECK (race IN
+            ('bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss')
+        ),
     mmr                     SMALLINT NOT NULL,
     games_played            INTEGER DEFAULT 0,
     games_won               INTEGER DEFAULT 0,
@@ -115,7 +127,15 @@ CREATE TABLE IF NOT EXISTS replays_1v1 (
     player_1_name           TEXT NOT NULL,
     player_2_name           TEXT NOT NULL,
     player_1_race           TEXT NOT NULL,
+        CHECK (player_1_race IN
+            ('bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss')
+        ),
     player_2_race           TEXT NOT NULL,
+        CHECK (player_2_race IN
+            ('bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss')
+        ),
     match_result            TEXT NOT NULL
         CHECK (match_result IN 
             ('player_1_win', 'player_2_win', 'draw')
@@ -129,7 +149,11 @@ CREATE TABLE IF NOT EXISTS replays_1v1 (
     game_speed              TEXT NOT NULL,
     game_duration_setting   TEXT NOT NULL,
     locked_alliances        TEXT NOT NULL,
-    cache_handles           TEXT[] NOT NULL
+    cache_handles           TEXT[] NOT NULL,
+    upload_status           TEXT NOT NULL
+        CHECK (upload_status IN 
+            ('pending', 'completed', 'failed')
+        )
 );
 
 /*
