@@ -58,17 +58,17 @@ CREATE TABLE IF NOT EXISTS matches_1v1 (
     player_2_race           TEXT NOT NULL,
     player_1_mmr            SMALLINT NOT NULL,
     player_2_mmr            SMALLINT NOT NULL,
-    player_1_report         TEXT NOT NULL
+    player_1_report         TEXT
         CHECK (player_1_report IN 
-            ('win', 'loss', 'draw', 
+            ('player_1_win', 'player_2_win', 'draw', 
             'abort', 'abandoned', 'invalidated', 'no_report')
         ),
-    player_2_report         TEXT NOT NULL
+    player_2_report         TEXT
         CHECK (player_2_report IN 
-            ('win', 'loss', 'draw', 
+            ('player_1_win', 'player_2_win', 'draw', 
             'abort', 'abandoned', 'invalidated', 'no_report')
         ),
-    match_result            TEXT NOT NULL
+    match_result            TEXT
         CHECK (match_result IN 
             ('player_1_win', 'player_2_win', 'draw', 
             'abort', 'abandoned', 'invalidated', 'no_report')
