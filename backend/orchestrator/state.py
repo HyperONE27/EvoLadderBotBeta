@@ -55,8 +55,7 @@ class StateManager:
         # self.queue_2v2: list[QueueEntry2v2] = []
         # self.queue_FFA: list[QueueEntryFFA] = []
         # self.timed_out_players: list[int] = []
-        # self.write_back_queue = []
-
+        
         self._populate_json_data()
         self._populate_postgres_data()
 

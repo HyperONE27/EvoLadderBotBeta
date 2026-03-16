@@ -633,9 +633,9 @@ class TransitionManager:
             finalised = self._finalise_match(match_id, match, p1_report)
             return True, None, finalised
         else:
-            # Conflict — mark as invalidated, no MMR changes.
+            # Conflict — mark as conflict, no MMR changes.
             finalised = self._handle_conflict(match_id, match)
-            return True, "Reports conflict — match invalidated.", finalised
+            return True, "Reports conflict — match marked as conflict.", finalised
 
     def _finalise_match(
         self,
@@ -702,12 +702,12 @@ class TransitionManager:
         return updated_match
 
     def _handle_conflict(self, match_id: int, match: Matches1v1Row) -> Matches1v1Row:
-        """Reports disagree — mark invalidated, no MMR changes, return to idle."""
+        """Reports disagree — mark as conflict, no MMR changes, return to idle."""
         now = datetime.now(timezone.utc)
 
         self._db_writer.update_match_1v1_result(
             match_id,
-            match_result="invalidated",
+            match_result="conflict",
             player_1_mmr_change=0,
             player_2_mmr_change=0,
             completed_at=now,
@@ -715,7 +715,7 @@ class TransitionManager:
 
         self._update_match_cache(
             match_id,
-            match_result="invalidated",
+            match_result="conflict",
             player_1_mmr_change=0,
             player_2_mmr_change=0,
             completed_at=now,
@@ -725,7 +725,7 @@ class TransitionManager:
         self._set_player_status(match["player_2_discord_uid"], "idle")
         self._confirmations.pop(match_id, None)
 
-        logger.info(f"Match #{match_id} invalidated (conflicting reports)")
+        logger.info(f"Match #{match_id} marked as conflict (conflicting reports)")
 
         updated = self._get_match_row(match_id)
         assert updated is not None

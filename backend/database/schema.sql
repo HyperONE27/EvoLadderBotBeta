@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS matches_1v1 (
         ),
     match_result            TEXT
         CHECK (match_result IN 
-            ('player_1_win', 'player_2_win', 'draw', 
+            ('player_1_win', 'player_2_win', 'draw', 'conflict', 
             'abort', 'abandoned', 'invalidated', 'no_report')
         ),
     player_1_mmr_change     SMALLINT,

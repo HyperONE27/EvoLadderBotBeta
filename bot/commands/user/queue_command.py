@@ -288,7 +288,7 @@ class MatchInfoEmbed(discord.Embed):
         super().__init__(title=title, description="", color=discord.Color.teal())
 
         # Spacer
-        self.add_field(name="\u3164", value="\u3164", inline=False)
+        self.add_field(name="", value="", inline=False)
 
         # --- Player and Contact Information ---
         p1_race_name = _race_display(p1_race) if p1_race else "Unknown"
@@ -332,9 +332,9 @@ class MatchInfoEmbed(discord.Embed):
         )
 
         # Spacer
-        self.add_field(name="", value="\u3164", inline=False)
+        self.add_field(name="", value="", inline=False)
 
-        # --- Match Information and Settings ---
+        # --- Map and Mod Information ---
         map_info = get_map_by_short_name(map_name)
         map_author = map_info["author"] if map_info else "Unknown"
         map_link = _get_map_link(map_name, server_code)
@@ -347,7 +347,7 @@ class MatchInfoEmbed(discord.Embed):
         server_full = _server_display(server_code)
 
         self.add_field(
-            name="**🌐 Match Information and Settings:**",
+            name="**🗺️ Map and Mod Information:**",
             value=(
                 f"- Map: `{map_name}`\n"
                 f"  - Map Link: `{map_link}`\n"
@@ -359,8 +359,12 @@ class MatchInfoEmbed(discord.Embed):
             inline=False,
         )
 
+        # Spacer
+        self.add_field(name="", value="", inline=False)
+
+        # --- Match Settings ---
         self.add_field(
-            name="",
+            name="🔧 Match Settings:",
             value=(
                 f"- Server: `{server_full}`\n"
                 f"- In-Game Channel: `SCEvoLadder`\n"
@@ -370,7 +374,7 @@ class MatchInfoEmbed(discord.Embed):
         )
 
         self.add_field(
-            name="",
+            name="\u3164",
             value=(
                 f"- Game Privacy: `{_EXPECTED_GAME_PRIVACY}`\n"
                 f"- Game Speed: `{_EXPECTED_GAME_SPEED}`\n"
@@ -380,6 +384,7 @@ class MatchInfoEmbed(discord.Embed):
         )
 
         # Spacer
+        self.add_field(name="", value="", inline=False)
         self.add_field(name="", value="", inline=False)
 
         # --- Match Result ---
@@ -393,14 +398,14 @@ class MatchInfoEmbed(discord.Embed):
         self.add_field(
             name="**🏆 Match Result:**",
             value=result_value,
-            inline=False,
+            inline=True,
         )
 
         # --- Replay Status ---
         self.add_field(
             name="**📡 Replay Status:**",
             value="- Replay Uploaded: `No`\n- Replay Uploaded At: `N/A`",
-            inline=False,
+            inline=True,
         )
 
         # Footer instruction
@@ -658,7 +663,7 @@ class MatchConflictEmbed(discord.Embed):
             name="**Reason:**",
             value=(
                 "Both players submitted conflicting reports. "
-                "The match has been **invalidated** and no MMR changes were applied. "
+                "The match result has been marked as **conflict** and no MMR changes were applied. "
                 "Please contact an admin to resolve this."
             ),
             inline=False,

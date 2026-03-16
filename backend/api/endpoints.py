@@ -191,7 +191,7 @@ async def match_report(
         from backend.api.app import ws_manager
 
         result = match.get("match_result")
-        if result == "invalidated":
+        if result == "conflict":
             await ws_manager.broadcast("match_conflict", dict(match))
         elif result is not None:
             await ws_manager.broadcast("match_completed", dict(match))
