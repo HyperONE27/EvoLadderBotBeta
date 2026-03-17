@@ -42,8 +42,6 @@ def _get_str_env(key: str) -> str:
 # Environment variables
 # ---------------------
 
-ADMINS: list[Admin] = _get_admins_env("ADMINS")
-
 DATABASE: dict[str, str] = {
     "url": _get_str_env("SUPABASE_URL"),
     "anon_key": _get_str_env("SUPABASE_ANON_KEY"),

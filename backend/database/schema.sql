@@ -2,6 +2,19 @@
 -- TABLES
 -- =============================================
 
+CREATE TABLE IF NOT EXISTS admins (
+    id                      SMALLSERIAL PRIMARY KEY,
+    discord_uid             BIGINT NOT NULL UNIQUE,
+    discord_username        TEXT NOT NULL,
+    role                    TEXT NOT NULL DEFAULT 'admin'
+        CHECK (role IN
+            ('owner', 'admin', 'inactive')
+        ),
+    first_promoted_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_promoted_at        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_demoted_at         TIMESTAMPTZ
+);
+
 CREATE TABLE IF NOT EXISTS players (
     id                      BIGSERIAL PRIMARY KEY,
     discord_uid             BIGINT NOT NULL UNIQUE,
@@ -11,16 +24,16 @@ CREATE TABLE IF NOT EXISTS players (
     battletag               TEXT,       -- 1-12 letters + "#" + 3-5 digits
     nationality             TEXT,       -- ISO 3166-1 alpha-2 code
     location                TEXT,       -- regions.json geographic region code
-    language                TEXT DEFAULT 'enUS'
+    language                TEXT NOT NULL DEFAULT 'enUS'
         CHECK (language IN
             ('enUS', 'esMX', 'koKR', 'ruRU', 'zhCN')
         ),
-    is_banned               BOOLEAN DEFAULT FALSE,
-    accepted_tos            BOOLEAN DEFAULT FALSE,
+    is_banned               BOOLEAN NOT NULL DEFAULT FALSE,
+    accepted_tos            BOOLEAN NOT NULL DEFAULT FALSE,
     accepted_tos_at         TIMESTAMPTZ,
-    completed_setup         BOOLEAN DEFAULT FALSE,
+    completed_setup         BOOLEAN NOT NULL DEFAULT FALSE,
     completed_setup_at      TIMESTAMPTZ,
-    player_status           TEXT DEFAULT 'idle'
+    player_status           TEXT NOT NULL DEFAULT 'idle'
         CHECK (player_status IN 
             ('idle', 'queueing', 'in_match', 'timed_out')
         ),
@@ -34,7 +47,7 @@ CREATE TABLE IF NOT EXISTS players (
 CREATE TABLE IF NOT EXISTS notifications (
     id                      BIGSERIAL PRIMARY KEY,
     discord_uid             BIGINT NOT NULL UNIQUE,
-    read_quick_start_guide  BOOLEAN DEFAULT FALSE
+    read_quick_start_guide  BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS events (
@@ -45,7 +58,7 @@ CREATE TABLE IF NOT EXISTS events (
             ('admin_command', 'player_command', 'player_update')
         ),
     event_data              JSONB NOT NULL,
-    performed_at            TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    performed_at            TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS matches_1v1 (
@@ -87,6 +100,8 @@ CREATE TABLE IF NOT EXISTS matches_1v1 (
     server_name             TEXT NOT NULL,
     assigned_at             TIMESTAMPTZ,
     completed_at            TIMESTAMPTZ,
+    admin_intervened        BOOLEAN NOT NULL DEFAULT FALSE,
+    admin_discord_uid       BIGINT DEFAULT NULL,
     player_1_replay_path    TEXT,
     player_1_replay_row_id  BIGINT,
     player_1_uploaded_at    TIMESTAMPTZ,
@@ -105,11 +120,11 @@ CREATE TABLE IF NOT EXISTS mmrs_1v1 (
             'sc2_terran', 'sc2_zerg', 'sc2_protoss')
         ),
     mmr                     SMALLINT NOT NULL,
-    games_played            INTEGER DEFAULT 0,
-    games_won               INTEGER DEFAULT 0,
-    games_lost              INTEGER DEFAULT 0,
-    games_drawn             INTEGER DEFAULT 0,
-    last_played_at          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    games_played            INTEGER NOT NULL DEFAULT 0,
+    games_won               INTEGER NOT NULL DEFAULT 0,
+    games_lost              INTEGER NOT NULL DEFAULT 0,
+    games_drawn             INTEGER NOT NULL DEFAULT 0,
+    last_played_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(discord_uid, race)
 );
 

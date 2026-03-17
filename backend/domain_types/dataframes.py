@@ -7,6 +7,16 @@ from typing import TypedDict
 # DataFrame definitions
 # ---------------------
 
+ADMINS_SCHEMA: dict[str, pl.DataType] = {
+    "id": pl.Int16,
+    "discord_uid": pl.Int64,
+    "discord_username": pl.String,
+    "role": pl.String,
+    "first_promoted_at": pl.Datetime("us", "utc"),
+    "last_promoted_at": pl.Datetime("us", "utc"),
+    "last_demoted_at": pl.Datetime("us", "utc"),
+}
+
 PLAYERS_SCHEMA: dict[str, pl.DataType] = {
     "id": pl.Int64,
     "discord_uid": pl.Int64,
@@ -127,6 +137,14 @@ TABLE_SCHEMAS: dict[str, dict[str, pl.DataType]] = {
 # DataFrame row types
 # -------------------
 
+class AdminsRow(TypedDict):
+    id: int
+    discord_uid: int
+    discord_username: str
+    role: str
+    first_promoted_at: datetime
+    last_promoted_at: datetime
+    last_demoted_at: datetime | None
 
 class PlayersRow(TypedDict):
     id: int
