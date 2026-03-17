@@ -1,3 +1,6 @@
+from concurrent.futures import ProcessPoolExecutor
+
+from backend.core.config import REPLAY_WORKER_PROCESSES
 from backend.database.database import DatabaseWriter
 from backend.lookups.match_1v1_lookups import init_match_1v1_lookups
 from backend.lookups.mmr_1v1_lookups import init_mmr_1v1_lookups
@@ -21,6 +24,7 @@ from common.lookups.region_lookups import init_region_lookups
 
 class Backend:
     def __init__(self) -> None:
+        self.process_pool = ProcessPoolExecutor(max_workers=REPLAY_WORKER_PROCESSES)
         self._initialize_orchestrator()
         self._initialize_lookups()
 

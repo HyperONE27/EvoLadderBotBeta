@@ -203,3 +203,15 @@ class MMRs1v1Response(BaseModel):
 
 class MMRs1v1AllResponse(BaseModel):
     mmrs: list[MMRs1v1Row]
+
+
+# --- /replays_1v1 ---
+
+
+class ReplayUploadResponse(BaseModel):
+    success: bool
+    error: str | None = None
+    parsed: dict | None = None
+    verification: dict | None = None
+    replay_id: int | None = None
+    upload_status: str | None = None

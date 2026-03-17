@@ -60,9 +60,16 @@ def _register_commands(client: discord.Client) -> None:
 async def on_message(message: discord.Message) -> None:
     if message.author == client.user:
         return
+
     # Remove this when we have actual things to do here
     if message.content.startswith("!"):
         await message.channel.send("🌎 Hello, world!")
+
+    # Replay upload handler — only fires for DM messages with attachments.
+    if isinstance(message.channel, discord.DMChannel) and message.attachments:
+        from bot.helpers.replay_handler import handle_replay_upload
+
+        await handle_replay_upload(client, message)
 
 
 @client.event

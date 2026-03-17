@@ -41,6 +41,15 @@ _EXPECTED_GAME_SPEED = "Faster"
 _EXPECTED_GAME_DURATION = "Infinite"
 _EXPECTED_LOCKED_ALLIANCES = "Yes"
 
+# ---------------------------------------------------------------------------
+# Replay validation gate
+# ---------------------------------------------------------------------------
+# When True, the match-report dropdown is locked until a replay has been
+# uploaded AND its race check passes.  The verification results are always
+# shown in the ReplayDetailsEmbed regardless of this flag; the flag only
+# controls whether those results actually gate reporting.
+_ENABLE_REPLAY_VALIDATION: bool = True
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -188,16 +197,19 @@ def build_queue_setup_embed(
 
 
 class QueueSearchingEmbed(discord.Embed):
-    def __init__(self, stats: dict | None = None) -> None:
+    def __init__(self, stats: dict | None = None, *, match_found: bool = False) -> None:
         bw_only = stats.get("bw_only", 0) if stats else 0
         sc2_only = stats.get("sc2_only", 0) if stats else 0
         both = stats.get("both", 0) if stats else 0
         now = time.time()
         next_search = int((now // 60 + 1) * 60)
 
-        super().__init__(
-            title="🔍 Searching...",
-            description=(
+        if match_found:
+            description = (
+                "The queue is searching for a game.\n\n- Search interval: 60 seconds"
+            )
+        else:
+            description = (
                 "The queue is searching for a game.\n\n"
                 f"- Next search: <t:{next_search}:R>\n"
                 "- Search interval: 60 seconds\n"
@@ -205,9 +217,23 @@ class QueueSearchingEmbed(discord.Embed):
                 f"  - Brood War: {bw_only}\n"
                 f"  - StarCraft II: {sc2_only}\n"
                 f"  - Both: {both}"
-            ),
+            )
+
+        super().__init__(
+            title="🔍 Searching...",
+            description=description,
             color=discord.Color.blue(),
         )
+
+        if match_found:
+            self.add_field(
+                name="✅ Match Found!",
+                value=(
+                    "You have been removed from the queue. "
+                    "Check your DMs for match confirmation details."
+                ),
+                inline=False,
+            )
 
 
 class QueueErrorEmbed(discord.Embed):
@@ -251,6 +277,7 @@ class MatchInfoEmbed(discord.Embed):
         p1_info: dict[str, Any] | None = None,
         p2_info: dict[str, Any] | None = None,
         pending_report: str | None = None,
+        replay_uploaded: bool = False,
     ) -> None:
         match_id = match_data.get("id", "?")
         p1_name = match_data.get("player_1_name", "Player 1")
@@ -402,20 +429,26 @@ class MatchInfoEmbed(discord.Embed):
         )
 
         # --- Replay Status ---
+        replay_value = (
+            "- Replay Uploaded: `Yes`"
+            if replay_uploaded
+            else "- Replay Uploaded: `No`\n- Replay Uploaded At: `N/A`"
+        )
         self.add_field(
             name="**📡 Replay Status:**",
-            value="- Replay Uploaded: `No`\n- Replay Uploaded At: `N/A`",
+            value=replay_value,
             inline=True,
         )
 
         # Footer instruction
-        self.set_footer(
-            text=(
+        if _ENABLE_REPLAY_VALIDATION and not replay_uploaded:
+            footer_text = (
                 "ℹ️ To report the match result, upload a replay. "
-                "The dropdown menus below will unlock and allow you to report "
-                "the match result, once you upload a replay."
+                "The dropdown menus below will unlock once a valid replay is uploaded."
             )
-        )
+        else:
+            footer_text = "ℹ️ Report the match result using the dropdown menus below."
+        self.set_footer(text=footer_text)
 
 
 def _player_header(
@@ -942,6 +975,8 @@ class MatchReportView(discord.ui.View):
         match_data: dict | None = None,
         p1_info: dict[str, Any] | None = None,
         p2_info: dict[str, Any] | None = None,
+        *,
+        report_locked: bool = False,
     ) -> None:
         super().__init__(timeout=None)
         self.match_id = match_id
@@ -949,6 +984,7 @@ class MatchReportView(discord.ui.View):
         self._p1_info = p1_info
         self._p2_info = p2_info
         self.report_select = MatchReportSelect(match_id, p1_name, p2_name)
+        self.report_select.disabled = report_locked
         self.add_item(self.report_select)
 
     async def submit_report(
@@ -1061,6 +1097,19 @@ async def _join_queue(
             view=QueueSearchingView(),
         )
 
+        # Store a reference to this message so the WS listener can edit it
+        # when a match is found (stops the timer and removes the cancel button).
+        try:
+            msg = await interaction.original_response()
+            from bot.core.dependencies import get_cache
+
+            get_cache().active_searching_messages[discord_user_id] = msg
+        except Exception:
+            logger.warning(
+                "Could not cache searching message reference",
+                discord_user_id=discord_user_id,
+            )
+
     except Exception:
         logger.exception("Failed to join queue")
         await interaction.edit_original_response(
@@ -1091,6 +1140,14 @@ async def _leave_queue(interaction: discord.Interaction) -> None:
             color=discord.Color.light_grey(),
         )
         await interaction.edit_original_response(embed=embed, view=None)
+
+        # Clear the cached searching message reference.
+        try:
+            from bot.core.dependencies import get_cache
+
+            get_cache().active_searching_messages.pop(interaction.user.id, None)
+        except Exception:
+            pass
 
     except Exception:
         logger.exception("Failed to leave queue")

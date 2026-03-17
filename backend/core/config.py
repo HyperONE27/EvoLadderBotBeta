@@ -93,3 +93,12 @@ IN_GAME_CHANNEL: str = "SCEvoLadder"
 # ---------------
 
 CURRENT_SEASON: str = "season_alpha"
+
+# ---------------------
+# Replay configuration
+# ---------------------
+
+REPLAY_WORKER_PROCESSES: int = int(os.getenv("REPLAY_WORKER_PROCESSES", "2"))
+
+# How many minutes after match assignment a replay may have started.
+REPLAY_TIMESTAMP_WINDOW_MINUTES: int = 60

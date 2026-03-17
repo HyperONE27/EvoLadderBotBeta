@@ -1,0 +1,167 @@
+"""
+Pure replay verification: compares parsed replay data against expected match
+parameters and returns a VerificationResult dict.
+"""
+
+from datetime import datetime, timezone
+from typing import Any
+
+from backend.core.config import EXPECTED_LOBBY_SETTINGS, REPLAY_TIMESTAMP_WINDOW_MINUTES
+
+
+# ---------------------------------------------------------------------------
+# Public interface
+# ---------------------------------------------------------------------------
+
+
+def verify_replay(
+    parsed: dict[str, Any],
+    match: dict[str, Any],
+    mods: dict[str, Any],
+) -> dict[str, Any]:
+    """
+    Verify a parsed replay against a match and return a VerificationResult dict.
+
+    Args:
+        parsed: dict returned by ``parse_replay()``.
+        match:  ``Matches1v1Row`` dict from the backend state.
+        mods:   ``state_manager.mods`` dict (from mods.json).
+
+    Returns:
+        dict with keys: races, map, mod, timestamp, observers, game_privacy,
+        game_speed, game_duration, locked_alliances.
+    """
+    result: dict[str, Any] = {}
+
+    # --- Races ---
+    expected_races = {match["player_1_race"], match["player_2_race"]}
+    played_races = {parsed["player_1_race"], parsed["player_2_race"]}
+    result["races"] = {
+        "success": expected_races == played_races,
+        "expected_races": sorted(expected_races),
+        "played_races": sorted(played_races),
+    }
+
+    # --- Map ---
+    expected_map: str = match["map_name"]
+    played_map: str = parsed.get("map_name", "")
+    result["map"] = {
+        "success": expected_map == played_map,
+        "expected_map": expected_map,
+        "played_map": played_map,
+    }
+
+    # --- Mod ---
+    result["mod"] = _verify_mod(parsed.get("cache_handles", []), mods)
+
+    # --- Timestamp ---
+    result["timestamp"] = _verify_timestamp(
+        parsed.get("replay_time", ""), match.get("assigned_at")
+    )
+
+    # --- Observers ---
+    observers_found: list[str] = parsed.get("observers", [])
+    result["observers"] = {
+        "success": len(observers_found) == 0,
+        "observers_found": observers_found,
+    }
+
+    # --- Game settings ---
+    for key, config_key, result_key in (
+        ("game_privacy", "privacy", "game_privacy"),
+        ("game_speed", "speed", "game_speed"),
+        ("game_duration_setting", "duration", "game_duration"),
+        ("locked_alliances", "locked_alliances", "locked_alliances"),
+    ):
+        expected_val: str = EXPECTED_LOBBY_SETTINGS[config_key]
+        found_val: str = parsed.get(key, "")
+        result[result_key] = {
+            "success": found_val == expected_val,
+            "expected": expected_val,
+            "found": found_val,
+        }
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+
+def _verify_mod(cache_handles: list[str], mods: dict[str, Any]) -> dict[str, Any]:
+    multi = mods.get("multi")
+    if not multi:
+        return {
+            "success": False,
+            "message": "SC: Evo Complete mod data not found.",
+        }
+
+    all_known: set[str] = set()
+    for key in (
+        "am_handles",
+        "eu_handles",
+        "as_handles",
+        "am_artmod_handles",
+        "eu_artmod_handles",
+        "as_artmod_handles",
+    ):
+        all_known.update(multi.get(key, []))
+
+    matching = set(cache_handles) & all_known
+    if matching:
+        return {
+            "success": True,
+            "message": (
+                f"SC: Evo Complete mod detected ({len(matching)} matching handle(s))."
+            ),
+        }
+    return {
+        "success": False,
+        "message": "SC: Evo Complete mod not detected in cache handles.",
+    }
+
+
+def _verify_timestamp(replay_time_str: str, assigned_at: Any) -> dict[str, Any]:
+    try:
+        if not replay_time_str:
+            return {
+                "success": False,
+                "error": "No replay time available.",
+                "time_difference_minutes": None,
+            }
+
+        replay_dt = datetime.fromisoformat(replay_time_str.replace("Z", "+00:00"))
+        if replay_dt.tzinfo is None:
+            replay_dt = replay_dt.replace(tzinfo=timezone.utc)
+
+        if assigned_at is None:
+            return {
+                "success": False,
+                "error": "No match assignment time available.",
+                "time_difference_minutes": None,
+            }
+
+        if isinstance(assigned_at, str):
+            assigned_dt = datetime.fromisoformat(assigned_at.replace("Z", "+00:00"))
+        else:
+            assigned_dt = assigned_at
+
+        if assigned_dt.tzinfo is None:
+            assigned_dt = assigned_dt.replace(tzinfo=timezone.utc)
+
+        diff_minutes = (replay_dt - assigned_dt).total_seconds() / 60
+        in_window = 0 <= diff_minutes <= REPLAY_TIMESTAMP_WINDOW_MINUTES
+
+        return {
+            "success": in_window,
+            "time_difference_minutes": diff_minutes,
+            "error": None,
+        }
+
+    except Exception as exc:
+        return {
+            "success": False,
+            "error": str(exc),
+            "time_difference_minutes": None,
+        }

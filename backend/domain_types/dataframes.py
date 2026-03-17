@@ -182,8 +182,10 @@ class Matches1v1Row(TypedDict):
     assigned_at: datetime | None
     completed_at: datetime | None
     player_1_replay_path: str | None
+    player_1_replay_row_id: int | None
     player_1_uploaded_at: datetime | None
     player_2_replay_path: str | None
+    player_2_replay_row_id: int | None
     player_2_uploaded_at: datetime | None
 
 
@@ -209,6 +211,7 @@ class Preferences1v1Row(TypedDict):
 
 class Replays1v1Row(TypedDict):
     id: int
+    matches_1v1_id: int
     replay_path: str
     replay_hash: str
     replay_time: datetime
@@ -228,3 +231,4 @@ class Replays1v1Row(TypedDict):
     game_duration_setting: str
     locked_alliances: str
     cache_handles: list[str]
+    upload_status: str

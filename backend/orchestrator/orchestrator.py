@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from backend.database.database import DatabaseWriter
 from backend.domain_types.dataframes import (
     Matches1v1Row,
@@ -218,4 +220,43 @@ class Orchestrator:
         """Record one player's result report. Returns (success, message, finalised_match)."""
         return self._transition_manager.report_match_result(
             match_id, discord_uid, report
+        )
+
+    # ------------------------------------------------------------------
+    # Replay 1v1
+    # ------------------------------------------------------------------
+
+    def insert_replay_1v1_pending(
+        self,
+        match_id: int,
+        discord_uid: int,
+        parsed: dict,
+        initial_path: str,
+        uploaded_at: datetime,
+    ) -> dict:
+        """Insert a replay row with upload_status='pending'. Returns the created row."""
+        return self._transition_manager.insert_replay_1v1_pending(
+            match_id, discord_uid, parsed, initial_path, uploaded_at
+        )
+
+    def update_replay_status(
+        self,
+        replay_id: int,
+        status: str,
+        final_path: str | None = None,
+    ) -> None:
+        """Update upload_status (and optionally replay_path) for a replay row."""
+        self._transition_manager.update_replay_status(replay_id, status, final_path)
+
+    def update_match_replay_refs(
+        self,
+        match_id: int,
+        player_num: int,
+        replay_path: str,
+        replay_row_id: int,
+        uploaded_at: datetime,
+    ) -> None:
+        """Update match row with latest replay path, row ID, and upload timestamp."""
+        self._transition_manager.update_match_replay_refs(
+            match_id, player_num, replay_path, replay_row_id, uploaded_at
         )

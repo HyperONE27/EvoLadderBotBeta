@@ -1,3 +1,8 @@
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import discord
+
 from common.json_types import (
     Country,
     CrossTableData,
@@ -59,6 +64,21 @@ class Cache:
 
         # Localization
         # self.locales: dict[str, Locale] = {}
+
+        # --- Runtime tracking (populated by the WS listener and on_message handler) ---
+
+        # Maps discord_uid → the QueueSearchingEmbed message so ws_listener can
+        # edit it when a match is found and strip the cancel button.
+        self.active_searching_messages: dict[int, "discord.Message"] = {}
+
+        # Maps discord_uid → {"match_data": dict, "p1_info": dict|None,
+        # "p2_info": dict|None} while the player is in an active match.
+        # Cleared when the match ends (any terminal WS event).
+        self.active_match_info: dict[int, dict] = {}
+
+        # Maps discord_uid → the MatchInfoEmbed message so the replay handler
+        # can update the embed and enable the report dropdown after a successful upload.
+        self.active_match_messages: dict[int, "discord.Message"] = {}
 
         self._populate_json_data()
         self._populate_locale_data()

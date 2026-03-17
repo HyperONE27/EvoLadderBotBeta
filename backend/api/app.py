@@ -77,6 +77,7 @@ async def lifespan(app: FastAPI):
     yield
 
     matchmaker_task.cancel()
+    backend.process_pool.shutdown(wait=False)
     logger.info("[Backend] Backend shutting down...")
 
 

@@ -1,6 +1,12 @@
-from fastapi import APIRouter, Depends
+import asyncio
+import structlog
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from backend.api.dependencies import get_backend
+from backend.algorithms.replay_parser import parse_replay
+from backend.algorithms.replay_verifier import verify_replay
 from backend.api.models import (
     GreetingResponse,
     MatchAbortRequest,
@@ -22,6 +28,7 @@ from backend.api.models import (
     QueueLeaveRequest,
     QueueLeaveResponse,
     QueueStatsResponse,
+    ReplayUploadResponse,
     SetCountryConfirmRequest,
     SetCountryConfirmResponse,
     SetupConfirmRequest,
@@ -30,6 +37,8 @@ from backend.api.models import (
     TermsOfServiceConfirmResponse,
 )
 from backend.core.bootstrap import Backend
+
+logger = structlog.get_logger(__name__)
 
 router = APIRouter()
 
@@ -283,3 +292,109 @@ async def mmrs_1v1(
     app: Backend = Depends(get_backend),
 ) -> MMRs1v1Response:
     return MMRs1v1Response(mmr=app.orchestrator.get_mmr_1v1(discord_uid, race))
+
+
+# --- /matches_1v1/{match_id}/replay ---
+
+
+@router.post(
+    "/matches_1v1/{match_id}/replay",
+    response_model=ReplayUploadResponse,
+)
+async def upload_replay(
+    match_id: int,
+    discord_uid: int = Form(...),
+    replay_file: UploadFile = File(...),
+    app: Backend = Depends(get_backend),
+) -> ReplayUploadResponse:
+    """
+    Accept a .SC2Replay upload from a match participant.
+
+    Flow:
+      1. Validate the match and player.
+      2. Parse the replay in the process pool (non-blocking).
+      3. Insert a ``pending`` row in ``replays_1v1`` (DB then cache).
+      4. Upload bytes to Supabase Storage (up to 3 attempts).
+      5. Update ``upload_status`` to ``completed`` / ``failed``.
+      6. Update the match row with the replay reference.
+      7. Run verification and return everything to the bot.
+    """
+    # --- 1. Validate ---
+    match = app.orchestrator.get_match_1v1(match_id)
+    if match is None:
+        return ReplayUploadResponse(success=False, error="Match not found.")
+
+    p1_uid = match["player_1_discord_uid"]
+    p2_uid = match["player_2_discord_uid"]
+    if discord_uid not in (p1_uid, p2_uid):
+        return ReplayUploadResponse(
+            success=False, error="You are not a participant in this match."
+        )
+    player_num = 1 if discord_uid == p1_uid else 2
+
+    # --- 2. Parse in process pool ---
+    replay_bytes = await replay_file.read()
+    loop = asyncio.get_event_loop()
+    try:
+        parsed: dict = await loop.run_in_executor(
+            app.process_pool, parse_replay, replay_bytes
+        )
+    except Exception as exc:
+        logger.exception("Replay parse executor failed", match_id=match_id)
+        return ReplayUploadResponse(
+            success=False, error=f"Replay parse executor failed: {exc}"
+        )
+
+    if parsed.get("error"):
+        return ReplayUploadResponse(success=False, error=parsed["error"])
+
+    # --- 3. Build paths and insert pending row ---
+    uploaded_at = datetime.now(timezone.utc)
+    replay_hash = parsed["replay_hash"]
+    filename = f"{uploaded_at.strftime('%Y-%m-%d_%H-%M-%S')}_{replay_hash}.SC2Replay"
+    storage_path = f"replays/{match_id}/{discord_uid}/{filename}"
+
+    created = app.orchestrator.insert_replay_1v1_pending(
+        match_id=match_id,
+        discord_uid=discord_uid,
+        parsed=parsed,
+        initial_path=filename,
+        uploaded_at=uploaded_at,
+    )
+    replay_id: int = created["id"]
+
+    # --- 4. Upload to Supabase Storage (up to 3 attempts) ---
+    public_url: str | None = None
+    upload_status = "failed"
+
+    for attempt in range(3):
+        public_url = app.db_writer.upload_replay_to_storage(replay_bytes, storage_path)
+        if public_url:
+            upload_status = "completed"
+            break
+        logger.warning(
+            "Supabase Storage upload attempt %d/3 failed",
+            attempt + 1,
+            match_id=match_id,
+            replay_id=replay_id,
+        )
+
+    # --- 5. Update upload_status (and final path if upload succeeded) ---
+    final_path: str = public_url if upload_status == "completed" else filename  # type: ignore[assignment]
+    app.orchestrator.update_replay_status(replay_id, upload_status, final_path)
+
+    # --- 6. Update the match row ---
+    app.orchestrator.update_match_replay_refs(
+        match_id, player_num, final_path, replay_id, uploaded_at
+    )
+
+    # --- 7. Verify and return ---
+    verification = verify_replay(parsed, dict(match), app.state_manager.mods)
+
+    return ReplayUploadResponse(
+        success=True,
+        parsed=parsed,
+        verification=verification,
+        replay_id=replay_id,
+        upload_status=upload_status,
+    )

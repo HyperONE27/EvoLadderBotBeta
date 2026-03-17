@@ -1,11 +1,14 @@
+import logging
 from datetime import datetime
 
 import polars as pl
 from supabase import create_client, Client
 from typing import Any, cast
 
-from backend.core.config import DATABASE
+from backend.core.config import DATABASE, STORAGE
 from backend.domain_types.dataframes import TABLE_SCHEMAS
+
+logger = logging.getLogger(__name__)
 
 
 # Connection functions
@@ -365,6 +368,71 @@ class DatabaseWriter:
         if player_2_mmr_change is not None:
             updates["player_2_mmr_change"] = player_2_mmr_change
         self.client.table("matches_1v1").update(updates).eq("id", match_id).execute()
+
+    # ------------------------------------------------------------------
+    # Replays 1v1
+    # ------------------------------------------------------------------
+
+    def add_replay_1v1(self, data: dict[str, Any]) -> dict:
+        """Insert a new replay row and return the created row (with DB-assigned id)."""
+        response = self.client.table("replays_1v1").insert(data).execute()
+        return cast(dict[str, Any], response.data[0])
+
+    def update_replay_1v1_status(
+        self,
+        replay_id: int,
+        status: str,
+        replay_path: str | None = None,
+    ) -> None:
+        """Update upload_status and optionally replay_path for a replay row."""
+        updates: dict[str, Any] = {"upload_status": status}
+        if replay_path is not None:
+            updates["replay_path"] = replay_path
+        self.client.table("replays_1v1").update(updates).eq("id", replay_id).execute()
+
+    def update_match_1v1_replay(
+        self,
+        match_id: int,
+        player_num: int,
+        replay_path: str,
+        replay_row_id: int,
+        uploaded_at: datetime,
+    ) -> None:
+        """Update a match row with the latest replay path, row ID, and timestamp."""
+        updates: dict[str, Any] = {
+            f"player_{player_num}_replay_path": replay_path,
+            f"player_{player_num}_replay_row_id": replay_row_id,
+            f"player_{player_num}_uploaded_at": uploaded_at.isoformat(),
+        }
+        self.client.table("matches_1v1").update(updates).eq("id", match_id).execute()
+
+    # ------------------------------------------------------------------
+    # Supabase Storage
+    # ------------------------------------------------------------------
+
+    def upload_replay_to_storage(
+        self, replay_bytes: bytes, storage_path: str
+    ) -> str | None:
+        """
+        Upload *replay_bytes* to Supabase Storage at *storage_path* and
+        return the public URL, or ``None`` on failure.
+        """
+        bucket = STORAGE["bucket_name"]
+        try:
+            self.client.storage.from_(bucket).upload(
+                storage_path,
+                replay_bytes,
+                {"content-type": "application/octet-stream", "upsert": "true"},
+            )
+            public_url: str = self.client.storage.from_(bucket).get_public_url(
+                storage_path
+            )
+            return public_url
+        except Exception as exc:
+            logger.error(
+                "Supabase Storage upload failed for path %s: %s", storage_path, exc
+            )
+            return None
 
     def batch_update_mmrs_1v1(self, rows: list[dict[str, Any]]) -> None:
         """Upsert multiple MMR rows in a single round-trip.

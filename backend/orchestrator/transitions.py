@@ -809,3 +809,116 @@ class TransitionManager:
         self._state_manager.matches_1v1_df = df.filter(pl.col("id") != match_id).vstack(
             pl.DataFrame([row]).cast(df.schema)
         )
+
+    # ==================================================================
+    # Replay 1v1
+    # ==================================================================
+
+    def insert_replay_1v1_pending(
+        self,
+        match_id: int,
+        discord_uid: int,
+        parsed: dict,
+        initial_path: str,
+        uploaded_at: datetime,
+    ) -> dict:
+        """
+        Insert a replay row with ``upload_status='pending'`` and return the
+        created row (which contains the DB-assigned ``id``).
+
+        Write-through: DB is written first, then the in-memory cache is updated.
+        """
+        data = {
+            "matches_1v1_id": match_id,
+            "replay_path": initial_path,
+            "replay_hash": parsed["replay_hash"],
+            "replay_time": parsed["replay_time"],
+            "uploaded_at": uploaded_at.isoformat(),
+            "player_1_name": parsed["player_1_name"],
+            "player_2_name": parsed["player_2_name"],
+            "player_1_race": parsed["player_1_race"],
+            "player_2_race": parsed["player_2_race"],
+            "match_result": parsed["match_result"],
+            "player_1_handle": parsed["player_1_handle"],
+            "player_2_handle": parsed["player_2_handle"],
+            "observers": parsed["observers"],
+            "map_name": parsed["map_name"],
+            "game_duration_seconds": parsed["game_duration_seconds"],
+            "game_privacy": parsed["game_privacy"],
+            "game_speed": parsed["game_speed"],
+            "game_duration_setting": parsed["game_duration_setting"],
+            "locked_alliances": parsed["locked_alliances"],
+            "cache_handles": parsed["cache_handles"],
+            "upload_status": "pending",
+        }
+
+        # DB write first (write-through).
+        created = self._db_writer.add_replay_1v1(data)
+
+        # Update in-memory cache.
+        df = self._state_manager.replays_1v1_df
+        self._state_manager.replays_1v1_df = df.vstack(
+            pl.DataFrame([created]).cast(df.schema)
+        )
+
+        return created
+
+    def update_replay_status(
+        self,
+        replay_id: int,
+        status: str,
+        final_path: str | None = None,
+    ) -> None:
+        """
+        Update ``upload_status`` for a replay row.  If *final_path* is given,
+        also update ``replay_path`` (used when changing from the initial
+        placeholder to the Supabase public URL).
+
+        Write-through: DB is written first, then the in-memory cache is updated.
+        """
+        # DB write first.
+        self._db_writer.update_replay_1v1_status(replay_id, status, final_path)
+
+        # Update in-memory cache by swapping the row.
+        df = self._state_manager.replays_1v1_df
+        rows = df.filter(pl.col("id") == replay_id)
+        if rows.is_empty():
+            return
+
+        row = rows.row(0, named=True)
+        row["upload_status"] = status
+        if final_path is not None:
+            row["replay_path"] = final_path
+
+        self._state_manager.replays_1v1_df = df.filter(
+            pl.col("id") != replay_id
+        ).vstack(pl.DataFrame([row]).cast(df.schema))
+
+    def update_match_replay_refs(
+        self,
+        match_id: int,
+        player_num: int,
+        replay_path: str,
+        replay_row_id: int,
+        uploaded_at: datetime,
+    ) -> None:
+        """
+        Update a match row with the latest replay path, replay row ID, and
+        upload timestamp for the given player number (1 or 2).
+
+        Write-through: DB is written first, then the in-memory cache is updated.
+        """
+        # DB write first.
+        self._db_writer.update_match_1v1_replay(
+            match_id, player_num, replay_path, replay_row_id, uploaded_at
+        )
+
+        # Update in-memory cache using the generic row-swap helper.
+        self._update_match_cache(
+            match_id,
+            **{
+                f"player_{player_num}_replay_path": replay_path,
+                f"player_{player_num}_replay_row_id": replay_row_id,
+                f"player_{player_num}_uploaded_at": uploaded_at,
+            },
+        )
