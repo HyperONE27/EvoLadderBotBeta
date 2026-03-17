@@ -334,7 +334,7 @@ async def upload_replay(
 
     # --- 2. Parse in process pool ---
     replay_bytes = await replay_file.read()
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     try:
         parsed: dict = await loop.run_in_executor(
             app.process_pool, parse_replay, replay_bytes
@@ -368,7 +368,9 @@ async def upload_replay(
     upload_status = "failed"
 
     for attempt in range(3):
-        public_url = app.db_writer.upload_replay_to_storage(replay_bytes, storage_path)
+        public_url = await loop.run_in_executor(
+            None, app.db_writer.upload_replay_to_storage, replay_bytes, storage_path
+        )
         if public_url:
             upload_status = "completed"
             break
@@ -389,7 +391,10 @@ async def upload_replay(
     )
 
     # --- 7. Verify and return ---
-    verification = verify_replay(parsed, dict(match), app.state_manager.mods)
+    season_maps = app.state_manager.maps.get("1v1", {}).get("season_alpha", {})
+    verification = verify_replay(
+        parsed, dict(match), app.state_manager.mods, season_maps
+    )
 
     return ReplayUploadResponse(
         success=True,

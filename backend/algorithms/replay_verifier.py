@@ -18,6 +18,7 @@ def verify_replay(
     parsed: dict[str, Any],
     match: dict[str, Any],
     mods: dict[str, Any],
+    maps: dict[str, Any],
 ) -> dict[str, Any]:
     """
     Verify a parsed replay against a match and return a VerificationResult dict.
@@ -26,6 +27,7 @@ def verify_replay(
         parsed: dict returned by ``parse_replay()``.
         match:  ``Matches1v1Row`` dict from the backend state.
         mods:   ``state_manager.mods`` dict (from mods.json).
+        maps:   ``state_manager.maps`` dict (from maps.json, season-level).
 
     Returns:
         dict with keys: races, map, mod, timestamp, observers, game_privacy,
@@ -43,7 +45,11 @@ def verify_replay(
     }
 
     # --- Map ---
-    expected_map: str = match["map_name"]
+    # match["map_name"] is the short name (e.g. "Celestial Enclave"); the replay
+    # contains the full name (e.g. "Celestial Enclave LE").  Resolve via maps data.
+    short_name: str = match["map_name"]
+    map_entry = maps.get(short_name, {})
+    expected_map: str = map_entry.get("name", short_name)
     played_map: str = parsed.get("map_name", "")
     result["map"] = {
         "success": expected_map == played_map,

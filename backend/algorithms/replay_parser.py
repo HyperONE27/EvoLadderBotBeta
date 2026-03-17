@@ -172,9 +172,10 @@ def parse_replay(replay_bytes: bytes) -> dict[str, Any]:
         observers: list[str] = [o.name for o in replay.observers]
 
         # --- Replay date ---
-        replay_time: str = (
-            replay.date.isoformat() if hasattr(replay, "date") and replay.date else ""
-        )
+        if hasattr(replay, "date") and replay.date:
+            replay_time: str = replay.date.isoformat()
+        else:
+            replay_time = "1970-01-01T00:00:00+00:00"
 
         return {
             "error": None,

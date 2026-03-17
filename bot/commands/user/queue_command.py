@@ -376,7 +376,7 @@ class MatchInfoEmbed(discord.Embed):
         self.add_field(
             name="**🗺️ Map and Mod Information:**",
             value=(
-                f"- Map: `{map_name}`\n"
+                f"- Map: `{map_info['name'] if map_info else map_name}`\n"
                 f"  - Map Link: `{map_link}`\n"
                 f"  - Author: `{map_author}`\n"
                 f"- Mod: `{mod_name}`\n"
