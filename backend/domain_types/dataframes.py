@@ -70,6 +70,8 @@ MATCHES_1V1_SCHEMA: dict[str, pl.DataType] = {
     "server_name": pl.String,
     "assigned_at": pl.Datetime("us", "utc"),
     "completed_at": pl.Datetime("us", "utc"),
+    "admin_intervened": pl.Boolean,
+    "admin_discord_uid": pl.Int64,
     "player_1_replay_path": pl.String,
     "player_1_replay_row_id": pl.Int64,
     "player_1_uploaded_at": pl.Datetime("us", "utc"),
