@@ -922,3 +922,256 @@ class TransitionManager:
                 f"player_{player_num}_uploaded_at": uploaded_at,
             },
         )
+
+    # ==================================================================
+    # Admin: ban toggle
+    # ==================================================================
+
+    def toggle_ban(self, discord_uid: int) -> tuple[bool, bool]:
+        """Toggle is_banned for a player. Returns (success, new_is_banned)."""
+        df = self._state_manager.players_df
+        rows = df.filter(pl.col("discord_uid") == discord_uid)
+        if rows.is_empty():
+            return False, False
+
+        player = rows.row(0, named=True)
+        player_id: int = player["id"]
+        new_banned = not player["is_banned"]
+
+        self._db_writer.update_player_ban_status(player_id, new_banned)
+
+        self._state_manager.players_df = df.with_columns(
+            is_banned=pl.when(pl.col("discord_uid") == discord_uid)
+            .then(pl.lit(new_banned))
+            .otherwise(pl.col("is_banned"))
+        )
+
+        logger.info(f"Player {discord_uid} ban toggled to {new_banned}")
+        return True, new_banned
+
+    # ==================================================================
+    # Admin: resolve match
+    # ==================================================================
+
+    def admin_resolve_match(
+        self,
+        match_id: int,
+        result: str,
+        admin_discord_uid: int,
+    ) -> dict:
+        """Admin-resolve a match. Bypasses the two-report flow.
+
+        Sets match_result, calculates MMR from snapshotted initial MMRs,
+        sets admin_intervened=True, and returns both players to idle.
+
+        Does NOT modify player_1_report or player_2_report.
+
+        Args:
+            match_id: Match to resolve.
+            result: One of 'player_1_win', 'player_2_win', 'draw', 'invalidated'.
+            admin_discord_uid: UID of the resolving admin.
+
+        Returns:
+            Dict with resolution details (match data, MMR changes, player info).
+        """
+        match = self._get_match_row(match_id)
+        if match is None:
+            return {"success": False, "error": "Match not found."}
+
+        p1_uid = match["player_1_discord_uid"]
+        p2_uid = match["player_2_discord_uid"]
+        p1_mmr = match["player_1_mmr"]
+        p2_mmr = match["player_2_mmr"]
+
+        now = datetime.now(timezone.utc)
+
+        # Calculate MMR changes from snapshotted initial MMRs.
+        if result == "invalidated":
+            p1_change = 0
+            p2_change = 0
+            new_p1_mmr = p1_mmr
+            new_p2_mmr = p2_mmr
+        else:
+            result_code_map = {"player_1_win": 1, "player_2_win": 2, "draw": 0}
+            result_code = result_code_map[result]
+            new_p1_mmr, new_p2_mmr = get_new_ratings(p1_mmr, p2_mmr, result_code)
+            p1_change = new_p1_mmr - p1_mmr
+            p2_change = new_p2_mmr - p2_mmr
+
+        # Write match resolution to DB.
+        self._db_writer.admin_resolve_match_1v1(
+            match_id,
+            match_result=result,
+            player_1_mmr_change=p1_change,
+            player_2_mmr_change=p2_change,
+            admin_discord_uid=admin_discord_uid,
+            completed_at=now,
+        )
+
+        # Update match cache.
+        self._update_match_cache(
+            match_id,
+            match_result=result,
+            player_1_mmr_change=p1_change,
+            player_2_mmr_change=p2_change,
+            admin_intervened=True,
+            admin_discord_uid=admin_discord_uid,
+            completed_at=now,
+        )
+
+        # Apply MMR changes (skip for invalidated).
+        if result != "invalidated":
+            p1_race = match["player_1_race"]
+            p2_race = match["player_2_race"]
+
+            p1_mmr_update = self._compute_mmr_update(
+                p1_uid, p1_race, new_p1_mmr, result, is_player_1=True, now=now
+            )
+            p2_mmr_update = self._compute_mmr_update(
+                p2_uid, p2_race, new_p2_mmr, result, is_player_1=False, now=now
+            )
+
+            mmr_updates = [u for u in (p1_mmr_update, p2_mmr_update) if u is not None]
+            if mmr_updates:
+                self._db_writer.batch_update_mmrs_1v1(mmr_updates)
+            if p1_mmr_update is not None:
+                self._apply_mmr_cache_update(p1_uid, p1_race, p1_mmr_update)
+            if p2_mmr_update is not None:
+                self._apply_mmr_cache_update(p2_uid, p2_race, p2_mmr_update)
+
+        # Return both players to idle.
+        self._set_player_status(p1_uid, "idle")
+        self._set_player_status(p2_uid, "idle")
+        self._confirmations.pop(match_id, None)
+
+        logger.info(
+            f"Match #{match_id} admin-resolved by {admin_discord_uid}: "
+            f"{result} (p1 {p1_mmr}→{new_p1_mmr}, p2 {p2_mmr}→{new_p2_mmr})"
+        )
+
+        return {
+            "success": True,
+            "match_id": match_id,
+            "result": result,
+            "player_1_discord_uid": p1_uid,
+            "player_2_discord_uid": p2_uid,
+            "player_1_name": match["player_1_name"],
+            "player_2_name": match["player_2_name"],
+            "player_1_race": match["player_1_race"],
+            "player_2_race": match["player_2_race"],
+            "player_1_mmr": p1_mmr,
+            "player_2_mmr": p2_mmr,
+            "player_1_mmr_new": new_p1_mmr,
+            "player_2_mmr_new": new_p2_mmr,
+            "player_1_mmr_change": p1_change,
+            "player_2_mmr_change": p2_change,
+            "map_name": match["map_name"],
+            "server_name": match["server_name"],
+        }
+
+    # ==================================================================
+    # Admin: set MMR (idempotent)
+    # ==================================================================
+
+    def admin_set_mmr(
+        self, discord_uid: int, race: str, new_mmr: int
+    ) -> tuple[bool, int | None]:
+        """Idempotent SET of a player's MMR. Returns (success, old_mmr)."""
+        df = self._state_manager.mmrs_1v1_df
+        rows = df.filter(
+            (pl.col("discord_uid") == discord_uid) & (pl.col("race") == race)
+        )
+        if rows.is_empty():
+            return False, None
+
+        old_mmr: int = rows.row(0, named=True)["mmr"]
+
+        # DB write.
+        self._db_writer.set_mmr_1v1_value(discord_uid, race, new_mmr)
+
+        # Cache update.
+        self._state_manager.mmrs_1v1_df = df.with_columns(
+            mmr=pl.when(
+                (pl.col("discord_uid") == discord_uid) & (pl.col("race") == race)
+            )
+            .then(pl.lit(new_mmr, dtype=pl.Int16))
+            .otherwise(pl.col("mmr"))
+        )
+
+        logger.info(f"Admin set MMR for {discord_uid}/{race}: {old_mmr} → {new_mmr}")
+        return True, old_mmr
+
+    # ==================================================================
+    # Owner: toggle admin role
+    # ==================================================================
+
+    def toggle_admin_role(self, discord_uid: int, discord_username: str) -> dict:
+        """Toggle a user between admin and inactive. Returns result dict.
+
+        - New user → insert with role='admin'.
+        - Existing 'inactive' → set role='admin', update last_promoted_at.
+        - Existing 'admin' → set role='inactive', update last_demoted_at.
+        - Existing 'owner' → refuse.
+        """
+        df = self._state_manager.admins_df
+        rows = df.filter(pl.col("discord_uid") == discord_uid)
+        now = datetime.now(timezone.utc)
+
+        if rows.is_empty():
+            # New admin — insert.
+            created = self._db_writer.upsert_admin(
+                discord_uid=discord_uid,
+                discord_username=discord_username,
+                role="admin",
+                first_promoted_at=now,
+                last_promoted_at=now,
+            )
+            self._state_manager.admins_df = df.vstack(
+                pl.DataFrame([created]).cast(df.schema)
+            )
+            logger.info(f"New admin added: {discord_username} ({discord_uid})")
+            return {"success": True, "action": "promoted", "new_role": "admin"}
+
+        current = rows.row(0, named=True)
+        current_role: str = current["role"]
+
+        if current_role == "owner":
+            return {"success": False, "error": "Cannot modify owner status."}
+
+        if current_role == "admin":
+            # Demote to inactive.
+            self._db_writer.update_admin_role(
+                discord_uid, "inactive", last_demoted_at=now
+            )
+            updated = {**current, "role": "inactive", "last_demoted_at": now}
+            self._state_manager.admins_df = df.filter(
+                pl.col("discord_uid") != discord_uid
+            ).vstack(pl.DataFrame([updated]).cast(df.schema))
+            logger.info(f"Admin demoted: {discord_username} ({discord_uid})")
+            return {"success": True, "action": "demoted", "new_role": "inactive"}
+
+        # inactive → promote back.
+        self._db_writer.update_admin_role(discord_uid, "admin", last_promoted_at=now)
+        updated = {**current, "role": "admin", "last_promoted_at": now}
+        self._state_manager.admins_df = df.filter(
+            pl.col("discord_uid") != discord_uid
+        ).vstack(pl.DataFrame([updated]).cast(df.schema))
+        logger.info(f"Admin re-promoted: {discord_username} ({discord_uid})")
+        return {"success": True, "action": "promoted", "new_role": "admin"}
+
+    # ==================================================================
+    # Admin: snapshot helpers
+    # ==================================================================
+
+    def get_queue_snapshot_1v1(self) -> list[QueueEntry1v1]:
+        """Return the current 1v1 queue (shallow copy)."""
+        return list(self._state_manager.queue_1v1)
+
+    def get_active_matches_1v1(self) -> list[Matches1v1Row]:
+        """Return all matches with match_result IS NULL."""
+        df = self._state_manager.matches_1v1_df
+        active = df.filter(pl.col("match_result").is_null())
+        return [
+            Matches1v1Row(**row)  # type: ignore[typeddict-item]
+            for row in active.iter_rows(named=True)
+        ]

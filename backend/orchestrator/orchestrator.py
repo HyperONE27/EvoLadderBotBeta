@@ -2,6 +2,7 @@ from datetime import datetime
 
 from backend.database.database import DatabaseWriter
 from backend.domain_types.dataframes import (
+    AdminsRow,
     Matches1v1Row,
     MMRs1v1Row,
     PlayersRow,
@@ -17,6 +18,14 @@ class Orchestrator:
     def __init__(self, state_manager: StateManager, db_writer: DatabaseWriter) -> None:
         self._state_reader = StateReader(state_manager)
         self._transition_manager = TransitionManager(state_manager, db_writer)
+
+    # ------------------------------------------------------------------
+    # Reads — Admins
+    # ------------------------------------------------------------------
+
+    def get_admin(self, discord_uid: int) -> AdminsRow | None:
+        """Get an admin by their Discord UID."""
+        return self._state_reader.get_admin(discord_uid)
 
     # ------------------------------------------------------------------
     # Reads
@@ -260,3 +269,45 @@ class Orchestrator:
         self._transition_manager.update_match_replay_refs(
             match_id, player_num, replay_path, replay_row_id, uploaded_at
         )
+
+    # ------------------------------------------------------------------
+    # Admin operations
+    # ------------------------------------------------------------------
+
+    def toggle_ban(self, discord_uid: int) -> tuple[bool, bool]:
+        """Toggle ban status. Returns (success, new_is_banned)."""
+        return self._transition_manager.toggle_ban(discord_uid)
+
+    def admin_resolve_match(
+        self, match_id: int, result: str, admin_discord_uid: int
+    ) -> dict:
+        """Admin-resolve a match bypassing the two-report flow."""
+        return self._transition_manager.admin_resolve_match(
+            match_id, result, admin_discord_uid
+        )
+
+    def admin_set_mmr(
+        self, discord_uid: int, race: str, new_mmr: int
+    ) -> tuple[bool, int | None]:
+        """Idempotent SET of a player's MMR. Returns (success, old_mmr)."""
+        return self._transition_manager.admin_set_mmr(discord_uid, race, new_mmr)
+
+    # ------------------------------------------------------------------
+    # Owner operations
+    # ------------------------------------------------------------------
+
+    def toggle_admin_role(self, discord_uid: int, discord_username: str) -> dict:
+        """Toggle a user between admin and inactive roles."""
+        return self._transition_manager.toggle_admin_role(discord_uid, discord_username)
+
+    # ------------------------------------------------------------------
+    # Admin snapshot
+    # ------------------------------------------------------------------
+
+    def get_queue_snapshot_1v1(self) -> list[QueueEntry1v1]:
+        """Return the current 1v1 queue."""
+        return self._transition_manager.get_queue_snapshot_1v1()
+
+    def get_active_matches_1v1(self) -> list[Matches1v1Row]:
+        """Return all matches with match_result IS NULL."""
+        return self._transition_manager.get_active_matches_1v1()

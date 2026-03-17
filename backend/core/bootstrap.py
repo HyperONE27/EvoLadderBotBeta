@@ -2,6 +2,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 from backend.core.config import REPLAY_WORKER_PROCESSES
 from backend.database.database import DatabaseWriter
+from backend.lookups.admin_lookups import init_admin_lookups
 from backend.lookups.match_1v1_lookups import init_match_1v1_lookups
 from backend.lookups.mmr_1v1_lookups import init_mmr_1v1_lookups
 
@@ -36,6 +37,7 @@ class Backend:
 
     def _initialize_lookups(self) -> None:
         modules = [
+            init_admin_lookups,
             init_country_lookups,
             init_cross_table_lookups,
             init_emote_lookups,

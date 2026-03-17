@@ -1,27 +1,11 @@
-import json
 import os
 from dotenv import load_dotenv
-from typing import cast, TypedDict
 
 load_dotenv()
 
 # ----------------
 # Internal helpers
 # ----------------
-
-
-class Admin(TypedDict):
-    discord_id: int
-    name: str
-    role: str
-
-
-def _get_admins_env(key: str) -> list[Admin]:
-    value = os.getenv(key)
-    if not value:
-        raise ValueError(f"Required environment variable {key} not set")
-    data = json.loads(value)
-    return cast(list[Admin], data)
 
 
 def _get_int_env(key: str) -> int:

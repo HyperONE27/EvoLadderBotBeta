@@ -8,7 +8,7 @@ from discord import app_commands
 
 from bot.core.config import BACKEND_URL
 from bot.core.http import get_session
-from bot.helpers.checks import check_if_dm
+from bot.helpers.checks import check_if_banned, check_if_dm
 from bot.helpers.emotes import (
     get_flag_emote,
     get_game_emote,
@@ -1230,6 +1230,7 @@ async def _abort_match(interaction: discord.Interaction, match_id: int) -> None:
 
 def register_queue_command(tree: app_commands.CommandTree) -> None:
     @tree.command(name="queue", description="Join the 1v1 ranked matchmaking queue")
+    @app_commands.check(check_if_banned)
     @app_commands.check(check_if_dm)
     async def queue_command(interaction: discord.Interaction) -> None:
         logger.debug(f"queue_command invoked by user={interaction.user.id}")

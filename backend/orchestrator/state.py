@@ -1,6 +1,5 @@
 import polars as pl
 
-from backend.core.config import Admin
 from backend.database.database import DatabaseReader
 from backend.domain_types.ephemeral import LeaderboardEntry1v1, QueueEntry1v1
 
@@ -19,9 +18,6 @@ from common.loader import JSONLoader
 
 class StateManager:
     def __init__(self) -> None:
-        # Admins
-        self.admins: list[Admin] = []
-
         # Static data from JSON files for lookups
         self.countries: dict[str, Country] = {}
         self.cross_table: CrossTableData = {
@@ -39,6 +35,7 @@ class StateManager:
         }
 
         # In-memory DataFrames (caching the entire database)
+        self.admins_df: pl.DataFrame = pl.DataFrame()
         self.players_df: pl.DataFrame = pl.DataFrame()
         self.notifications_df: pl.DataFrame = pl.DataFrame()
         self.events_df: pl.DataFrame = pl.DataFrame()

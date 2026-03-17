@@ -126,6 +126,7 @@ REPLAYS_1V1_SCHEMA: dict[str, pl.DataType] = {
 }
 
 TABLE_SCHEMAS: dict[str, dict[str, pl.DataType]] = {
+    "admins": ADMINS_SCHEMA,
     "players": PLAYERS_SCHEMA,
     "notifications": NOTIFICATIONS_SCHEMA,
     "events": EVENTS_SCHEMA,
@@ -139,6 +140,7 @@ TABLE_SCHEMAS: dict[str, dict[str, pl.DataType]] = {
 # DataFrame row types
 # -------------------
 
+
 class AdminsRow(TypedDict):
     id: int
     discord_uid: int
@@ -147,6 +149,7 @@ class AdminsRow(TypedDict):
     first_promoted_at: datetime
     last_promoted_at: datetime
     last_demoted_at: datetime | None
+
 
 class PlayersRow(TypedDict):
     id: int
@@ -201,6 +204,8 @@ class Matches1v1Row(TypedDict):
     server_name: str
     assigned_at: datetime | None
     completed_at: datetime | None
+    admin_intervened: bool
+    admin_discord_uid: int | None
     player_1_replay_path: str | None
     player_1_replay_row_id: int | None
     player_1_uploaded_at: datetime | None

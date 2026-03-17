@@ -434,6 +434,102 @@ class DatabaseWriter:
             )
             return None
 
+    # ------------------------------------------------------------------
+    # Players (admin operations)
+    # ------------------------------------------------------------------
+
+    def update_player_ban_status(self, player_id: int, is_banned: bool) -> None:
+        """Toggle the is_banned flag for a player."""
+        self.client.table("players").update({"is_banned": is_banned}).eq(
+            "id", player_id
+        ).execute()
+
+    # ------------------------------------------------------------------
+    # Matches 1v1 (admin operations)
+    # ------------------------------------------------------------------
+
+    def admin_resolve_match_1v1(
+        self,
+        match_id: int,
+        *,
+        match_result: str,
+        player_1_mmr_change: int,
+        player_2_mmr_change: int,
+        admin_discord_uid: int,
+        completed_at: datetime,
+    ) -> None:
+        """Admin-resolve a match: set result, MMR deltas, and admin audit columns."""
+        self.client.table("matches_1v1").update(
+            {
+                "match_result": match_result,
+                "player_1_mmr_change": player_1_mmr_change,
+                "player_2_mmr_change": player_2_mmr_change,
+                "admin_intervened": True,
+                "admin_discord_uid": admin_discord_uid,
+                "completed_at": completed_at.isoformat(),
+            }
+        ).eq("id", match_id).execute()
+
+    # ------------------------------------------------------------------
+    # MMR 1v1 (admin operations)
+    # ------------------------------------------------------------------
+
+    def set_mmr_1v1_value(self, discord_uid: int, race: str, mmr: int) -> None:
+        """Idempotent SET of a player's MMR value. Does not touch game stats."""
+        self.client.table("mmrs_1v1").update({"mmr": mmr}).eq(
+            "discord_uid", discord_uid
+        ).eq("race", race).execute()
+
+    # ------------------------------------------------------------------
+    # Admins
+    # ------------------------------------------------------------------
+
+    def upsert_admin(
+        self,
+        discord_uid: int,
+        discord_username: str,
+        role: str,
+        first_promoted_at: datetime,
+        last_promoted_at: datetime,
+        last_demoted_at: datetime | None = None,
+    ) -> dict:
+        """Insert or update an admin row. Returns the resulting row."""
+        data: dict[str, Any] = {
+            "discord_uid": discord_uid,
+            "discord_username": discord_username,
+            "role": role,
+            "first_promoted_at": first_promoted_at.isoformat(),
+            "last_promoted_at": last_promoted_at.isoformat(),
+            "last_demoted_at": last_demoted_at.isoformat() if last_demoted_at else None,
+        }
+        response = (
+            self.client.table("admins")
+            .upsert(data, on_conflict="discord_uid")
+            .execute()
+        )
+        return cast(dict[str, Any], response.data[0])
+
+    def update_admin_role(
+        self,
+        discord_uid: int,
+        role: str,
+        last_promoted_at: datetime | None = None,
+        last_demoted_at: datetime | None = None,
+    ) -> None:
+        """Update an admin's role and relevant timestamp."""
+        updates: dict[str, Any] = {"role": role}
+        if last_promoted_at is not None:
+            updates["last_promoted_at"] = last_promoted_at.isoformat()
+        if last_demoted_at is not None:
+            updates["last_demoted_at"] = last_demoted_at.isoformat()
+        self.client.table("admins").update(updates).eq(
+            "discord_uid", discord_uid
+        ).execute()
+
+    # ------------------------------------------------------------------
+    # MMR 1v1 (batch)
+    # ------------------------------------------------------------------
+
     def batch_update_mmrs_1v1(self, rows: list[dict[str, Any]]) -> None:
         """Upsert multiple MMR rows in a single round-trip.
 

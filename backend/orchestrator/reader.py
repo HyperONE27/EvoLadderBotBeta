@@ -1,10 +1,12 @@
 from backend.domain_types.dataframes import (
+    AdminsRow,
     Matches1v1Row,
     MMRs1v1Row,
     PlayersRow,
     Preferences1v1Row,
 )
 from backend.domain_types.ephemeral import QueueEntry1v1
+from backend.lookups.admin_lookups import get_admin_by_discord_uid
 from backend.lookups.match_1v1_lookups import get_match_1v1_by_id
 from backend.lookups.mmr_1v1_lookups import (
     get_mmr_1v1_by_discord_uid_and_race,
@@ -18,6 +20,14 @@ from backend.orchestrator.state import StateManager
 class StateReader:
     def __init__(self, state_manager: StateManager) -> None:
         self._state_manager = state_manager
+
+    # ------------------------------------------------------------------
+    # Admins
+    # ------------------------------------------------------------------
+
+    def get_admin(self, discord_uid: int) -> AdminsRow | None:
+        """Get an admin by their Discord UID."""
+        return get_admin_by_discord_uid(discord_uid)
 
     # ------------------------------------------------------------------
     # Players

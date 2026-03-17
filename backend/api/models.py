@@ -1,33 +1,99 @@
 from pydantic import BaseModel
 from backend.domain_types.dataframes import (
+    AdminsRow,
     Matches1v1Row,
     MMRs1v1Row,
     PlayersRow,
     Preferences1v1Row,
+    Replays1v1Row,
 )
+from backend.domain_types.ephemeral import QueueEntry1v1
 
 
 class GreetingResponse(BaseModel):
     message: str
 
 
-# --- /owner admin ---
+# --- /admins/{discord_uid} ---
 
-# --- /owner mmr ---
 
-# --- /owner profile ---
+class AdminsResponse(BaseModel):
+    admin: AdminsRow | None
+
 
 # --- /admin ban ---
 
-# --- /admin match ---
 
-# --- /admin profile ---
+class AdminBanRequest(BaseModel):
+    discord_uid: int
+
+
+class AdminBanResponse(BaseModel):
+    success: bool
+    new_is_banned: bool
+
 
 # --- /admin resolve ---
 
+
+class AdminResolveRequest(BaseModel):
+    result: str
+    admin_discord_uid: int
+
+
+class AdminResolveResponse(BaseModel):
+    success: bool
+    error: str | None = None
+    data: dict | None = None
+
+
 # --- /admin snapshot ---
 
-# --- /admin status ---
+
+class AdminSnapshotResponse(BaseModel):
+    queue: list[QueueEntry1v1]
+    active_matches: list[Matches1v1Row]
+    dataframe_stats: dict
+
+
+# --- /admin match ---
+
+
+class AdminMatchResponse(BaseModel):
+    match: Matches1v1Row | None
+    replays: list[Replays1v1Row]
+    verification: list[dict | None]
+    replay_urls: list[str | None]
+
+
+# --- /owner admin ---
+
+
+class OwnerToggleAdminRequest(BaseModel):
+    discord_uid: int
+    discord_username: str
+
+
+class OwnerToggleAdminResponse(BaseModel):
+    success: bool
+    error: str | None = None
+    action: str | None = None
+    new_role: str | None = None
+
+
+# --- /owner mmr ---
+
+
+class OwnerSetMMRRequest(BaseModel):
+    discord_uid: int
+    race: str
+    new_mmr: int
+
+
+class OwnerSetMMRResponse(BaseModel):
+    success: bool
+    old_mmr: int | None = None
+
 
 # --- /help ---
 

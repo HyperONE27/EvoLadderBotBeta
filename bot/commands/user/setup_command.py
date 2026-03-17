@@ -9,7 +9,7 @@ from discord import app_commands
 from bot.components.buttons import CancelButton, ConfirmButton, RestartButton
 from bot.core.config import BACKEND_URL
 from bot.core.http import get_session
-from bot.helpers.checks import check_if_dm
+from bot.helpers.checks import check_if_banned, check_if_dm
 from bot.helpers.emotes import get_flag_emote, get_globe_emote
 from bot.helpers.i18n import LOCALE_DISPLAY_NAMES, get_available_locales
 from common.json_types import Country, GeographicRegion
@@ -802,6 +802,7 @@ def register_setup_command(tree: app_commands.CommandTree) -> None:
     @tree.command(
         name="setup", description="Set up your player profile for matchmaking"
     )
+    @app_commands.check(check_if_banned)
     @app_commands.check(check_if_dm)
     async def setup_command(interaction: discord.Interaction) -> None:
         logger.debug(f"setup_command invoked by user={interaction.user.id}")

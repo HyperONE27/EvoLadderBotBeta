@@ -8,6 +8,13 @@ from backend.api.dependencies import get_backend
 from backend.algorithms.replay_parser import parse_replay
 from backend.algorithms.replay_verifier import verify_replay
 from backend.api.models import (
+    AdminBanRequest,
+    AdminBanResponse,
+    AdminMatchResponse,
+    AdminResolveRequest,
+    AdminResolveResponse,
+    AdminSnapshotResponse,
+    AdminsResponse,
     GreetingResponse,
     MatchAbortRequest,
     MatchAbortResponse,
@@ -18,6 +25,10 @@ from backend.api.models import (
     MatchReportResponse,
     MMRs1v1AllResponse,
     MMRs1v1Response,
+    OwnerSetMMRRequest,
+    OwnerSetMMRResponse,
+    OwnerToggleAdminRequest,
+    OwnerToggleAdminResponse,
     PlayersResponse,
     Preferences1v1Response,
     PreferencesUpsertRequest,
@@ -51,23 +62,145 @@ async def greet(
     return GreetingResponse(message=f"👋 Hello, {discord_uid}!")
 
 
-# --- /owner admin ---
+# --- /admins/{discord_uid} ---
 
-# --- /owner mmr ---
 
-# --- /owner profile ---
+@router.get("/admins/{discord_uid}", response_model=AdminsResponse)
+async def get_admin(
+    discord_uid: int,
+    app: Backend = Depends(get_backend),
+) -> AdminsResponse:
+    return AdminsResponse(admin=app.orchestrator.get_admin(discord_uid))
+
 
 # --- /admin ban ---
 
+
+@router.put("/admin/ban", response_model=AdminBanResponse)
+async def admin_ban(
+    request: AdminBanRequest,
+    app: Backend = Depends(get_backend),
+) -> AdminBanResponse:
+    success, new_is_banned = app.orchestrator.toggle_ban(request.discord_uid)
+    return AdminBanResponse(success=success, new_is_banned=new_is_banned)
+
+
 # --- /admin match ---
 
-# --- /admin profile ---
+
+@router.get("/admin/matches_1v1/{match_id}", response_model=AdminMatchResponse)
+async def admin_match(
+    match_id: int,
+    app: Backend = Depends(get_backend),
+) -> AdminMatchResponse:
+    match = app.orchestrator.get_match_1v1(match_id)
+
+    # Get replays for this match.
+    from backend.lookups.replay_1v1_lookups import get_replays_1v1_by_match_id
+
+    replays = get_replays_1v1_by_match_id(match_id) or []
+
+    # Run verification on each replay.
+    verifications: list[dict | None] = []
+    replay_urls: list[str | None] = []
+    season_maps = app.state_manager.maps.get("1v1", {}).get("season_alpha", {})
+
+    for replay in replays:
+        replay_urls.append(replay.get("replay_path"))
+        if match is not None:
+            from backend.algorithms.replay_verifier import verify_replay
+
+            verification = verify_replay(
+                dict(replay), dict(match), app.state_manager.mods, season_maps
+            )
+            verifications.append(verification)
+        else:
+            verifications.append(None)
+
+    return AdminMatchResponse(
+        match=match,
+        replays=replays,
+        verification=verifications,
+        replay_urls=replay_urls,
+    )
+
 
 # --- /admin resolve ---
 
+
+@router.put(
+    "/admin/matches_1v1/{match_id}/resolve", response_model=AdminResolveResponse
+)
+async def admin_resolve(
+    match_id: int,
+    request: AdminResolveRequest,
+    app: Backend = Depends(get_backend),
+) -> AdminResolveResponse:
+    result = app.orchestrator.admin_resolve_match(
+        match_id, request.result, request.admin_discord_uid
+    )
+    if result.get("success"):
+        return AdminResolveResponse(success=True, data=result)
+    return AdminResolveResponse(
+        success=False, error=result.get("error", "Unknown error")
+    )
+
+
 # --- /admin snapshot ---
 
-# --- /admin status ---
+
+@router.get("/admin/snapshot_1v1", response_model=AdminSnapshotResponse)
+async def admin_snapshot(
+    app: Backend = Depends(get_backend),
+) -> AdminSnapshotResponse:
+    queue = app.orchestrator.get_queue_snapshot_1v1()
+    active = app.orchestrator.get_active_matches_1v1()
+
+    # DataFrame memory stats.
+    sm = app.state_manager
+    stats: dict[str, dict[str, object]] = {}
+    for attr_name in dir(sm):
+        if attr_name.endswith("_df"):
+            df = getattr(sm, attr_name)
+            if hasattr(df, "estimated_size"):
+                table = attr_name.removesuffix("_df")
+                stats[table] = {
+                    "rows": len(df),
+                    "size_mb": round(df.estimated_size("mb"), 3),
+                }
+
+    return AdminSnapshotResponse(
+        queue=queue, active_matches=active, dataframe_stats=stats
+    )
+
+
+# --- /owner admin ---
+
+
+@router.put("/owner/admin", response_model=OwnerToggleAdminResponse)
+async def owner_toggle_admin(
+    request: OwnerToggleAdminRequest,
+    app: Backend = Depends(get_backend),
+) -> OwnerToggleAdminResponse:
+    result = app.orchestrator.toggle_admin_role(
+        request.discord_uid, request.discord_username
+    )
+    return OwnerToggleAdminResponse(**result)
+
+
+# --- /owner mmr ---
+
+
+@router.put("/owner/mmr", response_model=OwnerSetMMRResponse)
+async def owner_set_mmr(
+    request: OwnerSetMMRRequest,
+    app: Backend = Depends(get_backend),
+) -> OwnerSetMMRResponse:
+    success, old_mmr = app.orchestrator.admin_set_mmr(
+        request.discord_uid, request.race, request.new_mmr
+    )
+    return OwnerSetMMRResponse(success=success, old_mmr=old_mmr)
+
 
 # --- /help ---
 

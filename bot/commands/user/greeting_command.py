@@ -3,6 +3,7 @@ from discord import app_commands
 
 from bot.core.config import BACKEND_URL
 from bot.core.http import get_session
+from bot.helpers.checks import check_if_banned
 
 # --------------------
 # Command registration
@@ -11,6 +12,7 @@ from bot.core.http import get_session
 
 def register_greeting_command(tree: app_commands.CommandTree) -> None:
     @tree.command(name="greet", description="Greet a player")
+    @app_commands.check(check_if_banned)
     async def greeting_command(interaction: discord.Interaction) -> None:
 
         await interaction.response.defer()

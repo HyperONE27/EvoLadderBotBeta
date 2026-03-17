@@ -53,6 +53,16 @@ def get_replay_1v1_by_replay_path(replay_path: str) -> Replays1v1Row | None:
     return Replays1v1Row(**rows[0])  # type: ignore[no-any-return, typeddict-item]
 
 
+def get_replays_1v1_by_match_id(match_id: int) -> list[Replays1v1Row]:
+    """Get all replays for a given match ID."""
+    df = _get_replays_1v1()
+    if df.is_empty():
+        return []
+
+    rows = df.filter(pl.col("matches_1v1_id") == match_id).to_dicts()
+    return [Replays1v1Row(**r) for r in rows]  # type: ignore[typeddict-item]
+
+
 def get_replay_1v1_by_replay_hash(replay_hash: str) -> Replays1v1Row | None:
     """Get a replay by its replay hash."""
     df = _get_replays_1v1()
