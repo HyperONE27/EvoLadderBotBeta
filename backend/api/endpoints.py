@@ -351,14 +351,14 @@ async def upload_replay(
     # --- 3. Build paths and insert pending row ---
     uploaded_at = datetime.now(timezone.utc)
     replay_hash = parsed["replay_hash"]
-    filename = f"{uploaded_at.strftime('%Y-%m-%d_%H-%M-%S')}_{replay_hash}.SC2Replay"
+    filename = f"{uploaded_at.strftime('%Y-%m-%d_%H-%M-%S-%f')}_{replay_hash}.SC2Replay"
     storage_path = f"replays/{match_id}/{discord_uid}/{filename}"
 
     created = app.orchestrator.insert_replay_1v1_pending(
         match_id=match_id,
         discord_uid=discord_uid,
         parsed=parsed,
-        initial_path=filename,
+        initial_path=storage_path,
         uploaded_at=uploaded_at,
     )
     replay_id: int = created["id"]
@@ -382,7 +382,7 @@ async def upload_replay(
         )
 
     # --- 5. Update upload_status (and final path if upload succeeded) ---
-    final_path: str = public_url if upload_status == "completed" else filename  # type: ignore[assignment]
+    final_path: str = public_url if upload_status == "completed" else storage_path  # type: ignore[assignment]
     app.orchestrator.update_replay_status(replay_id, upload_status, final_path)
 
     # --- 6. Update the match row ---
