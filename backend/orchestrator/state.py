@@ -1,4 +1,5 @@
 import polars as pl
+import structlog
 
 from backend.database.database import DatabaseReader
 from backend.domain_types.ephemeral import LeaderboardEntry1v1, QueueEntry1v1
@@ -55,6 +56,7 @@ class StateManager:
 
         self._populate_json_data()
         self._populate_postgres_data()
+        self._populate_leaderboard()
 
     def _populate_json_data(self) -> None:
         json_data = JSONLoader().load_core_data()
@@ -73,3 +75,12 @@ class StateManager:
                     f"StateManager does not have attribute {table_name}_df"
                 )
             setattr(self, f"{table_name}_df", df)
+
+    def _populate_leaderboard(self) -> None:
+        from backend.algorithms.leaderboard import build_leaderboard_1v1
+
+        logger = structlog.get_logger(__name__)
+        self.leaderboard_1v1 = build_leaderboard_1v1(self.mmrs_1v1_df, self.players_df)
+        logger.info(
+            f"Leaderboard populated at startup: {len(self.leaderboard_1v1)} entries"
+        )

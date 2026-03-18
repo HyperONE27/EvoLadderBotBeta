@@ -5,7 +5,7 @@ from backend.domain_types.dataframes import (
     PlayersRow,
     Preferences1v1Row,
 )
-from backend.domain_types.ephemeral import QueueEntry1v1
+from backend.domain_types.ephemeral import LeaderboardEntry1v1, QueueEntry1v1
 from backend.lookups.admin_lookups import get_admin_by_discord_uid
 from backend.lookups.match_1v1_lookups import get_match_1v1_by_id
 from backend.lookups.mmr_1v1_lookups import (
@@ -79,6 +79,14 @@ class StateReader:
     def get_preferences_1v1(self, discord_uid: int) -> Preferences1v1Row | None:
         """Get a player's 1v1 queue preferences."""
         return get_preferences_1v1_by_discord_uid(discord_uid)
+
+    # ------------------------------------------------------------------
+    # Leaderboard
+    # ------------------------------------------------------------------
+
+    def get_leaderboard_1v1(self) -> list[LeaderboardEntry1v1]:
+        """Return the current 1v1 leaderboard."""
+        return self._state_manager.leaderboard_1v1
 
     # ------------------------------------------------------------------
     # Location

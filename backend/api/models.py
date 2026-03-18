@@ -116,13 +116,20 @@ class OwnerSetMMRResponse(BaseModel):
 # --- /leaderboard ---
 
 
-class LeaderboardRequest(BaseModel):
+class LeaderboardEntry(BaseModel):
     discord_uid: int
-    game_mode: str
+    player_name: str
+    ordinal_rank: int
+    letter_rank: str
+    race: str
+    nationality: str
+    mmr: int
+    games_played: int
+    last_played_at: str | None
 
 
 class LeaderboardResponse(BaseModel):
-    pass
+    leaderboard: list[LeaderboardEntry]
 
 
 # --- /profile ---

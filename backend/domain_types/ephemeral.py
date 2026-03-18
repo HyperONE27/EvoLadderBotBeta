@@ -10,6 +10,7 @@ class LeaderboardEntry1v1(TypedDict):
     race: str
     nationality: str
     mmr: int
+    games_played: int
     last_played_at: datetime
 
 

@@ -93,6 +93,8 @@ async def _handle_message(client: discord.Client, raw: str) -> None:
         await _on_match_completed(client, data)
     elif event == "match_conflict":
         await _on_match_conflict(client, data)
+    elif event == "leaderboard_updated":
+        _on_leaderboard_updated(data)
     else:
         logger.warning(f"[WS] Unknown event type: {event}")
 
@@ -271,6 +273,14 @@ async def _on_match_conflict(client: discord.Client, match_data: dict) -> None:
     await _send_to_both_low(client, p1_uid, p2_uid, embed)
     await _clear_match_state_low(p1_uid, p2_uid)
     await _post_to_match_log_low(client, embed)
+
+
+def _on_leaderboard_updated(data: dict) -> None:
+    """Replace the cached leaderboard with the new data from the backend."""
+    cache = get_cache()
+    entries = data.get("leaderboard", [])
+    cache.leaderboard_1v1 = entries
+    logger.info(f"[WS] Leaderboard cache updated: {len(entries)} entries")
 
 
 # ---------------------------------------------------------------------------

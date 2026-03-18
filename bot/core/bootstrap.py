@@ -83,6 +83,10 @@ class Cache:
         # can update the embed and enable the report dropdown after a successful upload.
         self.active_match_messages: dict[int, "discord.Message"] = {}
 
+        # Leaderboard data pushed from the backend via WS. Each entry is a dict
+        # matching the LeaderboardEntry1v1 TypedDict shape.
+        self.leaderboard_1v1: list[dict] = []
+
         self._populate_json_data()
         self._populate_locale_data()
 

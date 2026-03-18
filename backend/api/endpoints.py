@@ -21,6 +21,8 @@ from backend.api.models import (
     AdminResolveResponse,
     AdminSnapshotResponse,
     AdminsResponse,
+    LeaderboardEntry,
+    LeaderboardResponse,
     GreetingResponse,
     MatchAbortRequest,
     MatchAbortResponse,
@@ -54,10 +56,38 @@ from backend.api.models import (
     TermsOfServiceConfirmResponse,
 )
 from backend.core.bootstrap import Backend
+from backend.domain_types.ephemeral import LeaderboardEntry1v1
 
 logger = structlog.get_logger(__name__)
 
 router = APIRouter()
+
+
+def _entry_to_model(e: LeaderboardEntry1v1) -> LeaderboardEntry:
+    return LeaderboardEntry(
+        discord_uid=e["discord_uid"],
+        player_name=e["player_name"],
+        ordinal_rank=e["ordinal_rank"],
+        letter_rank=e["letter_rank"],
+        race=e["race"],
+        nationality=e["nationality"],
+        mmr=e["mmr"],
+        games_played=e["games_played"],
+        last_played_at=(
+            e["last_played_at"].isoformat() if e["last_played_at"] else None
+        ),
+    )
+
+
+async def _broadcast_leaderboard_if_dirty(app: Backend, ws: ConnectionManager) -> None:
+    """If the leaderboard was rebuilt since the last check, broadcast it."""
+    if app.orchestrator.consume_leaderboard_dirty():
+        entries = app.orchestrator.get_leaderboard_1v1()
+        models = [_entry_to_model(e) for e in entries]
+        await ws.broadcast(
+            "leaderboard_updated",
+            {"leaderboard": [m.model_dump() for m in models]},
+        )
 
 
 @router.get("/commands/greet/{discord_uid}", response_model=GreetingResponse)
@@ -164,11 +194,13 @@ async def admin_resolve(
     match_id: int,
     request: AdminResolveRequest,
     app: Backend = Depends(get_backend),
+    ws: ConnectionManager = Depends(get_ws_manager),
 ) -> AdminResolveResponse:
     result = app.orchestrator.admin_resolve_match(
         match_id, request.result, request.admin_discord_uid
     )
     if result.get("success"):
+        await _broadcast_leaderboard_if_dirty(app, ws)
         return AdminResolveResponse(success=True, data=result)
     return AdminResolveResponse(
         success=False, error=result.get("error", "Unknown error")
@@ -224,16 +256,28 @@ async def owner_toggle_admin(
 async def owner_set_mmr(
     request: OwnerSetMMRRequest,
     app: Backend = Depends(get_backend),
+    ws: ConnectionManager = Depends(get_ws_manager),
 ) -> OwnerSetMMRResponse:
     success, old_mmr = app.orchestrator.admin_set_mmr(
         request.discord_uid, request.race, request.new_mmr
     )
+    if success:
+        await _broadcast_leaderboard_if_dirty(app, ws)
     return OwnerSetMMRResponse(success=success, old_mmr=old_mmr)
 
 
 # --- /help ---
 
 # --- /leaderboard ---
+
+
+@router.get("/leaderboard_1v1", response_model=LeaderboardResponse)
+async def leaderboard_1v1(
+    app: Backend = Depends(get_backend),
+) -> LeaderboardResponse:
+    entries = app.orchestrator.get_leaderboard_1v1()
+    return LeaderboardResponse(leaderboard=[_entry_to_model(e) for e in entries])
+
 
 # --- /profile ---
 
@@ -362,6 +406,7 @@ async def match_report(
             await ws.broadcast("match_conflict", dict(match))
         elif result is not None:
             await ws.broadcast("match_completed", dict(match))
+        await _broadcast_leaderboard_if_dirty(app, ws)
     return MatchReportResponse(success=success, message=message, match=match)
 
 
@@ -586,8 +631,9 @@ async def upload_replay(
             resolved_match = dict(resolved_match_row)
             auto_resolved = True
 
-            # Broadcast match_completed via WebSocket.
+            # Broadcast match_completed + leaderboard via WebSocket.
             await ws.broadcast("match_completed", resolved_match)
+            await _broadcast_leaderboard_if_dirty(app, ws)
 
             logger.info(
                 "Replay auto-resolved match",

@@ -8,7 +8,7 @@ from backend.domain_types.dataframes import (
     PlayersRow,
     Preferences1v1Row,
 )
-from backend.domain_types.ephemeral import QueueEntry1v1
+from backend.domain_types.ephemeral import LeaderboardEntry1v1, QueueEntry1v1
 from backend.orchestrator.reader import StateReader
 from backend.orchestrator.state import StateManager
 from backend.orchestrator.transitions import TransitionManager
@@ -335,3 +335,15 @@ class Orchestrator:
     def get_active_matches_1v1(self) -> list[Matches1v1Row]:
         """Return all matches with match_result IS NULL."""
         return self._transition_manager.get_active_matches_1v1()
+
+    # ------------------------------------------------------------------
+    # Leaderboard
+    # ------------------------------------------------------------------
+
+    def get_leaderboard_1v1(self) -> list[LeaderboardEntry1v1]:
+        """Return the current 1v1 leaderboard."""
+        return list(self._state_reader.get_leaderboard_1v1())
+
+    def consume_leaderboard_dirty(self) -> bool:
+        """Return True if the leaderboard was rebuilt since the last check."""
+        return self._transition_manager.consume_leaderboard_dirty()

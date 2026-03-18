@@ -4,6 +4,7 @@ import polars as pl
 import structlog
 
 from backend.algorithms.game_stats import count_game_stats
+from backend.algorithms.leaderboard import build_leaderboard_1v1
 from common.datetime_helpers import utc_now
 from backend.algorithms.match_params import resolve_match_params
 from backend.algorithms.matchmaker import run_matchmaking_wave
@@ -30,6 +31,8 @@ class TransitionManager:
         self._db_writer = db_writer
         # Track match confirmations: match_id → set of discord_uids
         self._confirmations: dict[int, set[int]] = {}
+        # Whether the leaderboard was rebuilt since the last read.
+        self._leaderboard_dirty: bool = False
 
     def _handle_missing_player(self, discord_uid: int, discord_username: str) -> dict:
         """Return the player row, creating it in the DB and cache if it doesn't exist."""
@@ -478,6 +481,23 @@ class TransitionManager:
         )
         return "U"
 
+    def rebuild_leaderboard(self) -> None:
+        """Recompute the 1v1 leaderboard from current DataFrames."""
+        self._state_manager.leaderboard_1v1 = build_leaderboard_1v1(
+            self._state_manager.mmrs_1v1_df,
+            self._state_manager.players_df,
+        )
+        self._leaderboard_dirty = True
+        logger.info(
+            f"Leaderboard rebuilt: {len(self._state_manager.leaderboard_1v1)} entries"
+        )
+
+    def consume_leaderboard_dirty(self) -> bool:
+        """Return whether the leaderboard was rebuilt since last check, then reset."""
+        dirty = self._leaderboard_dirty
+        self._leaderboard_dirty = False
+        return dirty
+
     # ==================================================================
     # Match confirmation
     # ==================================================================
@@ -753,6 +773,8 @@ class TransitionManager:
         self._set_player_status(p1_uid, "idle")
         self._set_player_status(p2_uid, "idle")
         self._confirmations.pop(match_id, None)
+
+        self.rebuild_leaderboard()
 
         updated_match = self._get_match_row(match_id)
         if updated_match is None:
@@ -1274,6 +1296,8 @@ class TransitionManager:
             .then(pl.lit(new_mmr, dtype=pl.Int16))
             .otherwise(pl.col("mmr"))
         )
+
+        self.rebuild_leaderboard()
 
         logger.info(f"Admin set MMR for {discord_uid}/{race}: {old_mmr} → {new_mmr}")
         return True, old_mmr
