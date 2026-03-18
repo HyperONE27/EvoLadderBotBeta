@@ -7,12 +7,12 @@ as ``enforcement_enabled`` so the bottom status message reflects whether
 those checks are actually enforced.
 """
 
-from datetime import datetime, timezone
 from typing import Any
 
 import discord
 
 from bot.helpers.emotes import get_race_emote
+from common.datetime_helpers import to_display
 
 
 class ReplaySuccessEmbed(discord.Embed):
@@ -73,19 +73,16 @@ class ReplaySuccessEmbed(discord.Embed):
         self.add_field(name="🗺️ Map", value=map_display, inline=True)
 
         # Game start time
-        replay_date_str = replay_data.get("replay_time") or replay_data.get(
+        replay_date_raw = replay_data.get("replay_time") or replay_data.get(
             "replay_date", ""
         )
-        if replay_date_str:
-            replay_dt = _try_parse_datetime(str(replay_date_str))
-            if replay_dt:
-                formatted_ts = replay_dt.strftime("%d %b %Y, %H:%M:%S UTC")
-                unix_ts = int(replay_dt.timestamp())
-                self.add_field(
-                    name="🕒 Game Start Time",
-                    value=f"{formatted_ts}\n(<t:{unix_ts}>)",
-                    inline=True,
-                )
+        start_display = to_display(raw=replay_date_raw)
+        if start_display != "—":
+            self.add_field(
+                name="🕒 Game Start Time",
+                value=start_display,
+                inline=True,
+            )
 
         self.add_field(name="🕒 Game Duration", value=duration_text, inline=True)
         self.add_field(name="🔍 Observers", value=observers_text, inline=True)
@@ -255,23 +252,3 @@ def _format_verification(results: dict[str, Any], enforcement_enabled: bool) -> 
         )
 
     return "\n".join(lines)
-
-
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
-
-
-def _try_parse_datetime(date_str: str) -> datetime | None:
-    for fmt in (
-        lambda s: datetime.fromisoformat(s.replace("+00", "+00:00")),
-        lambda s: datetime.strptime(s, "%Y-%m-%d %H:%M:%S").replace(
-            tzinfo=timezone.utc
-        ),
-        lambda s: datetime.fromisoformat(s.replace("Z", "+00:00")),
-    ):
-        try:
-            return fmt(date_str)
-        except (ValueError, TypeError):
-            continue
-    return None

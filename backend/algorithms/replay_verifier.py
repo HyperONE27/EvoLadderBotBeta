@@ -3,10 +3,10 @@ Pure replay verification: compares parsed replay data against expected match
 parameters and returns a VerificationResult dict.
 """
 
-from datetime import datetime, timezone
 from typing import Any
 
 from backend.core.config import EXPECTED_LOBBY_SETTINGS, REPLAY_TIMESTAMP_WINDOW_MINUTES
+from common.datetime_helpers import ensure_utc
 
 
 # ---------------------------------------------------------------------------
@@ -130,36 +130,21 @@ def _verify_mod(cache_handles: list[str], mods: dict[str, Any]) -> dict[str, Any
 
 def _verify_timestamp(replay_time_raw: Any, assigned_at: Any) -> dict[str, Any]:
     try:
-        if not replay_time_raw:
+        replay_dt = ensure_utc(replay_time_raw)
+        if replay_dt is None:
             return {
                 "success": False,
                 "error": "No replay time available.",
                 "time_difference_minutes": None,
             }
 
-        if isinstance(replay_time_raw, datetime):
-            replay_dt = replay_time_raw
-        else:
-            replay_dt = datetime.fromisoformat(
-                str(replay_time_raw).replace("Z", "+00:00")
-            )
-        if replay_dt.tzinfo is None:
-            replay_dt = replay_dt.replace(tzinfo=timezone.utc)
-
-        if assigned_at is None:
+        assigned_dt = ensure_utc(assigned_at)
+        if assigned_dt is None:
             return {
                 "success": False,
                 "error": "No match assignment time available.",
                 "time_difference_minutes": None,
             }
-
-        if isinstance(assigned_at, str):
-            assigned_dt = datetime.fromisoformat(assigned_at.replace("Z", "+00:00"))
-        else:
-            assigned_dt = assigned_at
-
-        if assigned_dt.tzinfo is None:
-            assigned_dt = assigned_dt.replace(tzinfo=timezone.utc)
 
         diff_minutes = (replay_dt - assigned_dt).total_seconds() / 60
         in_window = 0 <= diff_minutes <= REPLAY_TIMESTAMP_WINDOW_MINUTES

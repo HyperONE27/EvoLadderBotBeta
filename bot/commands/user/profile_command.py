@@ -1,11 +1,10 @@
-from datetime import datetime, timezone
-
 import structlog
 import discord
 from discord import app_commands
 
 from bot.core.config import BACKEND_URL
 from bot.core.http import get_session
+from common.datetime_helpers import to_discord_timestamp
 from bot.helpers.checks import check_if_banned, check_if_dm
 from bot.helpers.emotes import (
     get_flag_emote,
@@ -163,13 +162,9 @@ def _format_mmr_rows(mmrs: list[dict]) -> str:
 
         last_played = m.get("last_played_at")
         if last_played and gp > 0:
-            try:
-                dt = datetime.fromisoformat(last_played)
-                if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
-                line += f"\n  - **Last Played:** <t:{int(dt.timestamp())}:f>"
-            except Exception:
-                pass
+            ts = to_discord_timestamp(raw=last_played, style="f")
+            if ts != "—":
+                line += f"\n  - **Last Played:** {ts}"
 
         lines.append(line)
     return "\n".join(lines)

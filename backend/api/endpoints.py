@@ -1,10 +1,10 @@
 import asyncio
 import structlog
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from backend.api.dependencies import get_backend
+from common.datetime_helpers import utc_now
 from backend.algorithms.replay_parser import parse_replay
 from backend.algorithms.replay_verifier import verify_replay
 from backend.api.models import (
@@ -514,7 +514,7 @@ async def upload_replay(
         return ReplayUploadResponse(success=False, error=parsed["error"])
 
     # --- 3. Build paths and insert pending row ---
-    uploaded_at = datetime.now(timezone.utc)
+    uploaded_at = utc_now()
     replay_hash = parsed["replay_hash"]
     filename = f"{uploaded_at.strftime('%Y-%m-%d_%H-%M-%S-%f')}_{replay_hash}.SC2Replay"
     storage_path = f"replays/{match_id}/{discord_uid}/{filename}"

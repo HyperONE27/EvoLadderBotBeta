@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 import structlog
 import discord
 from discord import app_commands
@@ -7,6 +5,7 @@ from discord import app_commands
 from bot.core.config import BACKEND_URL
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_admin
+from common.datetime_helpers import ensure_utc, utc_now
 from common.lookups.race_lookups import get_race_by_code
 
 logger = structlog.get_logger(__name__)
@@ -43,16 +42,11 @@ def _race_short(race_code: str | None) -> str:
 
 def _elapsed_seconds(iso_str: str | None) -> str:
     """Convert an ISO timestamp to an elapsed-seconds string like ' 794s'."""
-    if not iso_str:
+    dt = ensure_utc(iso_str)
+    if dt is None:
         return "   ?s"
-    try:
-        dt = datetime.fromisoformat(str(iso_str))
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        elapsed = int((datetime.now(timezone.utc) - dt).total_seconds())
-        return f"{elapsed:>4d}s"
-    except Exception:
-        return "   ?s"
+    elapsed = int((utc_now() - dt).total_seconds())
+    return f"{elapsed:>4d}s"
 
 
 def _format_queue_player(entry: dict) -> str:

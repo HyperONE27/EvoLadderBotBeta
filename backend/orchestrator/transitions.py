@@ -1,9 +1,10 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 import polars as pl
 import structlog
 
 from backend.algorithms.game_stats import count_game_stats
+from common.datetime_helpers import utc_now
 from backend.algorithms.match_params import resolve_match_params
 from backend.algorithms.matchmaker import run_matchmaking_wave
 from backend.algorithms.ratings_1v1 import get_default_mmr, get_new_ratings
@@ -91,7 +92,7 @@ class TransitionManager:
     ) -> tuple[bool, str | None]:
         player = self._handle_missing_player(discord_uid, discord_username)
         player_id: int = player["id"]
-        completed_setup_at = datetime.now(timezone.utc)
+        completed_setup_at = utc_now()
 
         self._db_writer.upsert_player_setup(
             player_id=player_id,
@@ -137,7 +138,7 @@ class TransitionManager:
     ) -> tuple[bool, str | None]:
         player = self._handle_missing_player(discord_uid, discord_username)
         player_id: int = player["id"]
-        accepted_tos_at = datetime.now(timezone.utc)
+        accepted_tos_at = utc_now()
 
         self._db_writer.upsert_player_tos(player_id, accepted, accepted_tos_at)
 
@@ -306,7 +307,7 @@ class TransitionManager:
             bw_mmr=actual_bw_mmr,
             sc2_mmr=actual_sc2_mmr,
             map_vetoes=map_vetoes,
-            joined_at=datetime.now(timezone.utc),
+            joined_at=utc_now(),
             wait_cycles=0,
         )
         self._state_manager.queue_1v1.append(entry)
@@ -407,7 +408,7 @@ class TransitionManager:
             season=CURRENT_SEASON,
         )
 
-        now = datetime.now(timezone.utc)
+        now = utc_now()
 
         created = self._db_writer.add_match_1v1(
             player_1_discord_uid=p1_uid,
@@ -523,7 +524,7 @@ class TransitionManager:
         else:
             return False, "Player is not part of this match."
 
-        now = datetime.now(timezone.utc)
+        now = utc_now()
 
         self._db_writer.finalise_match_1v1(
             match_id,
@@ -572,7 +573,7 @@ class TransitionManager:
         p1_report = "no_report" if p1_uid in confirmed else "abandoned"
         p2_report = "no_report" if p2_uid in confirmed else "abandoned"
 
-        now = datetime.now(timezone.utc)
+        now = utc_now()
 
         self._db_writer.finalise_match_1v1(
             match_id,
@@ -668,7 +669,7 @@ class TransitionManager:
         agreed_result: str,
     ) -> Matches1v1Row:
         """Both players agree — calculate MMR, write everything, return to idle."""
-        now = datetime.now(timezone.utc)
+        now = utc_now()
 
         # Map string result to the integer code that ratings_1v1 expects.
         result_code_map = {"player_1_win": 1, "player_2_win": 2, "draw": 0}
@@ -737,7 +738,7 @@ class TransitionManager:
 
     def _handle_conflict(self, match_id: int, match: Matches1v1Row) -> Matches1v1Row:
         """Reports disagree — mark as conflict, no MMR changes, return to idle."""
-        now = datetime.now(timezone.utc)
+        now = utc_now()
 
         self._db_writer.finalise_match_1v1(
             match_id,
@@ -1083,7 +1084,7 @@ class TransitionManager:
         p1_mmr = match["player_1_mmr"]
         p2_mmr = match["player_2_mmr"]
 
-        now = datetime.now(timezone.utc)
+        now = utc_now()
 
         # Calculate MMR changes from snapshotted initial MMRs.
         if result == "invalidated":
@@ -1231,7 +1232,7 @@ class TransitionManager:
         """
         df = self._state_manager.admins_df
         rows = df.filter(pl.col("discord_uid") == discord_uid)
-        now = datetime.now(timezone.utc)
+        now = utc_now()
 
         if rows.is_empty():
             # New admin — insert.

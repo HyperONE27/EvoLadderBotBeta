@@ -17,12 +17,14 @@ from datetime import datetime
 import structlog
 from fastapi import WebSocket
 
+from common.datetime_helpers import to_iso
+
 logger = structlog.get_logger(__name__)
 
 
 def _json_default(obj: object) -> str:
     if isinstance(obj, datetime):
-        return obj.isoformat()
+        return to_iso(dt=obj) or ""
     raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
 

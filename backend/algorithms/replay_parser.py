@@ -9,6 +9,7 @@ import io
 import logging
 import os
 import sys
+from datetime import timezone
 from typing import Any
 
 import sc2reader  # type: ignore[import-untyped]
@@ -172,8 +173,12 @@ def parse_replay(replay_bytes: bytes) -> dict[str, Any]:
         observers: list[str] = [o.name for o in replay.observers]
 
         # --- Replay date ---
+        # sc2reader produces naive datetimes; replay metadata is always UTC.
         if hasattr(replay, "date") and replay.date:
-            replay_time: str = replay.date.isoformat()
+            dt = replay.date
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            replay_time: str = dt.isoformat()
         else:
             replay_time = "1970-01-01T00:00:00+00:00"
 

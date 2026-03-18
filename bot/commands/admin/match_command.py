@@ -1,6 +1,6 @@
 import io
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 
 import structlog
@@ -11,6 +11,7 @@ from bot.core.config import BACKEND_URL
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_admin
 from bot.helpers.emotes import get_flag_emote, get_race_emote
+from common.datetime_helpers import to_discord_timestamp, to_display
 from common.lookups.region_lookups import get_game_server_by_code
 
 logger = structlog.get_logger(__name__)
@@ -36,34 +37,6 @@ _REPORT_LABELS: dict[str | None, str] = {
 # ----------
 # Helpers
 # ----------
-
-
-def _ts(iso_str: Any) -> str:
-    """Convert an ISO timestamp to a Discord relative timestamp, or '—'."""
-    if not iso_str:
-        return "—"
-    try:
-        dt = datetime.fromisoformat(str(iso_str))
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        return f"<t:{int(dt.timestamp())}:F>"
-    except Exception:
-        return str(iso_str)
-
-
-def _ts_full(iso_str: Any) -> str:
-    """Convert an ISO timestamp to 'DD Mon YYYY, HH:MM:SS UTC (<t:unix>)', or '—'."""
-    if not iso_str:
-        return "—"
-    try:
-        dt = datetime.fromisoformat(str(iso_str))
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        formatted = dt.strftime("%d %b %Y, %H:%M:%S UTC")
-        unix_ts = int(dt.timestamp())
-        return f"{formatted}\n(<t:{unix_ts}>)"
-    except Exception:
-        return str(iso_str)
 
 
 def _player_prefix(race: str, nationality: str | None) -> str:
@@ -220,9 +193,11 @@ class AdminMatchEmbed(discord.Embed):
         info_text = (
             f"**Map:** `{map_name}`\n**Server:** `{_server_display(server_code)}`"
         )
-        info_text += f"\n**Assigned:** {_ts(match.get('assigned_at'))}"
+        info_text += (
+            f"\n**Assigned:** {to_discord_timestamp(raw=match.get('assigned_at'))}"
+        )
         if match.get("completed_at"):
-            info_text += f"\n**Completed:** {_ts(match.get('completed_at'))}"
+            info_text += f"\n**Completed:** {to_discord_timestamp(raw=match.get('completed_at'))}"
         self.add_field(name="🗺️ Match Info", value=info_text, inline=False)
 
         # --- Raw Match Data (full matches_1v1 row) ---
@@ -345,7 +320,7 @@ class AdminReplayDetailsEmbed(discord.Embed):
 
         # --- Row 2: Start Time | Duration | Observers ---
         # Use the same full-format timestamp as the player-facing embed
-        start_time = _ts_full(replay.get("replay_time"))
+        start_time = to_display(raw=replay.get("replay_time"))
         self.add_field(name="🕒 Game Start Time", value=start_time, inline=True)
         self.add_field(
             name="🕒 Game Duration",
