@@ -68,6 +68,7 @@ def _entry_to_model(e: LeaderboardEntry1v1) -> LeaderboardEntry:
         discord_uid=e["discord_uid"],
         player_name=e["player_name"],
         ordinal_rank=e["ordinal_rank"],
+        active_ordinal_rank=e["active_ordinal_rank"],
         letter_rank=e["letter_rank"],
         race=e["race"],
         nationality=e["nationality"],

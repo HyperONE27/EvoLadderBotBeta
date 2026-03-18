@@ -137,7 +137,11 @@ class LeaderboardEmbed(discord.Embed):
                     rank_emote = get_rank_emote(entry["letter_rank"])
                     race_emote = get_race_emote(entry["race"])
                     flag_emote = get_flag_emote(entry["nationality"] or "XX")
-                    ordinal = f"{entry['ordinal_rank']:>4d}"
+                    active_rank = entry.get("active_ordinal_rank", -1)
+                    if active_rank > 0:
+                        ordinal = f"{active_rank:>4d}"
+                    else:
+                        ordinal = "   -"
                     name = f"{entry['player_name'][:12]:<12}"
                     mmr = entry["mmr"]
                     lines.append(

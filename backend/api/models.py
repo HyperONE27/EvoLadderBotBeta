@@ -120,6 +120,7 @@ class LeaderboardEntry(BaseModel):
     discord_uid: int
     player_name: str
     ordinal_rank: int
+    active_ordinal_rank: int
     letter_rank: str
     race: str
     nationality: str

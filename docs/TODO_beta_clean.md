@@ -20,6 +20,7 @@ What remains?
 - ⏰ Make sure visibility is solid
     - Maybe some more admin/owner commands
         - Directly reading DataFrame rows
+- ⏰ Fix mypy error suppressions and underlying issues
 - ⏰ Add some kind of health check and automatic resurrection for:
     - replay parsing process pool
     - DataFrames

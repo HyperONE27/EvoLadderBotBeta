@@ -2,45 +2,64 @@
 
 Takes the in-memory ``mmrs_1v1_df`` and ``players_df`` Polars DataFrames and
 returns a fully ranked ``list[LeaderboardEntry1v1]``.
+
+Ranking rules:
+- All player-race pairs with ``games_played > 0`` are included.
+- Sorted by MMR descending, ``last_played_at`` descending as tiebreaker.
+- ``ordinal_rank`` — dense rank across **all** entries (active + inactive).
+- ``active_ordinal_rank`` — dense rank across active entries only; -1 for inactive.
+- Active = ``last_played_at`` within ``LEADERBOARD_INACTIVITY_DAYS`` of now.
+- Letter ranks are assigned only to active entries using fixed-percentage
+  allocation with a guarantee of at least 1 entry per rank (when population
+  permits).  Inactive entries receive letter rank ``"U"``.
+
+Allocation algorithm:
+1. If active count >= 7, reserve 1 slot per rank, then distribute remaining
+   ``N - 7`` via ``floor(percentage * remaining)``, then distribute leftover
+   players using the alpha-style adaptive order.
+2. If active count < 7, assign via the same adaptive priority until exhausted.
+
+Adaptive remainder distribution order:
+  Middle ranks first: D → C → E → B
+  Then adaptively: if F > S+A, give to A first (A → F → S);
+                    otherwise give to F first (F → A → S).
 """
 
-import math
+from datetime import datetime, timedelta, timezone
 
 import polars as pl
 
+from backend.core.config import LEADERBOARD_INACTIVITY_DAYS
 from backend.domain_types.ephemeral import LeaderboardEntry1v1
 
-# Percentile-based tier splits (cumulative upper bounds).
-# S: top 1%, A: next 7%, B–E: 21% each, F: bottom 8%.
-_TIER_SPLITS: list[tuple[str, float]] = [
-    ("S", 0.01),
-    ("A", 0.08),
-    ("B", 0.29),
-    ("C", 0.50),
-    ("D", 0.71),
-    ("E", 0.92),
-    ("F", 1.00),
-]
+# Rank percentages (must sum to 1.0).
+_RANK_PERCENTAGES: dict[str, float] = {
+    "S": 0.01,
+    "A": 0.07,
+    "B": 0.21,
+    "C": 0.21,
+    "D": 0.21,
+    "E": 0.21,
+    "F": 0.08,
+}
+
+_RANK_ORDER: list[str] = ["S", "A", "B", "C", "D", "E", "F"]
+
+# Middle ranks get remainders first, then adaptive A/F/S.
+_MIDDLE_RANKS: list[str] = ["D", "C", "E", "B"]
 
 
 def build_leaderboard_1v1(
     mmrs_1v1_df: pl.DataFrame,
     players_df: pl.DataFrame,
 ) -> list[LeaderboardEntry1v1]:
-    """Compute the 1v1 leaderboard from the current DataFrames.
-
-    1. Filter out rows with ``games_played == 0``.
-    2. Join ``nationality`` from *players_df*.
-    3. Sort by MMR descending, then ``last_played_at`` descending.
-    4. Assign dense ordinal ranks (tied MMR → same rank).
-    5. Assign letter ranks using percentile-based tier splits.
-    """
+    """Compute the 1v1 leaderboard from the current DataFrames."""
     df = mmrs_1v1_df.filter(pl.col("games_played") > 0)
 
     if df.is_empty():
         return []
 
-    # Join nationality from players_df (left join on discord_uid).
+    # Join nationality from players_df.
     nationality_map = players_df.select("discord_uid", "nationality")
     df = df.join(nationality_map, on="discord_uid", how="left")
 
@@ -57,32 +76,67 @@ def build_leaderboard_1v1(
         "last_played_at",
     ).to_dicts()
 
-    total = len(rows)
-    tier_boundaries = _compute_tier_boundaries(total)
-
-    entries: list[LeaderboardEntry1v1] = []
+    # --- Ordinal rank (all entries, dense) ---
+    ordinal_ranks: list[int] = []
     prev_mmr: int | None = None
     prev_rank = 0
-
     for idx, row in enumerate(rows):
         mmr_val: int = row["mmr"]
-
-        # Dense ranking: same MMR → same ordinal rank.
         if mmr_val != prev_mmr:
             prev_rank = idx + 1
             prev_mmr = mmr_val
+        ordinal_ranks.append(prev_rank)
 
-        letter_rank = _letter_rank_for_position(idx, tier_boundaries)
+    # --- Active / inactive split ---
+    cutoff = datetime.now(timezone.utc) - timedelta(days=LEADERBOARD_INACTIVITY_DAYS)
 
+    active_indices: list[int] = []
+    inactive_indices: list[int] = []
+    for idx, row in enumerate(rows):
+        lp = row["last_played_at"]
+        if lp is not None and _ensure_utc(lp) >= cutoff:
+            active_indices.append(idx)
+        else:
+            inactive_indices.append(idx)
+
+    # --- Active ordinal rank (active entries only, dense) ---
+    active_ordinal_map: dict[int, int] = {}
+    a_prev_mmr: int | None = None
+    a_prev_rank = 0
+    for pos, idx in enumerate(active_indices):
+        mmr_val = rows[idx]["mmr"]
+        if mmr_val != a_prev_mmr:
+            a_prev_rank = pos + 1
+            a_prev_mmr = mmr_val
+        active_ordinal_map[idx] = a_prev_rank
+
+    # --- Letter rank allocation (active entries only) ---
+    total_active = len(active_indices)
+    allocations = _calculate_allocations(total_active)
+
+    # Map active list position → letter rank.
+    letter_rank_map: dict[int, str] = {}
+    active_pos = 0
+    for rank_letter in _RANK_ORDER:
+        count = allocations[rank_letter]
+        for _ in range(count):
+            if active_pos < total_active:
+                letter_rank_map[active_indices[active_pos]] = rank_letter
+                active_pos += 1
+
+    # --- Build final list ---
+    entries: list[LeaderboardEntry1v1] = []
+    for idx, row in enumerate(rows):
         entries.append(
             LeaderboardEntry1v1(
                 discord_uid=row["discord_uid"],
                 player_name=row["player_name"],
-                ordinal_rank=prev_rank,
-                letter_rank=letter_rank,
+                ordinal_rank=ordinal_ranks[idx],
+                active_ordinal_rank=active_ordinal_map.get(idx, -1),
+                letter_rank=letter_rank_map.get(idx, "U"),
                 race=row["race"],
                 nationality=row["nationality"] or "",
-                mmr=mmr_val,
+                mmr=row["mmr"],
                 games_played=row["games_played"],
                 last_played_at=row["last_played_at"],
             )
@@ -91,21 +145,73 @@ def build_leaderboard_1v1(
     return entries
 
 
-def _compute_tier_boundaries(total: int) -> list[tuple[str, int]]:
-    """Return ``(letter, last_index)`` pairs for each tier.
+# ---------------------------------------------------------------------------
+# Allocation helpers
+# ---------------------------------------------------------------------------
 
-    Uses ceiling so that the top tier always contains at least one player.
+
+def _calculate_allocations(total_active: int) -> dict[str, int]:
+    """Calculate how many active players go into each letter rank.
+
+    Guarantees at least 1 player per rank when ``total_active >= 7``.
     """
-    boundaries: list[tuple[str, int]] = []
-    for letter, cumulative_pct in _TIER_SPLITS:
-        boundary_idx = math.ceil(total * cumulative_pct) - 1
-        boundaries.append((letter, boundary_idx))
-    return boundaries
+    num_ranks = len(_RANK_ORDER)
+
+    if total_active == 0:
+        return {r: 0 for r in _RANK_ORDER}
+
+    if total_active < num_ranks:
+        # Not enough players for every rank — fill via adaptive priority.
+        alloc = {r: 0 for r in _RANK_ORDER}
+        order = _adaptive_remainder_order(alloc)
+        for i in range(total_active):
+            alloc[order[i % len(order)]] += 1
+        return alloc
+
+    # Reserve 1 per rank, distribute the rest by percentage.
+    alloc = {r: 1 for r in _RANK_ORDER}
+    remaining_pool = total_active - num_ranks
+
+    # Floor-allocate by percentage.
+    floor_alloc: dict[str, int] = {}
+    for rank, pct in _RANK_PERCENTAGES.items():
+        floor_alloc[rank] = int(remaining_pool * pct)
+
+    for rank in _RANK_ORDER:
+        alloc[rank] += floor_alloc[rank]
+
+    allocated = sum(alloc.values())
+    leftover = total_active - allocated
+
+    # Distribute leftover via adaptive order.
+    order = _adaptive_remainder_order(alloc)
+    for i in range(leftover):
+        alloc[order[i % len(order)]] += 1
+
+    return alloc
 
 
-def _letter_rank_for_position(idx: int, tier_boundaries: list[tuple[str, int]]) -> str:
-    """Return the letter rank for the player at *idx* (0-based)."""
-    for letter, boundary_idx in tier_boundaries:
-        if idx <= boundary_idx:
-            return letter
-    return "F"
+def _adaptive_remainder_order(current_alloc: dict[str, int]) -> list[str]:
+    """Return the priority order for distributing remaining players.
+
+    Middle ranks first (D → C → E → B), then adaptive A/F based on
+    whether F > S+A, then S last.
+    """
+    order = list(_MIDDLE_RANKS)
+
+    s_a = current_alloc.get("S", 0) + current_alloc.get("A", 0)
+    f = current_alloc.get("F", 0)
+
+    if f > s_a:
+        order.extend(["A", "F", "S"])
+    else:
+        order.extend(["F", "A", "S"])
+
+    return order
+
+
+def _ensure_utc(dt: datetime) -> datetime:
+    """Make a datetime UTC-aware if it isn't already."""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt

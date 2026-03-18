@@ -47,6 +47,7 @@ from common.config import ENABLE_REPLAY_VALIDATION as ENABLE_REPLAY_VALIDATION  
 from common.config import EXPECTED_LOBBY_SETTINGS as EXPECTED_LOBBY_SETTINGS  # noqa: E402
 from common.config import GAME_MODES as GAME_MODES  # noqa: E402
 from common.config import IN_GAME_CHANNEL as IN_GAME_CHANNEL  # noqa: E402
+from common.config import LEADERBOARD_INACTIVITY_DAYS as LEADERBOARD_INACTIVITY_DAYS  # noqa: E402
 from common.config import MAX_MAP_VETOES as MAX_MAP_VETOES  # noqa: E402
 from common.urls import QUICKSTART_URL as QUICKSTART_URL  # noqa: E402
 from common.urls import TOS_MIRROR_URL as TOS_MIRROR_URL  # noqa: E402
