@@ -17,6 +17,11 @@ Only 1v1 mode is currently implemented. 2v2, 3v3, and FFA are planned but not ye
 # Activate the venv first
 source .venv/bin/activate
 
+# Run both processes at once (local dev helper)
+./run_local.sh
+
+# Or run each process separately:
+
 # Run the backend (FastAPI)
 uvicorn backend.api.app:app --reload
 
@@ -84,7 +89,46 @@ Discord Users
 - **`StorageWriter`** (`backend/database/storage.py`) — handles replay file uploads to Supabase Storage bucket. Path format: `replays/{match_id}/{discord_uid}/{timestamp}_{hash}.SC2Replay`.
 - **Table schemas** are defined as Polars `DataType` dicts in `backend/domain_types/dataframes.py` (`TABLE_SCHEMAS` registry) and used for strict validation on load. TypedDict row types (`AdminsRow`, `PlayersRow`, `Matches1v1Row`, etc.) are in the same file.
 - **Ephemeral types** (`backend/domain_types/ephemeral.py`) — `QueueEntry1v1`, `MatchCandidate1v1`, `MatchParams1v1`, `LeaderboardEntry1v1`. These are in-memory only, not persisted.
+- **Event JSONB types** (`backend/domain_types/events.py`) — `AdminCommandJSONB`, `PlayerCommandJSONB`, `PlayerUpdateJSONB`. Structured types for JSONB columns in the `events` table (not yet actively used).
 - **Authorization** (`backend/orchestrator/authorization.py`) — exists but is currently empty; authorization checks happen on the bot side via `bot/helpers/checks.py`.
+
+### Backend Configuration (`backend/core/config.py`)
+
+Key constants (beyond environment variables):
+
+```python
+MATCHMAKER = {
+    "balance_threshold": 50,          # MMR diff threshold for soft skill rebalance
+    "refinement_passes": 2,           # defined but currently unused
+    "wait_cycle_priority_coefficient": 20,
+    "wait_cycle_priority_exponent": 1.25,
+}
+
+MMR = {
+    "default": 1500,
+    "divisor": 500,   # NOT the standard 400
+    "k_factor": 40,
+}
+
+QUEUE = {
+    "abort_interval": 60,        # seconds
+    "activity_interval": 30,     # seconds
+    "expansion_step": 1,
+    "match_interval": 60,        # seconds between matchmaking waves
+    "confirmation_timeout": 60,  # seconds for players to confirm
+}
+
+EXPECTED_LOBBY_SETTINGS = {
+    "duration": "Infinite",
+    "locked_alliances": "Yes",
+    "privacy": "Normal",
+    "speed": "Faster",
+}
+
+CURRENT_SEASON = "season_alpha"
+REPLAY_TIMESTAMP_WINDOW_MINUTES = 60   # how far before match assignment a replay may have started
+IN_GAME_CHANNEL = "SCEvoLadder"
+```
 
 ### Backend API Endpoints (`backend/api/endpoints.py`)
 
@@ -100,9 +144,11 @@ Discord Users
 - `PUT /owner/mmr` — directly set a player's MMR for a race
 
 **User/Player:**
+- `GET /commands/greet/{discord_uid}` — greeting data for welcome command
 - `GET /profile/{discord_uid}` — player info + all MMR rows
 - `GET /players/{discord_uid}` — player row
 - `GET /admins/{discord_uid}` — admin row (used by bot for permission checks)
+- `GET /matches_1v1/{match_id}` — match row (non-admin, no replay details)
 - `GET /mmrs_1v1/{discord_uid}` and `GET /mmrs_1v1/{discord_uid}/{race}` — MMR lookups
 - `GET /preferences_1v1/{discord_uid}` and `PUT /preferences_1v1` — saved race & veto choices
 
@@ -120,7 +166,7 @@ Discord Users
 - `PUT /commands/termsofservice` — accept/reject ToS
 
 **Replay:**
-- `POST /matches_1v1/{match_id}/replay` — 7-step flow: validate, parse (in ProcessPoolExecutor), insert pending row, upload to storage, update status, update match refs, run verifier
+- `POST /matches_1v1/{match_id}/replay` — 7-step flow: validate, parse (in ProcessPoolExecutor), insert pending row, upload to storage, update status, update match refs, run verifier. If verification passes race checks, the match is **automatically resolved** (no manual report needed).
 
 ### WebSocket Events
 
@@ -144,17 +190,30 @@ Six event types:
 - HTTP calls to the backend are made with the `aiohttp` session managed in `bot/core/http.py`.
 - **Message Queue** (`bot/core/message_queue.py`) — two-tier priority queue for non-interaction Discord API calls. High-priority: player-facing sends (match-found DMs, match info). Low-priority: terminal event DMs, match log posts, embed edits. Single worker, 40 msgs/sec rate limit, max 3 retries per job. Interaction endpoints (response, followup, edit_original_response) are NOT routed through this queue.
 
+### Bot Helpers (`bot/helpers/`)
+
+- `checks.py` — permission checks (banned, admin, owner, DM-only)
+- `emotes.py` — emote helper functions
+- `i18n.py` — i18n framework (not wired to commands yet)
+- `message_helpers.py` — queue-related message helpers
+- `replay_handler.py` — handles replay file DM uploads end-to-end
+
 ### Bot Commands
 
 Commands are organized under `bot/commands/{user,admin,owner}/`. Each command file exports a `register_*_command(tree)` function.
 
-**User Commands:**
+**User Commands (functional):**
 - `/setup` — modal for player_name, alt_player_names, battletag, nationality, location, language
 - `/setcountry` — set/update country
 - `/queue` — choose races (BW, SC2, or both) + up to 4 map vetoes, then enter queue
 - `/termsofservice` — accept/reject ToS
 - `/profile` — view player data + MMR breakdowns
 - `/greeting` — greeting/welcome command
+
+**User Commands (stub — empty files, not registered):**
+- `/help` (`help_command.py`)
+- `/leaderboard` (`leaderboard_command.py`)
+- `/prune` (`prune_command.py`)
 
 **Admin Commands (`/admin <subcommand>`):**
 - `ban` — toggle ban status
@@ -192,7 +251,9 @@ All game data lives under `data/core/` as JSON:
 
 Locale strings are under `data/locales/` (enUS, koKR, zhCN, esMX, ruRU) — framework in place but not yet wired to commands.
 
-`common/loader.py` (`JSONLoader`) loads all core JSON at startup for both processes. `common/json_types.py` contains TypedDict definitions for all JSON structures. `common/protocols.py` defines a `StaticDataSource` protocol satisfied by both `StateManager` and `Cache`, used to initialize `common/lookups/` modules.
+`data/misc/` contains source spreadsheets and mock data (e.g. `cross_table.xlsx`, `mock_leaderboard.json`) — not loaded at runtime.
+
+`common/loader.py` (`JSONLoader`) loads all core JSON at startup for both processes. `common/json_types.py` contains TypedDict definitions for all JSON structures. `common/protocols.py` defines a `StaticDataSource` protocol satisfied by both `StateManager` and `Cache`, used to initialize `common/lookups/` modules. `common/locale_types.py` contains TypedDict definitions for locale data.
 
 ### Common Lookups (`common/lookups/`)
 
@@ -228,7 +289,7 @@ Stateless, pure-function design. Single entry point: `run_matchmaking_wave(queue
 2. Equalize pools: assign "both" players to balance BW/SC2 by population and skill (3-phase: hard population balance, alternating distribution, soft skill rebalance with 50 MMR threshold)
 3. Smaller pool leads, larger follows. Build candidate pairs within each player's MMR window
 4. **MMR window:** `BASE_MMR_WINDOW (100) + wait_cycles * MMR_WINDOW_GROWTH_PER_CYCLE (50)`
-5. **Scoring:** `score = mmr_diff^2 - (2^wait_factor * 20.0)` — lower is better. Exponential wait bonus guarantees long-waiters eventually match regardless of MMR gap
+5. **Scoring:** `score = mmr_diff^2 - (wait_cycle_priority_coefficient * wait_factor^wait_cycle_priority_exponent)` — lower is better. Wait bonus guarantees long-waiters eventually match regardless of MMR gap
 6. **Optimal pairing via Hungarian algorithm** (Kuhn-Munkres, O(n^3)) — minimum-weight maximum-cardinality bipartite matching
 
 **Match Parameters** (`backend/algorithms/match_params.py`): Random map from non-vetoed pool, server from `cross_table[region_1][region_2]`, in-game channel: `SCEvoLadder`.
@@ -236,8 +297,10 @@ Stateless, pure-function design. Single entry point: `run_matchmaking_wave(queue
 ### Replay System
 
 - **Parser** (`backend/algorithms/replay_parser.py`): Uses `sc2reader` to extract player names, races, map, timestamp, duration, observers, cache handles, game settings. Runs in `ProcessPoolExecutor` to avoid blocking the event loop.
-- **Verifier** (`backend/algorithms/replay_verifier.py`): Compares parsed replay against expected match settings (races, map, mod via cache handles, timestamp, observers, game privacy/speed/duration/locked alliances). Results are informational unless `_ENABLE_REPLAY_VALIDATION=True` in the bot (currently True — report dropdown is locked until replay passes race checks).
-- **Upload flow:** Bot receives `.SC2Replay` via DM attachment → POST to backend → parse → insert pending row → upload to Supabase Storage → update status → update match refs → verify → return results.
+- **Verifier** (`backend/algorithms/replay_verifier.py`): Compares parsed replay against expected match settings (races, map, mod via cache handles, timestamp within `REPLAY_TIMESTAMP_WINDOW_MINUTES=60`, observers, game privacy/speed/duration/locked alliances per `EXPECTED_LOBBY_SETTINGS`). AI players are currently allowed (`_ALLOW_AI_PLAYERS=True`).
+- **Auto-resolution**: If the replay passes race checks, the match is automatically resolved without requiring players to manually report — `replay_auto_resolve_match()` maps the replay winner (in replay player order) to the match player order using the winning race.
+- **Upload flow:** Bot receives `.SC2Replay` via DM attachment → POST to backend → validate → parse (ProcessPoolExecutor) → insert pending row → upload to Supabase Storage → update upload_status → update match replay refs → verify → return results.
+- **Upload status field:** `pending` → `completed` / `failed`
 
 ### Game Stats (`backend/algorithms/game_stats.py`)
 
@@ -254,6 +317,8 @@ Key constraints:
 - Races: `bw_terran`, `bw_zerg`, `bw_protoss`, `sc2_terran`, `sc2_zerg`, `sc2_protoss`
 - Match results: `player_1_win`, `player_2_win`, `draw`, `conflict`, `abort`, `abandoned`, `invalidated`, `no_report`
 - Languages: `enUS`, `esMX`, `koKR`, `ruRU`, `zhCN`
+- Replay upload_status: `pending`, `completed`, `failed`
+- Match rows include: `player_X_replay_path`, `player_X_replay_row_id`, `player_X_uploaded_at` for tracking per-player replay uploads
 
 ### Deployment
 
@@ -277,14 +342,16 @@ Dev: `ruff`, `mypy`
 - All DataFrame mutations go through `TransitionManager` — never modify `StateManager` DataFrames directly.
 - WebSocket events are the only way the bot learns about match lifecycle changes — if adding a new match state transition, add a corresponding WS broadcast.
 - The `common/` package is shared between backend and bot — changes here affect both processes.
-- Admin roles are seeded from the `ADMINS` env var (no longer required — admins table is loaded from Supabase). The `ADMINS` env var reference in older docs is outdated.
+- Admin roles are loaded from the Supabase `admins` table at startup. The `ADMINS` env var referenced in older docs is outdated and no longer used.
+- `CURRENT_SEASON = "season_alpha"` is used for map pool filtering — update this when seasons change.
 
 ### Not Yet Implemented
 
 These items appear in planning docs or have stub code but are not functional:
-- Leaderboard (type exists in ephemeral.py, list in StateManager, but never populated; `/leaderboard` command is commented out)
-- i18n/localization (locale files exist, framework in place, not wired to commands)
-- Event tracking (`events` table and `event_lookups.py` exist but are unused)
-- Notification system (`notifications` table exists but is unused beyond read_quick_start_guide flag)
+- Leaderboard (`backend/algorithms/leaderboard.py` is empty; `LeaderboardEntry1v1` type exists; list in `StateManager` is never populated; `leaderboard_command.py` in bot is an empty stub)
+- i18n/localization (locale files exist, framework in place via `bot/helpers/i18n.py`, not wired to commands)
+- Event tracking (`events` table, `event_lookups.py`, and JSONB types in `events.py` exist but are unused)
+- Notification system (`notifications` table exists but is unused beyond `read_quick_start_guide` flag)
 - 2v2, 3v3, FFA modes
-- `/help` and `/prune` commands (commented out)
+- `/help` and `/prune` commands (empty stub files, not registered)
+- Authorization backend (`backend/orchestrator/authorization.py` is empty)
