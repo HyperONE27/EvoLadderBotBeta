@@ -19,7 +19,14 @@ from bot.core.config import (
 )
 from bot.core.dependencies import get_cache
 from bot.core.http import get_session
-from bot.helpers.checks import check_if_banned, check_if_dm
+from bot.helpers.checks import (
+    check_if_accepted_tos,
+    check_if_banned,
+    check_if_completed_setup,
+    check_if_dm,
+    check_if_queueing,
+    AlreadyQueueingError,
+)
 from bot.helpers.emotes import (
     get_flag_emote,
     get_game_emote,
@@ -858,6 +865,11 @@ class QueueSetupView(discord.ui.View):
 
         # Row 0: buttons
         async def on_join(interaction: discord.Interaction) -> None:
+            try:
+                await check_if_queueing(interaction)
+            except AlreadyQueueingError as e:
+                await interaction.response.send_message(str(e), ephemeral=True)
+                return
             await _join_queue(
                 interaction,
                 self.discord_user_id,
@@ -937,24 +949,49 @@ class QueueSetupView(discord.ui.View):
 
 
 class _CancelQueueButton(discord.ui.Button):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        discord_user_id: int,
+        bw_race: str | None,
+        sc2_race: str | None,
+        map_vetoes: list[str],
+    ) -> None:
         super().__init__(
             label="Cancel Queue",
             emoji="✖️",
             style=discord.ButtonStyle.danger,
             row=0,
         )
+        self.discord_user_id = discord_user_id
+        self.bw_race = bw_race
+        self.sc2_race = sc2_race
+        self.map_vetoes = map_vetoes
 
     async def callback(self, interaction: discord.Interaction) -> None:
-        await _leave_queue(interaction)
+        await _leave_queue(
+            interaction,
+            self.discord_user_id,
+            self.bw_race,
+            self.sc2_race,
+            self.map_vetoes,
+        )
 
 
 class QueueSearchingView(discord.ui.View):
-    def __init__(self, interaction: discord.Interaction) -> None:
+    def __init__(
+        self,
+        interaction: discord.Interaction,
+        discord_user_id: int,
+        bw_race: str | None,
+        sc2_race: str | None,
+        map_vetoes: list[str],
+    ) -> None:
         super().__init__(timeout=None)
         self._interaction = interaction
         self._heartbeat_task: asyncio.Task[None] | None = None
-        self.add_item(_CancelQueueButton())
+        self.add_item(
+            _CancelQueueButton(discord_user_id, bw_race, sc2_race, map_vetoes)
+        )
 
     async def start_heartbeat(self) -> None:
         self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
@@ -1153,7 +1190,9 @@ async def _join_queue(
         except Exception:
             pass
 
-        searching_view = QueueSearchingView(interaction)
+        searching_view = QueueSearchingView(
+            interaction, discord_user_id, bw_race, sc2_race, map_vetoes
+        )
         await interaction.edit_original_response(
             embed=QueueSearchingEmbed(stats),
             view=searching_view,
@@ -1180,7 +1219,13 @@ async def _join_queue(
         )
 
 
-async def _leave_queue(interaction: discord.Interaction) -> None:
+async def _leave_queue(
+    interaction: discord.Interaction,
+    discord_user_id: int,
+    bw_race: str | None,
+    sc2_race: str | None,
+    map_vetoes: list[str],
+) -> None:
     await interaction.response.defer()
     try:
         async with get_session().delete(
@@ -1196,8 +1241,9 @@ async def _leave_queue(interaction: discord.Interaction) -> None:
             )
             return
 
-        embed = QueueLeftEmbed()
-        await interaction.edit_original_response(embed=embed, view=None)
+        setup_view = QueueSetupView(discord_user_id, bw_race, sc2_race, map_vetoes)
+        embed = QueueSetupEmbed(bw_race, sc2_race, map_vetoes)
+        await interaction.edit_original_response(embed=embed, view=setup_view)
 
         # Stop the heartbeat and clear cached references.
         try:
@@ -1282,6 +1328,9 @@ async def _abort_match(interaction: discord.Interaction, match_id: int) -> None:
 
 def register_queue_command(tree: app_commands.CommandTree) -> None:
     @tree.command(name="queue", description="Join the 1v1 ranked matchmaking queue")
+    @app_commands.check(check_if_accepted_tos)
+    @app_commands.check(check_if_completed_setup)
+    @app_commands.check(check_if_queueing)
     @app_commands.check(check_if_banned)
     @app_commands.check(check_if_dm)
     async def queue_command(interaction: discord.Interaction) -> None:

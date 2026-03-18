@@ -6,7 +6,12 @@ from bot.components.buttons import ConfirmButton, CancelButton
 from bot.components.embeds import ErrorEmbed
 from bot.core.config import BACKEND_URL
 from bot.core.http import get_session
-from bot.helpers.checks import check_if_banned, check_if_dm
+from bot.helpers.checks import (
+    check_if_accepted_tos,
+    check_if_banned,
+    check_if_completed_setup,
+    check_if_dm,
+)
 from bot.helpers.emotes import get_flag_emote
 from common.json_types import Country
 from common.lookups.country_lookups import (
@@ -147,6 +152,8 @@ async def _send_setcountry_request(
 
 def register_setcountry_command(tree: app_commands.CommandTree) -> None:
     @tree.command(name="setcountry", description="Set your country")
+    @app_commands.check(check_if_accepted_tos)
+    @app_commands.check(check_if_completed_setup)
     @app_commands.check(check_if_banned)
     @app_commands.check(check_if_dm)
     @app_commands.autocomplete(country=_autocomplete_country)

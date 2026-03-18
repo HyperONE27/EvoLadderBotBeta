@@ -32,6 +32,51 @@ async def check_if_banned(interaction: discord.Interaction) -> bool:
     return True
 
 
+async def check_if_accepted_tos(interaction: discord.Interaction) -> bool:
+    """Hit GET /players/{uid} and check accepted_tos. Async check."""
+    uid = interaction.user.id
+    try:
+        async with get_session().get(f"{BACKEND_URL}/players/{uid}") as resp:
+            data = await resp.json()
+    except Exception:
+        return True
+
+    player = data.get("player")
+    if player is None or not player.get("accepted_tos"):
+        raise NotAcceptedTosError()
+    return True
+
+
+async def check_if_completed_setup(interaction: discord.Interaction) -> bool:
+    """Hit GET /players/{uid} and check completed_setup. Async check."""
+    uid = interaction.user.id
+    try:
+        async with get_session().get(f"{BACKEND_URL}/players/{uid}") as resp:
+            data = await resp.json()
+    except Exception:
+        return True
+
+    player = data.get("player")
+    if player is None or not player.get("completed_setup"):
+        raise NotCompletedSetupError()
+    return True
+
+
+async def check_if_queueing(interaction: discord.Interaction) -> bool:
+    """Hit GET /players/{uid} and check player_status is not 'queueing'. Async check."""
+    uid = interaction.user.id
+    try:
+        async with get_session().get(f"{BACKEND_URL}/players/{uid}") as resp:
+            data = await resp.json()
+    except Exception:
+        return True
+
+    player = data.get("player")
+    if player is not None and player.get("player_status") == "queueing":
+        raise AlreadyQueueingError()
+    return True
+
+
 async def check_if_admin(interaction: discord.Interaction) -> bool:
     """Hit GET /admins/{uid} and check role is not 'inactive'."""
     uid = interaction.user.id
@@ -86,3 +131,24 @@ class NotAdminError(app_commands.CheckFailure):
 class NotOwnerError(app_commands.CheckFailure):
     def __init__(self) -> None:
         super().__init__("This command is restricted to bot owners.")
+
+
+class NotAcceptedTosError(app_commands.CheckFailure):
+    def __init__(self) -> None:
+        super().__init__(
+            "You must accept the Terms of Service before using this command.\n"
+            "Use `/termsofservice` to review and accept them."
+        )
+
+
+class NotCompletedSetupError(app_commands.CheckFailure):
+    def __init__(self) -> None:
+        super().__init__(
+            "You must complete your player setup before using this command.\n"
+            "Use `/setup` to configure your profile."
+        )
+
+
+class AlreadyQueueingError(app_commands.CheckFailure):
+    def __init__(self) -> None:
+        super().__init__("You are already in the queue.")
