@@ -17,6 +17,20 @@ What remains?
     - Admin resolutions need to force a recalculation of the affected mmrs_1v1 rows
 - Make sure visibility is solid
     - Maybe some more admin/owner commands
+        - Directly reading DataFrame rows
+- Add some kind of health check and automatic resurrection for:
+    - replay parsing process pool
+    - DataFrames
+        - write-through guarantees writes hit the DB
+        - but not that DFs might not silently corrupt...(?)
+- Migrate some config variables into ENV
+    - Especially the current season
+- Fix circular imports/coupling with WebSocket
+- Fix duplicated `_format_verification`
+- Fix `admin_resolve_match` branch duplication
+- Fix `on_ready()` firing on the bot on every reconnect
+- Resolve potentially duplicated config values between bot and backend
+- Add unit tests
 
 # FINISH DURING PRE-BETA
 
@@ -35,6 +49,9 @@ What remains?
     - Two tiers:
         - Basic Tier (free)
             - Unlimited games and core features
-        - Supporter Tier (paid, $5-10/month or PWYW?)
+            - Access to /profile and /leaderboard
+        - Supporter Tier (paid, $5-10/month / $50-100/year or PWYW?)
             - Additional analytics or cosmetics features
+            - Full MMR timeline charts
+            - Winrate analysis by race, time, map, etc.
             - Perks might not be ready for full beta launch
