@@ -662,25 +662,50 @@ class TransitionManager:
             finalised = self._handle_conflict(match_id, match)
             return True, "Reports conflict — match marked as conflict.", finalised
 
-    def _finalise_match(
+    # ==================================================================
+    # Shared match resolution helpers
+    # ==================================================================
+
+    def _calculate_mmr_changes(
         self,
-        match_id: int,
         match: Matches1v1Row,
-        agreed_result: str,
-    ) -> Matches1v1Row:
-        """Both players agree — calculate MMR, write everything, return to idle."""
-        now = utc_now()
+        result: str,
+    ) -> tuple[int, int, int, int]:
+        """Calculate MMR changes from snapshotted match MMRs.
 
-        # Map string result to the integer code that ratings_1v1 expects.
+        Returns ``(new_p1_mmr, new_p2_mmr, p1_change, p2_change)``.
+        """
         result_code_map = {"player_1_win": 1, "player_2_win": 2, "draw": 0}
-        result_code = result_code_map[agreed_result]
-
+        result_code = result_code_map[result]
         new_p1_mmr, new_p2_mmr = get_new_ratings(
             match["player_1_mmr"], match["player_2_mmr"], result_code
         )
         p1_change = new_p1_mmr - match["player_1_mmr"]
         p2_change = new_p2_mmr - match["player_2_mmr"]
+        return new_p1_mmr, new_p2_mmr, p1_change, p2_change
 
+    def _apply_match_resolution(
+        self,
+        match_id: int,
+        match: Matches1v1Row,
+        result: str,
+        p1_change: int,
+        p2_change: int,
+        new_p1_mmr: int,
+        new_p2_mmr: int,
+        now: datetime,
+        *,
+        player_1_report: str | None = None,
+        player_2_report: str | None = None,
+        admin_intervened: bool = False,
+        admin_discord_uid: int | None = None,
+    ) -> Matches1v1Row:
+        """Write match result, update MMRs, reset players to idle, and return
+        the updated match row.
+
+        This is the single code path for all non-abort/non-abandoned match
+        resolutions (player agreement, admin resolve, replay auto-resolve).
+        """
         p1_uid = match["player_1_discord_uid"]
         p2_uid = match["player_2_discord_uid"]
         p1_race = match["player_1_race"]
@@ -688,20 +713,41 @@ class TransitionManager:
 
         # Compute new MMR rows before any writes.
         p1_mmr_update = self._compute_mmr_update(
-            p1_uid, p1_race, new_p1_mmr, agreed_result, is_player_1=True, now=now
+            p1_uid, p1_race, new_p1_mmr, result, is_player_1=True, now=now
         )
         p2_mmr_update = self._compute_mmr_update(
-            p2_uid, p2_race, new_p2_mmr, agreed_result, is_player_1=False, now=now
+            p2_uid, p2_race, new_p2_mmr, result, is_player_1=False, now=now
         )
 
-        # Write match result (single UPDATE).
-        self._db_writer.finalise_match_1v1(
-            match_id,
-            match_result=agreed_result,
-            player_1_mmr_change=p1_change,
-            player_2_mmr_change=p2_change,
-            completed_at=now,
-        )
+        # Write match result to DB.
+        db_kwargs: dict[str, object] = {
+            "match_result": result,
+            "player_1_mmr_change": p1_change,
+            "player_2_mmr_change": p2_change,
+            "completed_at": now,
+        }
+        cache_kwargs: dict[str, object] = dict(db_kwargs)
+
+        if player_1_report is not None:
+            db_kwargs["player_1_report"] = player_1_report
+            cache_kwargs["player_1_report"] = player_1_report
+        if player_2_report is not None:
+            db_kwargs["player_2_report"] = player_2_report
+            cache_kwargs["player_2_report"] = player_2_report
+
+        if admin_intervened:
+            cache_kwargs["admin_intervened"] = True
+            cache_kwargs["admin_discord_uid"] = admin_discord_uid
+            self._db_writer.admin_resolve_match_1v1(
+                match_id,
+                match_result=result,
+                player_1_mmr_change=p1_change,
+                player_2_mmr_change=p2_change,
+                admin_discord_uid=admin_discord_uid or 0,
+                completed_at=now,
+            )
+        else:
+            self._db_writer.finalise_match_1v1(match_id, **db_kwargs)  # type: ignore[arg-type]
 
         # Write both MMR rows in a single upsert.
         mmr_updates = [u for u in (p1_mmr_update, p2_mmr_update) if u is not None]
@@ -709,13 +755,7 @@ class TransitionManager:
             self._db_writer.batch_update_mmrs_1v1(mmr_updates)
 
         # Update caches.
-        self._update_match_cache(
-            match_id,
-            match_result=agreed_result,
-            player_1_mmr_change=p1_change,
-            player_2_mmr_change=p2_change,
-            completed_at=now,
-        )
+        self._update_match_cache(match_id, **cache_kwargs)
         if p1_mmr_update is not None:
             self._apply_mmr_cache_update(p1_uid, p1_race, p1_mmr_update)
         if p2_mmr_update is not None:
@@ -726,15 +766,39 @@ class TransitionManager:
         self._set_player_status(p2_uid, "idle")
         self._confirmations.pop(match_id, None)
 
+        updated_match = self._get_match_row(match_id)
+        assert updated_match is not None
+        return updated_match
+
+    def _finalise_match(
+        self,
+        match_id: int,
+        match: Matches1v1Row,
+        agreed_result: str,
+    ) -> Matches1v1Row:
+        """Both players agree — calculate MMR, write everything, return to idle."""
+        now = utc_now()
+        new_p1_mmr, new_p2_mmr, p1_change, p2_change = self._calculate_mmr_changes(
+            match, agreed_result
+        )
+
+        updated = self._apply_match_resolution(
+            match_id,
+            match,
+            agreed_result,
+            p1_change,
+            p2_change,
+            new_p1_mmr,
+            new_p2_mmr,
+            now,
+        )
+
         logger.info(
             f"Match #{match_id} finalised: {agreed_result} "
             f"(p1 {match['player_1_mmr']}→{new_p1_mmr}, "
             f"p2 {match['player_2_mmr']}→{new_p2_mmr})"
         )
-
-        updated_match = self._get_match_row(match_id)
-        assert updated_match is not None
-        return updated_match
+        return updated
 
     def _handle_conflict(self, match_id: int, match: Matches1v1Row) -> Matches1v1Row:
         """Reports disagree — mark as conflict, no MMR changes, return to idle."""
@@ -996,6 +1060,72 @@ class TransitionManager:
         )
 
     # ==================================================================
+    # Replay auto-resolution
+    # ==================================================================
+
+    def replay_auto_resolve_match(
+        self,
+        match_id: int,
+        uploader_discord_uid: int,
+        replay_result: str,
+    ) -> Matches1v1Row:
+        """Auto-resolve a match based on a validated replay.
+
+        The replay has already passed race, map, and timestamp checks.
+        ``replay_result`` is the result from the replay parser perspective
+        (``player_1_win``, ``player_2_win``, or ``draw``) relative to the
+        *replay* player order — which may differ from the match player order.
+        The caller is responsible for mapping the replay winner's race to the
+        correct match player before calling this method, so ``replay_result``
+        here is already in match-player terms (``player_1_win`` means the
+        match's player 1 won).
+
+        The uploader's report column is set to ``replay_result``.  The
+        opponent's report column is set to ``no_report`` only if it is
+        currently empty.
+        """
+        match = self._get_match_row(match_id)
+        assert match is not None, f"Match #{match_id} not found for auto-resolve"
+
+        p1_uid = match["player_1_discord_uid"]
+
+        # Determine report columns.
+        if uploader_discord_uid == p1_uid:
+            p1_report: str | None = replay_result
+            p2_report: str | None = (
+                "no_report" if match["player_2_report"] is None else None
+            )
+        else:
+            p2_report = replay_result
+            p1_report = "no_report" if match["player_1_report"] is None else None
+
+        now = utc_now()
+        new_p1_mmr, new_p2_mmr, p1_change, p2_change = self._calculate_mmr_changes(
+            match, replay_result
+        )
+
+        updated = self._apply_match_resolution(
+            match_id,
+            match,
+            replay_result,
+            p1_change,
+            p2_change,
+            new_p1_mmr,
+            new_p2_mmr,
+            now,
+            player_1_report=p1_report,
+            player_2_report=p2_report,
+        )
+
+        logger.info(
+            f"Match #{match_id} auto-resolved via replay upload by "
+            f"{uploader_discord_uid}: {replay_result} "
+            f"(p1 {match['player_1_mmr']}→{new_p1_mmr}, "
+            f"p2 {match['player_2_mmr']}→{new_p2_mmr})"
+        )
+        return updated
+
+    # ==================================================================
     # Admin: status reset
     # ==================================================================
 
@@ -1083,79 +1213,63 @@ class TransitionManager:
         p2_uid = match["player_2_discord_uid"]
         p1_mmr = match["player_1_mmr"]
         p2_mmr = match["player_2_mmr"]
-
-        now = utc_now()
-
-        # Calculate MMR changes from snapshotted initial MMRs.
-        if result == "invalidated":
-            p1_change = 0
-            p2_change = 0
-            new_p1_mmr = p1_mmr
-            new_p2_mmr = p2_mmr
-        else:
-            result_code_map = {"player_1_win": 1, "player_2_win": 2, "draw": 0}
-            result_code = result_code_map[result]
-            new_p1_mmr, new_p2_mmr = get_new_ratings(p1_mmr, p2_mmr, result_code)
-            p1_change = new_p1_mmr - p1_mmr
-            p2_change = new_p2_mmr - p2_mmr
-
-        # Write match resolution to DB.
-        self._db_writer.admin_resolve_match_1v1(
-            match_id,
-            match_result=result,
-            player_1_mmr_change=p1_change,
-            player_2_mmr_change=p2_change,
-            admin_discord_uid=admin_discord_uid,
-            completed_at=now,
-        )
-
-        # Update match cache.
-        self._update_match_cache(
-            match_id,
-            match_result=result,
-            player_1_mmr_change=p1_change,
-            player_2_mmr_change=p2_change,
-            admin_intervened=True,
-            admin_discord_uid=admin_discord_uid,
-            completed_at=now,
-        )
-
-        # Apply MMR changes.
         p1_race = match["player_1_race"]
         p2_race = match["player_2_race"]
 
+        now = utc_now()
+
         if result == "invalidated":
+            # No MMR changes — reset to snapshotted values.
+            new_p1_mmr, new_p2_mmr, p1_change, p2_change = p1_mmr, p2_mmr, 0, 0
+
+            self._db_writer.admin_resolve_match_1v1(
+                match_id,
+                match_result=result,
+                player_1_mmr_change=0,
+                player_2_mmr_change=0,
+                admin_discord_uid=admin_discord_uid,
+                completed_at=now,
+            )
+            self._update_match_cache(
+                match_id,
+                match_result=result,
+                player_1_mmr_change=0,
+                player_2_mmr_change=0,
+                admin_intervened=True,
+                admin_discord_uid=admin_discord_uid,
+                completed_at=now,
+            )
+
             # Explicitly reset MMR to the snapshotted value from the match row.
-            # This reverses any drift if the player's MMR changed during the match.
             self._db_writer.set_mmr_1v1_value(p1_uid, p1_race, p1_mmr)
             self._db_writer.set_mmr_1v1_value(p2_uid, p2_race, p2_mmr)
             self._set_mmr_cache_value(p1_uid, p1_race, p1_mmr)
             self._set_mmr_cache_value(p2_uid, p2_race, p2_mmr)
 
-            # Recalculate game stats from ground truth (the match we just
-            # invalidated no longer counts).
+            # Recalculate game stats from ground truth.
             self._recalculate_game_stats(p1_uid, p1_race)
             self._recalculate_game_stats(p2_uid, p2_race)
+
+            # Return both players to idle.
+            self._set_player_status(p1_uid, "idle")
+            self._set_player_status(p2_uid, "idle")
+            self._confirmations.pop(match_id, None)
         else:
-            p1_mmr_update = self._compute_mmr_update(
-                p1_uid, p1_race, new_p1_mmr, result, is_player_1=True, now=now
+            new_p1_mmr, new_p2_mmr, p1_change, p2_change = self._calculate_mmr_changes(
+                match, result
             )
-            p2_mmr_update = self._compute_mmr_update(
-                p2_uid, p2_race, new_p2_mmr, result, is_player_1=False, now=now
+            self._apply_match_resolution(
+                match_id,
+                match,
+                result,
+                p1_change,
+                p2_change,
+                new_p1_mmr,
+                new_p2_mmr,
+                now,
+                admin_intervened=True,
+                admin_discord_uid=admin_discord_uid,
             )
-
-            mmr_updates = [u for u in (p1_mmr_update, p2_mmr_update) if u is not None]
-            if mmr_updates:
-                self._db_writer.batch_update_mmrs_1v1(mmr_updates)
-            if p1_mmr_update is not None:
-                self._apply_mmr_cache_update(p1_uid, p1_race, p1_mmr_update)
-            if p2_mmr_update is not None:
-                self._apply_mmr_cache_update(p2_uid, p2_race, p2_mmr_update)
-
-        # Return both players to idle.
-        self._set_player_status(p1_uid, "idle")
-        self._set_player_status(p2_uid, "idle")
-        self._confirmations.pop(match_id, None)
 
         logger.info(
             f"Match #{match_id} admin-resolved by {admin_discord_uid}: "
@@ -1170,8 +1284,8 @@ class TransitionManager:
             "player_2_discord_uid": p2_uid,
             "player_1_name": match["player_1_name"],
             "player_2_name": match["player_2_name"],
-            "player_1_race": match["player_1_race"],
-            "player_2_race": match["player_2_race"],
+            "player_1_race": p1_race,
+            "player_2_race": p2_race,
             "player_1_nationality": self._get_player_nationality(p1_uid),
             "player_2_nationality": self._get_player_nationality(p2_uid),
             "player_1_letter_rank": self._get_player_letter_rank(p1_uid, p1_race),

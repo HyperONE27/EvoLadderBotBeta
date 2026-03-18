@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 import structlog
 from contextlib import asynccontextmanager
@@ -19,8 +20,6 @@ ws_manager = ConnectionManager()
 
 async def _matchmaker_loop() -> None:
     """Run matchmaking waves at the top of every minute."""
-    import time
-
     while True:
         now = time.time()
         next_top = (now // 60 + 1) * 60

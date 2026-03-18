@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 
 import polars as pl
@@ -7,8 +6,6 @@ from typing import Any, cast
 
 from backend.core.config import DATABASE
 from backend.domain_types.dataframes import TABLE_SCHEMAS
-
-logger = logging.getLogger(__name__)
 
 
 # Connection functions

@@ -232,6 +232,24 @@ class Orchestrator:
         )
 
     # ------------------------------------------------------------------
+    # Replay auto-resolution
+    # ------------------------------------------------------------------
+
+    def replay_auto_resolve_match(
+        self,
+        match_id: int,
+        uploader_discord_uid: int,
+        replay_result: str,
+    ) -> Matches1v1Row:
+        """Auto-resolve a match from a validated replay.
+
+        ``replay_result`` must already be in match-player terms.
+        """
+        return self._transition_manager.replay_auto_resolve_match(
+            match_id, uploader_discord_uid, replay_result
+        )
+
+    # ------------------------------------------------------------------
     # Replay 1v1
     # ------------------------------------------------------------------
 

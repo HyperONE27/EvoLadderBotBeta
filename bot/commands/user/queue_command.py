@@ -7,7 +7,8 @@ import structlog
 import discord
 from discord import app_commands
 
-from bot.core.config import BACKEND_URL
+from bot.core.config import BACKEND_URL, QUEUE_SEARCHING_HEARTBEAT_SECONDS
+from bot.core.dependencies import get_cache
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_banned, check_if_dm
 from bot.helpers.emotes import (
@@ -970,7 +971,6 @@ class QueueSearchingView(discord.ui.View):
 
     async def _heartbeat_loop(self) -> None:
         """Update the searching embed's timestamp at the 15th second of every minute."""
-        from bot.core.config import QUEUE_SEARCHING_HEARTBEAT_SECONDS
 
         while True:
             try:
@@ -1174,8 +1174,6 @@ async def _join_queue(
         # when a match is found (stops the timer and removes the cancel button).
         try:
             msg = await interaction.original_response()
-            from bot.core.dependencies import get_cache
-
             get_cache().active_searching_messages[discord_user_id] = msg
             get_cache().active_searching_views[discord_user_id] = searching_view
         except Exception:
@@ -1213,8 +1211,6 @@ async def _leave_queue(interaction: discord.Interaction) -> None:
 
         # Stop the heartbeat and clear cached references.
         try:
-            from bot.core.dependencies import get_cache
-
             cache = get_cache()
             cache.active_searching_messages.pop(interaction.user.id, None)
             view = cache.active_searching_views.pop(interaction.user.id, None)

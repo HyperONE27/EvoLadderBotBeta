@@ -297,3 +297,5 @@ class ReplayUploadResponse(BaseModel):
     verification: dict | None = None
     replay_id: int | None = None
     upload_status: str | None = None
+    auto_resolved: bool = False
+    match: dict | None = None

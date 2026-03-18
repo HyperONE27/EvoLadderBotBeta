@@ -5,6 +5,7 @@ Called from the bot's on_message handler whenever a player sends a message
 with attachments in a DM channel.
 """
 
+import aiohttp
 import structlog
 import discord
 
@@ -67,8 +68,6 @@ async def handle_replay_upload(
     try:
         replay_bytes = await sc2_attachment.read()
 
-        import aiohttp
-
         form = aiohttp.FormData()
         form.add_field("discord_uid", str(user_id))
         form.add_field(
@@ -95,6 +94,7 @@ async def handle_replay_upload(
 
         parsed: dict = data["parsed"]
         verification: dict | None = data.get("verification")
+        auto_resolved: bool = data.get("auto_resolved", False)
 
         # Lazily import to avoid circular import at module level.
         from bot.commands.user.queue_command import (
@@ -110,8 +110,15 @@ async def handle_replay_upload(
                 parsed,
                 verification_results=verification,
                 enforcement_enabled=_ENABLE_REPLAY_VALIDATION,
+                auto_resolved=auto_resolved,
             ),
         )
+
+        # If auto-resolved, the WS match_completed event will handle
+        # sending the finalized embed and disabling the dropdown.
+        # No need to update the MatchInfoEmbed here.
+        if auto_resolved:
+            return
 
         # Update the MatchInfoEmbed message: refresh replay status and
         # (conditionally) unlock the report dropdown (high priority — gates reporting).

@@ -8,7 +8,7 @@ from bot.core.bootstrap import Bot
 from bot.core.config import BOT_TOKEN
 from bot.core.dependencies import set_bot
 from bot.core.http import init_session, close_session
-from bot.core.message_queue import initialize_message_queue
+from bot.core.message_queue import get_message_queue, initialize_message_queue
 
 from bot.commands.admin.ban_command import register_admin_ban_command
 from bot.commands.admin.match_command import register_admin_match_command
@@ -24,6 +24,8 @@ from bot.commands.user.setcountry_command import register_setcountry_command
 from bot.commands.user.setup_command import register_setup_command
 from bot.commands.user.termsofservice_command import register_termsofservice_command
 from bot.core.ws_listener import start_ws_listener
+from bot.helpers.message_helpers import queue_channel_send_low
+from bot.helpers.replay_handler import handle_replay_upload
 from common.logging.config import configure_structlog
 
 logger = structlog.get_logger(__name__)
@@ -72,14 +74,10 @@ async def on_message(message: discord.Message) -> None:
 
     # Remove this when we have actual things to do here
     if message.content.startswith("!"):
-        from bot.helpers.message_helpers import queue_channel_send_low
-
         await queue_channel_send_low(message.channel, content="🌎 Hello, world!")
 
     # Replay upload handler — only fires for DM messages with attachments.
     if isinstance(message.channel, discord.DMChannel) and message.attachments:
-        from bot.helpers.replay_handler import handle_replay_upload
-
         await handle_replay_upload(client, message)
 
 
@@ -157,8 +155,6 @@ async def main() -> None:
     logger.info("⚙️ [Bot] Bot initialized. Attempting to connect to Discord...")
     async with client:
         await client.start(token=BOT_TOKEN, reconnect=True)
-    from bot.core.message_queue import get_message_queue
-
     await get_message_queue().stop()
     await close_session()
     logger.info("🛑 [Discord Gateway] Bot shutting down...")

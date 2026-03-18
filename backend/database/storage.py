@@ -1,10 +1,10 @@
-import logging
+import structlog
 
 from supabase import create_client, Client
 
 from backend.core.config import DATABASE, STORAGE
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # Connection functions
@@ -48,6 +48,6 @@ class StorageWriter:
             return public_url
         except Exception as exc:
             logger.error(
-                "Supabase Storage upload failed for path %s: %s", storage_path, exc
+                "Supabase Storage upload failed", path=storage_path, error=str(exc)
             )
             return None

@@ -23,6 +23,7 @@ class ReplaySuccessEmbed(discord.Embed):
         replay_data: dict[str, Any],
         verification_results: dict[str, Any] | None = None,
         enforcement_enabled: bool = True,
+        auto_resolved: bool = False,
     ) -> None:
         p1_name: str = replay_data.get("player_1_name", "Player 1")
         p2_name: str = replay_data.get("player_2_name", "Player 2")
@@ -91,7 +92,9 @@ class ReplaySuccessEmbed(discord.Embed):
 
         if verification_results:
             verification_text = _format_verification(
-                verification_results, enforcement_enabled=enforcement_enabled
+                verification_results,
+                enforcement_enabled=enforcement_enabled,
+                auto_resolved=auto_resolved,
             )
             self.add_field(
                 name="☑️ Replay Verification",
@@ -124,7 +127,11 @@ class ReplayErrorEmbed(discord.Embed):
 # ---------------------------------------------------------------------------
 
 
-def _format_verification(results: dict[str, Any], enforcement_enabled: bool) -> str:
+def _format_verification(
+    results: dict[str, Any],
+    enforcement_enabled: bool,
+    auto_resolved: bool = False,
+) -> str:
     lines: list[str] = []
 
     races_check = results.get("races", {})
@@ -205,6 +212,21 @@ def _format_verification(results: dict[str, Any], enforcement_enabled: bool) -> 
                 f"but found `{chk.get('found')}`."
             )
 
+    ai_check = results.get("ai_players", {})
+    if ai_check:
+        if not ai_check.get("ai_detected", False):
+            lines.append("- ✅ **No AI Players:** Both players are human.")
+        elif ai_check.get("success"):
+            lines.append(
+                "- ⚠️ **AI Player Detected:** Allowed (_ALLOW_AI_PLAYERS = True)."
+            )
+        else:
+            names = ", ".join(ai_check.get("ai_player_names", []))
+            lines.append(
+                f"- ❌ **AI Player Detected:** _ALLOW_AI_PLAYERS = False; "
+                f"an AI player was detected (`{names}`)."
+            )
+
     # Overall summary
     all_ok = all(
         results.get(k, {}).get("success", False)
@@ -218,13 +240,19 @@ def _format_verification(results: dict[str, Any], enforcement_enabled: bool) -> 
             "game_speed",
             "game_duration",
             "locked_alliances",
+            "ai_players",
         )
     )
     critical_failed = not races_check.get("success", True)
 
     lines.append("")
 
-    if all_ok:
+    if auto_resolved:
+        lines.append(
+            "✅ **Verification Complete:** All critical checks passed.\n"
+            "✅ **Match auto-resolved** from replay data. No manual reporting needed."
+        )
+    elif all_ok:
         lines.append(
             "✅ **Verification Complete:** All checks passed.\n"
             "ℹ️ This embed is provided for informational purposes only. "

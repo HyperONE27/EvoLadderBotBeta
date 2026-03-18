@@ -4,9 +4,11 @@ import structlog
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from backend.api.dependencies import get_backend
-from common.datetime_helpers import utc_now
 from backend.algorithms.replay_parser import parse_replay
 from backend.algorithms.replay_verifier import verify_replay
+from backend.lookups.admin_lookups import get_admin_by_discord_uid
+from backend.lookups.replay_1v1_lookups import get_replays_1v1_by_match_id
+from common.datetime_helpers import utc_now
 from backend.api.models import (
     AdminBanRequest,
     AdminBanResponse,
@@ -120,12 +122,7 @@ async def admin_match(
         player_2 = app.orchestrator.get_player(match["player_2_discord_uid"])
         admin_uid = match.get("admin_discord_uid")
         if admin_uid is not None:
-            from backend.lookups.admin_lookups import get_admin_by_discord_uid
-
             admin = get_admin_by_discord_uid(admin_uid)
-
-    # Get replays for this match.
-    from backend.lookups.replay_1v1_lookups import get_replays_1v1_by_match_id
 
     replays = get_replays_1v1_by_match_id(match_id) or []
 
@@ -137,8 +134,6 @@ async def admin_match(
     for replay in replays:
         replay_urls.append(replay.get("replay_path"))
         if match is not None:
-            from backend.algorithms.replay_verifier import verify_replay
-
             verification = verify_replay(
                 dict(replay), dict(match), app.state_manager.mods, season_maps
             )
@@ -555,11 +550,55 @@ async def upload_replay(
         match_id, player_num, final_path, replay_id, uploaded_at
     )
 
-    # --- 7. Verify and return ---
+    # --- 7. Verify ---
     season_maps = app.state_manager.maps.get("1v1", {}).get("season_alpha", {})
     verification = verify_replay(
         parsed, dict(match), app.state_manager.mods, season_maps
     )
+
+    # --- 8. Attempt auto-resolution if verification passes ---
+    auto_resolved = False
+    resolved_match = None
+
+    # Re-fetch the match in case it was resolved while we were uploading.
+    current_match = app.orchestrator.get_match_1v1(match_id)
+    can_auto_resolve = (
+        current_match is not None
+        and current_match["match_result"] is None
+        and verification.get("races", {}).get("success", False)
+        and verification.get("map", {}).get("success", False)
+        and verification.get("timestamp", {}).get("success", False)
+        and verification.get("ai_players", {}).get("success", True)
+        and parsed.get("match_result") in ("player_1_win", "player_2_win", "draw")
+    )
+
+    if can_auto_resolve:
+        assert current_match is not None
+        # Map the replay result (in replay player order) to match player order
+        # using the winning race.
+        replay_result: str = parsed["match_result"]
+        match_result = _map_replay_result_to_match(
+            replay_result, parsed, dict(current_match)
+        )
+
+        if match_result is not None:
+            resolved_match_row = app.orchestrator.replay_auto_resolve_match(
+                match_id, discord_uid, match_result
+            )
+            resolved_match = dict(resolved_match_row)
+            auto_resolved = True
+
+            # Broadcast match_completed via WebSocket.
+            from backend.api.app import ws_manager
+
+            await ws_manager.broadcast("match_completed", resolved_match)
+
+            logger.info(
+                "Replay auto-resolved match",
+                match_id=match_id,
+                result=match_result,
+                uploader=discord_uid,
+            )
 
     return ReplayUploadResponse(
         success=True,
@@ -567,4 +606,40 @@ async def upload_replay(
         verification=verification,
         replay_id=replay_id,
         upload_status=upload_status,
+        auto_resolved=auto_resolved,
+        match=resolved_match,
     )
+
+
+def _map_replay_result_to_match(
+    replay_result: str,
+    parsed: dict,
+    match: dict,
+) -> str | None:
+    """Map a replay result (in replay player order) to match player order.
+
+    Since BW-vs-SC2 matchups guarantee different races for each player,
+    we identify the winning race from the replay and find which match
+    player had that race.
+
+    Returns the result in match-player terms, or None if the mapping fails.
+    """
+    if replay_result == "draw":
+        return "draw"
+
+    # Determine the winning race from the replay.
+    if replay_result == "player_1_win":
+        winning_race = parsed["player_1_race"]
+    elif replay_result == "player_2_win":
+        winning_race = parsed["player_2_race"]
+    else:
+        return None
+
+    # Map to match player order.
+    if winning_race == match["player_1_race"]:
+        return "player_1_win"
+    elif winning_race == match["player_2_race"]:
+        return "player_2_win"
+    else:
+        # Race not found in match — should not happen if races check passed.
+        return None

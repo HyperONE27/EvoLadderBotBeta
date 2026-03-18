@@ -14,11 +14,11 @@ ISO-format string (keyword-only) so callers never need to pre-normalise.
 
 from __future__ import annotations
 
-import logging
+import structlog
 from datetime import datetime, timezone
 from typing import Any
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # ---------------------------------------------------------------------------
 # Canonical "now"
@@ -55,7 +55,7 @@ def ensure_utc(value: Any) -> datetime | None:
 
     if not isinstance(value, str):
         logger.warning(
-            "ensure_utc: unexpected type %s for value %r", type(value).__name__, value
+            "ensure_utc: unexpected type", type=type(value).__name__, value=repr(value)
         )
         return None
 
@@ -71,7 +71,7 @@ def ensure_utc(value: Any) -> datetime | None:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt
     except (ValueError, TypeError) as exc:
-        logger.warning("ensure_utc: failed to parse %r: %s", value, exc)
+        logger.warning("ensure_utc: failed to parse", value=repr(value), error=str(exc))
         return None
 
 
