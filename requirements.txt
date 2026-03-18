@@ -4,6 +4,7 @@ polars>=1.38.0
 python-dotenv>=1.0.0
 python-multipart>=0.0.20
 sc2reader>=1.8.0
+structlog>=24.0.0
 xxhash>=3.0.0
 supabase>=2.28.0
 uvicorn>=0.41.0

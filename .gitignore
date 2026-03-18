@@ -221,3 +221,6 @@ misc/*
 
 # Cursor
 .cursor/*
+
+# Pictures
+pictures/*

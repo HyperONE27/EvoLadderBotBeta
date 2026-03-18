@@ -15,6 +15,8 @@ What remains?
 - Implement the infrastructure
 - mmrs_1v1 W/L/D/T game counts desync from matches_1v1 when a match gets resolved more than once
     - Admin resolutions need to force a recalculation of the affected mmrs_1v1 rows
+- Make sure visibility is solid
+    - Maybe some more admin/owner commands
 
 # FINISH DURING PRE-BETA
 
