@@ -274,6 +274,12 @@ class Orchestrator:
     # Admin operations
     # ------------------------------------------------------------------
 
+    def reset_player_status(
+        self, discord_uid: int
+    ) -> tuple[bool, str | None, str | None]:
+        """Reset player to idle. Returns (success, error, old_status)."""
+        return self._transition_manager.reset_player_status(discord_uid)
+
     def toggle_ban(self, discord_uid: int) -> tuple[bool, bool]:
         """Toggle ban status. Returns (success, new_is_banned)."""
         return self._transition_manager.toggle_ban(discord_uid)

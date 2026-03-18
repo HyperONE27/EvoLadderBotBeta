@@ -33,6 +33,19 @@ class AdminBanResponse(BaseModel):
     new_is_banned: bool
 
 
+# --- /admin statusreset ---
+
+
+class AdminStatusResetRequest(BaseModel):
+    discord_uid: int
+
+
+class AdminStatusResetResponse(BaseModel):
+    success: bool
+    error: str | None = None
+    old_status: str | None = None
+
+
 # --- /admin resolve ---
 
 

@@ -11,6 +11,8 @@ from backend.api.models import (
     AdminBanRequest,
     AdminBanResponse,
     AdminMatchResponse,
+    AdminStatusResetRequest,
+    AdminStatusResetResponse,
     AdminResolveRequest,
     AdminResolveResponse,
     AdminSnapshotResponse,
@@ -83,6 +85,20 @@ async def admin_ban(
 ) -> AdminBanResponse:
     success, new_is_banned = app.orchestrator.toggle_ban(request.discord_uid)
     return AdminBanResponse(success=success, new_is_banned=new_is_banned)
+
+
+# --- /admin statusreset ---
+
+
+@router.put("/admin/statusreset", response_model=AdminStatusResetResponse)
+async def admin_statusreset(
+    request: AdminStatusResetRequest,
+    app: Backend = Depends(get_backend),
+) -> AdminStatusResetResponse:
+    success, error, old_status = app.orchestrator.reset_player_status(
+        request.discord_uid
+    )
+    return AdminStatusResetResponse(success=success, error=error, old_status=old_status)
 
 
 # --- /admin match ---

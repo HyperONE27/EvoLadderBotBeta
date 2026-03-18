@@ -390,8 +390,8 @@ class TransitionManager:
         elif p1_loc is None and p2_loc is None:
             # Both missing — pick a sensible fallback.  The cross-table
             # requires valid region codes so we can't just pass None.
-            p1_loc = "NA"
-            p2_loc = "NA"
+            p1_loc = "NAC"
+            p2_loc = "NAC"
 
         # At this point both are guaranteed non-None by the if/elif chain.
         assert p1_loc is not None
@@ -922,6 +922,35 @@ class TransitionManager:
                 f"player_{player_num}_uploaded_at": uploaded_at,
             },
         )
+
+    # ==================================================================
+    # Admin: status reset
+    # ==================================================================
+
+    def reset_player_status(
+        self, discord_uid: int
+    ) -> tuple[bool, str | None, str | None]:
+        """Reset a player's status to idle, clearing match mode and match ID.
+
+        Returns ``(success, error_message, old_status)``.
+        """
+        df = self._state_manager.players_df
+        rows = df.filter(pl.col("discord_uid") == discord_uid)
+        if rows.is_empty():
+            return False, "Player not found.", None
+
+        row = rows.row(0, named=True)
+        old_status: str = row.get("player_status") or "unknown"
+
+        if old_status == "idle" and row.get("current_match_id") is None:
+            return False, "Player is already idle with no active match.", old_status
+
+        self._set_player_status(discord_uid, "idle", match_mode=None, match_id=None)
+
+        logger.info(
+            f"Admin reset player {discord_uid} status from {old_status!r} to idle"
+        )
+        return True, None, old_status
 
     # ==================================================================
     # Admin: ban toggle

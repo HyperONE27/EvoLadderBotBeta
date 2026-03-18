@@ -3,9 +3,10 @@ import discord
 from discord import app_commands
 
 from bot.components.buttons import ConfirmButton, CancelButton
-from bot.core.config import BACKEND_URL
+from bot.core.config import BACKEND_URL, MATCH_LOG_CHANNEL_ID
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_admin
+from bot.helpers.emotes import get_race_emote
 
 logger = structlog.get_logger(__name__)
 
@@ -26,6 +27,7 @@ RESULT_CHOICES = [
     app_commands.Choice(name="Invalidate", value="invalidated"),
 ]
 
+
 # ----------
 # Components
 # ----------
@@ -38,10 +40,10 @@ class ResolvePreviewEmbed(discord.Embed):
         self, match_id: int, result: str, result_display: str, reason: str | None
     ) -> None:
         super().__init__(
-            title="⚠️ Admin Resolve Match",
+            title="⚠️ Admin: Confirm Match Resolution",
             description=(
-                f"You are about to manually resolve match **#{match_id}**.\n\n"
-                f"**Result:** `{result_display}`\n"
+                f"**Match ID:** {match_id}\n"
+                f"**Resolution:** {result_display}\n"
                 f"**Internal Code:** `{result}`"
             ),
             color=discord.Color.orange(),
@@ -49,43 +51,116 @@ class ResolvePreviewEmbed(discord.Embed):
         assert self.description is not None
         if reason:
             self.description += f"\n**Reason:** {reason}"
-        self.description += (
-            "\n\n⚠️ This will:\n"
-            "- Set the match result and calculate MMR changes\n"
-            "- Mark the match as admin-intervened\n"
-            "- Return both players to idle status\n"
-            "- **Player report columns will NOT be modified**\n\n"
-            "Please confirm below."
-        )
+        self.description += "\n\nThis will update the match result and MMR. Confirm?"
 
 
-class ResolveSuccessEmbed(discord.Embed):
-    def __init__(self, data: dict) -> None:
-        match_id = data.get("match_id", "?")
-        result = data.get("match_result", "?")
-        p1_name = data.get("player_1_name", "?")
-        p2_name = data.get("player_2_name", "?")
-        p1_change = data.get("player_1_mmr_change", 0)
-        p2_change = data.get("player_2_mmr_change", 0)
-        p1_new = data.get("player_1_new_mmr", "?")
-        p2_new = data.get("player_2_new_mmr", "?")
+def _get_result_display(result: str, data: dict) -> str:
+    """Build the result display string matching the alpha format."""
+    p1_name = data.get("player_1_name", "?")
+    p2_name = data.get("player_2_name", "?")
+    p1_race = data.get("player_1_race", "")
+    p2_race = data.get("player_2_race", "")
 
-        super().__init__(
-            title=f"✅ Match #{match_id} Resolved",
-            description=(
-                f"**Result:** `{result}`\n\n"
-                f"**{p1_name}:** `{p1_change:+d}` MMR → `{p1_new}` MMR\n"
-                f"**{p2_name}:** `{p2_change:+d}` MMR → `{p2_new}` MMR"
-            ),
-            color=discord.Color.green(),
-        )
+    try:
+        p1_emote = get_race_emote(p1_race)
+    except ValueError:
+        p1_emote = "🎮"
+    try:
+        p2_emote = get_race_emote(p2_race)
+    except ValueError:
+        p2_emote = "🎮"
+
+    if result == "player_1_win":
+        return f"🏆 **{p1_emote} {p1_name}**"
+    elif result == "player_2_win":
+        return f"🏆 **{p2_emote} {p2_name}**"
+    elif result == "draw":
+        return "⚖️ **Draw**"
+    elif result == "invalidated":
+        return "❌ **Match Invalidated**"
+    return result
+
+
+def _build_admin_resolution_embed(
+    data: dict,
+    *,
+    reason: str | None,
+    admin_name: str,
+    is_admin_confirm: bool = False,
+) -> discord.Embed:
+    """Build the Admin Resolution embed matching the alpha screenshot.
+
+    Used for: admin confirmation, player DMs, and match log channel.
+    """
+    match_id = data.get("match_id", "?")
+    result = data.get("result", "?")
+    p1_name = data.get("player_1_name", "?")
+    p2_name = data.get("player_2_name", "?")
+    p1_race = data.get("player_1_race", "")
+    p2_race = data.get("player_2_race", "")
+    p1_old = data.get("player_1_mmr", 0)
+    p2_old = data.get("player_2_mmr", 0)
+    p1_new = data.get("player_1_mmr_new", 0)
+    p2_new = data.get("player_2_mmr_new", 0)
+    p1_change = data.get("player_1_mmr_change", 0)
+    p2_change = data.get("player_2_mmr_change", 0)
+
+    try:
+        p1_emote = get_race_emote(p1_race)
+    except ValueError:
+        p1_emote = "🎮"
+    try:
+        p2_emote = get_race_emote(p2_race)
+    except ValueError:
+        p2_emote = "🎮"
+
+    title_icon = "✅" if is_admin_confirm else "⚖️"
+    color = discord.Color.green() if is_admin_confirm else discord.Color.gold()
+
+    embed = discord.Embed(
+        title=f"{title_icon} Match #{match_id} Admin Resolution",
+        description=(
+            f"**{p1_emote} {p1_name} ({p1_old} → {p1_new})** "
+            f"vs "
+            f"**{p2_emote} {p2_name} ({p2_old} → {p2_new})**"
+        ),
+        color=color,
+    )
+
+    # Spacer
+    embed.add_field(name="", value="\u3164", inline=False)
+
+    # Result (inline)
+    result_display = _get_result_display(result, data)
+    embed.add_field(name="**Result:**", value=result_display, inline=True)
+
+    # MMR Changes (inline)
+    mmr_text = (
+        f"• {p1_name}: `{p1_change:+d} ({p1_old} → {p1_new})`\n"
+        f"• {p2_name}: `{p2_change:+d} ({p2_old} → {p2_new})`"
+    )
+    embed.add_field(name="**MMR Changes:**", value=mmr_text, inline=True)
+
+    # Admin intervention (full width)
+    intervention_text = f"**Resolved by:** {admin_name}"
+    if reason:
+        intervention_text += f"\n**Reason:** {reason}"
+    embed.add_field(
+        name="⚠️ **Admin Intervention:**",
+        value=intervention_text,
+        inline=False,
+    )
+
+    return embed
 
 
 class UnsupportedGameModeEmbed(discord.Embed):
     def __init__(self, game_mode: str) -> None:
         super().__init__(
             title="🚧 Unsupported Game Mode",
-            description=f"`{game_mode}` is not yet supported. Only `1v1` is currently available.",
+            description=(
+                f"`{game_mode}` is not yet supported. Only `1v1` is currently available."
+            ),
             color=discord.Color.orange(),
         )
 
@@ -100,6 +175,7 @@ class ResolveConfirmView(discord.ui.View):
         match_id: int,
         result: str,
         admin_discord_uid: int,
+        reason: str | None,
     ) -> None:
         super().__init__()
 
@@ -110,7 +186,7 @@ class ResolveConfirmView(discord.ui.View):
                 )
                 return
             await _send_resolve_request(
-                interaction, match_id, result, admin_discord_uid
+                interaction, match_id, result, admin_discord_uid, reason
             )
 
         self.add_item(ConfirmButton(callback=on_confirm))
@@ -127,6 +203,7 @@ async def _send_resolve_request(
     match_id: int,
     result: str,
     admin_discord_uid: int,
+    reason: str | None,
 ) -> None:
     async with get_session().put(
         f"{BACKEND_URL}/admin/matches_1v1/{match_id}/resolve",
@@ -141,8 +218,8 @@ async def _send_resolve_request(
         error = data.get("error") or "An unexpected error occurred."
         await interaction.response.edit_message(
             embed=discord.Embed(
-                title="❌ Resolve Failed",
-                description=error,
+                title="❌ Admin: Resolution Failed",
+                description=f"Error: {error}",
                 color=discord.Color.red(),
             ),
             view=None,
@@ -150,55 +227,63 @@ async def _send_resolve_request(
         return
 
     resolve_data = data.get("data") or {}
+    admin_name = interaction.user.name
     logger.info(
-        f"Admin {interaction.user.name} ({interaction.user.id}) resolved "
+        f"Admin {admin_name} ({interaction.user.id}) resolved "
         f"match #{match_id}: result={result}"
     )
 
-    await interaction.response.edit_message(
-        embed=ResolveSuccessEmbed(resolve_data),
-        view=None,
+    # Admin confirmation embed (green, shown in the command response).
+    admin_embed = _build_admin_resolution_embed(
+        resolve_data, reason=reason, admin_name=admin_name, is_admin_confirm=True
     )
+    await interaction.response.edit_message(embed=admin_embed, view=None)
 
-    # Notify players via DM.
-    await _notify_players(interaction, resolve_data)
+    # Notify both players via DM and send to match log channel.
+    await _notify_players(interaction, resolve_data, reason, admin_name)
+    await _send_to_match_log(interaction, resolve_data, reason, admin_name)
 
 
 async def _notify_players(
     interaction: discord.Interaction,
     data: dict,
+    reason: str | None,
+    admin_name: str,
 ) -> None:
-    match_id = data.get("match_id", "?")
-    result = data.get("match_result", "?")
+    """DM both players with the Admin Resolution embed."""
     p1_uid = data.get("player_1_discord_uid")
     p2_uid = data.get("player_2_discord_uid")
-    p1_name = data.get("player_1_name", "?")
-    p2_name = data.get("player_2_name", "?")
-    p1_change = data.get("player_1_mmr_change", 0)
-    p2_change = data.get("player_2_mmr_change", 0)
-    p1_new = data.get("player_1_new_mmr", "?")
-    p2_new = data.get("player_2_new_mmr", "?")
 
-    for uid, name, change, new_mmr in [
-        (p1_uid, p1_name, p1_change, p1_new),
-        (p2_uid, p2_name, p2_change, p2_new),
-    ]:
+    embed = _build_admin_resolution_embed(data, reason=reason, admin_name=admin_name)
+
+    for uid in (p1_uid, p2_uid):
         if uid is None:
             continue
         try:
             user = await interaction.client.fetch_user(uid)
-            embed = discord.Embed(
-                title=f"📋 Match #{match_id} — Admin Resolution",
-                description=(
-                    f"An administrator has manually resolved your match.\n\n"
-                    f"**Result:** `{result}`\n"
-                    f"**Your MMR Change:** `{change:+d}` → `{new_mmr}` MMR"
-                ),
-                color=discord.Color.blue(),
-            )
             await user.send(embed=embed)
         except Exception:
-            logger.warning(f"Failed to DM player {name} ({uid}) about resolve")
+            logger.warning(f"Failed to DM player {uid} about admin resolve")
+
+
+async def _send_to_match_log(
+    interaction: discord.Interaction,
+    data: dict,
+    reason: str | None,
+    admin_name: str,
+) -> None:
+    """Send the Admin Resolution embed to the match log channel."""
+    try:
+        channel = interaction.client.get_channel(MATCH_LOG_CHANNEL_ID)
+        if channel is None:
+            channel = await interaction.client.fetch_channel(MATCH_LOG_CHANNEL_ID)
+        if channel is not None:
+            embed = _build_admin_resolution_embed(
+                data, reason=reason, admin_name=admin_name
+            )
+            await channel.send(embed=embed)  # type: ignore[union-attr]
+    except Exception:
+        logger.warning("Failed to send admin resolve embed to match log channel")
 
 
 # --------------------
@@ -237,5 +322,6 @@ def register_admin_resolve_command(tree: app_commands.CommandTree) -> None:
                 match_id,
                 result.value,
                 interaction.user.id,
+                reason,
             ),
         )
