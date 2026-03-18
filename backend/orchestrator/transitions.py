@@ -11,7 +11,7 @@ from backend.algorithms.matchmaker import run_matchmaking_wave
 from backend.algorithms.ratings_1v1 import get_default_mmr, get_new_ratings
 from backend.core.config import CURRENT_SEASON
 from backend.database.database import DatabaseWriter
-from backend.domain_types.dataframes import Matches1v1Row
+from backend.domain_types.dataframes import Matches1v1Row, row_as
 from backend.domain_types.ephemeral import (
     MatchCandidate1v1,
     MatchParams1v1,
@@ -451,7 +451,7 @@ class TransitionManager:
             f"on {params['map_name']} @ {params['server_name']}"
         )
 
-        return Matches1v1Row(**created)  # type: ignore[typeddict-item, no-any-return]
+        return row_as(Matches1v1Row, created)
 
     def _get_player_location(self, discord_uid: int) -> str | None:
         df = self._state_manager.players_df
@@ -935,7 +935,7 @@ class TransitionManager:
         rows = df.filter(pl.col("id") == match_id)
         if rows.is_empty():
             return None
-        return Matches1v1Row(**rows.row(0, named=True))  # type: ignore[typeddict-item, no-any-return]
+        return row_as(Matches1v1Row, rows.row(0, named=True))
 
     def _update_match_cache(self, match_id: int, **updates: object) -> None:
         """Patch specific columns on a cached match row."""
@@ -1377,7 +1377,4 @@ class TransitionManager:
         """Return all matches with match_result IS NULL."""
         df = self._state_manager.matches_1v1_df
         active = df.filter(pl.col("match_result").is_null())
-        return [
-            Matches1v1Row(**row)  # type: ignore[typeddict-item]
-            for row in active.iter_rows(named=True)
-        ]
+        return [row_as(Matches1v1Row, row) for row in active.iter_rows(named=True)]

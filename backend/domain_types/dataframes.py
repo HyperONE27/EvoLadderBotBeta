@@ -1,7 +1,20 @@
 import polars as pl
 
 from datetime import datetime
-from typing import TypedDict
+from typing import Any, TypeVar, TypedDict, cast
+
+_T = TypeVar("_T")
+
+
+def row_as(row_type: type[_T], row: dict[str, Any]) -> _T:
+    """Cast a Polars row dict to a TypedDict type.
+
+    The DataFrame schema is validated at load time (DatabaseReader._validate_schema),
+    so the cast is safe — this is a single trust boundary rather than 20+ scattered
+    type: ignore comments.
+    """
+    return cast(_T, row)
+
 
 # ---------------------
 # DataFrame definitions

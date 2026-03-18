@@ -1,6 +1,6 @@
 import polars as pl
 
-from backend.domain_types.dataframes import PlayersRow
+from backend.domain_types.dataframes import PlayersRow, row_as
 from backend.orchestrator.state import StateManager
 
 _MODULE_NOT_INITIALIZED: str = f"{__name__} not initialized"
@@ -37,7 +37,7 @@ def get_player_by_discord_uid(discord_uid: int) -> PlayersRow | None:
     if not rows:
         return None
 
-    return PlayersRow(**rows[0])  # type: ignore[no-any-return, typeddict-item]
+    return row_as(PlayersRow, rows[0])
 
 
 def get_player_by_discord_username(discord_username: str) -> PlayersRow | None:
@@ -50,7 +50,7 @@ def get_player_by_discord_username(discord_username: str) -> PlayersRow | None:
     if not rows:
         return None
 
-    return PlayersRow(**rows[0])  # type: ignore[no-any-return, typeddict-item]
+    return row_as(PlayersRow, rows[0])
 
 
 def get_player_by_player_name(player_name: str) -> PlayersRow | None:
@@ -63,7 +63,7 @@ def get_player_by_player_name(player_name: str) -> PlayersRow | None:
     if not rows:
         return None
 
-    return PlayersRow(**rows[0])  # type: ignore[no-any-return, typeddict-item]
+    return row_as(PlayersRow, rows[0])
 
 
 def get_player_by_battletag(battletag: str) -> PlayersRow | None:
@@ -76,7 +76,7 @@ def get_player_by_battletag(battletag: str) -> PlayersRow | None:
     if not rows:
         return None
 
-    return PlayersRow(**rows[0])  # type: ignore[no-any-return, typeddict-item]
+    return row_as(PlayersRow, rows[0])
 
 
 # ----------------

@@ -1,6 +1,6 @@
 import polars as pl
 
-from backend.domain_types.dataframes import Preferences1v1Row
+from backend.domain_types.dataframes import Preferences1v1Row, row_as
 from backend.orchestrator.state import StateManager
 
 _MODULE_NOT_INITIALIZED: str = f"{__name__} not initialized"
@@ -37,7 +37,7 @@ def get_preferences_1v1_by_discord_uid(discord_uid: int) -> Preferences1v1Row | 
     if not rows:
         return None
 
-    return Preferences1v1Row(**rows[0])  # type: ignore[no-any-return, typeddict-item]
+    return row_as(Preferences1v1Row, rows[0])
 
 
 # ----------------

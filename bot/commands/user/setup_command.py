@@ -564,6 +564,13 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
         self.add_item(self.alt_ids_input)
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
+        if self._message is None:
+            await interaction.response.send_message(
+                "An error occurred. Please run `/setup` again.", ephemeral=True
+            )
+            return
+        message: discord.Message = self._message
+
         player_name = self.player_name_input.value.strip()
         battletag = self.battletag_input.value.strip()
         raw_alt_ids = self.alt_ids_input.value.strip()
@@ -584,8 +591,9 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
             logger.debug(f"SetupModal validation failed (player_name): {error}")
             await self._edit(
                 interaction,
+                message=message,
                 embed=SetupValidationErrorEmbed("Invalid User ID", error or ""),
-                view=SetupValidationErrorView(current_presets, self._message),  # type: ignore[arg-type]
+                view=SetupValidationErrorView(current_presets, message),
             )
             return
 
@@ -594,8 +602,9 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
             logger.debug(f"SetupModal validation failed (battletag): {error}")
             await self._edit(
                 interaction,
+                message=message,
                 embed=SetupValidationErrorEmbed("Invalid BattleTag", error or ""),
-                view=SetupValidationErrorView(current_presets, self._message),  # type: ignore[arg-type]
+                view=SetupValidationErrorView(current_presets, message),
             )
             return
 
@@ -608,10 +617,11 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
                 )
                 await self._edit(
                     interaction,
+                    message=message,
                     embed=SetupValidationErrorEmbed(
                         f"Invalid Alternative ID: {token}", error or ""
                     ),
-                    view=SetupValidationErrorView(current_presets, self._message),  # type: ignore[arg-type]
+                    view=SetupValidationErrorView(current_presets, message),
                 )
                 return
             alt_ids.append(token)
@@ -620,10 +630,11 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
             logger.debug("SetupModal validation failed: duplicate IDs")
             await self._edit(
                 interaction,
+                message=message,
                 embed=SetupValidationErrorEmbed(
                     "Duplicate IDs", "All IDs must be unique."
                 ),
-                view=SetupValidationErrorView(current_presets, self._message),  # type: ignore[arg-type]
+                view=SetupValidationErrorView(current_presets, message),
             )
             return
 
@@ -645,6 +656,7 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
         )
         await self._edit(
             interaction,
+            message=message,
             embed=SetupSelectionEmbed(
                 preselected_country, preselected_region, self._preselected_language
             ),
@@ -652,7 +664,7 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
                 player_name=player_name,
                 battletag=battletag,
                 alt_ids=alt_ids,
-                message=self._message,  # type: ignore[arg-type]
+                message=message,
                 selected_country=preselected_country,
                 selected_region=preselected_region,
                 selected_language=self._preselected_language,
@@ -691,11 +703,12 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
         self,
         interaction: discord.Interaction,
         *,
+        message: discord.Message,
         embed: discord.Embed,
         view: discord.ui.View,
     ) -> None:
         await interaction.response.defer()
-        await self._message.edit(embed=embed, view=view)  # type: ignore[union-attr]
+        await message.edit(embed=embed, view=view)
 
 
 # ----------------

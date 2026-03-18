@@ -1,6 +1,6 @@
 import polars as pl
 
-from backend.domain_types.dataframes import Replays1v1Row
+from backend.domain_types.dataframes import Replays1v1Row, row_as
 from backend.orchestrator.state import StateManager
 
 _MODULE_NOT_INITIALIZED: str = f"{__name__} not initialized"
@@ -37,7 +37,7 @@ def get_replay_1v1_by_id(id: int) -> Replays1v1Row | None:
     if not rows:
         return None
 
-    return Replays1v1Row(**rows[0])  # type: ignore[no-any-return, typeddict-item]
+    return row_as(Replays1v1Row, rows[0])
 
 
 def get_replay_1v1_by_replay_path(replay_path: str) -> Replays1v1Row | None:
@@ -50,7 +50,7 @@ def get_replay_1v1_by_replay_path(replay_path: str) -> Replays1v1Row | None:
     if not rows:
         return None
 
-    return Replays1v1Row(**rows[0])  # type: ignore[no-any-return, typeddict-item]
+    return row_as(Replays1v1Row, rows[0])
 
 
 def get_replays_1v1_by_match_id(match_id: int) -> list[Replays1v1Row]:
@@ -60,7 +60,7 @@ def get_replays_1v1_by_match_id(match_id: int) -> list[Replays1v1Row]:
         return []
 
     rows = df.filter(pl.col("matches_1v1_id") == match_id).to_dicts()
-    return [Replays1v1Row(**r) for r in rows]  # type: ignore[typeddict-item]
+    return [row_as(Replays1v1Row, r) for r in rows]
 
 
 def get_replay_1v1_by_replay_hash(replay_hash: str) -> Replays1v1Row | None:
@@ -73,7 +73,7 @@ def get_replay_1v1_by_replay_hash(replay_hash: str) -> Replays1v1Row | None:
     if not rows:
         return None
 
-    return Replays1v1Row(**rows[0])  # type: ignore[no-any-return, typeddict-item]
+    return row_as(Replays1v1Row, rows[0])
 
 
 # ----------------

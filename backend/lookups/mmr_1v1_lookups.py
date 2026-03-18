@@ -1,6 +1,6 @@
 import polars as pl
 
-from backend.domain_types.dataframes import MMRs1v1Row
+from backend.domain_types.dataframes import MMRs1v1Row, row_as
 from backend.orchestrator.state import StateManager
 
 _MODULE_NOT_INITIALIZED: str = f"{__name__} not initialized"
@@ -37,7 +37,7 @@ def get_mmrs_1v1_by_discord_uid(discord_uid: int) -> list[MMRs1v1Row] | None:
     if not rows:
         return None
 
-    return [MMRs1v1Row(**row) for row in rows]  # type: ignore[typeddict-item]
+    return [row_as(MMRs1v1Row, row) for row in rows]
 
 
 def get_mmrs_1v1_by_race(race: str) -> list[MMRs1v1Row] | None:
@@ -50,7 +50,7 @@ def get_mmrs_1v1_by_race(race: str) -> list[MMRs1v1Row] | None:
     if not rows:
         return None
 
-    return [MMRs1v1Row(**row) for row in rows]  # type: ignore[typeddict-item]
+    return [row_as(MMRs1v1Row, row) for row in rows]
 
 
 def get_mmr_1v1_by_discord_uid_and_race(
@@ -67,7 +67,7 @@ def get_mmr_1v1_by_discord_uid_and_race(
     if not rows:
         return None
 
-    return MMRs1v1Row(**rows[0])  # type: ignore[no-any-return, typeddict-item]
+    return row_as(MMRs1v1Row, rows[0])
 
 
 # ----------------

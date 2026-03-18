@@ -1,6 +1,6 @@
 import polars as pl
 
-from backend.domain_types.dataframes import Matches1v1Row
+from backend.domain_types.dataframes import Matches1v1Row, row_as
 from backend.orchestrator.state import StateManager
 
 _MODULE_NOT_INITIALIZED: str = f"{__name__} not initialized"
@@ -37,7 +37,7 @@ def get_match_1v1_by_id(id: int) -> Matches1v1Row | None:
     if not rows:
         return None
 
-    return Matches1v1Row(**rows[0])  # type: ignore[no-any-return, typeddict-item]
+    return row_as(Matches1v1Row, rows[0])
 
 
 def get_matches_1v1_by_discord_uid(discord_uid: int) -> list[Matches1v1Row] | None:
@@ -53,7 +53,7 @@ def get_matches_1v1_by_discord_uid(discord_uid: int) -> list[Matches1v1Row] | No
     if not rows:
         return None
 
-    return [Matches1v1Row(**row) for row in rows]  # type: ignore[typeddict-item]
+    return [row_as(Matches1v1Row, row) for row in rows]
 
 
 def get_matches_1v1_by_race(race: str) -> list[Matches1v1Row] | None:
@@ -68,7 +68,7 @@ def get_matches_1v1_by_race(race: str) -> list[Matches1v1Row] | None:
     if not rows:
         return None
 
-    return [Matches1v1Row(**row) for row in rows]  # type: ignore[typeddict-item]
+    return [row_as(Matches1v1Row, row) for row in rows]
 
 
 def get_matches_1v1_by_map_name(map_name: str) -> list[Matches1v1Row] | None:
@@ -81,7 +81,7 @@ def get_matches_1v1_by_map_name(map_name: str) -> list[Matches1v1Row] | None:
     if not rows:
         return None
 
-    return [Matches1v1Row(**row) for row in rows]  # type: ignore[typeddict-item]
+    return [row_as(Matches1v1Row, row) for row in rows]
 
 
 def get_matches_1v1_by_server_name(server_name: str) -> list[Matches1v1Row] | None:
@@ -94,7 +94,7 @@ def get_matches_1v1_by_server_name(server_name: str) -> list[Matches1v1Row] | No
     if not rows:
         return None
 
-    return [Matches1v1Row(**row) for row in rows]  # type: ignore[typeddict-item]
+    return [row_as(Matches1v1Row, row) for row in rows]
 
 
 def get_matches_1v1_by_two_discord_uids(
@@ -112,7 +112,7 @@ def get_matches_1v1_by_two_discord_uids(
     if not rows:
         return None
 
-    return [Matches1v1Row(**row) for row in rows]  # type: ignore[typeddict-item]
+    return [row_as(Matches1v1Row, row) for row in rows]
 
 
 # ----------------

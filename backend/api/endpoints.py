@@ -587,7 +587,7 @@ async def upload_replay(
         )
 
     # --- 5. Update upload_status (and final path if upload succeeded) ---
-    final_path: str = public_url if upload_status == "completed" else storage_path  # type: ignore[assignment]
+    final_path: str = public_url if public_url is not None else storage_path
     app.orchestrator.update_replay_status(replay_id, upload_status, final_path)
 
     # --- 6. Update the match row ---

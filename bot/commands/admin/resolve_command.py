@@ -282,9 +282,9 @@ async def _send_to_match_log(
         channel = interaction.client.get_channel(MATCH_LOG_CHANNEL_ID)
         if channel is None:
             channel = await interaction.client.fetch_channel(MATCH_LOG_CHANNEL_ID)
-        if channel is not None:
+        if channel is not None and isinstance(channel, discord.TextChannel):
             embed = AdminResolutionEmbed(data, reason=reason, admin_name=admin_name)
-            await queue_channel_send_low(channel, embed=embed)  # type: ignore[arg-type]
+            await queue_channel_send_low(channel, embed=embed)
     except Exception:
         logger.warning("Failed to send admin resolve embed to match log channel")
 

@@ -23,12 +23,14 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass
-from typing import Awaitable, Callable
+from typing import Any, Awaitable, Callable, TypeVar
 
 import discord
 import structlog
 
 from bot.core.config import DISCORD_MESSAGE_RATE_LIMIT, MESSAGE_QUEUE_MAX_RETRIES
+
+_T = TypeVar("_T")
 
 logger = structlog.get_logger(__name__)
 
@@ -42,13 +44,16 @@ class MessageQueueJob:
                      on each invocation (NOT a coroutine object — must be
                      callable to support retries).
         future:      asyncio.Future for result propagation.  The same Future
-                     instance is reused across all retry attempts.
+                     instance is reused across all retry attempts.  Typed as
+                     Any internally because the queue holds heterogeneous jobs;
+                     callers receive a correctly-typed Future via the generic
+                     enqueue_high/enqueue_low methods.
         retry_count: Number of retry attempts already made (max 3).
         job_type:    "high" or "low" for logging purposes.
     """
 
-    operation: Callable[[], Awaitable[object]]
-    future: asyncio.Future[object]
+    operation: Callable[[], Awaitable[Any]]
+    future: asyncio.Future[Any]
     retry_count: int = 0
     job_type: str = "unknown"
 
@@ -103,17 +108,17 @@ class MessageQueue:
     # ------------------------------------------------------------------
 
     async def enqueue_high(
-        self, operation: Callable[[], Awaitable[object]]
-    ) -> asyncio.Future[object]:
-        future: asyncio.Future[object] = asyncio.get_running_loop().create_future()
+        self, operation: Callable[[], Awaitable[_T]]
+    ) -> asyncio.Future[_T]:
+        future: asyncio.Future[_T] = asyncio.get_running_loop().create_future()
         job = MessageQueueJob(operation=operation, future=future, job_type="high")
         await self._high_priority_queue.put(job)
         return future
 
     async def enqueue_low(
-        self, operation: Callable[[], Awaitable[object]]
-    ) -> asyncio.Future[object]:
-        future: asyncio.Future[object] = asyncio.get_running_loop().create_future()
+        self, operation: Callable[[], Awaitable[_T]]
+    ) -> asyncio.Future[_T]:
+        future: asyncio.Future[_T] = asyncio.get_running_loop().create_future()
         job = MessageQueueJob(operation=operation, future=future, job_type="low")
         await self._low_priority_queue.put(job)
         return future

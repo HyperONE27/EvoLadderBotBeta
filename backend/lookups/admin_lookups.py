@@ -1,6 +1,6 @@
 import polars as pl
 
-from backend.domain_types.dataframes import AdminsRow
+from backend.domain_types.dataframes import AdminsRow, row_as
 from backend.orchestrator.state import StateManager
 
 _state_manager: StateManager | None = None
@@ -19,4 +19,4 @@ def get_admin_by_discord_uid(discord_uid: int) -> AdminsRow | None:
     rows = df.filter(pl.col("discord_uid") == discord_uid)
     if rows.is_empty():
         return None
-    return AdminsRow(**rows.row(0, named=True))  # type: ignore[no-any-return, typeddict-item]
+    return row_as(AdminsRow, rows.row(0, named=True))

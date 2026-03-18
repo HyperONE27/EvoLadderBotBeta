@@ -41,7 +41,7 @@ async def queue_user_send_high(
 ) -> discord.Message:
     queue = get_message_queue()
 
-    async def operation() -> object:
+    async def operation() -> discord.Message:
         send_kwargs: dict[str, Any] = {**kwargs}
         if content is not None:
             send_kwargs["content"] = content
@@ -52,7 +52,7 @@ async def queue_user_send_high(
         return await user.send(**send_kwargs)
 
     future = await queue.enqueue_high(operation)
-    return await future  # type: ignore[return-value]
+    return await future
 
 
 async def queue_message_reply_high(
@@ -64,7 +64,7 @@ async def queue_message_reply_high(
 ) -> discord.Message:
     queue = get_message_queue()
 
-    async def operation() -> object:
+    async def operation() -> discord.Message:
         reply_kwargs: dict[str, Any] = {**kwargs}
         if content is not None:
             reply_kwargs["content"] = content
@@ -75,7 +75,7 @@ async def queue_message_reply_high(
         return await message.reply(**reply_kwargs)
 
     future = await queue.enqueue_high(operation)
-    return await future  # type: ignore[return-value]
+    return await future
 
 
 async def queue_message_edit_high(
@@ -87,7 +87,7 @@ async def queue_message_edit_high(
 ) -> discord.Message:
     queue = get_message_queue()
 
-    async def operation() -> object:
+    async def operation() -> discord.Message:
         edit_kwargs: dict[str, Any] = {}
         if content is not MISSING:
             edit_kwargs["content"] = content
@@ -99,7 +99,7 @@ async def queue_message_edit_high(
         return await message.edit(**edit_kwargs)
 
     future = await queue.enqueue_high(operation)
-    return await future  # type: ignore[return-value]
+    return await future
 
 
 async def queue_message_delete_high(
@@ -130,7 +130,7 @@ async def queue_user_send_low(
 ) -> discord.Message:
     queue = get_message_queue()
 
-    async def operation() -> object:
+    async def operation() -> discord.Message:
         send_kwargs: dict[str, Any] = {**kwargs}
         if content is not None:
             send_kwargs["content"] = content
@@ -141,7 +141,7 @@ async def queue_user_send_low(
         return await user.send(**send_kwargs)
 
     future = await queue.enqueue_low(operation)
-    return await future  # type: ignore[return-value]
+    return await future
 
 
 async def queue_channel_send_low(
@@ -153,7 +153,7 @@ async def queue_channel_send_low(
 ) -> discord.Message:
     queue = get_message_queue()
 
-    async def operation() -> object:
+    async def operation() -> discord.Message:
         send_kwargs: dict[str, Any] = {**kwargs}
         if content is not None:
             send_kwargs["content"] = content
@@ -164,7 +164,7 @@ async def queue_channel_send_low(
         return await channel.send(**send_kwargs)
 
     future = await queue.enqueue_low(operation)
-    return await future  # type: ignore[return-value]
+    return await future
 
 
 async def queue_message_edit_low(
@@ -176,7 +176,7 @@ async def queue_message_edit_low(
 ) -> discord.Message:
     queue = get_message_queue()
 
-    async def operation() -> object:
+    async def operation() -> discord.Message:
         edit_kwargs: dict[str, Any] = {}
         if content is not MISSING:
             edit_kwargs["content"] = content
@@ -188,7 +188,7 @@ async def queue_message_edit_low(
         return await message.edit(**edit_kwargs)
 
     future = await queue.enqueue_low(operation)
-    return await future  # type: ignore[return-value]
+    return await future
 
 
 async def queue_message_delete_low(
@@ -214,7 +214,7 @@ async def queue_message_reply_low(
 ) -> discord.Message:
     queue = get_message_queue()
 
-    async def operation() -> object:
+    async def operation() -> discord.Message:
         reply_kwargs: dict[str, Any] = {**kwargs}
         if content is not None:
             reply_kwargs["content"] = content
@@ -225,4 +225,4 @@ async def queue_message_reply_low(
         return await message.reply(**reply_kwargs)
 
     future = await queue.enqueue_low(operation)
-    return await future  # type: ignore[return-value]
+    return await future
