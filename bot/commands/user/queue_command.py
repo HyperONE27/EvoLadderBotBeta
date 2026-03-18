@@ -196,13 +196,14 @@ class QueueSetupEmbed(discord.Embed):
         )
 
 
-class QueueLeftEmbed(discord.Embed):
-    def __init__(self) -> None:
-        super().__init__(
-            title="Queue Left",
-            description="You have left the queue.",
-            color=discord.Color.light_grey(),
-        )
+# Deprecated because leaving the queue now returns you directly to QueueSetupEmbed
+# class QueueLeftEmbed(discord.Embed):
+#     def __init__(self) -> None:
+#         super().__init__(
+#             title="Queue Left",
+#             description="You have left the queue.",
+#             color=discord.Color.light_grey(),
+#         )
 
 
 class MatchConfirmedEmbed(discord.Embed):

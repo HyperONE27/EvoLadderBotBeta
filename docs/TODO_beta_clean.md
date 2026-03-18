@@ -4,33 +4,39 @@ What remains?
 
 # FINISH BY PRE-BETA
 
-- /leaderboard is completely unimplemented
+- ⏰ /leaderboard is completely unimplemented
     - 1/7/21/21/21/21/8% splits
     - Ordinal rank calculation
     - Store in Leaderboard1v1 in StateManager
-- /profile looks weird
-- /profile doesn't contain full T/W/L/D (win-rate %) statistics by race and aggregated
-- Generally the UI is messed up everywhere
+- ⏰ /profile looks weird
+- ⏰ /profile doesn't contain full T/W/L/D (win-rate %) statistics by race and aggregated
+- ⏰ Generally the UI is messed up everywhere
     - Especially /snapshot
-- Implement the infrastructure
-- mmrs_1v1 W/L/D/T game counts desync from matches_1v1 when a match gets resolved more than once
+    - ⏰ Holy shit fix this
+- ⏰ Implement the infrastructure
+    - of what??? I forgot
+- ✅ mmrs_1v1 W/L/D/T game counts desync from matches_1v1 when a match gets resolved more than once
     - Admin resolutions need to force a recalculation of the affected mmrs_1v1 rows
-- Make sure visibility is solid
+- ⏰ Make sure visibility is solid
     - Maybe some more admin/owner commands
         - Directly reading DataFrame rows
-- Add some kind of health check and automatic resurrection for:
+- ⏰ Add some kind of health check and automatic resurrection for:
     - replay parsing process pool
     - DataFrames
         - write-through guarantees writes hit the DB
         - but not that DFs might not silently corrupt...(?)
-- Migrate some config variables into ENV
+- ✅ Migrate some config variables into ENV, there are many that would be convenient to have moved to backend/core/config.py or bot/core/config.py or even loaded from ENV directly
     - Especially the current season
-- Fix circular imports/coupling with WebSocket
-- Fix duplicated `_format_verification`
-- Fix `admin_resolve_match` branch duplication
-- Fix `on_ready()` firing on the bot on every reconnect
-- Resolve potentially duplicated config values between bot and backend
-- Add unit tests
+    - Actually we should just centralize all of them, no private constants, just move them all to config
+- ✅ Fix circular imports/coupling with WebSocket by isolating whatever is causing conflicts into a differnet module
+- ✅ Fix duplicated `_format_verification`
+- ✅ Fix `admin_resolve_match` branch duplication
+    - There is shared logic between the MMR adjusting paths and the abort/abandoned paths that could be consolidated
+- ✅ Fix `on_ready()` firing on the bot on every reconnect
+    - More specifically we should have some kind of module level flag that prevents initializing a new aiohttp session, a new MessageQueue, re-registering all commands, etc..
+- ✅ Resolve potentially duplicated config values between bot and backend
+- ✅ Find and fix all asserts, change them to errors
+- ⏰ Add unit tests
 
 # FINISH DURING PRE-BETA
 
