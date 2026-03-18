@@ -60,12 +60,14 @@ async def handle_replay_upload(
     p2_info: dict | None = match_info["p2_info"]
     match_id: int = match_data["id"]
 
-    # Acknowledge immediately so the player knows we're working.
-    processing_msg = await queue_message_reply_high(
-        message, content="⏳ Processing replay, please wait…"
-    )
+    processing_msg: discord.Message | None = None
 
     try:
+        # Acknowledge immediately so the player knows we're working.
+        processing_msg = await queue_message_reply_high(
+            message, content="⏳ Processing replay, please wait…"
+        )
+
         replay_bytes = await sc2_attachment.read()
 
         form = aiohttp.FormData()
@@ -83,7 +85,8 @@ async def handle_replay_upload(
         ) as resp:
             data = await resp.json()
 
-        await queue_message_delete_low(processing_msg)
+        if processing_msg is not None:
+            await queue_message_delete_low(processing_msg)
 
         if not data.get("success"):
             await queue_message_reply_high(
@@ -155,10 +158,11 @@ async def handle_replay_upload(
             user_id=user_id,
             match_id=match_id,
         )
-        try:
-            await queue_message_delete_low(processing_msg)
-        except Exception:
-            pass
+        if processing_msg is not None:
+            try:
+                await queue_message_delete_low(processing_msg)
+            except Exception:
+                pass
         await queue_message_reply_high(
             message,
             content="❌ An unexpected error occurred while processing the replay. Please try again.",

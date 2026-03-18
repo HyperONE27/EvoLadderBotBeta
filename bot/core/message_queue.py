@@ -166,7 +166,7 @@ class MessageQueue:
                 job.future.set_result(result)
 
         except AttributeError as exc:
-            # discord.py internal state issue — message was likely sent.
+            # discord.py internal state issue — delivery uncertain, treat as failure.
             if "is_finished" in str(exc):
                 logger.warning(
                     "message_queue.discord_internal_error",
@@ -174,14 +174,14 @@ class MessageQueue:
                     error=str(exc),
                 )
                 if not job.future.done():
-                    job.future.set_result(None)
+                    job.future.set_exception(exc)
             else:
                 self._handle_failure(job, queue_type, exc)
 
         except discord.NotFound as exc:
-            if exc.code == 10008:  # Unknown Message — already deleted
+            if exc.code == 10008:  # Unknown Message — already deleted, treat as no-op
                 if not job.future.done():
-                    job.future.set_result(None)
+                    job.future.set_exception(exc)
             else:
                 self._handle_failure(job, queue_type, exc)
 

@@ -728,19 +728,16 @@ class TransitionManager:
         )
 
         # Write match result to DB.
-        db_kwargs: dict[str, object] = {
+        cache_kwargs: dict[str, object] = {
             "match_result": result,
             "player_1_mmr_change": p1_change,
             "player_2_mmr_change": p2_change,
             "completed_at": now,
         }
-        cache_kwargs: dict[str, object] = dict(db_kwargs)
 
         if player_1_report is not None:
-            db_kwargs["player_1_report"] = player_1_report
             cache_kwargs["player_1_report"] = player_1_report
         if player_2_report is not None:
-            db_kwargs["player_2_report"] = player_2_report
             cache_kwargs["player_2_report"] = player_2_report
 
         if admin_intervened:
@@ -755,7 +752,15 @@ class TransitionManager:
                 completed_at=now,
             )
         else:
-            self._db_writer.finalise_match_1v1(match_id, **db_kwargs)  # type: ignore[arg-type]
+            self._db_writer.finalise_match_1v1(
+                match_id,
+                match_result=result,
+                player_1_mmr_change=p1_change,
+                player_2_mmr_change=p2_change,
+                completed_at=now,
+                player_1_report=player_1_report,
+                player_2_report=player_2_report,
+            )
 
         # Write both MMR rows in a single upsert.
         mmr_updates = [u for u in (p1_mmr_update, p2_mmr_update) if u is not None]

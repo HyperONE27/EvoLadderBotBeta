@@ -17,10 +17,16 @@ What remains?
     - of what??? I forgot
 - ✅ mmrs_1v1 W/L/D/T game counts desync from matches_1v1 when a match gets resolved more than once
     - Admin resolutions need to force a recalculation of the affected mmrs_1v1 rows
+- ⏰ Fix any other import issues (circular/lazy/etc.)
+- ⏰ Potentially split embeds/views/other components out of the command modules
+    - queue_command.py is getting very large
+- ⏰ Maybe split up transitions.py
+    - This is also getting pretty large
 - ⏰ Make sure visibility is solid
     - Maybe some more admin/owner commands
         - Directly reading DataFrame rows
 - ⏰ Fix mypy error suppressions and underlying issues
+- ⏰ Make HTML error codes explicit (4XX/5XX) instead of returning 200 everywhere
 - ⏰ Add some kind of health check and automatic resurrection for:
     - replay parsing process pool
     - DataFrames
