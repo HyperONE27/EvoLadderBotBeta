@@ -2,6 +2,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 from backend.core.config import REPLAY_WORKER_PROCESSES
 from backend.database.database import DatabaseWriter
+from backend.database.storage import StorageWriter
 from backend.lookups.admin_lookups import init_admin_lookups
 from backend.lookups.match_1v1_lookups import init_match_1v1_lookups
 from backend.lookups.mmr_1v1_lookups import init_mmr_1v1_lookups
@@ -33,6 +34,7 @@ class Backend:
         # Initialize orchestrator components
         self.state_manager = StateManager()
         self.db_writer = DatabaseWriter()
+        self.storage_writer = StorageWriter()
         self.orchestrator = Orchestrator(self.state_manager, self.db_writer)
 
     def _initialize_lookups(self) -> None:

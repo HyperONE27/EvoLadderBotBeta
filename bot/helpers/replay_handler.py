@@ -11,7 +11,13 @@ import discord
 from bot.core.config import BACKEND_URL
 from bot.core.dependencies import get_cache
 from bot.core.http import get_session
-from bot.components.replay_embed import ReplayDetailsEmbed
+from bot.components.replay_embed import ReplayErrorEmbed, ReplaySuccessEmbed
+from bot.helpers.message_helpers import (
+    queue_message_delete_low,
+    queue_message_edit_high,
+    queue_message_reply_high,
+    queue_message_reply_low,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -39,9 +45,12 @@ async def handle_replay_upload(
 
     match_info = cache.active_match_info.get(user_id)
     if match_info is None:
-        await message.reply(
-            "❌ You are not currently in an active match. "
-            "Replay uploads are only accepted during an in-progress match."
+        await queue_message_reply_low(
+            message,
+            content=(
+                "❌ You are not currently in an active match. "
+                "Replay uploads are only accepted during an in-progress match."
+            ),
         )
         return
 
@@ -51,7 +60,9 @@ async def handle_replay_upload(
     match_id: int = match_data["id"]
 
     # Acknowledge immediately so the player knows we're working.
-    processing_msg = await message.reply("⏳ Processing replay, please wait…")
+    processing_msg = await queue_message_reply_high(
+        message, content="⏳ Processing replay, please wait…"
+    )
 
     try:
         replay_bytes = await sc2_attachment.read()
@@ -73,13 +84,12 @@ async def handle_replay_upload(
         ) as resp:
             data = await resp.json()
 
-        await processing_msg.delete()
+        await queue_message_delete_low(processing_msg)
 
         if not data.get("success"):
-            await message.reply(
-                embed=ReplayDetailsEmbed.get_error_embed(
-                    data.get("error") or "Unknown error"
-                )
+            await queue_message_reply_high(
+                message,
+                embed=ReplayErrorEmbed(data.get("error") or "Unknown error"),
             )
             return
 
@@ -93,17 +103,18 @@ async def handle_replay_upload(
             MatchReportView,
         )
 
-        # Send the replay details as a new message.
-        await message.reply(
-            embed=ReplayDetailsEmbed.get_success_embed(
+        # Send the replay details as a new message (high priority).
+        await queue_message_reply_high(
+            message,
+            embed=ReplaySuccessEmbed(
                 parsed,
                 verification_results=verification,
                 enforcement_enabled=_ENABLE_REPLAY_VALIDATION,
-            )
+            ),
         )
 
         # Update the MatchInfoEmbed message: refresh replay status and
-        # (conditionally) unlock the report dropdown.
+        # (conditionally) unlock the report dropdown (high priority — gates reporting).
         match_msg = cache.active_match_messages.get(user_id)
         if match_msg is not None:
             should_unlock = (not _ENABLE_REPLAY_VALIDATION) or _races_pass(verification)
@@ -124,7 +135,7 @@ async def handle_replay_upload(
                 report_locked=not should_unlock,
             )
             try:
-                await match_msg.edit(embed=new_embed, view=new_view)
+                await queue_message_edit_high(match_msg, embed=new_embed, view=new_view)
             except Exception:
                 logger.exception(
                     "[Replay] Failed to update MatchInfoEmbed after upload",
@@ -139,11 +150,12 @@ async def handle_replay_upload(
             match_id=match_id,
         )
         try:
-            await processing_msg.delete()
+            await queue_message_delete_low(processing_msg)
         except Exception:
             pass
-        await message.reply(
-            "❌ An unexpected error occurred while processing the replay. Please try again."
+        await queue_message_reply_high(
+            message,
+            content="❌ An unexpected error occurred while processing the replay. Please try again.",
         )
 
 

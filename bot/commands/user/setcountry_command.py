@@ -3,6 +3,7 @@ import discord
 from discord import app_commands
 
 from bot.components.buttons import ConfirmButton, CancelButton
+from bot.components.embeds import ErrorEmbed
 from bot.core.config import BACKEND_URL
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_banned, check_if_dm
@@ -125,10 +126,9 @@ async def _send_setcountry_request(
             f"setcountry backend failure for user={interaction.user.id}: {data.get('message')}"
         )
         await interaction.response.edit_message(
-            embed=discord.Embed(
+            embed=ErrorEmbed(
                 title="❌ Update Failed",
                 description=data.get("message") or "An unexpected error occurred.",
-                color=discord.Color.red(),
             ),
             view=None,
         )

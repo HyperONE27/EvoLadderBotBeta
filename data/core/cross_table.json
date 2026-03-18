@@ -158,20 +158,20 @@
             "CHN": "KOR",
             "THM": "KOR",
             "OCE": "SNG",
-            "USB": "SNG",
+            "USB": "TWN",
             "FER": "KOR"
         },
         "CHN": {
             "CHN": "KOR",
             "THM": "TWN",
             "OCE": "SNG",
-            "USB": "SNG",
+            "USB": "KOR",
             "FER": "KOR"
         },
         "THM": {
             "THM": "TWN",
             "OCE": "SNG",
-            "USB": "SNG",
+            "USB": "KOR",
             "FER": "KOR"
         },
         "OCE": {

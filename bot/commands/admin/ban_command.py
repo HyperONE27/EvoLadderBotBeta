@@ -3,6 +3,7 @@ import discord
 from discord import app_commands
 
 from bot.components.buttons import ConfirmButton, CancelButton
+from bot.components.embeds import ErrorEmbed
 from bot.core.config import BACKEND_URL
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_admin
@@ -82,10 +83,9 @@ async def _send_ban_request(
 
     if not data.get("success"):
         await interaction.response.edit_message(
-            embed=discord.Embed(
+            embed=ErrorEmbed(
                 title="❌ Error",
                 description="Failed to toggle ban status. The user may not have a profile.",
-                color=discord.Color.red(),
             ),
             view=None,
         )

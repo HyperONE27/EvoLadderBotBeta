@@ -3,6 +3,7 @@ import discord
 from discord import app_commands
 
 from bot.components.buttons import ConfirmButton, CancelButton
+from bot.components.embeds import ErrorEmbed
 from bot.core.config import BACKEND_URL
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_owner
@@ -96,10 +97,9 @@ async def _send_toggle_admin_request(
     if not data.get("success"):
         error = data.get("error") or "An unexpected error occurred."
         await interaction.response.edit_message(
-            embed=discord.Embed(
+            embed=ErrorEmbed(
                 title="❌ Error",
                 description=error,
-                color=discord.Color.red(),
             ),
             view=None,
         )

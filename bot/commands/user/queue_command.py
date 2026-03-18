@@ -1,3 +1,4 @@
+import asyncio
 import time
 from typing import Any
 
@@ -144,56 +145,84 @@ async def _fetch_player_info(discord_uid: int) -> dict[str, Any] | None:
 # ---------------------------------------------------------------------------
 
 
-def build_queue_setup_embed(
-    bw_race: str | None,
-    sc2_race: str | None,
-    map_vetoes: list[str],
-) -> discord.Embed:
-    """Build the queue setup embed matching the alpha UI."""
-    embed = discord.Embed(
-        title="🎮 Matchmaking Queue",
-        color=discord.Color.blue(),
-    )
+class QueueSetupEmbed(discord.Embed):
+    """Queue setup configuration display."""
 
-    # Quick start guide warning
-    embed.add_field(
-        name="⚠️ NEW PLAYERS START HERE ⚠️",
-        value=f"📘 **QUICK START GUIDE:**  [READ THIS BEFORE YOUR FIRST MATCH!]({_QUICKSTART_URL})\n",
-        inline=False,
-    )
-
-    # Selected races
-    race_lines: list[str] = []
-    if bw_race:
-        race_lines.append(
-            f"- Brood War: {get_race_emote(bw_race)} {_race_display(bw_race)}"
+    def __init__(
+        self,
+        bw_race: str | None,
+        sc2_race: str | None,
+        map_vetoes: list[str],
+    ) -> None:
+        super().__init__(
+            title="🎮 Matchmaking Queue",
+            color=discord.Color.blue(),
         )
-    if sc2_race:
-        race_lines.append(
-            f"- StarCraft II: {get_race_emote(sc2_race)} {_race_display(sc2_race)}"
+
+        # Quick start guide warning
+        self.add_field(
+            name="⚠️ NEW PLAYERS START HERE ⚠️",
+            value=f"📘 **QUICK START GUIDE:**  [READ THIS BEFORE YOUR FIRST MATCH!]({_QUICKSTART_URL})\n",
+            inline=False,
         )
-    race_value = "\n".join(race_lines) if race_lines else "None selected"
-    embed.add_field(name="Selected Races", value=race_value, inline=False)
 
-    # Vetoed maps
-    veto_count = len(map_vetoes)
-    if map_vetoes:
-        sorted_vetoes = sorted(map_vetoes)
-        veto_lines: list[str] = []
-        for i, map_name in enumerate(sorted_vetoes):
-            game = _get_map_game(map_name)
-            game_emote = get_game_emote(game)
-            veto_lines.append(f"{_NUMBER_EMOTES[i]} {game_emote} {map_name}")
-        veto_value = "\n".join(veto_lines)
-    else:
-        veto_value = "No vetoes"
-    embed.add_field(
-        name=f"Vetoed Maps ({veto_count}/{_MAX_MAP_VETOES})",
-        value=veto_value,
-        inline=False,
-    )
+        # Selected races
+        race_lines: list[str] = []
+        if bw_race:
+            race_lines.append(
+                f"- Brood War: {get_race_emote(bw_race)} {_race_display(bw_race)}"
+            )
+        if sc2_race:
+            race_lines.append(
+                f"- StarCraft II: {get_race_emote(sc2_race)} {_race_display(sc2_race)}"
+            )
+        race_value = "\n".join(race_lines) if race_lines else "None selected"
+        self.add_field(name="Selected Races", value=race_value, inline=False)
 
-    return embed
+        # Vetoed maps
+        veto_count = len(map_vetoes)
+        if map_vetoes:
+            sorted_vetoes = sorted(map_vetoes)
+            veto_lines: list[str] = []
+            for i, map_name in enumerate(sorted_vetoes):
+                game = _get_map_game(map_name)
+                game_emote = get_game_emote(game)
+                veto_lines.append(f"{_NUMBER_EMOTES[i]} {game_emote} {map_name}")
+            veto_value = "\n".join(veto_lines)
+        else:
+            veto_value = "No vetoes"
+        self.add_field(
+            name=f"Vetoed Maps ({veto_count}/{_MAX_MAP_VETOES})",
+            value=veto_value,
+            inline=False,
+        )
+
+
+class QueueLeftEmbed(discord.Embed):
+    def __init__(self) -> None:
+        super().__init__(
+            title="Queue Left",
+            description="You have left the queue.",
+            color=discord.Color.light_grey(),
+        )
+
+
+class MatchConfirmedEmbed(discord.Embed):
+    def __init__(self, match_id: int) -> None:
+        super().__init__(
+            title=f"✅ Match #{match_id} — Confirmed!",
+            description="Waiting for your opponent to confirm...",
+            color=discord.Color.gold(),
+        )
+
+
+class MatchAbortAckEmbed(discord.Embed):
+    def __init__(self) -> None:
+        super().__init__(
+            title="🛑 Match Aborted",
+            description="You have aborted the match. You will receive a summary shortly.",
+            color=discord.Color.red(),
+        )
 
 
 class QueueSearchingEmbed(discord.Embed):
@@ -912,7 +941,7 @@ class QueueSetupView(discord.ui.View):
         new_view = QueueSetupView(
             self.discord_user_id, self.bw_race, self.sc2_race, self.map_vetoes
         )
-        embed = build_queue_setup_embed(self.bw_race, self.sc2_race, self.map_vetoes)
+        embed = QueueSetupEmbed(self.bw_race, self.sc2_race, self.map_vetoes)
         await interaction.response.edit_message(embed=embed, view=new_view)
 
 
@@ -930,9 +959,51 @@ class _CancelQueueButton(discord.ui.Button):
 
 
 class QueueSearchingView(discord.ui.View):
-    def __init__(self) -> None:
+    def __init__(self, interaction: discord.Interaction) -> None:
         super().__init__(timeout=None)
+        self._interaction = interaction
+        self._heartbeat_task: asyncio.Task[None] | None = None
         self.add_item(_CancelQueueButton())
+
+    async def start_heartbeat(self) -> None:
+        self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
+
+    async def _heartbeat_loop(self) -> None:
+        """Update the searching embed's timestamp at the 15th second of every minute."""
+        from bot.core.config import QUEUE_SEARCHING_HEARTBEAT_SECONDS
+
+        while True:
+            try:
+                now = time.time()
+                # Sleep until the 15th second of the next minute.
+                current_minute_start = (now // 60) * 60
+                next_beat = current_minute_start + 15
+                if next_beat <= now:
+                    next_beat += 60
+                await asyncio.sleep(next_beat - now)
+
+                # Fetch fresh stats and rebuild the embed.
+                stats: dict | None = None
+                try:
+                    async with get_session().get(
+                        f"{BACKEND_URL}/queue_1v1/stats"
+                    ) as resp:
+                        stats = await resp.json()
+                except Exception:
+                    pass
+
+                await self._interaction.edit_original_response(
+                    embed=QueueSearchingEmbed(stats),
+                )
+            except asyncio.CancelledError:
+                return
+            except Exception:
+                logger.warning("queue_heartbeat_error", exc_info=True)
+                await asyncio.sleep(QUEUE_SEARCHING_HEARTBEAT_SECONDS)
+
+    def stop_heartbeat(self) -> None:
+        if self._heartbeat_task and not self._heartbeat_task.done():
+            self._heartbeat_task.cancel()
 
 
 class MatchFoundView(discord.ui.View):
@@ -1092,10 +1163,12 @@ async def _join_queue(
         except Exception:
             pass
 
+        searching_view = QueueSearchingView(interaction)
         await interaction.edit_original_response(
             embed=QueueSearchingEmbed(stats),
-            view=QueueSearchingView(),
+            view=searching_view,
         )
+        await searching_view.start_heartbeat()
 
         # Store a reference to this message so the WS listener can edit it
         # when a match is found (stops the timer and removes the cancel button).
@@ -1104,6 +1177,7 @@ async def _join_queue(
             from bot.core.dependencies import get_cache
 
             get_cache().active_searching_messages[discord_user_id] = msg
+            get_cache().active_searching_views[discord_user_id] = searching_view
         except Exception:
             logger.warning(
                 "Could not cache searching message reference",
@@ -1134,18 +1208,18 @@ async def _leave_queue(interaction: discord.Interaction) -> None:
             )
             return
 
-        embed = discord.Embed(
-            title="Queue Left",
-            description="You have left the queue.",
-            color=discord.Color.light_grey(),
-        )
+        embed = QueueLeftEmbed()
         await interaction.edit_original_response(embed=embed, view=None)
 
-        # Clear the cached searching message reference.
+        # Stop the heartbeat and clear cached references.
         try:
             from bot.core.dependencies import get_cache
 
-            get_cache().active_searching_messages.pop(interaction.user.id, None)
+            cache = get_cache()
+            cache.active_searching_messages.pop(interaction.user.id, None)
+            view = cache.active_searching_views.pop(interaction.user.id, None)
+            if view is not None and hasattr(view, "stop_heartbeat"):
+                view.stop_heartbeat()
         except Exception:
             pass
 
@@ -1175,11 +1249,7 @@ async def _confirm_match(interaction: discord.Interaction, match_id: int) -> Non
 
         # Always show "waiting for opponent" — the WS listener sends a NEW
         # message with match details once both players have confirmed.
-        embed = discord.Embed(
-            title=f"✅ Match #{match_id} — Confirmed!",
-            description="Waiting for your opponent to confirm...",
-            color=discord.Color.gold(),
-        )
+        embed = MatchConfirmedEmbed(match_id)
         await interaction.edit_original_response(embed=embed, view=None)
 
     except Exception:
@@ -1207,11 +1277,7 @@ async def _abort_match(interaction: discord.Interaction, match_id: int) -> None:
             return
 
         await interaction.edit_original_response(
-            embed=discord.Embed(
-                title="🛑 Match Aborted",
-                description="You have aborted the match. You will receive a summary shortly.",
-                color=discord.Color.red(),
-            ),
+            embed=MatchAbortAckEmbed(),
             view=None,
         )
 
@@ -1259,7 +1325,7 @@ def register_queue_command(tree: app_commands.CommandTree) -> None:
         except Exception:
             logger.warning("Failed to load preferences", exc_info=True)
 
-        embed = build_queue_setup_embed(bw_race, sc2_race, map_vetoes)
+        embed = QueueSetupEmbed(bw_race, sc2_race, map_vetoes)
         view = QueueSetupView(
             discord_user_id=interaction.user.id,
             bw_race=bw_race,

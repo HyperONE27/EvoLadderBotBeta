@@ -71,6 +71,9 @@ class Cache:
         # edit it when a match is found and strip the cancel button.
         self.active_searching_messages: dict[int, "discord.Message"] = {}
 
+        # Maps discord_uid → QueueSearchingView so the heartbeat can be stopped.
+        self.active_searching_views: dict[int, object] = {}
+
         # Maps discord_uid → {"match_data": dict, "p1_info": dict|None,
         # "p2_info": dict|None} while the player is in an active match.
         # Cleared when the match ends (any terminal WS event).

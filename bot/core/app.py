@@ -3,10 +3,12 @@ import discord
 import structlog
 from discord import app_commands
 
+from bot.components.embeds import ErrorEmbed
 from bot.core.bootstrap import Bot
 from bot.core.config import BOT_TOKEN
 from bot.core.dependencies import set_bot
 from bot.core.http import init_session, close_session
+from bot.core.message_queue import initialize_message_queue
 
 from bot.commands.admin.ban_command import register_admin_ban_command
 from bot.commands.admin.match_command import register_admin_match_command
@@ -70,7 +72,9 @@ async def on_message(message: discord.Message) -> None:
 
     # Remove this when we have actual things to do here
     if message.content.startswith("!"):
-        await message.channel.send("🌎 Hello, world!")
+        from bot.helpers.message_helpers import queue_channel_send_low
+
+        await queue_channel_send_low(message.channel, content="🌎 Hello, world!")
 
     # Replay upload handler — only fires for DM messages with attachments.
     if isinstance(message.channel, discord.DMChannel) and message.attachments:
@@ -87,6 +91,8 @@ async def on_connect() -> None:
 @client.event
 async def on_ready() -> None:
     await init_session()
+    mq = initialize_message_queue()
+    await mq.start()
     try:
         _register_commands(client)
         synced = await tree.sync()
@@ -121,18 +127,16 @@ async def on_tree_error(
             else "You do not have permission to use this command."
         )
 
-        embed = discord.Embed(
+        embed = ErrorEmbed(
             title="🚫 Unauthorized Command Usage",
             description=description,
-            color=discord.Color.red(),
         )
     else:
-        embed = discord.Embed(
+        embed = ErrorEmbed(
             title="❓ Unexpected Error",
             description="An unexpected error occurred. Please try again later.\n"
             "If the problem persists, please contact the developer.\n"
             f"Error: {error!r}",
-            color=discord.Color.red(),
         )
 
     if interaction.response.is_done():
@@ -153,6 +157,9 @@ async def main() -> None:
     logger.info("⚙️ [Bot] Bot initialized. Attempting to connect to Discord...")
     async with client:
         await client.start(token=BOT_TOKEN, reconnect=True)
+    from bot.core.message_queue import get_message_queue
+
+    await get_message_queue().stop()
     await close_session()
     logger.info("🛑 [Discord Gateway] Bot shutting down...")
 

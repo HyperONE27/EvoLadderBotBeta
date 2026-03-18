@@ -111,6 +111,19 @@ async def admin_match(
 ) -> AdminMatchResponse:
     match = app.orchestrator.get_match_1v1(match_id)
 
+    # Look up player rows and resolving admin.
+    player_1 = None
+    player_2 = None
+    admin = None
+    if match is not None:
+        player_1 = app.orchestrator.get_player(match["player_1_discord_uid"])
+        player_2 = app.orchestrator.get_player(match["player_2_discord_uid"])
+        admin_uid = match.get("admin_discord_uid")
+        if admin_uid is not None:
+            from backend.lookups.admin_lookups import get_admin_by_discord_uid
+
+            admin = get_admin_by_discord_uid(admin_uid)
+
     # Get replays for this match.
     from backend.lookups.replay_1v1_lookups import get_replays_1v1_by_match_id
 
@@ -135,6 +148,9 @@ async def admin_match(
 
     return AdminMatchResponse(
         match=match,
+        player_1=player_1,
+        player_2=player_2,
+        admin=admin,
         replays=replays,
         verification=verifications,
         replay_urls=replay_urls,
@@ -518,7 +534,7 @@ async def upload_replay(
 
     for attempt in range(3):
         public_url = await loop.run_in_executor(
-            None, app.db_writer.upload_replay_to_storage, replay_bytes, storage_path
+            None, app.storage_writer.upload_replay, replay_bytes, storage_path
         )
         if public_url:
             upload_status = "completed"

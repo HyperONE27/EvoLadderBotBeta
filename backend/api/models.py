@@ -74,6 +74,9 @@ class AdminSnapshotResponse(BaseModel):
 
 class AdminMatchResponse(BaseModel):
     match: Matches1v1Row | None
+    player_1: PlayersRow | None
+    player_2: PlayersRow | None
+    admin: AdminsRow | None
     replays: list[Replays1v1Row]
     verification: list[dict | None]
     replay_urls: list[str | None]

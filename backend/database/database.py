@@ -5,7 +5,7 @@ import polars as pl
 from supabase import create_client, Client
 from typing import Any, cast
 
-from backend.core.config import DATABASE, STORAGE
+from backend.core.config import DATABASE
 from backend.domain_types.dataframes import TABLE_SCHEMAS
 
 logger = logging.getLogger(__name__)
@@ -407,34 +407,6 @@ class DatabaseWriter:
         self.client.table("matches_1v1").update(updates).eq("id", match_id).execute()
 
     # ------------------------------------------------------------------
-    # Supabase Storage
-    # ------------------------------------------------------------------
-
-    def upload_replay_to_storage(
-        self, replay_bytes: bytes, storage_path: str
-    ) -> str | None:
-        """
-        Upload *replay_bytes* to Supabase Storage at *storage_path* and
-        return the public URL, or ``None`` on failure.
-        """
-        bucket = STORAGE["bucket_name"]
-        try:
-            self.client.storage.from_(bucket).upload(
-                storage_path,
-                replay_bytes,
-                {"content-type": "application/octet-stream", "upsert": "true"},
-            )
-            public_url: str = self.client.storage.from_(bucket).get_public_url(
-                storage_path
-            )
-            return public_url
-        except Exception as exc:
-            logger.error(
-                "Supabase Storage upload failed for path %s: %s", storage_path, exc
-            )
-            return None
-
-    # ------------------------------------------------------------------
     # Players (admin operations)
     # ------------------------------------------------------------------
 
@@ -473,6 +445,26 @@ class DatabaseWriter:
     # ------------------------------------------------------------------
     # MMR 1v1 (admin operations)
     # ------------------------------------------------------------------
+
+    def update_mmr_1v1_game_stats(
+        self,
+        discord_uid: int,
+        race: str,
+        *,
+        games_played: int,
+        games_won: int,
+        games_lost: int,
+        games_drawn: int,
+    ) -> None:
+        """Update only game stat columns on an MMR row (no MMR change)."""
+        self.client.table("mmrs_1v1").update(
+            {
+                "games_played": games_played,
+                "games_won": games_won,
+                "games_lost": games_lost,
+                "games_drawn": games_drawn,
+            }
+        ).eq("discord_uid", discord_uid).eq("race", race).execute()
 
     def set_mmr_1v1_value(self, discord_uid: int, race: str, mmr: int) -> None:
         """Idempotent SET of a player's MMR value. Does not touch game stats."""

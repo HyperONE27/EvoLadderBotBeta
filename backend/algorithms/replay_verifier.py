@@ -128,16 +128,21 @@ def _verify_mod(cache_handles: list[str], mods: dict[str, Any]) -> dict[str, Any
     }
 
 
-def _verify_timestamp(replay_time_str: str, assigned_at: Any) -> dict[str, Any]:
+def _verify_timestamp(replay_time_raw: Any, assigned_at: Any) -> dict[str, Any]:
     try:
-        if not replay_time_str:
+        if not replay_time_raw:
             return {
                 "success": False,
                 "error": "No replay time available.",
                 "time_difference_minutes": None,
             }
 
-        replay_dt = datetime.fromisoformat(replay_time_str.replace("Z", "+00:00"))
+        if isinstance(replay_time_raw, datetime):
+            replay_dt = replay_time_raw
+        else:
+            replay_dt = datetime.fromisoformat(
+                str(replay_time_raw).replace("Z", "+00:00")
+            )
         if replay_dt.tzinfo is None:
             replay_dt = replay_dt.replace(tzinfo=timezone.utc)
 

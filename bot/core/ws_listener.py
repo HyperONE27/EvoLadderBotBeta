@@ -30,6 +30,12 @@ from bot.commands.user.queue_command import (
 )
 from bot.core.config import BACKEND_URL, MATCH_LOG_CHANNEL_ID
 from bot.core.dependencies import get_cache
+from bot.helpers.message_helpers import (
+    queue_channel_send_low,
+    queue_message_edit_low,
+    queue_user_send_high,
+    queue_user_send_low,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -94,33 +100,58 @@ async def _on_match_found(client: discord.Client, match_data: dict) -> None:
     p2_uid = match_data.get("player_2_discord_uid")
     cache = get_cache()
 
+    # --- High priority: DM both players with confirm/abort buttons ---
+    dm_coros = []
+    dm_uids: list[int] = []
+    for uid in (p1_uid, p2_uid):
+        if uid is None:
+            continue
+        try:
+            user = await client.fetch_user(uid)
+            dm_coros.append(
+                queue_user_send_high(
+                    user,
+                    embed=MatchFoundEmbed(match_data),
+                    view=MatchFoundView(match_id, match_data),
+                )
+            )
+            dm_uids.append(uid)
+        except Exception:
+            logger.exception(f"[WS] Failed to fetch user {uid} for match_found")
+
+    # Send all DMs concurrently (high priority — worker drains these first).
+    if dm_coros:
+        results = await asyncio.gather(*dm_coros, return_exceptions=True)
+        for uid, result in zip(dm_uids, results):
+            if isinstance(result, Exception):
+                logger.exception(
+                    f"[WS] Failed to DM user {uid} for match_found", exc_info=result
+                )
+
+    # --- Low priority: update searching embeds (fire-and-forget) ---
     for uid in (p1_uid, p2_uid):
         if uid is None:
             continue
 
-        # Send the match-found DM with confirm/abort buttons.
-        try:
-            user = await client.fetch_user(uid)
-            await user.send(
-                embed=MatchFoundEmbed(match_data),
-                view=MatchFoundView(match_id, match_data),
-            )
-        except Exception:
-            logger.exception(f"[WS] Failed to DM user {uid} for match_found")
+        searching_view = cache.active_searching_views.pop(uid, None)
+        if searching_view is not None and hasattr(searching_view, "stop_heartbeat"):
+            searching_view.stop_heartbeat()
 
-        # Edit the QueueSearchingEmbed: stop timer, remove cancel button, add
-        # "match found" field.
         searching_msg = cache.active_searching_messages.pop(uid, None)
         if searching_msg is not None:
-            try:
-                await searching_msg.edit(
-                    embed=QueueSearchingEmbed(match_found=True),
-                    view=None,
-                )
-            except Exception:
-                logger.exception(
-                    f"[WS] Failed to update searching embed for user {uid}"
-                )
+            asyncio.create_task(
+                _edit_searching_embed_low(searching_msg, uid),
+            )
+
+
+async def _edit_searching_embed_low(msg: discord.Message, uid: int) -> None:
+    """Fire-and-forget low-priority edit of a searching embed."""
+    try:
+        await queue_message_edit_low(
+            msg, embed=QueueSearchingEmbed(match_found=True), view=None
+        )
+    except Exception:
+        logger.exception(f"[WS] Failed to update searching embed for user {uid}")
 
 
 async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
@@ -136,11 +167,13 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
     p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
     embed = MatchInfoEmbed(match_data, p1_info, p2_info)
 
+    # High priority: DM both players with MatchInfoEmbed concurrently.
+    dm_coros = []
+    dm_uids: list[int] = []
     for uid in (p1_uid, p2_uid):
         if uid is None:
             continue
 
-        # Store match context so the replay handler can act on DM uploads.
         cache.active_match_info[uid] = {
             "match_data": match_data,
             "p1_info": p1_info,
@@ -149,22 +182,35 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
 
         try:
             user = await client.fetch_user(uid)
-            msg = await user.send(
-                embed=embed,
-                view=MatchReportView(
-                    match_id,
-                    p1_name,
-                    p2_name,
-                    match_data,
-                    p1_info,
-                    p2_info,
-                    report_locked=_ENABLE_REPLAY_VALIDATION,
-                ),
+            dm_coros.append(
+                queue_user_send_high(
+                    user,
+                    embed=embed,
+                    view=MatchReportView(
+                        match_id,
+                        p1_name,
+                        p2_name,
+                        match_data,
+                        p1_info,
+                        p2_info,
+                        report_locked=_ENABLE_REPLAY_VALIDATION,
+                    ),
+                )
             )
-            # Keep a reference so the replay handler can edit it later.
-            cache.active_match_messages[uid] = msg
+            dm_uids.append(uid)
         except Exception:
-            logger.exception(f"[WS] Failed to DM user {uid} for both_confirmed")
+            logger.exception(f"[WS] Failed to fetch user {uid} for both_confirmed")
+
+    if dm_coros:
+        results = await asyncio.gather(*dm_coros, return_exceptions=True)
+        for uid, result in zip(dm_uids, results):
+            if isinstance(result, Exception):
+                logger.exception(
+                    f"[WS] Failed to DM user {uid} for both_confirmed",
+                    exc_info=result,
+                )
+            elif isinstance(result, discord.Message):
+                cache.active_match_messages[uid] = result
 
 
 async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
@@ -176,9 +222,9 @@ async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
     p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
     embed = MatchAbortedEmbed(match_data, p1_info, p2_info)
 
-    await _send_to_both(client, p1_uid, p2_uid, embed)
-    await _clear_match_state(p1_uid, p2_uid)
-    await _post_to_match_log(client, embed)
+    await _send_to_both_low(client, p1_uid, p2_uid, embed)
+    await _clear_match_state_low(p1_uid, p2_uid)
+    await _post_to_match_log_low(client, embed)
 
 
 async def _on_match_abandoned(client: discord.Client, match_data: dict) -> None:
@@ -190,9 +236,9 @@ async def _on_match_abandoned(client: discord.Client, match_data: dict) -> None:
     p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
     embed = MatchAbandonedEmbed(match_data, p1_info, p2_info)
 
-    await _send_to_both(client, p1_uid, p2_uid, embed)
-    await _clear_match_state(p1_uid, p2_uid)
-    await _post_to_match_log(client, embed)
+    await _send_to_both_low(client, p1_uid, p2_uid, embed)
+    await _clear_match_state_low(p1_uid, p2_uid)
+    await _post_to_match_log_low(client, embed)
 
 
 async def _on_match_completed(client: discord.Client, match_data: dict) -> None:
@@ -204,9 +250,9 @@ async def _on_match_completed(client: discord.Client, match_data: dict) -> None:
     p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
     embed = MatchFinalizedEmbed(match_data, p1_info, p2_info)
 
-    await _send_to_both(client, p1_uid, p2_uid, embed)
-    await _clear_match_state(p1_uid, p2_uid)
-    await _post_to_match_log(client, embed)
+    await _send_to_both_low(client, p1_uid, p2_uid, embed)
+    await _clear_match_state_low(p1_uid, p2_uid)
+    await _post_to_match_log_low(client, embed)
 
 
 async def _on_match_conflict(client: discord.Client, match_data: dict) -> None:
@@ -218,9 +264,9 @@ async def _on_match_conflict(client: discord.Client, match_data: dict) -> None:
     p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
     embed = MatchConflictEmbed(match_data, p1_info, p2_info)
 
-    await _send_to_both(client, p1_uid, p2_uid, embed)
-    await _clear_match_state(p1_uid, p2_uid)
-    await _post_to_match_log(client, embed)
+    await _send_to_both_low(client, p1_uid, p2_uid, embed)
+    await _clear_match_state_low(p1_uid, p2_uid)
+    await _post_to_match_log_low(client, embed)
 
 
 # ---------------------------------------------------------------------------
@@ -228,7 +274,7 @@ async def _on_match_conflict(client: discord.Client, match_data: dict) -> None:
 # ---------------------------------------------------------------------------
 
 
-async def _send_to_both(
+async def _send_to_both_low(
     client: discord.Client,
     p1_uid: int | None,
     p2_uid: int | None,
@@ -239,12 +285,12 @@ async def _send_to_both(
             continue
         try:
             user = await client.fetch_user(uid)
-            await user.send(embed=embed)
+            await queue_user_send_low(user, embed=embed)
         except Exception:
             logger.exception(f"[WS] Failed to DM user {uid}")
 
 
-async def _clear_match_state(p1_uid: int | None, p2_uid: int | None) -> None:
+async def _clear_match_state_low(p1_uid: int | None, p2_uid: int | None) -> None:
     """
     Remove match tracking from the cache and disable the MatchReportView
     on each player's MatchInfoEmbed message so stale dropdowns can't be used.
@@ -254,11 +300,10 @@ async def _clear_match_state(p1_uid: int | None, p2_uid: int | None) -> None:
         if uid is None:
             continue
 
-        # Disable the report dropdown on the match info message.
         match_msg = cache.active_match_messages.pop(uid, None)
         if match_msg is not None:
             try:
-                await match_msg.edit(view=None)
+                await queue_message_edit_low(match_msg, view=None)
             except Exception:
                 logger.exception(
                     f"[WS] Failed to disable MatchReportView for user {uid}"
@@ -267,7 +312,7 @@ async def _clear_match_state(p1_uid: int | None, p2_uid: int | None) -> None:
         cache.active_match_info.pop(uid, None)
 
 
-async def _post_to_match_log(
+async def _post_to_match_log_low(
     client: discord.Client,
     embed: discord.Embed,
 ) -> None:
@@ -279,6 +324,6 @@ async def _post_to_match_log(
         if channel is None or not isinstance(channel, discord.TextChannel):
             logger.warning("[WS] Match log channel not found or not a text channel")
             return
-        await channel.send(embed=embed)
+        await queue_channel_send_low(channel, embed=embed)
     except Exception:
         logger.exception("[WS] Failed to post to match log channel")

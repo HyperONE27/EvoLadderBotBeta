@@ -1,6 +1,10 @@
+import logging
+
 from supabase import create_client, Client
 
 from backend.core.config import DATABASE, STORAGE
+
+logger = logging.getLogger(__name__)
 
 
 # Connection functions
@@ -17,11 +21,9 @@ class StorageReader:
         self.bucket: str = STORAGE["bucket_name"]
         self.client: Client = _create_read_client()
 
-    def download_file(self) -> None:
-        pass
-
-    def download_replay(self) -> None:
-        pass
+    def get_public_url(self, storage_path: str) -> str:
+        """Return the public URL for a file in Supabase Storage."""
+        return self.client.storage.from_(self.bucket).get_public_url(storage_path)
 
 
 class StorageWriter:
@@ -29,8 +31,23 @@ class StorageWriter:
         self.bucket: str = STORAGE["bucket_name"]
         self.client: Client = _create_write_client()
 
-    def upload_file(self) -> None:
-        pass
+    def upload_replay(self, replay_bytes: bytes, storage_path: str) -> str | None:
+        """Upload replay bytes to Supabase Storage and return the public URL.
 
-    def upload_replay(self) -> None:
-        pass
+        Returns None on failure.
+        """
+        try:
+            self.client.storage.from_(self.bucket).upload(
+                storage_path,
+                replay_bytes,
+                {"content-type": "application/octet-stream", "upsert": "true"},
+            )
+            public_url: str = self.client.storage.from_(self.bucket).get_public_url(
+                storage_path
+            )
+            return public_url
+        except Exception as exc:
+            logger.error(
+                "Supabase Storage upload failed for path %s: %s", storage_path, exc
+            )
+            return None

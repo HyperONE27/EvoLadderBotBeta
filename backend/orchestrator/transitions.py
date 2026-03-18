@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import polars as pl
 import structlog
 
+from backend.algorithms.game_stats import count_game_stats
 from backend.algorithms.match_params import resolve_match_params
 from backend.algorithms.matchmaker import run_matchmaking_wave
 from backend.algorithms.ratings_1v1 import get_default_mmr, get_new_ratings
@@ -452,6 +453,27 @@ class TransitionManager:
             return None
         return rows.row(0, named=True).get("location")
 
+    def _get_player_nationality(self, discord_uid: int) -> str | None:
+        df = self._state_manager.players_df
+        rows = df.filter(pl.col("discord_uid") == discord_uid)
+        if rows.is_empty():
+            return None
+        return rows.row(0, named=True).get("nationality")
+
+    def _get_player_letter_rank(self, discord_uid: int, race: str) -> str:
+        """Look up a player's letter rank from the current leaderboard.
+
+        Falls back to "U" (unranked) if the player is not on the leaderboard.
+        """
+        for entry in self._state_manager.leaderboard_1v1:
+            if entry["discord_uid"] == discord_uid and entry["race"] == race:
+                return entry["letter_rank"]
+        logger.warning(
+            f"Letter rank not found for player {discord_uid} race {race}, "
+            f"falling back to 'U' (unranked)"
+        )
+        return "U"
+
     # ==================================================================
     # Match confirmation
     # ==================================================================
@@ -754,7 +776,12 @@ class TransitionManager:
         now: datetime,
     ) -> dict | None:
         """Return a fully-populated MMR row dict for the given player, or None if
-        no row exists.  Does not touch the DB or the cache."""
+        no row exists.  Does not touch the DB or the cache.
+
+        Game stats (games_played/won/lost/drawn) are recalculated from the
+        matches_1v1 ground truth rather than incremented, so admin re-resolves
+        cannot desync the counters.
+        """
         df = self._state_manager.mmrs_1v1_df
         rows = df.filter(
             (pl.col("discord_uid") == discord_uid) & (pl.col("race") == race)
@@ -763,17 +790,15 @@ class TransitionManager:
             return None
 
         current = rows.row(0, named=True)
-        won = agreed_result == ("player_1_win" if is_player_1 else "player_2_win")
-        lost = agreed_result == ("player_2_win" if is_player_1 else "player_1_win")
-        drawn = agreed_result == "draw"
+        stats = count_game_stats(self._state_manager.matches_1v1_df, discord_uid, race)
 
         return {
             **current,
             "mmr": new_mmr,
-            "games_played": current["games_played"] + 1,
-            "games_won": current["games_won"] + (1 if won else 0),
-            "games_lost": current["games_lost"] + (1 if lost else 0),
-            "games_drawn": current["games_drawn"] + (1 if drawn else 0),
+            "games_played": stats["games_played"],
+            "games_won": stats["games_won"],
+            "games_lost": stats["games_lost"],
+            "games_drawn": stats["games_drawn"],
             "last_played_at": now,
         }
 
@@ -782,6 +807,52 @@ class TransitionManager:
     ) -> None:
         """Swap in a pre-computed MMR row in the in-memory cache."""
         df = self._state_manager.mmrs_1v1_df
+        self._state_manager.mmrs_1v1_df = df.filter(
+            ~((pl.col("discord_uid") == discord_uid) & (pl.col("race") == race))
+        ).vstack(pl.DataFrame([updated]).cast(df.schema))
+
+    def _set_mmr_cache_value(self, discord_uid: int, race: str, mmr: int) -> None:
+        """Set only the MMR value on an existing cache row (no stat changes)."""
+        df = self._state_manager.mmrs_1v1_df
+        rows = df.filter(
+            (pl.col("discord_uid") == discord_uid) & (pl.col("race") == race)
+        )
+        if rows.is_empty():
+            return
+        updated = rows.row(0, named=True)
+        updated["mmr"] = mmr
+        self._state_manager.mmrs_1v1_df = df.filter(
+            ~((pl.col("discord_uid") == discord_uid) & (pl.col("race") == race))
+        ).vstack(pl.DataFrame([updated]).cast(df.schema))
+
+    def _recalculate_game_stats(self, discord_uid: int, race: str) -> None:
+        """Recalculate games_played/won/lost/drawn from matches_1v1 ground truth
+        and write to both DB and in-memory cache."""
+        df = self._state_manager.mmrs_1v1_df
+        rows = df.filter(
+            (pl.col("discord_uid") == discord_uid) & (pl.col("race") == race)
+        )
+        if rows.is_empty():
+            return
+
+        stats = count_game_stats(self._state_manager.matches_1v1_df, discord_uid, race)
+
+        # DB write
+        self._db_writer.update_mmr_1v1_game_stats(
+            discord_uid,
+            race,
+            games_played=stats["games_played"],
+            games_won=stats["games_won"],
+            games_lost=stats["games_lost"],
+            games_drawn=stats["games_drawn"],
+        )
+
+        # Cache update
+        updated = rows.row(0, named=True)
+        updated["games_played"] = stats["games_played"]
+        updated["games_won"] = stats["games_won"]
+        updated["games_lost"] = stats["games_lost"]
+        updated["games_drawn"] = stats["games_drawn"]
         self._state_manager.mmrs_1v1_df = df.filter(
             ~((pl.col("discord_uid") == discord_uid) & (pl.col("race") == race))
         ).vstack(pl.DataFrame([updated]).cast(df.schema))
@@ -1048,11 +1119,23 @@ class TransitionManager:
             completed_at=now,
         )
 
-        # Apply MMR changes (skip for invalidated).
-        if result != "invalidated":
-            p1_race = match["player_1_race"]
-            p2_race = match["player_2_race"]
+        # Apply MMR changes.
+        p1_race = match["player_1_race"]
+        p2_race = match["player_2_race"]
 
+        if result == "invalidated":
+            # Explicitly reset MMR to the snapshotted value from the match row.
+            # This reverses any drift if the player's MMR changed during the match.
+            self._db_writer.set_mmr_1v1_value(p1_uid, p1_race, p1_mmr)
+            self._db_writer.set_mmr_1v1_value(p2_uid, p2_race, p2_mmr)
+            self._set_mmr_cache_value(p1_uid, p1_race, p1_mmr)
+            self._set_mmr_cache_value(p2_uid, p2_race, p2_mmr)
+
+            # Recalculate game stats from ground truth (the match we just
+            # invalidated no longer counts).
+            self._recalculate_game_stats(p1_uid, p1_race)
+            self._recalculate_game_stats(p2_uid, p2_race)
+        else:
             p1_mmr_update = self._compute_mmr_update(
                 p1_uid, p1_race, new_p1_mmr, result, is_player_1=True, now=now
             )
@@ -1088,6 +1171,10 @@ class TransitionManager:
             "player_2_name": match["player_2_name"],
             "player_1_race": match["player_1_race"],
             "player_2_race": match["player_2_race"],
+            "player_1_nationality": self._get_player_nationality(p1_uid),
+            "player_2_nationality": self._get_player_nationality(p2_uid),
+            "player_1_letter_rank": self._get_player_letter_rank(p1_uid, p1_race),
+            "player_2_letter_rank": self._get_player_letter_rank(p2_uid, p2_race),
             "player_1_mmr": p1_mmr,
             "player_2_mmr": p2_mmr,
             "player_1_mmr_new": new_p1_mmr,
