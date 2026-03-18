@@ -38,6 +38,10 @@ intents.members = True
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
+# Module-level flag to prevent re-initialization on reconnect.
+_initialized: bool = False
+_ws_task: asyncio.Task[None] | None = None
+
 # ----------------
 # Internal helpers
 # ----------------
@@ -88,6 +92,15 @@ async def on_connect() -> None:
 
 @client.event
 async def on_ready() -> None:
+    global _initialized, _ws_task
+
+    if _initialized:
+        logger.info("[Discord Gateway] Bot reconnected (skipping re-initialization).")
+        # Restart the WS listener if it died during disconnect.
+        if _ws_task is None or _ws_task.done():
+            _ws_task = asyncio.create_task(start_ws_listener(client))
+        return
+
     await init_session()
     mq = initialize_message_queue()
     await mq.start()
@@ -97,7 +110,8 @@ async def on_ready() -> None:
         logger.info(f"[Discord Gateway] Synced {len(synced)} commands.")
         logger.info("[Discord Gateway] Bot is ready!")
         # Start WebSocket listener for real-time backend events.
-        asyncio.create_task(start_ws_listener(client))
+        _ws_task = asyncio.create_task(start_ws_listener(client))
+        _initialized = True
     except Exception as e:
         logger.error(f"[Discord Gateway] Error during initialization: {e}")
         raise e

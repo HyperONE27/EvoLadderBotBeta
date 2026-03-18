@@ -2,26 +2,18 @@ import structlog
 import discord
 from discord import app_commands
 
-from bot.core.config import BACKEND_URL
+from bot.core.config import (
+    BACKEND_URL,
+    GAME_MODE_CHOICES,
+    MAX_MATCH_SLOTS,
+    MAX_QUEUE_SLOTS,
+)
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_admin
 from common.datetime_helpers import ensure_utc, utc_now
 from common.lookups.race_lookups import get_race_by_code
 
 logger = structlog.get_logger(__name__)
-
-# ----------
-# Constants
-# ----------
-
-GAME_MODE_CHOICES = [
-    app_commands.Choice(name="1v1", value="1v1"),
-    app_commands.Choice(name="2v2", value="2v2"),
-    app_commands.Choice(name="FFA", value="ffa"),
-]
-
-MAX_QUEUE_SLOTS = 30
-MAX_MATCH_SLOTS = 15
 
 # ----------
 # Components

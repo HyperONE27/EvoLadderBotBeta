@@ -396,8 +396,11 @@ class TransitionManager:
             p2_loc = "NAC"
 
         # At this point both are guaranteed non-None by the if/elif chain.
-        assert p1_loc is not None
-        assert p2_loc is not None
+        if p1_loc is None or p2_loc is None:
+            raise ValueError(
+                f"Player location is None after resolution for candidate "
+                f"{candidate['player_1_discord_uid']} vs {candidate['player_2_discord_uid']}"
+            )
 
         params: MatchParams1v1 = resolve_match_params(
             candidate,
@@ -525,26 +528,18 @@ class TransitionManager:
             return False, "Player is not part of this match."
 
         now = utc_now()
-
-        self._db_writer.finalise_match_1v1(
+        self._apply_match_resolution(
             match_id,
-            match_result="abort",
+            match,
+            "abort",
+            0,
+            0,
+            match["player_1_mmr"],
+            match["player_2_mmr"],
+            now,
             player_1_report=p1_report,
             player_2_report=p2_report,
-            completed_at=now,
         )
-
-        self._update_match_cache(
-            match_id,
-            player_1_report=p1_report,
-            player_2_report=p2_report,
-            match_result="abort",
-            completed_at=now,
-        )
-
-        self._set_player_status(p1_uid, "idle")
-        self._set_player_status(p2_uid, "idle")
-        self._confirmations.pop(match_id, None)
 
         logger.info(f"Match #{match_id} aborted by player {discord_uid}")
         return True, None
@@ -574,26 +569,18 @@ class TransitionManager:
         p2_report = "no_report" if p2_uid in confirmed else "abandoned"
 
         now = utc_now()
-
-        self._db_writer.finalise_match_1v1(
+        self._apply_match_resolution(
             match_id,
-            match_result="abandoned",
+            match,
+            "abandoned",
+            0,
+            0,
+            match["player_1_mmr"],
+            match["player_2_mmr"],
+            now,
             player_1_report=p1_report,
             player_2_report=p2_report,
-            completed_at=now,
         )
-
-        self._update_match_cache(
-            match_id,
-            player_1_report=p1_report,
-            player_2_report=p2_report,
-            match_result="abandoned",
-            completed_at=now,
-        )
-
-        self._set_player_status(p1_uid, "idle")
-        self._set_player_status(p2_uid, "idle")
-        self._confirmations.pop(match_id, None)
 
         logger.info(f"Match #{match_id} abandoned (confirmation timeout)")
         return True, None
@@ -640,7 +627,8 @@ class TransitionManager:
 
         # Re-fetch to see both reports.
         match = self._get_match_row(match_id)
-        assert match is not None
+        if match is None:
+            raise RuntimeError(f"Match #{match_id} disappeared after report update")
 
         p1_report = match["player_1_report"]
         p2_report = match["player_2_report"]
@@ -767,7 +755,8 @@ class TransitionManager:
         self._confirmations.pop(match_id, None)
 
         updated_match = self._get_match_row(match_id)
-        assert updated_match is not None
+        if updated_match is None:
+            raise RuntimeError(f"Match #{match_id} not found after resolution")
         return updated_match
 
     def _finalise_match(
@@ -804,30 +793,18 @@ class TransitionManager:
         """Reports disagree — mark as conflict, no MMR changes, return to idle."""
         now = utc_now()
 
-        self._db_writer.finalise_match_1v1(
+        updated = self._apply_match_resolution(
             match_id,
-            match_result="conflict",
-            player_1_mmr_change=0,
-            player_2_mmr_change=0,
-            completed_at=now,
+            match,
+            "conflict",
+            0,
+            0,
+            match["player_1_mmr"],
+            match["player_2_mmr"],
+            now,
         )
-
-        self._update_match_cache(
-            match_id,
-            match_result="conflict",
-            player_1_mmr_change=0,
-            player_2_mmr_change=0,
-            completed_at=now,
-        )
-
-        self._set_player_status(match["player_1_discord_uid"], "idle")
-        self._set_player_status(match["player_2_discord_uid"], "idle")
-        self._confirmations.pop(match_id, None)
 
         logger.info(f"Match #{match_id} marked as conflict (conflicting reports)")
-
-        updated = self._get_match_row(match_id)
-        assert updated is not None
         return updated
 
     def _compute_mmr_update(
@@ -1085,7 +1062,8 @@ class TransitionManager:
         currently empty.
         """
         match = self._get_match_row(match_id)
-        assert match is not None, f"Match #{match_id} not found for auto-resolve"
+        if match is None:
+            raise ValueError(f"Match #{match_id} not found for auto-resolve")
 
         p1_uid = match["player_1_discord_uid"]
 
@@ -1221,55 +1199,23 @@ class TransitionManager:
         if result == "invalidated":
             # No MMR changes — reset to snapshotted values.
             new_p1_mmr, new_p2_mmr, p1_change, p2_change = p1_mmr, p2_mmr, 0, 0
-
-            self._db_writer.admin_resolve_match_1v1(
-                match_id,
-                match_result=result,
-                player_1_mmr_change=0,
-                player_2_mmr_change=0,
-                admin_discord_uid=admin_discord_uid,
-                completed_at=now,
-            )
-            self._update_match_cache(
-                match_id,
-                match_result=result,
-                player_1_mmr_change=0,
-                player_2_mmr_change=0,
-                admin_intervened=True,
-                admin_discord_uid=admin_discord_uid,
-                completed_at=now,
-            )
-
-            # Explicitly reset MMR to the snapshotted value from the match row.
-            self._db_writer.set_mmr_1v1_value(p1_uid, p1_race, p1_mmr)
-            self._db_writer.set_mmr_1v1_value(p2_uid, p2_race, p2_mmr)
-            self._set_mmr_cache_value(p1_uid, p1_race, p1_mmr)
-            self._set_mmr_cache_value(p2_uid, p2_race, p2_mmr)
-
-            # Recalculate game stats from ground truth.
-            self._recalculate_game_stats(p1_uid, p1_race)
-            self._recalculate_game_stats(p2_uid, p2_race)
-
-            # Return both players to idle.
-            self._set_player_status(p1_uid, "idle")
-            self._set_player_status(p2_uid, "idle")
-            self._confirmations.pop(match_id, None)
         else:
             new_p1_mmr, new_p2_mmr, p1_change, p2_change = self._calculate_mmr_changes(
                 match, result
             )
-            self._apply_match_resolution(
-                match_id,
-                match,
-                result,
-                p1_change,
-                p2_change,
-                new_p1_mmr,
-                new_p2_mmr,
-                now,
-                admin_intervened=True,
-                admin_discord_uid=admin_discord_uid,
-            )
+
+        self._apply_match_resolution(
+            match_id,
+            match,
+            result,
+            p1_change,
+            p2_change,
+            new_p1_mmr,
+            new_p2_mmr,
+            now,
+            admin_intervened=True,
+            admin_discord_uid=admin_discord_uid,
+        )
 
         logger.info(
             f"Match #{match_id} admin-resolved by {admin_discord_uid}: "

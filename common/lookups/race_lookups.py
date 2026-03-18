@@ -46,6 +46,16 @@ def get_race_by_alias(alias: str) -> Race | None:
     )
 
 
+def get_bw_race_codes() -> list[str]:
+    """Return race codes where ``is_bw_race`` is True."""
+    return [code for code, race in get_races().items() if race["is_bw_race"]]
+
+
+def get_sc2_race_codes() -> list[str]:
+    """Return race codes where ``is_sc2_race`` is True."""
+    return [code for code, race in get_races().items() if race["is_sc2_race"]]
+
+
 # ----------------
 # Module lifecycle
 # ----------------

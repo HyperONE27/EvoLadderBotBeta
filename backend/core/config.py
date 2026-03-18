@@ -37,15 +37,24 @@ STORAGE: dict[str, str] = {
 }
 
 # ---------------------
-# Backend constants
+# Re-exports from common
 # ---------------------
 
-EXPECTED_LOBBY_SETTINGS: dict[str, str] = {
-    "duration": "Infinite",
-    "locked_alliances": "Yes",
-    "privacy": "Normal",
-    "speed": "Faster",
-}
+from common.config import ALLOW_AI_PLAYERS as ALLOW_AI_PLAYERS  # noqa: E402
+from common.config import CONFIRMATION_TIMEOUT as CONFIRMATION_TIMEOUT  # noqa: E402
+from common.config import CURRENT_SEASON as CURRENT_SEASON  # noqa: E402
+from common.config import ENABLE_REPLAY_VALIDATION as ENABLE_REPLAY_VALIDATION  # noqa: E402
+from common.config import EXPECTED_LOBBY_SETTINGS as EXPECTED_LOBBY_SETTINGS  # noqa: E402
+from common.config import GAME_MODES as GAME_MODES  # noqa: E402
+from common.config import IN_GAME_CHANNEL as IN_GAME_CHANNEL  # noqa: E402
+from common.config import MAX_MAP_VETOES as MAX_MAP_VETOES  # noqa: E402
+from common.urls import QUICKSTART_URL as QUICKSTART_URL  # noqa: E402
+from common.urls import TOS_MIRROR_URL as TOS_MIRROR_URL  # noqa: E402
+from common.urls import TOS_URL as TOS_URL  # noqa: E402
+
+# ---------------------
+# Matchmaker constants
+# ---------------------
 
 MATCHMAKER: dict[str, float | int] = {
     "balance_threshold": 50,
@@ -54,27 +63,31 @@ MATCHMAKER: dict[str, float | int] = {
     "wait_cycle_priority_exponent": 1.25,
 }
 
+BASE_MMR_WINDOW: int = 100
+MMR_WINDOW_GROWTH_PER_CYCLE: int = 50
+WAIT_PRIORITY_COEFFICIENT: float = 20.0
+BALANCE_THRESHOLD_MMR: int = 50
+
+# ---------------------
+# MMR / ELO
+# ---------------------
+
 MMR: dict[str, int] = {
     "default": 1500,
     "divisor": 500,
     "k_factor": 40,
 }
 
+# ---------------------
+# Queue timing
+# ---------------------
+
 QUEUE: dict[str, int] = {
     "abort_interval": 60,
     "activity_interval": 30,
     "expansion_step": 1,
     "match_interval": 60,
-    "confirmation_timeout": 60,
 }
-
-IN_GAME_CHANNEL: str = "SCEvoLadder"
-
-# ---------------
-# Other constants
-# ---------------
-
-CURRENT_SEASON: str = "season_alpha"
 
 # ---------------------
 # Replay configuration

@@ -34,7 +34,23 @@ BOT_TOKEN: str = _get_str_env("BOT_TOKEN")
 MATCH_LOG_CHANNEL_ID: int = _get_int_env("MATCH_LOG_CHANNEL_ID")
 
 # ---------------------
-# Message queue
+# Re-exports from common
+# ---------------------
+
+from common.config import ALLOW_AI_PLAYERS as ALLOW_AI_PLAYERS  # noqa: E402
+from common.config import CONFIRMATION_TIMEOUT as CONFIRMATION_TIMEOUT  # noqa: E402
+from common.config import CURRENT_SEASON as CURRENT_SEASON  # noqa: E402
+from common.config import ENABLE_REPLAY_VALIDATION as ENABLE_REPLAY_VALIDATION  # noqa: E402
+from common.config import EXPECTED_LOBBY_SETTINGS as EXPECTED_LOBBY_SETTINGS  # noqa: E402
+from common.config import GAME_MODES as GAME_MODES  # noqa: E402
+from common.config import IN_GAME_CHANNEL as IN_GAME_CHANNEL  # noqa: E402
+from common.config import MAX_MAP_VETOES as MAX_MAP_VETOES  # noqa: E402
+from common.urls import QUICKSTART_URL as QUICKSTART_URL  # noqa: E402
+from common.urls import TOS_MIRROR_URL as TOS_MIRROR_URL  # noqa: E402
+from common.urls import TOS_URL as TOS_URL  # noqa: E402
+
+# ---------------------
+# Discord API
 # ---------------------
 
 DISCORD_MESSAGE_RATE_LIMIT: int = 40
@@ -44,3 +60,32 @@ DISCORD_MESSAGE_RATE_LIMIT: int = 40
 # ---------------------
 
 QUEUE_SEARCHING_HEARTBEAT_SECONDS: int = 45
+
+# ---------------------
+# Display limits
+# ---------------------
+
+MAX_QUEUE_SLOTS: int = 30
+MAX_MATCH_SLOTS: int = 15
+
+# ---------------------
+# WebSocket
+# ---------------------
+
+WS_RECONNECT_BACKOFF_SECONDS: int = 5
+
+# ---------------------
+# Message queue
+# ---------------------
+
+MESSAGE_QUEUE_MAX_RETRIES: int = 3
+
+# ---------------------
+# Discord UI / Game mode choices
+# ---------------------
+
+from discord import app_commands  # noqa: E402
+
+GAME_MODE_CHOICES: list[app_commands.Choice[str]] = [
+    app_commands.Choice(name=name, value=value) for name, value in GAME_MODES
+]

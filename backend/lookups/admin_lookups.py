@@ -13,7 +13,8 @@ def init_admin_lookups(state_manager: StateManager) -> None:
 
 def get_admin_by_discord_uid(discord_uid: int) -> AdminsRow | None:
     """Return the admin row for the given Discord UID, or None."""
-    assert _state_manager is not None
+    if _state_manager is None:
+        raise RuntimeError(f"{__name__} not initialized")
     df = _state_manager.admins_df
     rows = df.filter(pl.col("discord_uid") == discord_uid)
     if rows.is_empty():

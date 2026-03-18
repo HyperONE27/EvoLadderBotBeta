@@ -9,7 +9,7 @@ import aiohttp
 import structlog
 import discord
 
-from bot.core.config import BACKEND_URL
+from bot.core.config import BACKEND_URL, ENABLE_REPLAY_VALIDATION
 from bot.core.dependencies import get_cache
 from bot.core.http import get_session
 from bot.components.replay_embed import ReplayErrorEmbed, ReplaySuccessEmbed
@@ -98,7 +98,6 @@ async def handle_replay_upload(
 
         # Lazily import to avoid circular import at module level.
         from bot.commands.user.queue_command import (
-            _ENABLE_REPLAY_VALIDATION,
             MatchInfoEmbed,
             MatchReportView,
         )
@@ -109,7 +108,7 @@ async def handle_replay_upload(
             embed=ReplaySuccessEmbed(
                 parsed,
                 verification_results=verification,
-                enforcement_enabled=_ENABLE_REPLAY_VALIDATION,
+                enforcement_enabled=ENABLE_REPLAY_VALIDATION,
                 auto_resolved=auto_resolved,
             ),
         )
@@ -124,7 +123,7 @@ async def handle_replay_upload(
         # (conditionally) unlock the report dropdown (high priority — gates reporting).
         match_msg = cache.active_match_messages.get(user_id)
         if match_msg is not None:
-            should_unlock = (not _ENABLE_REPLAY_VALIDATION) or _races_pass(verification)
+            should_unlock = (not ENABLE_REPLAY_VALIDATION) or _races_pass(verification)
 
             p1_name = match_data.get("player_1_name", "Player 1")
             p2_name = match_data.get("player_2_name", "Player 2")

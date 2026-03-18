@@ -5,11 +5,16 @@ import structlog
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
-from backend.api.dependencies import get_backend, set_backend
+from backend.api.dependencies import (
+    get_backend,
+    get_ws_manager,
+    set_backend,
+    set_ws_manager,
+)
 from backend.api.endpoints import router
 from backend.api.websocket import ConnectionManager
 from backend.core.bootstrap import Backend
-from backend.core.config import QUEUE
+from backend.core.config import CONFIRMATION_TIMEOUT
 
 from common.logging.config import configure_structlog
 
@@ -20,6 +25,7 @@ ws_manager = ConnectionManager()
 
 async def _matchmaker_loop() -> None:
     """Run matchmaking waves at the top of every minute."""
+    ws = get_ws_manager()
     while True:
         now = time.time()
         next_top = (now // 60 + 1) * 60
@@ -32,11 +38,11 @@ async def _matchmaker_loop() -> None:
                 match_id = match["id"]
 
                 # Broadcast match_found to the bot.
-                await ws_manager.broadcast("match_found", dict(match))
+                await ws.broadcast("match_found", dict(match))
 
                 # Schedule a confirmation timeout for this match.
                 asyncio.create_task(
-                    _confirmation_timeout(match_id, QUEUE["confirmation_timeout"])
+                    _confirmation_timeout(match_id, CONFIRMATION_TIMEOUT)
                 )
 
         except Exception:
@@ -48,6 +54,7 @@ async def _confirmation_timeout(match_id: int, timeout: int) -> None:
     await asyncio.sleep(timeout)
     try:
         backend = get_backend()
+        ws = get_ws_manager()
 
         if backend.orchestrator.is_match_confirmed(match_id):
             return
@@ -56,7 +63,7 @@ async def _confirmation_timeout(match_id: int, timeout: int) -> None:
         if success:
             match = backend.orchestrator.get_match_1v1(match_id)
             if match is not None:
-                await ws_manager.broadcast("match_abandoned", dict(match))
+                await ws.broadcast("match_abandoned", dict(match))
 
     except Exception:
         logger.exception(f"Confirmation timeout handling failed for match #{match_id}")
@@ -68,6 +75,7 @@ async def lifespan(app: FastAPI):
 
     backend = Backend()
     set_backend(backend)
+    set_ws_manager(ws_manager)
     backend.orchestrator.reset_all_player_statuses()
     logger.info("[Backend] Backend initialized.")
 

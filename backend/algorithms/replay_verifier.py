@@ -5,16 +5,12 @@ parameters and returns a VerificationResult dict.
 
 from typing import Any
 
-from backend.core.config import EXPECTED_LOBBY_SETTINGS, REPLAY_TIMESTAMP_WINDOW_MINUTES
+from backend.core.config import (
+    ALLOW_AI_PLAYERS,
+    EXPECTED_LOBBY_SETTINGS,
+    REPLAY_TIMESTAMP_WINDOW_MINUTES,
+)
 from common.datetime_helpers import ensure_utc
-
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-
-# If True, auto-validation succeeds even when an AI player is detected in the
-# replay.  Set to False in production to reject replays with AI opponents.
-_ALLOW_AI_PLAYERS: bool = True
 
 
 # ---------------------------------------------------------------------------
@@ -86,7 +82,7 @@ def verify_replay(
     ai_names = [n for n in (p1_name, p2_name) if _is_ai_player(n)]
     ai_detected = len(ai_names) > 0
     result["ai_players"] = {
-        "success": _ALLOW_AI_PLAYERS or not ai_detected,
+        "success": ALLOW_AI_PLAYERS or not ai_detected,
         "ai_detected": ai_detected,
         "ai_player_names": ai_names,
     }

@@ -4,23 +4,13 @@ from discord import app_commands
 
 from bot.components.buttons import ConfirmButton, CancelButton
 from bot.components.embeds import ErrorEmbed
-from bot.core.config import BACKEND_URL
+from bot.core.config import BACKEND_URL, GAME_MODE_CHOICES
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_owner
 from bot.helpers.emotes import get_race_emote
 from common.lookups.race_lookups import get_races
 
 logger = structlog.get_logger(__name__)
-
-# ----------
-# Constants
-# ----------
-
-GAME_MODE_CHOICES = [
-    app_commands.Choice(name="1v1", value="1v1"),
-    app_commands.Choice(name="2v2", value="2v2"),
-    app_commands.Choice(name="FFA", value="ffa"),
-]
 
 # ----------
 # Components

@@ -2,8 +2,8 @@
 Replay embeds — shown after a replay is uploaded.
 
 The embed always displays verification results regardless of the
-``_ENABLE_REPLAY_VALIDATION`` flag in queue_command.py.  The flag is passed
-as ``enforcement_enabled`` so the bottom status message reflects whether
+``ENABLE_REPLAY_VALIDATION`` flag.  The flag is passed as
+``enforcement_enabled`` so the bottom status message reflects whether
 those checks are actually enforced.
 """
 
@@ -11,6 +11,7 @@ from typing import Any
 
 import discord
 
+from bot.core.config import ALLOW_AI_PLAYERS
 from bot.helpers.emotes import get_race_emote
 from common.datetime_helpers import to_display
 
@@ -91,7 +92,7 @@ class ReplaySuccessEmbed(discord.Embed):
         self.add_field(name="", value="\u3164", inline=False)
 
         if verification_results:
-            verification_text = _format_verification(
+            verification_text = format_verification(
                 verification_results,
                 enforcement_enabled=enforcement_enabled,
                 auto_resolved=auto_resolved,
@@ -127,9 +128,9 @@ class ReplayErrorEmbed(discord.Embed):
 # ---------------------------------------------------------------------------
 
 
-def _format_verification(
+def format_verification(
     results: dict[str, Any],
-    enforcement_enabled: bool,
+    enforcement_enabled: bool = True,
     auto_resolved: bool = False,
 ) -> str:
     lines: list[str] = []
@@ -218,12 +219,12 @@ def _format_verification(
             lines.append("- ✅ **No AI Players:** Both players are human.")
         elif ai_check.get("success"):
             lines.append(
-                "- ⚠️ **AI Player Detected:** Allowed (_ALLOW_AI_PLAYERS = True)."
+                f"- ⚠️ **AI Player Detected:** Allowed (ALLOW_AI_PLAYERS = {ALLOW_AI_PLAYERS})."
             )
         else:
             names = ", ".join(ai_check.get("ai_player_names", []))
             lines.append(
-                f"- ❌ **AI Player Detected:** _ALLOW_AI_PLAYERS = False; "
+                f"- ❌ **AI Player Detected:** ALLOW_AI_PLAYERS = {ALLOW_AI_PLAYERS}; "
                 f"an AI player was detected (`{names}`)."
             )
 

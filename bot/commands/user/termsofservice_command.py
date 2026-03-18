@@ -4,7 +4,7 @@ from discord import app_commands
 
 from bot.components.buttons import ConfirmButton
 from bot.components.embeds import ErrorEmbed
-from bot.core.config import BACKEND_URL
+from bot.core.config import BACKEND_URL, TOS_MIRROR_URL, TOS_URL
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_banned, check_if_dm
 
@@ -24,8 +24,8 @@ class TermsOfServiceEmbed(discord.Embed):
             description=(
                 "Please read our Terms of Service, User Conduct guidelines, Privacy Policy, and Refund Policy. **You must accept these terms in order to use the SC: Evo Complete Ladder Bot.**\n\n"
                 "**Official Terms of Service:**\n"
-                "🔗 [SC: Evo Ladder ToS](https://www.scevo.net/ladder/tos)\n"
-                "🔗 [EvoLadderBot ToS (Mirror)](https://rentry.co/evoladderbot-tos)\n\n"
+                f"🔗 [SC: Evo Ladder ToS]({TOS_URL})\n"
+                f"🔗 [EvoLadderBot ToS (Mirror)]({TOS_MIRROR_URL})\n\n"
                 "By clicking **✅ I Accept These Terms** below, you confirm that you have read and agree to abide by the Terms of Service. "
                 "You can withdraw your agreement to these terms at any time by using this command again and clicking **❌ I Decline These Terms** below.\n\n"
                 "**⚠️ Failure to read or understand these terms is NOT AN ACCEPTABLE DEFENSE for violating them, and may result in your removal from the Service.**"

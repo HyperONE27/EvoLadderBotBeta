@@ -7,7 +7,8 @@ import structlog
 import discord
 from discord import app_commands
 
-from bot.core.config import BACKEND_URL
+from bot.components.replay_embed import format_verification
+from bot.core.config import BACKEND_URL, GAME_MODE_CHOICES
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_admin
 from bot.helpers.emotes import get_flag_emote, get_race_emote
@@ -15,16 +16,6 @@ from common.datetime_helpers import to_discord_timestamp, to_display
 from common.lookups.region_lookups import get_game_server_by_code
 
 logger = structlog.get_logger(__name__)
-
-# ----------
-# Constants
-# ----------
-
-GAME_MODE_CHOICES = [
-    app_commands.Choice(name="1v1", value="1v1"),
-    app_commands.Choice(name="2v2", value="2v2"),
-    app_commands.Choice(name="FFA", value="ffa"),
-]
 
 _REPORT_LABELS: dict[str | None, str] = {
     "player_1_win": "Player 1 Won",
@@ -340,7 +331,7 @@ class AdminReplayDetailsEmbed(discord.Embed):
         if verification:
             self.add_field(
                 name="☑️ Replay Verification",
-                value=_format_verification(verification),
+                value=format_verification(verification, enforcement_enabled=False),
                 inline=False,
             )
 
@@ -360,115 +351,6 @@ class UnsupportedGameModeEmbed(discord.Embed):
             description=f"`{game_mode}` is not yet supported. Only `1v1` is currently available.",
             color=discord.Color.orange(),
         )
-
-
-# ----------
-# Verification formatter
-# ----------
-
-
-def _format_verification(v: dict[str, Any]) -> str:
-    """Build the full verification checklist string — matches the player-facing
-    format from replay_embed.py."""
-    lines: list[str] = []
-
-    # Races
-    races = v.get("races", {})
-    if races.get("success"):
-        lines.append("- ✅ **Races Match:** Played races correspond to queued races.")
-    else:
-        expected = ", ".join(sorted(races.get("expected_races", [])))
-        played = ", ".join(sorted(races.get("played_races", [])))
-        lines.append(
-            f"- ❌ **Races Mismatch:** Expected `{expected}`, but played `{played}`."
-        )
-
-    # Map
-    map_check = v.get("map", {})
-    if map_check.get("success"):
-        lines.append("- ✅ **Map Matches:** Correct map was used.")
-    else:
-        lines.append(
-            f"- ❌ **Map Mismatch:** Expected `{map_check.get('expected_map')}`, "
-            f"but played `{map_check.get('played_map')}`."
-        )
-
-    # Mod
-    mod = v.get("mod", {})
-    prefix = "✅" if mod.get("success") else "❌"
-    lines.append(
-        f"- {prefix} **{'Mod Valid' if mod.get('success') else 'Mod Invalid'}:** "
-        f"{mod.get('message', '')}"
-    )
-
-    # Timestamp
-    ts = v.get("timestamp", {})
-    if ts.get("success"):
-        diff = ts.get("time_difference_minutes")
-        if diff is not None:
-            lines.append(
-                f"- ✅ **Timestamp Valid:** Match started within "
-                f"{abs(diff):.1f} min of assignment."
-            )
-    else:
-        if ts.get("error"):
-            lines.append(
-                f"- ❌ **Timestamp Invalid:** Could not verify. Reason: `{ts['error']}`"
-            )
-        else:
-            diff = ts.get("time_difference_minutes")
-            if diff is not None:
-                if diff < 0:
-                    lines.append(
-                        f"- ❌ **Timestamp Invalid:** Match started "
-                        f"{abs(diff):.1f} min **before** assignment."
-                    )
-                else:
-                    lines.append(
-                        f"- ❌ **Timestamp Invalid:** Match started "
-                        f"{diff:.1f} min **after** assignment (exceeds window)."
-                    )
-            else:
-                lines.append("- ❌ **Timestamp Invalid:** Unknown error.")
-
-    # Observers
-    obs = v.get("observers", {})
-    if obs.get("success"):
-        lines.append("- ✅ **No Observers:** No unauthorized observers detected.")
-    else:
-        names = ", ".join(obs.get("observers_found", []))
-        lines.append(f"- ❌ **Observers Detected:** Unauthorized observers: `{names}`.")
-
-    # Game settings
-    for key, label in (
-        ("game_privacy", "Game Privacy Setting"),
-        ("game_speed", "Game Speed Setting"),
-        ("game_duration", "Game Duration Setting"),
-        ("locked_alliances", "Locked Alliances Setting"),
-    ):
-        check = v.get(key, {})
-        if check.get("success"):
-            lines.append(f"- ✅ **{label}:** `{check.get('found')}`")
-        else:
-            lines.append(
-                f"- ❌ **{label}:** Expected `{check.get('expected')}`, "
-                f"but found `{check.get('found')}`."
-            )
-
-    # Critical failure summary
-    critical_fail = any(
-        not v.get(k, {}).get("success", True) for k in ("races", "map", "mod")
-    )
-
-    if critical_fail:
-        lines.append("")
-        lines.append(
-            "⚠️ **Critical Validation Failure:**\n"
-            "We do not accept games played with the incorrect races, map, or mod. "
-            "Result reporting has been locked. Please contact an admin to nullify this match."
-        )
-
-    return "\n".join(lines)
 
 
 # ----------------

@@ -13,33 +13,17 @@ No global state, no singletons, no I/O, no mutation of the input list.
 
 from copy import deepcopy
 
+from backend.core.config import (
+    BALANCE_THRESHOLD_MMR,
+    BASE_MMR_WINDOW,
+    MMR,
+    MMR_WINDOW_GROWTH_PER_CYCLE,
+    WAIT_PRIORITY_COEFFICIENT,
+)
 from backend.domain_types.ephemeral import MatchCandidate1v1, QueueEntry1v1
 
-# ---------------------------------------------------------------------------
-# Tuning constants
-# ---------------------------------------------------------------------------
-
-# Base MMR window: two players may be matched when their MMR difference is
-# at most  BASE_MMR_WINDOW + wait_cycles * MMR_WINDOW_GROWTH_PER_CYCLE
-BASE_MMR_WINDOW: int = 100
-MMR_WINDOW_GROWTH_PER_CYCLE: int = 50
-
-# When scoring candidate pairs a lower score is better.
-# score = mmr_diff² − (2^wait_factor × WAIT_PRIORITY_COEFFICIENT)
-# where wait_factor = max(lead_wait_cycles, follow_wait_cycles).
-#
-# The exponential term ensures that long-waiting players dominate the
-# scoring function after a modest number of cycles regardless of MMR gap,
-# effectively guaranteeing them a match.
-WAIT_PRIORITY_COEFFICIENT: float = 20.0
-
-# When rebalancing "both-race" players between the BW and SC2 pools, only
-# attempt a swap if the mean-MMR difference between the two pools exceeds
-# this threshold.
-BALANCE_THRESHOLD_MMR: int = 50
-
 # Fallback MMR used when a player's MMR is ``None``.
-DEFAULT_MMR: int = 1500
+DEFAULT_MMR: int = MMR["default"]
 
 
 # ---------------------------------------------------------------------------
@@ -395,14 +379,14 @@ def _to_match_candidate(
     p1_race = _race_for_match(lead_entry, bw=lead_is_bw)
     p2_race = _race_for_match(follow_entry, bw=not lead_is_bw)
 
-    # These should always be non-None given how categorisation works, but
-    # guard defensively.
-    assert p1_race is not None, (
-        f"Lead player {lead_entry['discord_uid']} has no race for bw={lead_is_bw}"
-    )
-    assert p2_race is not None, (
-        f"Follow player {follow_entry['discord_uid']} has no race for bw={not lead_is_bw}"
-    )
+    if p1_race is None:
+        raise ValueError(
+            f"Lead player {lead_entry['discord_uid']} has no race for bw={lead_is_bw}"
+        )
+    if p2_race is None:
+        raise ValueError(
+            f"Follow player {follow_entry['discord_uid']} has no race for bw={not lead_is_bw}"
+        )
 
     return MatchCandidate1v1(
         player_1_discord_uid=lead_entry["discord_uid"],
@@ -464,7 +448,8 @@ def run_matchmaking_wave(
     # Sanity: pools must be disjoint.
     bw_ids = {p["discord_uid"] for p in bw_pool}
     sc2_ids = {p["discord_uid"] for p in sc2_pool}
-    assert not (bw_ids & sc2_ids), "Equalisation produced overlapping pools"
+    if bw_ids & sc2_ids:
+        raise RuntimeError("Equalisation produced overlapping pools")
 
     # --- Determine lead / follow and match ----------------------------------
     matched_pairs: list[tuple[QueueEntry1v1, QueueEntry1v1]] = []

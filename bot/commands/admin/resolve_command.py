@@ -4,23 +4,13 @@ from discord import app_commands
 
 from bot.components.buttons import ConfirmButton, CancelButton
 from bot.components.embeds import ErrorEmbed
-from bot.core.config import BACKEND_URL, MATCH_LOG_CHANNEL_ID
+from bot.core.config import BACKEND_URL, GAME_MODE_CHOICES, MATCH_LOG_CHANNEL_ID
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_admin
 from bot.helpers.emotes import get_flag_emote, get_race_emote, get_rank_emote
 from bot.helpers.message_helpers import queue_channel_send_low, queue_user_send_low
 
 logger = structlog.get_logger(__name__)
-
-# ----------
-# Constants
-# ----------
-
-GAME_MODE_CHOICES = [
-    app_commands.Choice(name="1v1", value="1v1"),
-    app_commands.Choice(name="2v2", value="2v2"),
-    app_commands.Choice(name="FFA", value="ffa"),
-]
 
 RESULT_CHOICES = [
     app_commands.Choice(name="Player 1 Wins", value="player_1_win"),
@@ -41,19 +31,19 @@ class ResolvePreviewEmbed(discord.Embed):
     def __init__(
         self, match_id: int, result: str, result_display: str, reason: str | None
     ) -> None:
+        description = (
+            f"**Match ID:** {match_id}\n"
+            f"**Resolution:** {result_display}\n"
+            f"**Internal Code:** `{result}`"
+        )
+        if reason:
+            description += f"\n**Reason:** {reason}"
+        description += "\n\nThis will update the match result and MMR. Confirm?"
         super().__init__(
             title="⚠️ Admin: Confirm Match Resolution",
-            description=(
-                f"**Match ID:** {match_id}\n"
-                f"**Resolution:** {result_display}\n"
-                f"**Internal Code:** `{result}`"
-            ),
+            description=description,
             color=discord.Color.orange(),
         )
-        assert self.description is not None
-        if reason:
-            self.description += f"\n**Reason:** {reason}"
-        self.description += "\n\nThis will update the match result and MMR. Confirm?"
 
 
 def _player_prefix(race: str, nationality: str | None, letter_rank: str | None) -> str:

@@ -3,7 +3,9 @@ import structlog
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 
-from backend.api.dependencies import get_backend
+from backend.api.dependencies import get_backend, get_ws_manager
+from backend.api.websocket import ConnectionManager
+from backend.core.config import CURRENT_SEASON
 from backend.algorithms.replay_parser import parse_replay
 from backend.algorithms.replay_verifier import verify_replay
 from backend.lookups.admin_lookups import get_admin_by_discord_uid
@@ -129,7 +131,7 @@ async def admin_match(
     # Run verification on each replay.
     verifications: list[dict | None] = []
     replay_urls: list[str | None] = []
-    season_maps = app.state_manager.maps.get("1v1", {}).get("season_alpha", {})
+    season_maps = app.state_manager.maps.get("1v1", {}).get(CURRENT_SEASON, {})
 
     for replay in replays:
         replay_urls.append(replay.get("replay_path"))
@@ -317,17 +319,15 @@ async def match_confirm(
     match_id: int,
     request: MatchConfirmRequest,
     app: Backend = Depends(get_backend),
+    ws: ConnectionManager = Depends(get_ws_manager),
 ) -> MatchConfirmResponse:
     success, both_confirmed = app.orchestrator.confirm_match(
         match_id, request.discord_uid
     )
     if success and both_confirmed:
-        # Both players confirmed — broadcast so bot can send match details.
-        from backend.api.app import ws_manager
-
         match = app.orchestrator.get_match_1v1(match_id)
         if match is not None:
-            await ws_manager.broadcast("both_confirmed", dict(match))
+            await ws.broadcast("both_confirmed", dict(match))
     return MatchConfirmResponse(success=success, both_confirmed=both_confirmed)
 
 
@@ -336,14 +336,13 @@ async def match_abort(
     match_id: int,
     request: MatchAbortRequest,
     app: Backend = Depends(get_backend),
+    ws: ConnectionManager = Depends(get_ws_manager),
 ) -> MatchAbortResponse:
     success, message = app.orchestrator.abort_match(match_id, request.discord_uid)
     if success:
-        from backend.api.app import ws_manager
-
         match = app.orchestrator.get_match_1v1(match_id)
         if match is not None:
-            await ws_manager.broadcast("match_aborted", dict(match))
+            await ws.broadcast("match_aborted", dict(match))
     return MatchAbortResponse(success=success, message=message)
 
 
@@ -352,18 +351,17 @@ async def match_report(
     match_id: int,
     request: MatchReportRequest,
     app: Backend = Depends(get_backend),
+    ws: ConnectionManager = Depends(get_ws_manager),
 ) -> MatchReportResponse:
     success, message, match = app.orchestrator.report_match_result(
         match_id, request.discord_uid, request.report
     )
     if success and match is not None:
-        from backend.api.app import ws_manager
-
         result = match.get("match_result")
         if result == "conflict":
-            await ws_manager.broadcast("match_conflict", dict(match))
+            await ws.broadcast("match_conflict", dict(match))
         elif result is not None:
-            await ws_manager.broadcast("match_completed", dict(match))
+            await ws.broadcast("match_completed", dict(match))
     return MatchReportResponse(success=success, message=message, match=match)
 
 
@@ -466,6 +464,7 @@ async def upload_replay(
     discord_uid: int = Form(...),
     replay_file: UploadFile = File(...),
     app: Backend = Depends(get_backend),
+    ws: ConnectionManager = Depends(get_ws_manager),
 ) -> ReplayUploadResponse:
     """
     Accept a .SC2Replay upload from a match participant.
@@ -551,7 +550,7 @@ async def upload_replay(
     )
 
     # --- 7. Verify ---
-    season_maps = app.state_manager.maps.get("1v1", {}).get("season_alpha", {})
+    season_maps = app.state_manager.maps.get("1v1", {}).get(CURRENT_SEASON, {})
     verification = verify_replay(
         parsed, dict(match), app.state_manager.mods, season_maps
     )
@@ -572,8 +571,7 @@ async def upload_replay(
         and parsed.get("match_result") in ("player_1_win", "player_2_win", "draw")
     )
 
-    if can_auto_resolve:
-        assert current_match is not None
+    if can_auto_resolve and current_match is not None:
         # Map the replay result (in replay player order) to match player order
         # using the winning race.
         replay_result: str = parsed["match_result"]
@@ -589,9 +587,7 @@ async def upload_replay(
             auto_resolved = True
 
             # Broadcast match_completed via WebSocket.
-            from backend.api.app import ws_manager
-
-            await ws_manager.broadcast("match_completed", resolved_match)
+            await ws.broadcast("match_completed", resolved_match)
 
             logger.info(
                 "Replay auto-resolved match",

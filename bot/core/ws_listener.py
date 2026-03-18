@@ -25,10 +25,14 @@ from bot.commands.user.queue_command import (
     MatchFoundView,
     MatchReportView,
     QueueSearchingEmbed,
-    _ENABLE_REPLAY_VALIDATION,
     _fetch_player_info,
 )
-from bot.core.config import BACKEND_URL, MATCH_LOG_CHANNEL_ID
+from bot.core.config import (
+    BACKEND_URL,
+    ENABLE_REPLAY_VALIDATION,
+    MATCH_LOG_CHANNEL_ID,
+    WS_RECONNECT_BACKOFF_SECONDS,
+)
 from bot.core.dependencies import get_cache
 from bot.helpers.message_helpers import (
     queue_channel_send_low,
@@ -62,7 +66,7 @@ async def start_ws_listener(client: discord.Client) -> None:
         except Exception:
             logger.exception("[WS] Connection failed, reconnecting in 5s")
 
-        await asyncio.sleep(5)
+        await asyncio.sleep(WS_RECONNECT_BACKOFF_SECONDS)
 
 
 async def _handle_message(client: discord.Client, raw: str) -> None:
@@ -193,7 +197,7 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
                         match_data,
                         p1_info,
                         p2_info,
-                        report_locked=_ENABLE_REPLAY_VALIDATION,
+                        report_locked=ENABLE_REPLAY_VALIDATION,
                     ),
                 )
             )

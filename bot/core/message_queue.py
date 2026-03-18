@@ -28,7 +28,7 @@ from typing import Awaitable, Callable
 import discord
 import structlog
 
-from bot.core.config import DISCORD_MESSAGE_RATE_LIMIT
+from bot.core.config import DISCORD_MESSAGE_RATE_LIMIT, MESSAGE_QUEUE_MAX_RETRIES
 
 logger = structlog.get_logger(__name__)
 
@@ -191,7 +191,7 @@ class MessageQueue:
     def _handle_failure(
         self, job: MessageQueueJob, queue_type: str, exc: Exception
     ) -> None:
-        if job.retry_count < 3:
+        if job.retry_count < MESSAGE_QUEUE_MAX_RETRIES:
             job.retry_count += 1
             logger.warning(
                 "message_queue.retry",

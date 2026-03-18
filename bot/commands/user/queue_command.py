@@ -7,7 +7,16 @@ import structlog
 import discord
 from discord import app_commands
 
-from bot.core.config import BACKEND_URL, QUEUE_SEARCHING_HEARTBEAT_SECONDS
+from bot.core.config import (
+    BACKEND_URL,
+    CONFIRMATION_TIMEOUT,
+    CURRENT_SEASON,
+    ENABLE_REPLAY_VALIDATION,
+    EXPECTED_LOBBY_SETTINGS,
+    MAX_MAP_VETOES,
+    QUICKSTART_URL,
+    QUEUE_SEARCHING_HEARTBEAT_SECONDS,
+)
 from bot.core.dependencies import get_cache
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_banned, check_if_dm
@@ -19,7 +28,7 @@ from bot.helpers.emotes import (
 )
 from common.lookups.map_lookups import get_map_by_short_name, get_maps
 from common.lookups.mod_lookups import get_mod_by_code
-from common.lookups.race_lookups import get_races
+from common.lookups.race_lookups import get_bw_race_codes, get_races, get_sc2_race_codes
 from common.lookups.region_lookups import (
     get_game_region_by_code,
     get_game_server_by_code,
@@ -31,26 +40,7 @@ logger = structlog.get_logger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-_BW_RACES = ["bw_terran", "bw_zerg", "bw_protoss"]
-_SC2_RACES = ["sc2_terran", "sc2_zerg", "sc2_protoss"]
-_MAX_MAP_VETOES = 4
-_QUICKSTART_URL = "https://rentry.co/evoladderbot-quickstartguide"
 _NUMBER_EMOTES = [":one:", ":two:", ":three:", ":four:"]
-
-# Game settings (match the alpha defaults)
-_EXPECTED_GAME_PRIVACY = "Normal"
-_EXPECTED_GAME_SPEED = "Faster"
-_EXPECTED_GAME_DURATION = "Infinite"
-_EXPECTED_LOCKED_ALLIANCES = "Yes"
-
-# ---------------------------------------------------------------------------
-# Replay validation gate
-# ---------------------------------------------------------------------------
-# When True, the match-report dropdown is locked until a replay has been
-# uploaded AND its race check passes.  The verification results are always
-# shown in the ReplayDetailsEmbed regardless of this flag; the flag only
-# controls whether those results actually gate reporting.
-_ENABLE_REPLAY_VALIDATION: bool = True
 
 
 # ---------------------------------------------------------------------------
@@ -72,7 +62,7 @@ def _race_group_label(race_code: str) -> str:
 
 def _get_map_game(map_name: str) -> str:
     """Return 'bw' or 'sc2' for a map by looking it up in the map pool."""
-    maps = get_maps(game_mode="1v1", season="season_alpha") or {}
+    maps = get_maps(game_mode="1v1", season=CURRENT_SEASON) or {}
     map_data = maps.get(map_name)
     if map_data:
         return map_data.get("game", "sc2")
@@ -163,7 +153,7 @@ class QueueSetupEmbed(discord.Embed):
         # Quick start guide warning
         self.add_field(
             name="⚠️ NEW PLAYERS START HERE ⚠️",
-            value=f"📘 **QUICK START GUIDE:**  [READ THIS BEFORE YOUR FIRST MATCH!]({_QUICKSTART_URL})\n",
+            value=f"📘 **QUICK START GUIDE:**  [READ THIS BEFORE YOUR FIRST MATCH!]({QUICKSTART_URL})\n",
             inline=False,
         )
 
@@ -193,7 +183,7 @@ class QueueSetupEmbed(discord.Embed):
         else:
             veto_value = "No vetoes"
         self.add_field(
-            name=f"Vetoed Maps ({veto_count}/{_MAX_MAP_VETOES})",
+            name=f"Vetoed Maps ({veto_count}/{MAX_MAP_VETOES})",
             value=veto_value,
             inline=False,
         )
@@ -425,7 +415,7 @@ class MatchInfoEmbed(discord.Embed):
             value=(
                 f"- Server: `{server_full}`\n"
                 f"- In-Game Channel: `SCEvoLadder`\n"
-                f"- Locked Alliances: `{_EXPECTED_LOCKED_ALLIANCES}`"
+                f"- Locked Alliances: `{EXPECTED_LOBBY_SETTINGS['locked_alliances']}`"
             ),
             inline=True,
         )
@@ -433,9 +423,9 @@ class MatchInfoEmbed(discord.Embed):
         self.add_field(
             name="\u3164",
             value=(
-                f"- Game Privacy: `{_EXPECTED_GAME_PRIVACY}`\n"
-                f"- Game Speed: `{_EXPECTED_GAME_SPEED}`\n"
-                f"- Game Duration: `{_EXPECTED_GAME_DURATION}`"
+                f"- Game Privacy: `{EXPECTED_LOBBY_SETTINGS['privacy']}`\n"
+                f"- Game Speed: `{EXPECTED_LOBBY_SETTINGS['speed']}`\n"
+                f"- Game Duration: `{EXPECTED_LOBBY_SETTINGS['duration']}`"
             ),
             inline=True,
         )
@@ -471,7 +461,7 @@ class MatchInfoEmbed(discord.Embed):
         )
 
         # Footer instruction
-        if _ENABLE_REPLAY_VALIDATION and not replay_uploaded:
+        if ENABLE_REPLAY_VALIDATION and not replay_uploaded:
             footer_text = (
                 "ℹ️ To report the match result, upload a replay. "
                 "The dropdown menus below will unlock once a valid replay is uploaded."
@@ -748,7 +738,7 @@ class BwRaceSelect(discord.ui.Select):
                 emoji=get_race_emote(code),
                 default=(code == selected),
             )
-            for code in _BW_RACES
+            for code in get_bw_race_codes()
             if code in races
         ]
         super().__init__(
@@ -775,7 +765,7 @@ class Sc2RaceSelect(discord.ui.Select):
                 emoji=get_race_emote(code),
                 default=(code == selected),
             )
-            for code in _SC2_RACES
+            for code in get_sc2_race_codes()
             if code in races
         ]
         super().__init__(
@@ -794,7 +784,7 @@ class Sc2RaceSelect(discord.ui.Select):
 
 class MapVetoSelect(discord.ui.Select):
     def __init__(self, selected: list[str] | None = None) -> None:
-        maps = get_maps(game_mode="1v1", season="season_alpha") or {}
+        maps = get_maps(game_mode="1v1", season=CURRENT_SEASON) or {}
         options = [
             discord.SelectOption(
                 label=map_data["short_name"],
@@ -808,9 +798,9 @@ class MapVetoSelect(discord.ui.Select):
             options = [discord.SelectOption(label="No maps available", value="none")]
 
         super().__init__(
-            placeholder=f"Select maps to veto (max {_MAX_MAP_VETOES})...",
+            placeholder=f"Select maps to veto (max {MAX_MAP_VETOES})...",
             min_values=0,
-            max_values=min(_MAX_MAP_VETOES, len(options)),
+            max_values=min(MAX_MAP_VETOES, len(options)),
             options=options,
             row=3,
         )
@@ -1008,7 +998,7 @@ class QueueSearchingView(discord.ui.View):
 
 class MatchFoundView(discord.ui.View):
     def __init__(self, match_id: int, match_data: dict) -> None:
-        super().__init__(timeout=60)
+        super().__init__(timeout=CONFIRMATION_TIMEOUT)
         self.match_id = match_id
         self.match_data = match_data
 
