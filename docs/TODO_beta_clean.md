@@ -4,6 +4,19 @@ What remains?
 
 # FINISH BY PRE-BETA
 
+- ⏰ Make sure visibility is solid
+    - Maybe some more admin/owner commands
+        - Directly reading DataFrame rows
+- ⏰ Add some kind of health check and automatic resurrection for:
+    - replay parsing process pool
+    - DataFrames
+        - write-through guarantees writes hit the DB
+        - but not that DFs might not silently corrupt...(?)
+- ⏰ Add unit tests
+- ⏰ Need some dashboard to help people see when peak hours are
+    - ⏰ Need to keep track of queue join attempts
+    - ⏰ the events table {event_type = player_command, action=queue_join, game_mode=1v1, performed_at=timestamp}
+        - this gives us everything we need, just need to graph this
 - ✅ /leaderboard is completely unimplemented
     - 1/7/21/21/21/21/8% splits
     - Ordinal rank calculation
@@ -12,15 +25,15 @@ What remains?
 - ✅ Every single time a match is resolved, we must trigger the leaderboard recalculation and wait for the result and then get it
     - ✅ The letter rank updates need to propagate to the match finalized embeds
     - ✅ And make sure the frontend gets the update too via WebSocket
-- ⏰ /profile looks weird
-- ⏰ /profile doesn't contain full T/W/L/D (win-rate %) statistics by race and aggregated
-- ⏰ Generally the UI is messed up everywhere
+- ✅ /profile looks weird
+- ✅ /profile doesn't contain full T/W/L/D (win-rate %) statistics by race and aggregated
+- ✅ Generally the UI is messed up everywhere
     - Especially /snapshot
     - ✅ Holy shit fix this
-- ⏰ /snapshot does not correctly show letter 
+- ✅ /snapshot does not correctly show letter 
     - Currently shows `Z1 HyperONEFOUR`
     - It needs to show `D T2 US HyperONEFOUR`
-- ⏰ /snapshot displays matches that should have already been resolved
+- ✅ /snapshot displays matches that should have already been resolved
 - ❌ Implement the infrastructure
     - ❌ of what??? I forgot. I had a thought here and dropped it. probably not important
 - ✅ mmrs_1v1 W/L/D/T game counts desync from matches_1v1 when a match gets resolved more than once
@@ -30,15 +43,8 @@ What remains?
     - queue_command.py is getting very large
 - ✅ Maybe split up transitions.py
     - This is also getting pretty large
-- ⏰ Make sure visibility is solid
-    - Maybe some more admin/owner commands
-        - Directly reading DataFrame rows
+
 - ✅ Make HTML error codes explicit (4XX/5XX) instead of returning 200 everywhere
-- ⏰ Add some kind of health check and automatic resurrection for:
-    - replay parsing process pool
-    - DataFrames
-        - write-through guarantees writes hit the DB
-        - but not that DFs might not silently corrupt...(?)
 - ✅ Fix mypy error suppressions and underlying issues
 - ✅ Migrate some config variables into ENV, there are many that would be convenient to have moved to backend/core/config.py or bot/core/config.py or even loaded from ENV directly
     - Especially the current season
@@ -51,7 +57,6 @@ What remains?
     - More specifically we should have some kind of module level flag that prevents initializing a new aiohttp session, a new MessageQueue, re-registering all commands, etc..
 - ✅ Resolve potentially duplicated config values between bot and backend
 - ✅ Find and fix all asserts, change them to errors
-- ⏰ Add unit tests
 
 # FINISH DURING PRE-BETA
 
