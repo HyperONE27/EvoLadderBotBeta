@@ -142,6 +142,7 @@ async def handle_replay_upload(
                 p1_info=p1_info,
                 p2_info=p2_info,
                 report_locked=not should_unlock,
+                locale=locale,
             )
             try:
                 await queue_message_edit_high(match_msg, embed=new_embed, view=new_view)

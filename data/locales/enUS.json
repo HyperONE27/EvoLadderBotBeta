@@ -338,5 +338,14 @@
     "admin_match_embed.field_name.raw": "📋 Raw Match Data",
     "admin_match_embed.field_name.replay_status": "🎬 Replay Status",
     "admin_match_embed.replay_uploaded": "✅ Uploaded",
-    "admin_match_embed.replay_no": "❌ No"
+    "admin_match_embed.replay_no": "❌ No",
+
+    "queue_select.placeholder.bw_race": "Select your Brood War race (max 1)",
+    "queue_select.placeholder.sc2_race": "Select your StarCraft II race (max 1)",
+    "queue_select.placeholder.map_veto": "Select maps to veto (max {max_vetoes})...",
+    "queue_select.no_maps_available": "No maps available",
+
+    "match_report_select.placeholder": "Report match result...",
+    "match_report_select.victory": "{name} victory",
+    "match_report_select.draw": "Draw"
 }

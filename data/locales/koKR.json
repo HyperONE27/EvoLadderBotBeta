@@ -338,5 +338,14 @@
     "admin_match_embed.field_name.raw": "📋 원본 매치 데이터",
     "admin_match_embed.field_name.replay_status": "🎬 리플레이 상태",
     "admin_match_embed.replay_uploaded": "✅ 업로드됨",
-    "admin_match_embed.replay_no": "❌ 없음"
+    "admin_match_embed.replay_no": "❌ 없음",
+
+    "queue_select.placeholder.bw_race": "브루드워 종족 선택 (최대 1개)",
+    "queue_select.placeholder.sc2_race": "스타크래프트 II 종족 선택 (최대 1개)",
+    "queue_select.placeholder.map_veto": "금지할 맵 선택 (최대 {max_vetoes}개)...",
+    "queue_select.no_maps_available": "사용 가능한 맵 없음",
+
+    "match_report_select.placeholder": "경기 결과 보고...",
+    "match_report_select.victory": "{name} 승리",
+    "match_report_select.draw": "무승부"
 }

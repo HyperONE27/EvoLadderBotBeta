@@ -205,6 +205,7 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
                         p1_info,
                         p2_info,
                         report_locked=ENABLE_REPLAY_VALIDATION,
+                        locale=locale,
                     ),
                 )
             )

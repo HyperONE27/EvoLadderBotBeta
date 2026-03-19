@@ -1366,11 +1366,11 @@ async def _fetch_player_info(discord_uid: int) -> dict[str, Any] | None:
 
 
 class BwRaceSelect(discord.ui.Select):
-    def __init__(self, selected: str | None = None) -> None:
+    def __init__(self, selected: str | None = None, locale: str = "enUS") -> None:
         races = get_races()
         options = [
             discord.SelectOption(
-                label=races[code]["name"],
+                label=t(f"race.{code}.name", locale),
                 value=code,
                 emoji=get_race_emote(code),
                 default=(code == selected),
@@ -1379,7 +1379,7 @@ class BwRaceSelect(discord.ui.Select):
             if code in races
         ]
         super().__init__(
-            placeholder="Select your Brood War race (max 1)",
+            placeholder=t("queue_select.placeholder.bw_race", locale),
             min_values=0,
             max_values=1,
             options=options,
@@ -1393,11 +1393,11 @@ class BwRaceSelect(discord.ui.Select):
 
 
 class Sc2RaceSelect(discord.ui.Select):
-    def __init__(self, selected: str | None = None) -> None:
+    def __init__(self, selected: str | None = None, locale: str = "enUS") -> None:
         races = get_races()
         options = [
             discord.SelectOption(
-                label=races[code]["name"],
+                label=t(f"race.{code}.name", locale),
                 value=code,
                 emoji=get_race_emote(code),
                 default=(code == selected),
@@ -1406,7 +1406,7 @@ class Sc2RaceSelect(discord.ui.Select):
             if code in races
         ]
         super().__init__(
-            placeholder="Select your StarCraft II race (max 1)",
+            placeholder=t("queue_select.placeholder.sc2_race", locale),
             min_values=0,
             max_values=1,
             options=options,
@@ -1420,7 +1420,7 @@ class Sc2RaceSelect(discord.ui.Select):
 
 
 class MapVetoSelect(discord.ui.Select):
-    def __init__(self, selected: list[str] | None = None) -> None:
+    def __init__(self, selected: list[str] | None = None, locale: str = "enUS") -> None:
         maps = get_maps(game_mode="1v1", season=CURRENT_SEASON) or {}
         options = [
             discord.SelectOption(
@@ -1432,10 +1432,18 @@ class MapVetoSelect(discord.ui.Select):
             for map_name, map_data in sorted(maps.items())
         ]
         if not options:
-            options = [discord.SelectOption(label="No maps available", value="none")]
+            options = [
+                discord.SelectOption(
+                    label=t("queue_select.no_maps_available", locale), value="none"
+                )
+            ]
 
         super().__init__(
-            placeholder=f"Select maps to veto (max {MAX_MAP_VETOES})...",
+            placeholder=t(
+                "queue_select.placeholder.map_veto",
+                locale,
+                max_vetoes=str(MAX_MAP_VETOES),
+            ),
             min_values=0,
             max_values=min(MAX_MAP_VETOES, len(options)),
             options=options,
@@ -1449,15 +1457,25 @@ class MapVetoSelect(discord.ui.Select):
 
 
 class MatchReportSelect(discord.ui.Select):
-    def __init__(self, match_id: int, p1_name: str, p2_name: str) -> None:
+    def __init__(
+        self, match_id: int, p1_name: str, p2_name: str, locale: str = "enUS"
+    ) -> None:
         self.match_id = match_id
         options = [
-            discord.SelectOption(label=f"{p1_name} victory", value="player_1_win"),
-            discord.SelectOption(label=f"{p2_name} victory", value="player_2_win"),
-            discord.SelectOption(label="Draw", value="draw"),
+            discord.SelectOption(
+                label=t("match_report_select.victory", locale, name=p1_name),
+                value="player_1_win",
+            ),
+            discord.SelectOption(
+                label=t("match_report_select.victory", locale, name=p2_name),
+                value="player_2_win",
+            ),
+            discord.SelectOption(
+                label=t("match_report_select.draw", locale), value="draw"
+            ),
         ]
         super().__init__(
-            placeholder="Report match result...",
+            placeholder=t("match_report_select.placeholder", locale),
             min_values=1,
             max_values=1,
             options=options,
@@ -1554,9 +1572,9 @@ class QueueSetupView(discord.ui.View):
         self.add_item(cancel_btn)
 
         # Row 1-3: selects
-        self.add_item(BwRaceSelect(self.bw_race))
-        self.add_item(Sc2RaceSelect(self.sc2_race))
-        self.add_item(MapVetoSelect(self.map_vetoes))
+        self.add_item(BwRaceSelect(self.bw_race, locale=_locale))
+        self.add_item(Sc2RaceSelect(self.sc2_race, locale=_locale))
+        self.add_item(MapVetoSelect(self.map_vetoes, locale=_locale))
 
     async def persist_and_refresh(self, interaction: discord.Interaction) -> None:
         """Save preferences to backend and refresh the embed."""
@@ -1727,13 +1745,17 @@ class MatchReportView(discord.ui.View):
         p2_info: dict[str, Any] | None = None,
         *,
         report_locked: bool = False,
+        locale: str = "enUS",
     ) -> None:
         super().__init__(timeout=None)
         self.match_id = match_id
         self._match_data = match_data or {}
         self._p1_info = p1_info
         self._p2_info = p2_info
-        self.report_select = MatchReportSelect(match_id, p1_name, p2_name)
+        self._locale = locale
+        self.report_select = MatchReportSelect(
+            match_id, p1_name, p2_name, locale=locale
+        )
         self.report_select.disabled = report_locked
         self.add_item(self.report_select)
 
