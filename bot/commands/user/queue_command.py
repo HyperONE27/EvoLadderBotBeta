@@ -425,10 +425,10 @@ class MatchReportView(discord.ui.View):
             ) as resp:
                 data = await resp.json()
 
-            if not data.get("success"):
+            if resp.status >= 400:
                 await interaction.followup.send(
                     embed=QueueErrorEmbed(
-                        data.get("message") or "Failed to submit report."
+                        data.get("detail") or "Failed to submit report."
                     ),
                     ephemeral=True,
                 )
@@ -501,9 +501,9 @@ async def _join_queue(
         ) as resp:
             data = await resp.json()
 
-        if not data.get("success"):
+        if resp.status >= 400:
             await interaction.edit_original_response(
-                embed=QueueErrorEmbed(data.get("message") or "Failed to join queue."),
+                embed=QueueErrorEmbed(data.get("detail") or "Failed to join queue."),
                 view=None,
             )
             return
@@ -560,9 +560,9 @@ async def _leave_queue(
         ) as resp:
             data = await resp.json()
 
-        if not data.get("success"):
+        if resp.status >= 400:
             await interaction.followup.send(
-                embed=QueueErrorEmbed(data.get("message") or "Failed to leave queue."),
+                embed=QueueErrorEmbed(data.get("detail") or "Failed to leave queue."),
                 ephemeral=True,
             )
             return
@@ -596,9 +596,9 @@ async def _confirm_match(interaction: discord.Interaction, match_id: int) -> Non
             f"{BACKEND_URL}/matches_1v1/{match_id}/confirm",
             json={"discord_uid": interaction.user.id},
         ) as resp:
-            data = await resp.json()
+            await resp.json()
 
-        if not data.get("success"):
+        if resp.status >= 400:
             await interaction.followup.send(
                 embed=QueueErrorEmbed("Failed to confirm match."),
                 ephemeral=True,
@@ -627,9 +627,9 @@ async def _abort_match(interaction: discord.Interaction, match_id: int) -> None:
         ) as resp:
             data = await resp.json()
 
-        if not data.get("success"):
+        if resp.status >= 400:
             await interaction.followup.send(
-                embed=QueueErrorEmbed(data.get("message") or "Failed to abort match."),
+                embed=QueueErrorEmbed(data.get("detail") or "Failed to abort match."),
                 ephemeral=True,
             )
             return

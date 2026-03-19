@@ -88,10 +88,10 @@ async def handle_replay_upload(
         if processing_msg is not None:
             await queue_message_delete_low(processing_msg)
 
-        if not data.get("success"):
+        if resp.status >= 400:
             await queue_message_reply_high(
                 message,
-                embed=ReplayErrorEmbed(data.get("error") or "Unknown error"),
+                embed=ReplayErrorEmbed(data.get("detail") or "Unknown error"),
             )
             return
 

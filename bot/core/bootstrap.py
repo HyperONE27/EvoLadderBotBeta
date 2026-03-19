@@ -87,6 +87,10 @@ class Cache:
         # matching the LeaderboardEntry1v1 TypedDict shape.
         self.leaderboard_1v1: list[dict] = []
 
+        # Per-player locale preference (discord_uid → locale code, e.g. "enUS").
+        # Populated when a player completes /setup or when their profile is loaded.
+        self.player_locales: dict[int, str] = {}
+
         self._populate_json_data()
         self._populate_locale_data()
 
@@ -99,4 +103,7 @@ class Cache:
             setattr(self, key, value)
 
     def _populate_locale_data(self) -> None:
-        pass
+        from common.i18n import init_i18n
+
+        locales = JSONLoader().load_locale_data()
+        init_i18n(locales)

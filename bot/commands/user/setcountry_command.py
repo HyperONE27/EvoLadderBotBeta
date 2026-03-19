@@ -4,6 +4,7 @@ from discord import app_commands
 
 from bot.components.embeds import SetCountryNotFoundEmbed, SetCountryPreviewEmbed
 from bot.components.views import SetCountryView
+from bot.core.dependencies import get_cache
 from bot.helpers.checks import (
     check_if_accepted_tos,
     check_if_banned,
@@ -48,8 +49,9 @@ async def _send_confirmation(
     interaction: discord.Interaction,
     country: Country,
 ) -> None:
+    locale = get_cache().player_locales.get(interaction.user.id, "enUS")
     await interaction.followup.send(
-        embed=SetCountryPreviewEmbed(country),
+        embed=SetCountryPreviewEmbed(country, locale=locale),
         view=SetCountryView(country),
     )
 
@@ -73,7 +75,10 @@ def register_setcountry_command(tree: app_commands.CommandTree) -> None:
 
         country_obj = get_first_country_by_partial_name(country)
         if country_obj is None:
-            await interaction.followup.send(embed=SetCountryNotFoundEmbed(country))
+            locale = get_cache().player_locales.get(interaction.user.id, "enUS")
+            await interaction.followup.send(
+                embed=SetCountryNotFoundEmbed(country, locale=locale)
+            )
             return
 
         await _send_confirmation(interaction, country_obj)

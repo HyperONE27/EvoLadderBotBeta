@@ -32,6 +32,7 @@ from bot.components.embeds import (
     ToggleAdminSuccessEmbed,
 )
 from bot.core.config import BACKEND_URL, MATCH_LOG_CHANNEL_ID
+from bot.core.dependencies import get_cache
 from bot.core.http import get_session
 from bot.helpers.emotes import get_flag_emote, get_globe_emote
 from bot.helpers.i18n import LOCALE_DISPLAY_NAMES, get_available_locales
@@ -703,17 +704,19 @@ async def _send_setup_request(
     ) as response:
         data = await response.json()
 
-    if not data.get("success"):
+    if response.status >= 400:
+        error = data.get("detail") or "An unexpected error occurred."
         logger.error(
-            f"_send_setup_request: backend returned failure for user={interaction.user.id}: {data.get('message')}"
+            f"_send_setup_request: backend returned {response.status} for user={interaction.user.id}: {error}"
         )
         await interaction.response.edit_message(
-            embed=SetupValidationErrorEmbed(
-                "Setup Failed", data.get("message") or "An unexpected error occurred."
-            ),
+            embed=SetupValidationErrorEmbed("Setup Failed", error),
             view=None,
         )
         return
+
+    # Cache the player's chosen language so locale-aware embeds can use it.
+    get_cache().player_locales[interaction.user.id] = language
 
     await interaction.response.edit_message(
         embed=SetupSuccessEmbed(
@@ -775,15 +778,13 @@ async def _send_tos_request(
     ) as response:
         data = await response.json()
 
-    if not data.get("success"):
+    if response.status >= 400:
+        error = data.get("detail") or "An unexpected error occurred."
         logger.error(
-            f"TOS upsert failed for {discord_username} ({discord_uid}): {data.get('message')}"
+            f"TOS upsert failed for {discord_username} ({discord_uid}): {error}"
         )
         await interaction.response.edit_message(
-            embed=ErrorEmbed(
-                title="❌ Error",
-                description=data.get("message") or "An unexpected error occurred.",
-            ),
+            embed=ErrorEmbed(title="❌ Error", description=error),
             view=None,
         )
         return
@@ -825,21 +826,20 @@ async def _send_setcountry_request(
     ) as response:
         data = await response.json()
 
-    if not data.get("success"):
+    if response.status >= 400:
+        error = data.get("detail") or "An unexpected error occurred."
         logger.error(
-            f"setcountry backend failure for user={interaction.user.id}: {data.get('message')}"
+            f"setcountry backend failure for user={interaction.user.id}: {error}"
         )
         await interaction.response.edit_message(
-            embed=ErrorEmbed(
-                title="❌ Update Failed",
-                description=data.get("message") or "An unexpected error occurred.",
-            ),
+            embed=ErrorEmbed(title="❌ Update Failed", description=error),
             view=None,
         )
         return
 
+    locale = get_cache().player_locales.get(interaction.user.id, "enUS")
     await interaction.response.edit_message(
-        embed=SetCountryConfirmEmbed(country),
+        embed=SetCountryConfirmEmbed(country, locale=locale),
         view=None,
     )
 
@@ -875,7 +875,7 @@ async def _send_ban_request(
     ) as response:
         data = await response.json()
 
-    if not data.get("success"):
+    if response.status >= 400:
         await interaction.response.edit_message(
             embed=ErrorEmbed(
                 title="❌ Error",
@@ -942,8 +942,8 @@ async def _send_resolve_request(
     ) as response:
         data = await response.json()
 
-    if not data.get("success"):
-        error = data.get("error") or "An unexpected error occurred."
+    if response.status >= 400:
+        error = data.get("detail") or "An unexpected error occurred."
         await interaction.response.edit_message(
             embed=ErrorEmbed(
                 title="❌ Admin: Resolution Failed",
@@ -1040,8 +1040,8 @@ async def _send_statusreset_request(
     ) as response:
         data = await response.json()
 
-    if not data.get("success"):
-        error = data.get("error") or "An unexpected error occurred."
+    if response.status >= 400:
+        error = data.get("detail") or "An unexpected error occurred."
         await interaction.response.edit_message(
             embed=ErrorEmbed(
                 title="❌ Admin: Status Reset Failed",
@@ -1097,13 +1097,10 @@ async def _send_toggle_admin_request(
     ) as response:
         data = await response.json()
 
-    if not data.get("success"):
-        error = data.get("error") or "An unexpected error occurred."
+    if response.status >= 400:
+        error = data.get("detail") or "An unexpected error occurred."
         await interaction.response.edit_message(
-            embed=ErrorEmbed(
-                title="❌ Error",
-                description=error,
-            ),
+            embed=ErrorEmbed(title="❌ Error", description=error),
             view=None,
         )
         return
@@ -1165,7 +1162,7 @@ async def _send_set_mmr_request(
     ) as response:
         data = await response.json()
 
-    if not data.get("success"):
+    if response.status >= 400:
         await interaction.response.edit_message(
             embed=ErrorEmbed(
                 title="❌ Error",

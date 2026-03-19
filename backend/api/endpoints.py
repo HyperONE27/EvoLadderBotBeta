@@ -1,7 +1,7 @@
 import asyncio
 import structlog
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from backend.api.dependencies import get_backend, get_ws_manager
 from backend.api.websocket import ConnectionManager
@@ -119,7 +119,9 @@ async def admin_ban(
     app: Backend = Depends(get_backend),
 ) -> AdminBanResponse:
     success, new_is_banned = app.orchestrator.toggle_ban(request.discord_uid)
-    return AdminBanResponse(success=success, new_is_banned=new_is_banned)
+    if not success:
+        raise HTTPException(status_code=404, detail="Player not found.")
+    return AdminBanResponse(success=True, new_is_banned=new_is_banned)
 
 
 # --- /admin statusreset ---
@@ -133,7 +135,10 @@ async def admin_statusreset(
     success, error, old_status = app.orchestrator.reset_player_status(
         request.discord_uid
     )
-    return AdminStatusResetResponse(success=success, error=error, old_status=old_status)
+    if not success:
+        code = 404 if "not found" in (error or "").lower() else 409
+        raise HTTPException(status_code=code, detail=error)
+    return AdminStatusResetResponse(success=True, old_status=old_status)
 
 
 # --- /admin match ---
@@ -200,12 +205,12 @@ async def admin_resolve(
     result = app.orchestrator.admin_resolve_match(
         match_id, request.result, request.admin_discord_uid
     )
-    if result.get("success"):
-        await _broadcast_leaderboard_if_dirty(app, ws)
-        return AdminResolveResponse(success=True, data=result)
-    return AdminResolveResponse(
-        success=False, error=result.get("error", "Unknown error")
-    )
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=404, detail=result.get("error", "Match not found.")
+        )
+    await _broadcast_leaderboard_if_dirty(app, ws)
+    return AdminResolveResponse(success=True, data=result)
 
 
 # --- /admin snapshot ---
@@ -247,6 +252,8 @@ async def owner_toggle_admin(
     result = app.orchestrator.toggle_admin_role(
         request.discord_uid, request.discord_username
     )
+    if not result.get("success"):
+        raise HTTPException(status_code=403, detail=result.get("error", "Forbidden."))
     return OwnerToggleAdminResponse(**result)
 
 
@@ -262,9 +269,10 @@ async def owner_set_mmr(
     success, old_mmr = app.orchestrator.admin_set_mmr(
         request.discord_uid, request.race, request.new_mmr
     )
-    if success:
-        await _broadcast_leaderboard_if_dirty(app, ws)
-    return OwnerSetMMRResponse(success=success, old_mmr=old_mmr)
+    if not success:
+        raise HTTPException(status_code=404, detail="Player MMR row not found.")
+    await _broadcast_leaderboard_if_dirty(app, ws)
+    return OwnerSetMMRResponse(success=True, old_mmr=old_mmr)
 
 
 # --- /help ---
@@ -311,7 +319,10 @@ async def queue_join(
         request.sc2_mmr,
         request.map_vetoes,
     )
-    return QueueJoinResponse(success=success, message=message)
+    if not success:
+        code = 400 if message and "race" in message.lower() else 409
+        raise HTTPException(status_code=code, detail=message)
+    return QueueJoinResponse(success=True, message=None)
 
 
 @router.delete("/queue_1v1/leave", response_model=QueueLeaveResponse)
@@ -320,7 +331,9 @@ async def queue_leave(
     app: Backend = Depends(get_backend),
 ) -> QueueLeaveResponse:
     success, message = app.orchestrator.leave_queue_1v1(request.discord_uid)
-    return QueueLeaveResponse(success=success, message=message)
+    if not success:
+        raise HTTPException(status_code=409, detail=message)
+    return QueueLeaveResponse(success=True, message=None)
 
 
 @router.get("/queue_1v1/stats", response_model=QueueStatsResponse)
@@ -369,11 +382,11 @@ async def match_confirm(
     success, both_confirmed = app.orchestrator.confirm_match(
         match_id, request.discord_uid
     )
-    if success and both_confirmed:
+    if both_confirmed:
         match = app.orchestrator.get_match_1v1(match_id)
         if match is not None:
             await ws.broadcast("both_confirmed", dict(match))
-    return MatchConfirmResponse(success=success, both_confirmed=both_confirmed)
+    return MatchConfirmResponse(success=True, both_confirmed=both_confirmed)
 
 
 @router.put("/matches_1v1/{match_id}/abort", response_model=MatchAbortResponse)
@@ -384,11 +397,18 @@ async def match_abort(
     ws: ConnectionManager = Depends(get_ws_manager),
 ) -> MatchAbortResponse:
     success, message = app.orchestrator.abort_match(match_id, request.discord_uid)
-    if success:
-        match = app.orchestrator.get_match_1v1(match_id)
-        if match is not None:
-            await ws.broadcast("match_aborted", dict(match))
-    return MatchAbortResponse(success=success, message=message)
+    if not success:
+        if "not found" in (message or "").lower():
+            code = 404
+        elif "not part" in (message or "").lower():
+            code = 403
+        else:
+            code = 409
+        raise HTTPException(status_code=code, detail=message)
+    match = app.orchestrator.get_match_1v1(match_id)
+    if match is not None:
+        await ws.broadcast("match_aborted", dict(match))
+    return MatchAbortResponse(success=True, message=None)
 
 
 @router.put("/matches_1v1/{match_id}/report", response_model=MatchReportResponse)
@@ -401,14 +421,24 @@ async def match_report(
     success, message, match = app.orchestrator.report_match_result(
         match_id, request.discord_uid, request.report
     )
-    if success and match is not None:
+    if not success:
+        if "Invalid report" in (message or ""):
+            code = 400
+        elif "not found" in (message or "").lower():
+            code = 404
+        elif "not part" in (message or "").lower():
+            code = 403
+        else:
+            code = 409
+        raise HTTPException(status_code=code, detail=message)
+    if match is not None:
         result = match.get("match_result")
         if result == "conflict":
             await ws.broadcast("match_conflict", dict(match))
         elif result is not None:
             await ws.broadcast("match_completed", dict(match))
         await _broadcast_leaderboard_if_dirty(app, ws)
-    return MatchReportResponse(success=success, message=message, match=match)
+    return MatchReportResponse(success=True, message=message, match=match)
 
 
 # --- /setcountry ---
@@ -424,7 +454,9 @@ async def setcountry(
         request.discord_username,
         request.country_code,
     )
-    return SetCountryConfirmResponse(success=success, message=message)
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    return SetCountryConfirmResponse(success=True, message=message)
 
 
 # --- /setup ---
@@ -443,7 +475,9 @@ async def setup(
         request.location,
         request.language,
     )
-    return SetupConfirmResponse(success=success, message=message)
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    return SetupConfirmResponse(success=True, message=message)
 
 
 # --- /termsofservice ---
@@ -459,7 +493,9 @@ async def termsofservice(
         request.discord_username,
         request.accepted,
     )
-    return TermsOfServiceConfirmResponse(success=success, message=message)
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    return TermsOfServiceConfirmResponse(success=True, message=message)
 
 
 # --- General endpoints ---
@@ -527,13 +563,13 @@ async def upload_replay(
     # --- 1. Validate ---
     match = app.orchestrator.get_match_1v1(match_id)
     if match is None:
-        return ReplayUploadResponse(success=False, error="Match not found.")
+        raise HTTPException(status_code=404, detail="Match not found.")
 
     p1_uid = match["player_1_discord_uid"]
     p2_uid = match["player_2_discord_uid"]
     if discord_uid not in (p1_uid, p2_uid):
-        return ReplayUploadResponse(
-            success=False, error="You are not a participant in this match."
+        raise HTTPException(
+            status_code=403, detail="You are not a participant in this match."
         )
     player_num = 1 if discord_uid == p1_uid else 2
 
@@ -546,12 +582,12 @@ async def upload_replay(
         )
     except Exception as exc:
         logger.exception("Replay parse executor failed", match_id=match_id)
-        return ReplayUploadResponse(
-            success=False, error=f"Replay parse executor failed: {exc}"
+        raise HTTPException(
+            status_code=500, detail=f"Replay parse executor failed: {exc}"
         )
 
     if parsed.get("error"):
-        return ReplayUploadResponse(success=False, error=parsed["error"])
+        raise HTTPException(status_code=422, detail=parsed["error"])
 
     # --- 3. Build paths and insert pending row ---
     uploaded_at = utc_now()

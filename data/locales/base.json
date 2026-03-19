@@ -1,8 +1,8 @@
 {
-    "bot.commands.user.setcountry.confirm.description": "Your nationality has been updated successfully.",
-    "bot.commands.user.setcountry.confirm.title": "✅ Nationality Updated",
-    "bot.commands.user.setcountry.preview.description": "Please review your nationality selection before confirming:",
-    "bot.commands.user.setcountry.preview.title": "🔍 Preview Nationality Selection",
-    "bot.commands.user.setcountry.not_found.description": "No country found matching the string \"{country}\".",
-    "bot.commands.user.setcountry.not_found.title": "No country found matching the string \"{country}\"."
+    "bot.commands.user.setcountry.confirm.description": "",
+    "bot.commands.user.setcountry.confirm.title": "",
+    "bot.commands.user.setcountry.preview.description": "",
+    "bot.commands.user.setcountry.preview.title": "",
+    "bot.commands.user.setcountry.not_found.description": "",
+    "bot.commands.user.setcountry.not_found.title": ""
 }

@@ -1062,19 +1062,27 @@ class TermsOfServiceDeclinedEmbed(discord.Embed):
 
 
 class SetCountryNotFoundEmbed(discord.Embed):
-    def __init__(self, country: str):
+    def __init__(self, country: str, locale: str = "enUS"):
+        from common.i18n import t
+
         super().__init__(
             title="❌ Country Not Found",
-            description=f'No country found matching the string "{country}".',
+            description=t(
+                "bot.commands.user.setcountry.not_found.description",
+                locale,
+                country=country,
+            ),
             color=discord.Color.red(),
         )
 
 
 class SetCountryPreviewEmbed(discord.Embed):
-    def __init__(self, country: Country):
+    def __init__(self, country: Country, locale: str = "enUS"):
+        from common.i18n import t
+
         super().__init__(
-            title="🔍 Preview Nationality Selection",
-            description="Please review your nationality selection before confirming:",
+            title=t("bot.commands.user.setcountry.preview.title", locale),
+            description=t("bot.commands.user.setcountry.preview.description", locale),
             color=discord.Color.blue(),
         )
         self.add_field(
@@ -1084,10 +1092,12 @@ class SetCountryPreviewEmbed(discord.Embed):
 
 
 class SetCountryConfirmEmbed(discord.Embed):
-    def __init__(self, country: Country):
+    def __init__(self, country: Country, locale: str = "enUS"):
+        from common.i18n import t
+
         super().__init__(
-            title="✅ Nationality Updated",
-            description="Your nationality has been updated successfully.",
+            title=t("bot.commands.user.setcountry.confirm.title", locale),
+            description=t("bot.commands.user.setcountry.confirm.description", locale),
             color=discord.Color.blue(),
         )
         self.add_field(
