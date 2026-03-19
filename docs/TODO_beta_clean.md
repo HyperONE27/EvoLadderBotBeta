@@ -25,13 +25,14 @@ What remains?
 - ⏰ Make sure visibility is solid
     - Maybe some more admin/owner commands
         - Directly reading DataFrame rows
-- ⏰ Fix mypy error suppressions and underlying issues
+
 - ⏰ Make HTML error codes explicit (4XX/5XX) instead of returning 200 everywhere
 - ⏰ Add some kind of health check and automatic resurrection for:
     - replay parsing process pool
     - DataFrames
         - write-through guarantees writes hit the DB
         - but not that DFs might not silently corrupt...(?)
+- ✅ Fix mypy error suppressions and underlying issues
 - ✅ Migrate some config variables into ENV, there are many that would be convenient to have moved to backend/core/config.py or bot/core/config.py or even loaded from ENV directly
     - Especially the current season
     - Actually we should just centralize all of them, no private constants, just move them all to config
