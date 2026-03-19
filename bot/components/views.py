@@ -52,7 +52,7 @@ from bot.helpers.emotes import (
     get_globe_emote,
     get_race_emote,
 )
-from common.i18n import LOCALE_DISPLAY_NAMES, get_available_locales
+from common.i18n import LOCALE_DISPLAY_NAMES, get_available_locales, t
 from bot.helpers.message_helpers import (
     queue_channel_send_low,
     queue_message_edit_low,
@@ -108,9 +108,9 @@ class RestartButton(discord.ui.Button["discord.ui.View"]):
 
 
 class CancelButton(discord.ui.Button["discord.ui.View"]):
-    def __init__(self, row: int | None = None) -> None:
+    def __init__(self, row: int | None = None, locale: str = "enUS") -> None:
         super().__init__(
-            label="Cancel",
+            label=t("button.cancel", locale),
             emoji="✖️",
             style=discord.ButtonStyle.danger,
             row=row,
@@ -294,6 +294,7 @@ class SetupIntroView(discord.ui.View):
         preselected_nationality: str | None = None,
         preselected_location: str | None = None,
         preselected_language: str | None = None,
+        locale: str = "enUS",
     ) -> None:
         super().__init__()
 
@@ -307,10 +308,13 @@ class SetupIntroView(discord.ui.View):
                 preselected_nationality=preselected_nationality,
                 preselected_location=preselected_location,
                 preselected_language=preselected_language,
+                locale=get_player_locale(interaction.user.id),
             )
             await interaction.response.send_modal(modal)
 
-        self.add_item(ConfirmButton(callback=on_begin, label="Begin Setup"))
+        self.add_item(
+            ConfirmButton(callback=on_begin, label=t("button.begin_setup", locale))
+        )
         self.add_item(CancelButton())
 
 
@@ -326,6 +330,7 @@ class SetupSelectionView(discord.ui.View):
         selected_language: str | None = None,
         country_page1_code: str | None = None,
         country_page2_code: str | None = None,
+        locale: str = "enUS",
     ) -> None:
         super().__init__()
         self.player_name = player_name
@@ -337,6 +342,7 @@ class SetupSelectionView(discord.ui.View):
         self.selected_language = selected_language
         self.country_page1_code = country_page1_code
         self.country_page2_code = country_page2_code
+        self.locale = locale
 
         self.countries: list[Country] = sorted(
             get_common_countries().values(), key=lambda c: c["name"]
@@ -366,10 +372,16 @@ class SetupSelectionView(discord.ui.View):
                 or not self.selected_language
             ):
                 embed = SetupSelectionEmbed(
-                    self.selected_country, self.selected_region, self.selected_language
+                    self.selected_country,
+                    self.selected_region,
+                    self.selected_language,
+                    locale=get_player_locale(interaction.user.id),
                 )
                 embed.set_footer(
-                    text="Please select a nationality, location, and language before confirming."
+                    text=t(
+                        "setup_selection_view.incomplete_footer.1",
+                        get_player_locale(interaction.user.id),
+                    )
                 )
                 fresh = SetupSelectionView(
                     player_name=self.player_name,
@@ -381,10 +393,12 @@ class SetupSelectionView(discord.ui.View):
                     selected_language=self.selected_language,
                     country_page1_code=self.country_page1_code,
                     country_page2_code=self.country_page2_code,
+                    locale=get_player_locale(interaction.user.id),
                 )
                 await interaction.response.edit_message(embed=embed, view=fresh)
                 return
 
+            _locale = get_player_locale(interaction.user.id)
             await interaction.response.edit_message(
                 embed=SetupPreviewEmbed(
                     self.player_name,
@@ -393,6 +407,7 @@ class SetupSelectionView(discord.ui.View):
                     self.selected_country,
                     self.selected_region,
                     self.selected_language,
+                    locale=_locale,
                 ),
                 view=SetupPreviewView(
                     player_name=self.player_name,
@@ -402,12 +417,14 @@ class SetupSelectionView(discord.ui.View):
                     country=self.selected_country,
                     region=self.selected_region,
                     language=self.selected_language,
+                    locale=_locale,
                 ),
             )
 
         async def on_restart(interaction: discord.Interaction) -> None:
+            _locale = get_player_locale(interaction.user.id)
             await interaction.response.edit_message(
-                embed=SetupIntroEmbed(),
+                embed=SetupIntroEmbed(locale=_locale),
                 view=SetupIntroView(
                     modal_presets={
                         "player_name": self.player_name,
@@ -421,12 +438,21 @@ class SetupSelectionView(discord.ui.View):
                     if self.selected_region
                     else None,
                     preselected_language=self.selected_language,
+                    locale=_locale,
                 ),
             )
 
-        self.add_item(ConfirmButton(callback=on_confirm, row=4))
-        self.add_item(RestartButton(callback=on_restart, row=4))
-        self.add_item(CancelButton(row=4))
+        self.add_item(
+            ConfirmButton(
+                callback=on_confirm, row=4, label=t("button.confirm", self.locale)
+            )
+        )
+        self.add_item(
+            RestartButton(
+                callback=on_restart, row=4, label=t("button.restart", self.locale)
+            )
+        )
+        self.add_item(CancelButton(row=4, locale=self.locale))
 
     async def refresh(self, interaction: discord.Interaction) -> None:
         new_view = SetupSelectionView(
@@ -439,10 +465,14 @@ class SetupSelectionView(discord.ui.View):
             selected_language=self.selected_language,
             country_page1_code=self.country_page1_code,
             country_page2_code=self.country_page2_code,
+            locale=get_player_locale(interaction.user.id),
         )
         await interaction.response.edit_message(
             embed=SetupSelectionEmbed(
-                self.selected_country, self.selected_region, self.selected_language
+                self.selected_country,
+                self.selected_region,
+                self.selected_language,
+                locale=get_player_locale(interaction.user.id),
             ),
             view=new_view,
         )
@@ -458,6 +488,7 @@ class SetupPreviewView(discord.ui.View):
         country: Country,
         region: GeographicRegion,
         language: str,
+        locale: str = "enUS",
     ) -> None:
         super().__init__()
 
@@ -467,8 +498,9 @@ class SetupPreviewView(discord.ui.View):
             )
 
         async def on_restart(interaction: discord.Interaction) -> None:
+            _locale = get_player_locale(interaction.user.id)
             await interaction.response.edit_message(
-                embed=SetupIntroEmbed(),
+                embed=SetupIntroEmbed(locale=_locale),
                 view=SetupIntroView(
                     modal_presets={
                         "player_name": player_name,
@@ -478,24 +510,37 @@ class SetupPreviewView(discord.ui.View):
                     preselected_nationality=country["code"],
                     preselected_location=region["code"],
                     preselected_language=language,
+                    locale=_locale,
                 ),
             )
 
-        self.add_item(ConfirmButton(callback=on_confirm))
-        self.add_item(RestartButton(callback=on_restart))
-        self.add_item(CancelButton())
+        self.add_item(
+            ConfirmButton(callback=on_confirm, label=t("button.confirm", locale))
+        )
+        self.add_item(
+            RestartButton(callback=on_restart, label=t("button.restart", locale))
+        )
+        self.add_item(CancelButton(locale=locale))
 
 
 class SetupValidationErrorView(discord.ui.View):
-    def __init__(self, presets: dict[str, str], message: discord.Message) -> None:
+    def __init__(
+        self, presets: dict[str, str], message: discord.Message, locale: str = "enUS"
+    ) -> None:
         super().__init__()
 
         async def on_restart(interaction: discord.Interaction) -> None:
-            modal = SetupModal(presets=presets, message=message)
+            modal = SetupModal(
+                presets=presets,
+                message=message,
+                locale=get_player_locale(interaction.user.id),
+            )
             await interaction.response.send_modal(modal)
 
-        self.add_item(RestartButton(callback=on_restart, label="Try Again"))
-        self.add_item(CancelButton())
+        self.add_item(
+            RestartButton(callback=on_restart, label=t("button.try_again", locale))
+        )
+        self.add_item(CancelButton(locale=locale))
 
 
 class SetupModal(discord.ui.Modal, title="Player Setup"):
@@ -510,8 +555,9 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
         preselected_nationality: str | None = None,
         preselected_location: str | None = None,
         preselected_language: str | None = None,
+        locale: str = "enUS",
     ) -> None:
-        super().__init__()
+        super().__init__(title=t("setup_modal.title.1", locale))
         self._message = message
         self._preselected_nationality = preselected_nationality
         self._preselected_location = preselected_location
@@ -519,24 +565,24 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
         p = presets or {}
 
         self.player_name_input = discord.ui.TextInput(
-            label="User ID",
-            placeholder="3–12 characters (letters, digits, - _ .)",
+            label=t("setup_modal.field_label.player_name", locale),
+            placeholder=t("setup_modal.field_placeholder.player_name", locale),
             default=p.get("player_name") or None,
             min_length=3,
             max_length=12,
             required=True,
         )
         self.battletag_input = discord.ui.TextInput(
-            label="BattleTag",
-            placeholder="e.g. Username#1234",
+            label=t("setup_modal.field_label.battletag", locale),
+            placeholder=t("setup_modal.field_placeholder.battletag", locale),
             default=p.get("battletag") or None,
             min_length=5,
             max_length=25,
             required=True,
         )
         self.alt_ids_input = discord.ui.TextInput(
-            label="Alternative IDs (optional)",
-            placeholder="Space-separated names, e.g. AltName1 AltName2",
+            label=t("setup_modal.field_label.alt_ids", locale),
+            placeholder=t("setup_modal.field_placeholder.alt_ids", locale),
             default=p.get("alt_ids") or None,
             max_length=100,
             required=False,
@@ -548,7 +594,11 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
     async def on_submit(self, interaction: discord.Interaction) -> None:
         if self._message is None:
             await interaction.response.send_message(
-                "An error occurred. Please run `/setup` again.", ephemeral=True
+                t(
+                    "setup_modal.error.no_message",
+                    get_player_locale(interaction.user.id),
+                ),
+                ephemeral=True,
             )
             return
         message: discord.Message = self._message
@@ -575,7 +625,11 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
                 interaction,
                 message=message,
                 embed=SetupValidationErrorEmbed("Invalid User ID", error or ""),
-                view=SetupValidationErrorView(current_presets, message),
+                view=SetupValidationErrorView(
+                    current_presets,
+                    message,
+                    locale=get_player_locale(interaction.user.id),
+                ),
             )
             return
 
@@ -586,7 +640,11 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
                 interaction,
                 message=message,
                 embed=SetupValidationErrorEmbed("Invalid BattleTag", error or ""),
-                view=SetupValidationErrorView(current_presets, message),
+                view=SetupValidationErrorView(
+                    current_presets,
+                    message,
+                    locale=get_player_locale(interaction.user.id),
+                ),
             )
             return
 
@@ -603,7 +661,11 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
                     embed=SetupValidationErrorEmbed(
                         f"Invalid Alternative ID: {token}", error or ""
                     ),
-                    view=SetupValidationErrorView(current_presets, message),
+                    view=SetupValidationErrorView(
+                        current_presets,
+                        message,
+                        locale=get_player_locale(interaction.user.id),
+                    ),
                 )
                 return
             alt_ids.append(token)
@@ -616,7 +678,11 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
                 embed=SetupValidationErrorEmbed(
                     "Duplicate IDs", "All IDs must be unique."
                 ),
-                view=SetupValidationErrorView(current_presets, message),
+                view=SetupValidationErrorView(
+                    current_presets,
+                    message,
+                    locale=get_player_locale(interaction.user.id),
+                ),
             )
             return
 
@@ -636,11 +702,15 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
         page1_code, page2_code = _country_page_codes(
             preselected_country["code"] if preselected_country else None
         )
+        _locale = get_player_locale(interaction.user.id)
         await self._edit(
             interaction,
             message=message,
             embed=SetupSelectionEmbed(
-                preselected_country, preselected_region, self._preselected_language
+                preselected_country,
+                preselected_region,
+                self._preselected_language,
+                locale=_locale,
             ),
             view=SetupSelectionView(
                 player_name=player_name,
@@ -652,6 +722,7 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
                 selected_language=self._preselected_language,
                 country_page1_code=page1_code,
                 country_page2_code=page2_code,
+                locale=_locale,
             ),
         )
 
@@ -670,13 +741,20 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
             if self._message is not None:
                 await interaction.response.defer()
                 await self._message.edit(
-                    content="An unexpected error occurred. Please try again.",
+                    content=t(
+                        "setup_modal.error.unexpected",
+                        get_player_locale(interaction.user.id),
+                    ),
                     embed=None,
                     view=None,
                 )
             else:
                 await interaction.response.send_message(
-                    "An unexpected error occurred. Please try again.", ephemeral=True
+                    t(
+                        "setup_modal.error.unexpected",
+                        get_player_locale(interaction.user.id),
+                    ),
+                    ephemeral=True,
                 )
         except discord.InteractionResponded:
             pass
@@ -774,10 +852,13 @@ class TermsOfServiceView(discord.ui.View):
                 interaction, discord_uid, discord_username, accepted=False
             )
 
-        self.add_item(ConfirmButton(label="Accept", callback=on_accept))
+        _locale = get_player_locale(discord_uid)
+        self.add_item(
+            ConfirmButton(label=t("button.accept", _locale), callback=on_accept)
+        )
         self.add_item(
             ConfirmButton(
-                label="Decline",
+                label=t("button.decline", _locale),
                 callback=on_decline,
                 style=discord.ButtonStyle.red,
                 emoji="✖️",
@@ -815,7 +896,12 @@ async def _send_tos_request(
     logger.info(
         f"TOS upsert succeeded for {discord_username} ({discord_uid}): accepted={accepted}"
     )
-    embed = TermsOfServiceAcceptedEmbed() if accepted else TermsOfServiceDeclinedEmbed()
+    _locale = get_player_locale(discord_uid)
+    embed = (
+        TermsOfServiceAcceptedEmbed(locale=_locale)
+        if accepted
+        else TermsOfServiceDeclinedEmbed(locale=_locale)
+    )
     await interaction.response.edit_message(embed=embed, view=None)
 
 
@@ -825,14 +911,16 @@ async def _send_tos_request(
 
 
 class SetCountryView(discord.ui.View):
-    def __init__(self, country: Country):
+    def __init__(self, country: Country, locale: str = "enUS"):
         super().__init__()
 
         async def on_confirm(interaction: discord.Interaction) -> None:
             await _send_setcountry_request(interaction, country)
 
-        self.add_item(ConfirmButton(callback=on_confirm))
-        self.add_item(CancelButton())
+        self.add_item(
+            ConfirmButton(callback=on_confirm, label=t("button.confirm", locale))
+        )
+        self.add_item(CancelButton(locale=locale))
 
 
 async def _send_setcountry_request(
@@ -879,13 +967,17 @@ class BanConfirmView(discord.ui.View):
         async def on_confirm(interaction: discord.Interaction) -> None:
             if interaction.user.id != caller_id:
                 await interaction.response.send_message(
-                    "You cannot use this button.", ephemeral=True
+                    t("error.not_your_button", get_player_locale(interaction.user.id)),
+                    ephemeral=True,
                 )
                 return
             await _send_ban_request(interaction, target)
 
-        self.add_item(ConfirmButton(callback=on_confirm))
-        self.add_item(CancelButton())
+        _locale = get_player_locale(caller_id)
+        self.add_item(
+            ConfirmButton(callback=on_confirm, label=t("button.confirm", _locale))
+        )
+        self.add_item(CancelButton(locale=_locale))
 
 
 async def _send_ban_request(
@@ -914,7 +1006,9 @@ async def _send_ban_request(
         f"{target.name} ({target.id}): is_banned={new_is_banned}"
     )
     await interaction.response.edit_message(
-        embed=BanSuccessEmbed(target, new_is_banned),
+        embed=BanSuccessEmbed(
+            target, new_is_banned, locale=get_player_locale(interaction.user.id)
+        ),
         view=None,
     )
 
@@ -938,15 +1032,19 @@ class ResolveConfirmView(discord.ui.View):
         async def on_confirm(interaction: discord.Interaction) -> None:
             if interaction.user.id != caller_id:
                 await interaction.response.send_message(
-                    "You cannot use this button.", ephemeral=True
+                    t("error.not_your_button", get_player_locale(interaction.user.id)),
+                    ephemeral=True,
                 )
                 return
             await _send_resolve_request(
                 interaction, match_id, result, admin_discord_uid, reason
             )
 
-        self.add_item(ConfirmButton(callback=on_confirm))
-        self.add_item(CancelButton())
+        _locale = get_player_locale(caller_id)
+        self.add_item(
+            ConfirmButton(callback=on_confirm, label=t("button.confirm", _locale))
+        )
+        self.add_item(CancelButton(locale=_locale))
 
 
 async def _send_resolve_request(
@@ -984,7 +1082,11 @@ async def _send_resolve_request(
     )
 
     admin_embed = AdminResolutionEmbed(
-        resolve_data, reason=reason, admin_name=admin_name, is_admin_confirm=True
+        resolve_data,
+        reason=reason,
+        admin_name=admin_name,
+        is_admin_confirm=True,
+        locale=get_player_locale(interaction.user.id),
     )
     await interaction.response.edit_message(embed=admin_embed, view=None)
 
@@ -1002,14 +1104,18 @@ async def _notify_players(
     p1_uid = data.get("player_1_discord_uid")
     p2_uid = data.get("player_2_discord_uid")
 
-    embed = AdminResolutionEmbed(data, reason=reason, admin_name=admin_name)
-
     for uid in (p1_uid, p2_uid):
         if uid is None:
             continue
         try:
+            locale = get_player_locale(uid)
             user = await interaction.client.fetch_user(uid)
-            await queue_user_send_low(user, embed=embed)
+            await queue_user_send_low(
+                user,
+                embed=AdminResolutionEmbed(
+                    data, reason=reason, admin_name=admin_name, locale=locale
+                ),
+            )
         except Exception:
             logger.warning(f"Failed to DM player {uid} about admin resolve")
 
@@ -1044,13 +1150,17 @@ class StatusResetConfirmView(discord.ui.View):
         async def on_confirm(interaction: discord.Interaction) -> None:
             if interaction.user.id != caller_id:
                 await interaction.response.send_message(
-                    "You cannot use this button.", ephemeral=True
+                    t("error.not_your_button", get_player_locale(interaction.user.id)),
+                    ephemeral=True,
                 )
                 return
             await _send_statusreset_request(interaction, target)
 
-        self.add_item(ConfirmButton(callback=on_confirm))
-        self.add_item(CancelButton())
+        _locale = get_player_locale(caller_id)
+        self.add_item(
+            ConfirmButton(callback=on_confirm, label=t("button.confirm", _locale))
+        )
+        self.add_item(CancelButton(locale=_locale))
 
 
 async def _send_statusreset_request(
@@ -1081,7 +1191,12 @@ async def _send_statusreset_request(
     )
 
     await interaction.response.edit_message(
-        embed=StatusResetSuccessEmbed(target, old_status, interaction.user),
+        embed=StatusResetSuccessEmbed(
+            target,
+            old_status,
+            interaction.user,
+            locale=get_player_locale(interaction.user.id),
+        ),
         view=None,
     )
 
@@ -1098,13 +1213,17 @@ class ToggleAdminConfirmView(discord.ui.View):
         async def on_confirm(interaction: discord.Interaction) -> None:
             if interaction.user.id != caller_id:
                 await interaction.response.send_message(
-                    "You cannot use this button.", ephemeral=True
+                    t("error.not_your_button", get_player_locale(interaction.user.id)),
+                    ephemeral=True,
                 )
                 return
             await _send_toggle_admin_request(interaction, target)
 
-        self.add_item(ConfirmButton(callback=on_confirm))
-        self.add_item(CancelButton())
+        _locale = get_player_locale(caller_id)
+        self.add_item(
+            ConfirmButton(callback=on_confirm, label=t("button.confirm", _locale))
+        )
+        self.add_item(CancelButton(locale=_locale))
 
 
 async def _send_toggle_admin_request(
@@ -1137,7 +1256,9 @@ async def _send_toggle_admin_request(
     )
 
     await interaction.response.edit_message(
-        embed=ToggleAdminSuccessEmbed(target, action, new_role),
+        embed=ToggleAdminSuccessEmbed(
+            target, action, new_role, locale=get_player_locale(interaction.user.id)
+        ),
         view=None,
     )
 
@@ -1160,13 +1281,17 @@ class SetMMRConfirmView(discord.ui.View):
         async def on_confirm(interaction: discord.Interaction) -> None:
             if interaction.user.id != caller_id:
                 await interaction.response.send_message(
-                    "You cannot use this button.", ephemeral=True
+                    t("error.not_your_button", get_player_locale(interaction.user.id)),
+                    ephemeral=True,
                 )
                 return
             await _send_set_mmr_request(interaction, target, race, new_mmr)
 
-        self.add_item(ConfirmButton(callback=on_confirm))
-        self.add_item(CancelButton())
+        _locale = get_player_locale(caller_id)
+        self.add_item(
+            ConfirmButton(callback=on_confirm, label=t("button.confirm", _locale))
+        )
+        self.add_item(CancelButton(locale=_locale))
 
 
 async def _send_set_mmr_request(
@@ -1203,7 +1328,13 @@ async def _send_set_mmr_request(
     )
 
     await interaction.response.edit_message(
-        embed=SetMMRSuccessEmbed(target, race, old_mmr, new_mmr),
+        embed=SetMMRSuccessEmbed(
+            target,
+            race,
+            old_mmr,
+            new_mmr,
+            locale=get_player_locale(interaction.user.id),
+        ),
         view=None,
     )
 
@@ -1362,6 +1493,8 @@ class QueueSetupView(discord.ui.View):
     def _build(self) -> None:
         self.clear_items()
 
+        _locale = get_player_locale(self.discord_user_id)
+
         # Row 0: buttons
         async def on_join(interaction: discord.Interaction) -> None:
             try:
@@ -1384,7 +1517,7 @@ class QueueSetupView(discord.ui.View):
             )
 
         join_btn: discord.ui.Button[QueueSetupView] = discord.ui.Button(
-            label="Join Queue",
+            label=t("button.join_queue", _locale),
             emoji="🚀",
             style=discord.ButtonStyle.secondary,
             row=0,
@@ -1399,7 +1532,7 @@ class QueueSetupView(discord.ui.View):
             await self.persist_and_refresh(interaction)
 
         clear_btn: discord.ui.Button[QueueSetupView] = discord.ui.Button(
-            label="Clear All Selections",
+            label=t("button.clear_selections", _locale),
             emoji="🗑️",
             style=discord.ButtonStyle.danger,
             row=0,
@@ -1412,7 +1545,7 @@ class QueueSetupView(discord.ui.View):
                 await interaction.message.delete()
 
         cancel_btn: discord.ui.Button[QueueSetupView] = discord.ui.Button(
-            label="Cancel",
+            label=t("button.cancel", _locale),
             emoji="✖️",
             style=discord.ButtonStyle.danger,
             row=0,
@@ -1464,7 +1597,7 @@ class _CancelQueueButton(discord.ui.Button):
         map_vetoes: list[str],
     ) -> None:
         super().__init__(
-            label="Cancel Queue",
+            label=t("button.cancel_queue", get_player_locale(discord_user_id)),
             emoji="✖️",
             style=discord.ButtonStyle.danger,
             row=0,
@@ -1553,7 +1686,7 @@ class QueueSearchingView(discord.ui.View):
 
 
 class MatchFoundView(discord.ui.View):
-    def __init__(self, match_id: int, match_data: dict) -> None:
+    def __init__(self, match_id: int, match_data: dict, locale: str = "enUS") -> None:
         super().__init__(timeout=CONFIRMATION_TIMEOUT)
         self.match_id = match_id
         self.match_data = match_data
@@ -1562,7 +1695,7 @@ class MatchFoundView(discord.ui.View):
             await _confirm_match(interaction, match_id)
 
         confirm_btn: discord.ui.Button[MatchFoundView] = discord.ui.Button(
-            label="Confirm Match",
+            label=t("button.confirm_match", locale),
             emoji="✅",
             style=discord.ButtonStyle.green,
             row=0,
@@ -1574,7 +1707,7 @@ class MatchFoundView(discord.ui.View):
             await _abort_match(interaction, match_id)
 
         abort_btn: discord.ui.Button[MatchFoundView] = discord.ui.Button(
-            label="Abort Match",
+            label=t("button.abort_match", locale),
             emoji="🛑",
             style=discord.ButtonStyle.secondary,
             row=0,
@@ -1763,7 +1896,8 @@ async def _leave_queue(
             return
 
         setup_view = QueueSetupView(discord_user_id, bw_race, sc2_race, map_vetoes)
-        embed = QueueSetupEmbed(bw_race, sc2_race, map_vetoes)
+        locale = get_player_locale(discord_user_id)
+        embed = QueueSetupEmbed(bw_race, sc2_race, map_vetoes, locale=locale)
         await interaction.edit_original_response(embed=embed, view=setup_view)
 
         try:
@@ -1799,7 +1933,8 @@ async def _confirm_match(interaction: discord.Interaction, match_id: int) -> Non
             )
             return
 
-        embed = MatchConfirmedEmbed(match_id)
+        locale = get_player_locale(interaction.user.id)
+        embed = MatchConfirmedEmbed(match_id, locale=locale)
         await interaction.edit_original_response(embed=embed, view=None)
 
     except Exception:
@@ -1826,8 +1961,9 @@ async def _abort_match(interaction: discord.Interaction, match_id: int) -> None:
             )
             return
 
+        locale = get_player_locale(interaction.user.id)
         await interaction.edit_original_response(
-            embed=MatchAbortAckEmbed(),
+            embed=MatchAbortAckEmbed(locale=locale),
             view=None,
         )
 

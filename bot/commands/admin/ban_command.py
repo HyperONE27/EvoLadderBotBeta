@@ -4,6 +4,7 @@ from discord import app_commands
 
 from bot.components.embeds import BanPreviewEmbed
 from bot.components.views import BanConfirmView
+from bot.core.dependencies import get_player_locale
 from bot.helpers.checks import check_if_admin
 
 logger = structlog.get_logger(__name__)
@@ -26,7 +27,8 @@ def register_admin_ban_command(tree: app_commands.CommandTree) -> None:
             f"Admin {interaction.user.name} ({interaction.user.id}) "
             f"invoked /ban for {user.name} ({user.id})"
         )
+        locale = get_player_locale(interaction.user.id)
         await interaction.followup.send(
-            embed=BanPreviewEmbed(user),
+            embed=BanPreviewEmbed(user, locale=locale),
             view=BanConfirmView(interaction.user.id, user),
         )

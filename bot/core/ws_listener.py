@@ -121,7 +121,7 @@ async def _on_match_found(client: discord.Client, match_data: dict) -> None:
                 queue_user_send_high(
                     user,
                     embed=MatchFoundEmbed(match_data, locale=locale),
-                    view=MatchFoundView(match_id, match_data),
+                    view=MatchFoundView(match_id, match_data, locale=locale),
                 )
             )
             dm_uids.append(uid)

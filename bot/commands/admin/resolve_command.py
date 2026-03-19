@@ -5,6 +5,7 @@ from discord import app_commands
 from bot.components.embeds import ResolvePreviewEmbed, UnsupportedGameModeEmbed
 from bot.components.views import ResolveConfirmView
 from bot.core.config import GAME_MODE_CHOICES
+from bot.core.dependencies import get_player_locale
 from bot.helpers.checks import check_if_admin
 
 logger = structlog.get_logger(__name__)
@@ -46,8 +47,11 @@ def register_admin_resolve_command(tree: app_commands.CommandTree) -> None:
             f"invoked /resolve {match_id} result={result.value} (mode={mode})"
         )
 
+        locale = get_player_locale(interaction.user.id)
         await interaction.followup.send(
-            embed=ResolvePreviewEmbed(match_id, result.value, result.name, reason),
+            embed=ResolvePreviewEmbed(
+                match_id, result.value, result.name, reason, locale=locale
+            ),
             view=ResolveConfirmView(
                 interaction.user.id,
                 match_id,

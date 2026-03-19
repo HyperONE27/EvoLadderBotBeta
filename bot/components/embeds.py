@@ -67,10 +67,12 @@ class ErrorEmbed(discord.Embed):
 
 
 class UnsupportedGameModeEmbed(discord.Embed):
-    def __init__(self, game_mode: str) -> None:
+    def __init__(self, game_mode: str, locale: str = "enUS") -> None:
         super().__init__(
-            title="🚧 Unsupported Game Mode",
-            description=f"`{game_mode}` is not yet supported. Only `1v1` is currently available.",
+            title=t("unsupported_game_mode_embed.title.1", locale),
+            description=t(
+                "unsupported_game_mode_embed.description.1", locale, game_mode=game_mode
+            ),
             color=discord.Color.orange(),
         )
 
@@ -718,14 +720,6 @@ class MatchConflictEmbed(discord.Embed):
 # Setup
 # =========================================================================
 
-_COUNTRY_LIMIT_NOTE = (
-    "**Due to Discord UI limitations, only 49 common nationalities are listed here.**\n"
-    "- If your nationality is not listed, select **Other** (page 2), then use `/setcountry` "
-    "to set your exact nationality.\n"
-    "- If you are non-representing, select **Other** (page 2), then use `/setcountry` "
-    "to select **Non-representing**."
-)
-
 
 class SetupIntroEmbed(discord.Embed):
     def __init__(self, locale: str = "enUS") -> None:
@@ -762,19 +756,41 @@ class SetupSelectionEmbed(discord.Embed):
         selected_lines: list[str] = []
         if country:
             selected_lines.append(
-                f"- Nationality: {get_flag_emote(country['code'])} {country['name']}"
+                t(
+                    "setup_selection_embed.nationality_label.1",
+                    locale,
+                    flag=str(get_flag_emote(country["code"])),
+                    name=country["name"],
+                )
             )
         if region:
             selected_lines.append(
-                f"- Location: {get_globe_emote(region['globe_emote_code'])} {region['name']}"
+                t(
+                    "setup_selection_embed.location_label.1",
+                    locale,
+                    globe=str(get_globe_emote(region["globe_emote_code"])),
+                    name=region["name"],
+                )
             )
         if language:
             entry = LOCALE_DISPLAY_NAMES.get(language)
             flag, display = (entry[1], entry[0]) if entry else ("", language)
-            selected_lines.append(f"- Language: {flag} {display}")
+            selected_lines.append(
+                t(
+                    "setup_selection_embed.language_label.1",
+                    locale,
+                    flag=flag,
+                    name=display,
+                )
+            )
 
         if selected_lines:
-            selected_block = "**Selected:**\n" + "\n".join(selected_lines) + "\n\n"
+            selected_block = (
+                t("setup_selection_embed.selected_header.1", locale)
+                + "\n"
+                + "\n".join(selected_lines)
+                + "\n\n"
+            )
         else:
             selected_block = ""
 
@@ -792,7 +808,13 @@ class SetupSelectionEmbed(discord.Embed):
                 missing.append("language")
             self.description = (
                 selected_block
-                + f"Please select your {', '.join(missing)}.\n\n{_COUNTRY_LIMIT_NOTE}"
+                + t(
+                    "setup_selection_embed.select_prompt.1",
+                    locale,
+                    missing=", ".join(missing),
+                )
+                + "\n\n"
+                + t("setup_selection_embed.country_limit_note.1", locale)
             )
 
 
@@ -823,12 +845,20 @@ class SetupPreviewEmbed(discord.Embed):
             inline=False,
         )
         self.add_field(
-            name=f"{get_flag_emote(country['code'])} **Nationality**",
+            name=t(
+                "shared.field_name.nationality",
+                locale,
+                flag=str(get_flag_emote(country["code"])),
+            ),
             value=f"`{country['name']} ({country['code']})`",
             inline=False,
         )
         self.add_field(
-            name=f"{get_globe_emote(region['globe_emote_code'])} **Location**",
+            name=t(
+                "shared.field_name.location",
+                locale,
+                globe=str(get_globe_emote(region["globe_emote_code"])),
+            ),
             value=f"`{region['name']}`",
             inline=False,
         )
@@ -872,12 +902,20 @@ class SetupSuccessEmbed(discord.Embed):
             inline=False,
         )
         self.add_field(
-            name=f"{get_flag_emote(country['code'])} **Nationality**",
+            name=t(
+                "shared.field_name.nationality",
+                locale,
+                flag=str(get_flag_emote(country["code"])),
+            ),
             value=f"`{country['name']} ({country['code']})`",
             inline=False,
         )
         self.add_field(
-            name=f"{get_globe_emote(region['globe_emote_code'])} **Location**",
+            name=t(
+                "shared.field_name.location",
+                locale,
+                globe=str(get_globe_emote(region["globe_emote_code"])),
+            ),
             value=f"`{region['name']}`",
             inline=False,
         )
@@ -1176,7 +1214,11 @@ class SetCountryPreviewEmbed(discord.Embed):
             color=discord.Color.blue(),
         )
         self.add_field(
-            name=f"{get_flag_emote(country['code'])} **Nationality**",
+            name=t(
+                "set_country_preview_embed.field_name.1",
+                locale,
+                flag=str(get_flag_emote(country["code"])),
+            ),
             value=f"`{country['name']} ({country['code']})`",
         )
 
@@ -1189,7 +1231,11 @@ class SetCountryConfirmEmbed(discord.Embed):
             color=discord.Color.blue(),
         )
         self.add_field(
-            name=f"{get_flag_emote(country['code'])} **Nationality**",
+            name=t(
+                "set_country_confirm_embed.field_name.1",
+                locale,
+                flag=str(get_flag_emote(country["code"])),
+            ),
             value=f"`{country['name']} ({country['code']})`",
         )
 
@@ -1200,30 +1246,44 @@ class SetCountryConfirmEmbed(discord.Embed):
 
 
 class BanPreviewEmbed(discord.Embed):
-    def __init__(self, target: discord.User) -> None:
+    def __init__(self, target: discord.User, locale: str = "enUS") -> None:
         super().__init__(
-            title="⚠️ Toggle Ban",
-            description=(
-                f"You are about to toggle the ban status for:\n\n"
-                f"**User:** {target.mention} (`{target.name}` / `{target.id}`)\n\n"
-                "If the user is currently **unbanned**, they will be **banned**.\n"
-                "If the user is currently **banned**, they will be **unbanned**.\n\n"
-                "Please confirm below."
+            title=t("ban_preview_embed.title.1", locale),
+            description=t(
+                "ban_preview_embed.description.1",
+                locale,
+                mention=target.mention,
+                username=target.name,
+                uid=str(target.id),
             ),
             color=discord.Color.orange(),
         )
 
 
 class BanSuccessEmbed(discord.Embed):
-    def __init__(self, target: discord.User, new_is_banned: bool) -> None:
-        action = "banned" if new_is_banned else "unbanned"
-        emoji = "🔨" if new_is_banned else "✅"
+    def __init__(
+        self, target: discord.User, new_is_banned: bool, locale: str = "enUS"
+    ) -> None:
+        title_key = (
+            "ban_success_embed.title_banned.1"
+            if new_is_banned
+            else "ban_success_embed.title_unbanned.1"
+        )
+        status_key = (
+            "ban_success_embed.status_banned.1"
+            if new_is_banned
+            else "ban_success_embed.status_unbanned.1"
+        )
         color = discord.Color.red() if new_is_banned else discord.Color.green()
         super().__init__(
-            title=f"{emoji} User {action.title()}",
-            description=(
-                f"**User:** {target.mention} (`{target.name}` / `{target.id}`)\n"
-                f"**Status:** {action.upper()}"
+            title=t(title_key, locale),
+            description=t(
+                "ban_success_embed.description.1",
+                locale,
+                mention=target.mention,
+                username=target.name,
+                uid=str(target.id),
+                status=t(status_key, locale),
             ),
             color=color,
         )
@@ -1307,9 +1367,9 @@ def _format_blank_match_slot(id_width: int) -> str:
 class SystemStatsEmbed(discord.Embed):
     """Embed 1: DataFrame memory stats."""
 
-    def __init__(self, dataframe_stats: dict) -> None:
+    def __init__(self, dataframe_stats: dict, locale: str = "enUS") -> None:
         super().__init__(
-            title="🔍 Admin System Snapshot",
+            title=t("system_stats_embed.title.1", locale),
             color=discord.Color.blue(),
         )
 
@@ -1321,14 +1381,14 @@ class SystemStatsEmbed(discord.Embed):
                 stat_lines.append(f"{table:<20} {rows:>6} rows  {size_mb:>8.3f} MB")
             stats_block = "\n".join(stat_lines)
             self.add_field(
-                name="📊 DataFrames",
+                name=t("system_stats_embed.field_name.1", locale),
                 value=f"```\n{stats_block}\n```",
                 inline=False,
             )
         else:
             self.add_field(
-                name="📊 DataFrames",
-                value="```\nNo stats available.\n```",
+                name=t("system_stats_embed.field_name.1", locale),
+                value=t("system_stats_embed.field_value_no_stats.1", locale),
                 inline=False,
             )
 
@@ -1336,14 +1396,17 @@ class SystemStatsEmbed(discord.Embed):
 class QueueSnapshotEmbed(discord.Embed):
     """Embed 2: Queue players in monospace backtick format, two columns of 15."""
 
-    def __init__(self, queue: list[dict]) -> None:
+    def __init__(self, queue: list[dict], locale: str = "enUS") -> None:
         queue_size = len(queue)
         super().__init__(
-            title="🎮 Queue Status",
+            title=t("queue_snapshot_embed.title.1", locale),
             color=discord.Color.green(),
         )
 
-        description = f"**Players in Queue:** {queue_size}\n"
+        description = (
+            t("queue_snapshot_embed.players_in_queue.1", locale, count=str(queue_size))
+            + "\n"
+        )
 
         spacer = " \u200b \u200b \u200b "
         for i in range(0, MAX_QUEUE_SLOTS, 2):
@@ -1368,10 +1431,10 @@ class QueueSnapshotEmbed(discord.Embed):
 class MatchesEmbed(discord.Embed):
     """Embed 3: Active matches in monospace backtick format."""
 
-    def __init__(self, active_matches: list[dict]) -> None:
+    def __init__(self, active_matches: list[dict], locale: str = "enUS") -> None:
         match_count = len(active_matches)
         super().__init__(
-            title="⚔️ Active Matches",
+            title=t("matches_embed.title.1", locale),
             color=discord.Color.orange(),
         )
 
@@ -1380,7 +1443,9 @@ class MatchesEmbed(discord.Embed):
             max_id = max(m.get("id") or 0 for m in active_matches)
             id_width = max(5, len(str(max_id)))
 
-        description = f"**Active Matches:** {match_count}\n"
+        description = (
+            t("matches_embed.active_matches.1", locale, count=str(match_count)) + "\n"
+        )
 
         for i in range(MAX_MATCH_SLOTS):
             if i < len(active_matches):
@@ -1397,14 +1462,6 @@ class MatchesEmbed(discord.Embed):
 # =========================================================================
 # Admin: Match Details
 # =========================================================================
-
-_REPORT_LABELS: dict[str | None, str] = {
-    "player_1_win": "Player 1 Won",
-    "player_2_win": "Player 2 Won",
-    "draw": "Draw",
-    "invalidated": "Invalidated",
-    None: "Not Reported",
-}
 
 
 def _player_prefix(
@@ -1426,16 +1483,18 @@ def _player_prefix(
     return " ".join(parts)
 
 
-def _result_display(result: str | None, p1_name: str, p2_name: str) -> str:
+def _result_display(
+    result: str | None, p1_name: str, p2_name: str, locale: str = "enUS"
+) -> str:
     if result == "player_1_win":
-        return f"🏆 **{p1_name}** won"
+        return t("result_display.player_win.1", locale, name=p1_name)
     if result == "player_2_win":
-        return f"🏆 **{p2_name}** won"
+        return t("result_display.player_win.1", locale, name=p2_name)
     if result == "draw":
-        return "⚖️ **Draw**"
+        return t("result_display.draw.1", locale)
     if result == "invalidated":
-        return "❌ **Invalidated**"
-    return "⏳ **In Progress**"
+        return t("result_display.invalidated.1", locale)
+    return t("result_display.in_progress.1", locale)
 
 
 def _format_duration(seconds: int) -> str:
@@ -1454,10 +1513,12 @@ def _admin_server_display(server_code: str | None) -> str:
 
 
 class MatchNotFoundEmbed(discord.Embed):
-    def __init__(self, match_id: int) -> None:
+    def __init__(self, match_id: int, locale: str = "enUS") -> None:
         super().__init__(
-            title="❌ Match Not Found",
-            description=f"No match found with ID `{match_id}`.",
+            title=t("match_not_found_embed.title.1", locale),
+            description=t(
+                "match_not_found_embed.description.1", locale, match_id=str(match_id)
+            ),
             color=discord.Color.red(),
         )
 
@@ -1471,6 +1532,7 @@ class AdminMatchEmbed(discord.Embed):
         player_1: dict[str, Any] | None,
         player_2: dict[str, Any] | None,
         admin: dict[str, Any] | None,
+        locale: str = "enUS",
     ) -> None:
         match_id = match.get("id", "?")
         result = match.get("match_result")
@@ -1498,7 +1560,7 @@ class AdminMatchEmbed(discord.Embed):
         p2_prefix = _player_prefix(p2_race, p2_nat)
 
         super().__init__(
-            title=f"🔍 Admin Match #{match_id} State",
+            title=t("admin_match_embed.title.1", locale, match_id=str(match_id)),
             description=(
                 f"{p1_prefix} **{p1_name}** (MMR: {p1_mmr})"
                 f"  vs  "
@@ -1509,20 +1571,20 @@ class AdminMatchEmbed(discord.Embed):
 
         self.add_field(
             name="",
-            value=(
-                f"**Result:** {_result_display(result, p1_name, p2_name)}\n"
-                f"**Player 1 UID:** `{p1_uid}`\n"
-                f"**Player 2 UID:** `{p2_uid}`"
+            value=t(
+                "admin_match_embed.field_value.overview",
+                locale,
+                display=_result_display(result, p1_name, p2_name, locale),
+                p1_uid=str(p1_uid),
+                p2_uid=str(p2_uid),
             ),
             inline=False,
         )
 
-        p1_report = _REPORT_LABELS.get(
-            match.get("player_1_report"), match.get("player_1_report") or "Not Reported"
-        )
-        p2_report = _REPORT_LABELS.get(
-            match.get("player_2_report"), match.get("player_2_report") or "Not Reported"
-        )
+        p1_report_code = match.get("player_1_report")
+        p2_report_code = match.get("player_2_report")
+        p1_report = t(f"match_result.{p1_report_code or 'no_report'}", locale)
+        p2_report = t(f"match_result.{p2_report_code or 'no_report'}", locale)
         reports_text = f"**{p1_name}:** {p1_report}\n**{p2_name}:** {p2_report}"
 
         admin_intervened = match.get("admin_intervened", False)
@@ -1530,16 +1592,31 @@ class AdminMatchEmbed(discord.Embed):
             admin_uid = match.get("admin_discord_uid")
             admin_username = admin.get("discord_username") if admin else None
             if admin_username:
-                resolved_text = f"✅ Yes\n{admin_username} (`{admin_uid}`)"
+                resolved_text = t(
+                    "admin_match_embed.resolved_yes_with_name",
+                    locale,
+                    admin_username=admin_username,
+                    admin_uid=str(admin_uid),
+                )
             else:
-                resolved_text = f"✅ Yes\n`{admin_uid}`"
+                resolved_text = t(
+                    "admin_match_embed.resolved_yes_no_name",
+                    locale,
+                    admin_uid=str(admin_uid),
+                )
         else:
-            resolved_text = "❌ No"
+            resolved_text = t("admin_match_embed.resolved_no", locale)
 
         self.add_field(
-            name="📊 Original Player Reports", value=reports_text, inline=True
+            name=t("admin_match_embed.field_name.reports", locale),
+            value=reports_text,
+            inline=True,
         )
-        self.add_field(name="🛡️ Admin Resolved", value=resolved_text, inline=True)
+        self.add_field(
+            name=t("admin_match_embed.field_name.resolved", locale),
+            value=resolved_text,
+            inline=True,
+        )
 
         p1_change = match.get("player_1_mmr_change")
         p2_change = match.get("player_2_mmr_change")
@@ -1552,19 +1629,36 @@ class AdminMatchEmbed(discord.Embed):
                 f"**{p1_name}:** `{p1_c:+d}` ({p1_mmr} → {p1_new})\n"
                 f"**{p2_name}:** `{p2_c:+d}` ({p2_mmr} → {p2_new})"
             )
-            self.add_field(name="📈 MMR Changes", value=mmr_text, inline=False)
+            self.add_field(
+                name=t("admin_match_embed.field_name.mmr_changes", locale),
+                value=mmr_text,
+                inline=False,
+            )
 
         map_name = match.get("map_name") or "Unknown"
         server_code = match.get("server_name")
-        info_text = (
-            f"**Map:** `{map_name}`\n**Server:** `{_admin_server_display(server_code)}`"
+        info_text = t(
+            "admin_match_embed.match_info.map_server",
+            locale,
+            map_name=map_name,
+            server=_admin_server_display(server_code),
         )
-        info_text += (
-            f"\n**Assigned:** {to_discord_timestamp(raw=match.get('assigned_at'))}"
+        info_text += t(
+            "admin_match_embed.match_info.assigned",
+            locale,
+            ts=to_discord_timestamp(raw=match.get("assigned_at")),
         )
         if match.get("completed_at"):
-            info_text += f"\n**Completed:** {to_discord_timestamp(raw=match.get('completed_at'))}"
-        self.add_field(name="🗺️ Match Info", value=info_text, inline=False)
+            info_text += t(
+                "admin_match_embed.match_info.completed",
+                locale,
+                ts=to_discord_timestamp(raw=match.get("completed_at")),
+            )
+        self.add_field(
+            name=t("admin_match_embed.field_name.match_info", locale),
+            value=info_text,
+            inline=False,
+        )
 
         raw: dict[str, Any] = {}
         for key in (
@@ -1607,17 +1701,29 @@ class AdminMatchEmbed(discord.Embed):
         if len(raw_json) > 950:
             raw_json = raw_json[:950] + "\n..."
         self.add_field(
-            name="📋 Raw Match Data",
+            name=t("admin_match_embed.field_name.raw", locale),
             value=f"```json\n{raw_json}\n```",
             inline=False,
         )
 
         p1_replay = match.get("player_1_replay_path")
         p2_replay = match.get("player_2_replay_path")
-        p1_status = "✅ Uploaded" if p1_replay else "❌ No"
-        p2_status = "✅ Uploaded" if p2_replay else "❌ No"
+        p1_status = (
+            t("admin_match_embed.replay_uploaded", locale)
+            if p1_replay
+            else t("admin_match_embed.replay_no", locale)
+        )
+        p2_status = (
+            t("admin_match_embed.replay_uploaded", locale)
+            if p2_replay
+            else t("admin_match_embed.replay_no", locale)
+        )
         replay_text = f"**{p1_name}:** {p1_status}\n**{p2_name}:** {p2_status}"
-        self.add_field(name="🎬 Replay Status", value=replay_text, inline=False)
+        self.add_field(
+            name=t("admin_match_embed.field_name.replay_status", locale),
+            value=replay_text,
+            inline=False,
+        )
 
 
 class AdminReplayDetailsEmbed(discord.Embed):
@@ -1630,10 +1736,13 @@ class AdminReplayDetailsEmbed(discord.Embed):
         replay: dict[str, Any],
         verification: dict[str, Any] | None,
         replay_url: str | None,
+        locale: str = "enUS",
     ) -> None:
         super().__init__(
-            title=f"Player #{player_num} Replay Details",
-            description="Summary of the uploaded replay for the match.",
+            title=t(
+                "admin_replay_details_embed.title.1", locale, player_num=str(player_num)
+            ),
+            description=t("admin_replay_details_embed.description.1", locale),
             color=discord.Color.light_grey(),
         )
 
@@ -1669,41 +1778,59 @@ class AdminReplayDetailsEmbed(discord.Embed):
         self.add_field(name="", value="\u3164", inline=False)
 
         self.add_field(
-            name="⚔️ Matchup",
+            name=t("shared.field_name.matchup", locale),
             value=f"**{p1_emote} {p1_name}** vs\n**{p2_emote} {p2_name}**",
             inline=True,
         )
-        self.add_field(name="🏆 Result", value=result_display, inline=True)
-        self.add_field(name="🗺️ Map", value=map_display, inline=True)
+        self.add_field(
+            name=t("shared.field_name.result_header", locale),
+            value=result_display,
+            inline=True,
+        )
+        self.add_field(
+            name=t("shared.field_name.map", locale), value=map_display, inline=True
+        )
 
         start_time = to_display(raw=replay.get("replay_time"))
-        self.add_field(name="🕒 Game Start Time", value=start_time, inline=True)
         self.add_field(
-            name="🕒 Game Duration",
+            name=t("shared.field_name.game_start_time", locale),
+            value=start_time,
+            inline=True,
+        )
+        self.add_field(
+            name=t("shared.field_name.game_duration", locale),
             value=_format_duration(duration),
             inline=True,
         )
 
         obs_text = (
-            f"⚠️ {', '.join(observers)}" if observers else "✅ No observers present"
+            f"⚠️ {', '.join(observers)}"
+            if observers
+            else t("format_verification.observers_ok.1", locale)
         )
-        self.add_field(name="🔍 Observers", value=obs_text, inline=True)
+        self.add_field(
+            name=t("shared.field_name.observers", locale), value=obs_text, inline=True
+        )
 
         self.add_field(name="", value="\u3164", inline=False)
 
         if verification:
             self.add_field(
-                name="☑️ Replay Verification",
+                name=t("shared.field_name.replay_verification", locale),
                 value=format_verification(
-                    verification, enforcement_enabled=False, locale="enUS"
+                    verification, enforcement_enabled=False, locale=locale
                 ),
                 inline=False,
             )
 
         if replay_url:
             self.add_field(
-                name="📥 Download",
-                value=f"[Replay File]({replay_url})",
+                name=t("admin_replay_details_embed.field_name.7", locale),
+                value=t(
+                    "admin_replay_details_embed.field_value.7",
+                    locale,
+                    replay_url=replay_url,
+                ),
                 inline=False,
             )
 
@@ -1713,7 +1840,7 @@ class AdminReplayDetailsEmbed(discord.Embed):
 # =========================================================================
 
 
-def _get_result_display(result: str, data: dict) -> str:
+def _get_result_display(result: str, data: dict, locale: str = "enUS") -> str:
     """Build the result display string matching the alpha format."""
     p1_name = data.get("player_1_name", "?")
     p2_name = data.get("player_2_name", "?")
@@ -1730,30 +1857,49 @@ def _get_result_display(result: str, data: dict) -> str:
         p2_emote = "🎮"
 
     if result == "player_1_win":
-        return f"🏆 **{p1_emote} {p1_name}**"
+        return t(
+            "get_result_display.player_1_win.1",
+            locale,
+            p1_emote=str(p1_emote),
+            p1_name=p1_name,
+        )
     elif result == "player_2_win":
-        return f"🏆 **{p2_emote} {p2_name}**"
+        return t(
+            "get_result_display.player_2_win.1",
+            locale,
+            p2_emote=str(p2_emote),
+            p2_name=p2_name,
+        )
     elif result == "draw":
-        return "⚖️ **Draw**"
+        return t("get_result_display.draw.1", locale)
     elif result == "invalidated":
-        return "❌ **Match Invalidated**"
+        return t("get_result_display.invalidated.1", locale)
     return result
 
 
 class ResolvePreviewEmbed(discord.Embed):
     def __init__(
-        self, match_id: int, result: str, result_display: str, reason: str | None
+        self,
+        match_id: int,
+        result: str,
+        result_display: str,
+        reason: str | None,
+        locale: str = "enUS",
     ) -> None:
-        description = (
-            f"**Match ID:** {match_id}\n"
-            f"**Resolution:** {result_display}\n"
-            f"**Internal Code:** `{result}`"
+        description = t(
+            "resolve_preview_embed.description.1",
+            locale,
+            match_id=str(match_id),
+            result_display=result_display,
+            result=result,
         )
         if reason:
-            description += f"\n**Reason:** {reason}"
-        description += "\n\nThis will update the match result and MMR. Confirm?"
+            description += t(
+                "resolve_preview_embed.reason_suffix.1", locale, reason=reason
+            )
+        description += t("resolve_preview_embed.confirm_suffix.1", locale)
         super().__init__(
-            title="⚠️ Admin: Confirm Match Resolution",
+            title=t("resolve_preview_embed.title.1", locale),
             description=description,
             color=discord.Color.orange(),
         )
@@ -1792,11 +1938,15 @@ class AdminResolutionEmbed(discord.Embed):
         p1_prefix = _player_prefix(p1_race, p1_nationality, p1_rank)
         p2_prefix = _player_prefix(p2_race, p2_nationality, p2_rank)
 
-        title_icon = "✅" if is_admin_confirm else "⚖️"
         color = discord.Color.green() if is_admin_confirm else discord.Color.gold()
+        title_key = (
+            "admin_resolution_embed.title_confirm.1"
+            if is_admin_confirm
+            else "admin_resolution_embed.title_player.1"
+        )
 
         super().__init__(
-            title=f"{title_icon} Match #{match_id} Admin Resolution",
+            title=t(title_key, locale, match_id=str(match_id)),
             description=(
                 f"**{p1_prefix} {p1_name} ({p1_old} → {p1_new})** "
                 f"vs "
@@ -1807,7 +1957,7 @@ class AdminResolutionEmbed(discord.Embed):
 
         self.add_field(name="", value="\u3164", inline=False)
 
-        result_display = _get_result_display(result, data)
+        result_display = _get_result_display(result, data, locale)
         self.add_field(
             name=t("shared.field_name.result", locale),
             value=result_display,
@@ -1822,11 +1972,15 @@ class AdminResolutionEmbed(discord.Embed):
             name=t("shared.field_name.mmr_changes", locale), value=mmr_text, inline=True
         )
 
-        intervention_text = f"**Resolved by:** {admin_name}"
+        intervention_text = t(
+            "admin_resolution_embed.resolved_by.1", locale, admin_name=admin_name
+        )
         if reason:
-            intervention_text += f"\n**Reason:** {reason}"
+            intervention_text += t(
+                "admin_resolution_embed.reason.1", locale, reason=reason
+            )
         self.add_field(
-            name="⚠️ **Admin Intervention:**",
+            name=t("admin_resolution_embed.field_name.1", locale),
             value=intervention_text,
             inline=False,
         )
@@ -1838,14 +1992,15 @@ class AdminResolutionEmbed(discord.Embed):
 
 
 class StatusResetPreviewEmbed(discord.Embed):
-    def __init__(self, target: discord.User) -> None:
+    def __init__(self, target: discord.User, locale: str = "enUS") -> None:
         super().__init__(
-            title="⚠️ Admin: Confirm Status Reset",
-            description=(
-                f"**Player:** {target.mention} (`{target.name}` / `{target.id}`)\n\n"
-                "This will reset the player's state to **idle**, clearing their "
-                "current match mode and match ID. Use this to fix stuck players.\n\n"
-                "Confirm?"
+            title=t("status_reset_preview_embed.title.1", locale),
+            description=t(
+                "status_reset_preview_embed.description.1",
+                locale,
+                mention=target.mention,
+                username=target.name,
+                uid=str(target.id),
             ),
             color=discord.Color.orange(),
         )
@@ -1857,17 +2012,25 @@ class StatusResetSuccessEmbed(discord.Embed):
         target: discord.User,
         old_status: str | None,
         admin: discord.User | discord.Member,
+        locale: str = "enUS",
     ) -> None:
         super().__init__(
-            title="✅ Admin: Player Status Reset",
-            description=(
-                f"**Player:** {target.mention} (`{target.name}` / `{target.id}`)\n"
-                f"**Previous State:** `{old_status or 'unknown'}`\n"
-                f"**New State:** `idle`"
+            title=t("status_reset_success_embed.title.1", locale),
+            description=t(
+                "status_reset_success_embed.description.1",
+                locale,
+                mention=target.mention,
+                username=target.name,
+                uid=str(target.id),
+                old_status=old_status or "unknown",
             ),
             color=discord.Color.green(),
         )
-        self.add_field(name="👤 Admin", value=admin.name, inline=True)
+        self.add_field(
+            name=t("status_reset_success_embed.field_name.1", locale),
+            value=admin.name,
+            inline=True,
+        )
 
 
 # =========================================================================
@@ -1876,40 +2039,44 @@ class StatusResetSuccessEmbed(discord.Embed):
 
 
 class ToggleAdminPreviewEmbed(discord.Embed):
-    def __init__(self, target: discord.User) -> None:
+    def __init__(self, target: discord.User, locale: str = "enUS") -> None:
         super().__init__(
-            title="⚠️ Toggle Admin Role",
-            description=(
-                f"You are about to toggle the admin role for:\n\n"
-                f"**User:** {target.mention} (`{target.name}` / `{target.id}`)\n\n"
-                "- If the user is **not an admin**, they will be **promoted to admin**.\n"
-                "- If the user is an **active admin**, they will be **demoted to inactive**.\n"
-                "- If the user is **inactive**, they will be **re-promoted to admin**.\n"
-                "- **Owners cannot be demoted** through this command.\n\n"
-                "Please confirm below."
+            title=t("toggle_admin_preview_embed.title.1", locale),
+            description=t(
+                "toggle_admin_preview_embed.description.1",
+                locale,
+                mention=target.mention,
+                username=target.name,
+                uid=str(target.id),
             ),
             color=discord.Color.orange(),
         )
 
 
 class ToggleAdminSuccessEmbed(discord.Embed):
-    def __init__(self, target: discord.User, action: str, new_role: str) -> None:
+    def __init__(
+        self, target: discord.User, action: str, new_role: str, locale: str = "enUS"
+    ) -> None:
         if action == "promoted":
-            emoji = "⬆️"
+            title_key = "toggle_admin_success_embed.title_promoted.1"
             color = discord.Color.green()
         elif action == "demoted":
-            emoji = "⬇️"
+            title_key = "toggle_admin_success_embed.title_demoted.1"
             color = discord.Color.orange()
         else:
-            emoji = "➕"
+            title_key = "toggle_admin_success_embed.title_other.1"
             color = discord.Color.green()
 
         super().__init__(
-            title=f"{emoji} Admin Role Updated",
-            description=(
-                f"**User:** {target.mention} (`{target.name}` / `{target.id}`)\n"
-                f"**Action:** {action.title()}\n"
-                f"**New Role:** `{new_role}`"
+            title=t(title_key, locale),
+            description=t(
+                "toggle_admin_success_embed.description.1",
+                locale,
+                mention=target.mention,
+                username=target.name,
+                uid=str(target.id),
+                action=action.title(),
+                new_role=new_role,
             ),
             color=color,
         )
@@ -1921,21 +2088,25 @@ class ToggleAdminSuccessEmbed(discord.Embed):
 
 
 class SetMMRPreviewEmbed(discord.Embed):
-    def __init__(self, target: discord.User, race: str, new_mmr: int) -> None:
+    def __init__(
+        self, target: discord.User, race: str, new_mmr: int, locale: str = "enUS"
+    ) -> None:
         try:
             race_emote = get_race_emote(race)
         except ValueError:
             race_emote = "🎮"
 
         super().__init__(
-            title="⚠️ Set MMR",
-            description=(
-                f"You are about to set the MMR for:\n\n"
-                f"**User:** {target.mention} (`{target.name}` / `{target.id}`)\n"
-                f"**Race:** {race_emote} `{race}`\n"
-                f"**New MMR:** `{new_mmr}`\n\n"
-                "This is an **idempotent SET** — the MMR will be overwritten to this exact value.\n\n"
-                "Please confirm below."
+            title=t("set_mmr_preview_embed.title.1", locale),
+            description=t(
+                "set_mmr_preview_embed.description.1",
+                locale,
+                mention=target.mention,
+                username=target.name,
+                uid=str(target.id),
+                race_emote=str(race_emote),
+                race=race,
+                new_mmr=str(new_mmr),
             ),
             color=discord.Color.orange(),
         )
@@ -1948,6 +2119,7 @@ class SetMMRSuccessEmbed(discord.Embed):
         race: str,
         old_mmr: int | None,
         new_mmr: int,
+        locale: str = "enUS",
     ) -> None:
         try:
             race_emote = get_race_emote(race)
@@ -1957,12 +2129,17 @@ class SetMMRSuccessEmbed(discord.Embed):
         old_str = str(old_mmr) if old_mmr is not None else "N/A"
 
         super().__init__(
-            title="✅ MMR Updated",
-            description=(
-                f"**User:** {target.mention} (`{target.name}` / `{target.id}`)\n"
-                f"**Race:** {race_emote} `{race}`\n"
-                f"**Old MMR:** `{old_str}`\n"
-                f"**New MMR:** `{new_mmr}`"
+            title=t("set_mmr_success_embed.title.1", locale),
+            description=t(
+                "set_mmr_success_embed.description.1",
+                locale,
+                mention=target.mention,
+                username=target.name,
+                uid=str(target.id),
+                race_emote=str(race_emote),
+                race=race,
+                old_mmr=old_str,
+                new_mmr=str(new_mmr),
             ),
             color=discord.Color.green(),
         )
@@ -2021,12 +2198,18 @@ class ReplaySuccessEmbed(discord.Embed):
         self.add_field(name="", value="\u3164", inline=False)
 
         self.add_field(
-            name="⚔️ Matchup",
+            name=t("shared.field_name.matchup", locale),
             value=f"**{p1_race_emote} {p1_name}** vs\n**{p2_race_emote} {p2_name}**",
             inline=True,
         )
-        self.add_field(name="🏆 Result", value=winner_text, inline=True)
-        self.add_field(name="🗺️ Map", value=map_display, inline=True)
+        self.add_field(
+            name=t("shared.field_name.result_header", locale),
+            value=winner_text,
+            inline=True,
+        )
+        self.add_field(
+            name=t("shared.field_name.map", locale), value=map_display, inline=True
+        )
 
         replay_date_raw = replay_data.get("replay_time") or replay_data.get(
             "replay_date", ""
@@ -2034,13 +2217,21 @@ class ReplaySuccessEmbed(discord.Embed):
         start_display = to_display(raw=replay_date_raw)
         if start_display != "—":
             self.add_field(
-                name="🕒 Game Start Time",
+                name=t("shared.field_name.game_start_time", locale),
                 value=start_display,
                 inline=True,
             )
 
-        self.add_field(name="🕒 Game Duration", value=duration_text, inline=True)
-        self.add_field(name="🔍 Observers", value=observers_text, inline=True)
+        self.add_field(
+            name=t("shared.field_name.game_duration", locale),
+            value=duration_text,
+            inline=True,
+        )
+        self.add_field(
+            name=t("shared.field_name.observers", locale),
+            value=observers_text,
+            inline=True,
+        )
 
         self.add_field(name="", value="\u3164", inline=False)
 
@@ -2052,7 +2243,7 @@ class ReplaySuccessEmbed(discord.Embed):
                 locale=locale,
             )
             self.add_field(
-                name="☑️ Replay Verification",
+                name=t("shared.field_name.replay_verification", locale),
                 value=verification_text,
                 inline=False,
             )

@@ -13,6 +13,7 @@ from bot.components.embeds import (
     UnsupportedGameModeEmbed,
 )
 from bot.core.config import BACKEND_URL, GAME_MODE_CHOICES
+from bot.core.dependencies import get_player_locale
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_admin
 
@@ -64,8 +65,12 @@ def register_admin_match_command(tree: app_commands.CommandTree) -> None:
         data = await _fetch_match(match_id)
         match = data.get("match")
 
+        locale = get_player_locale(interaction.user.id)
+
         if match is None:
-            await interaction.followup.send(embed=MatchNotFoundEmbed(match_id))
+            await interaction.followup.send(
+                embed=MatchNotFoundEmbed(match_id, locale=locale)
+            )
             return
 
         player_1 = data.get("player_1")
@@ -76,13 +81,15 @@ def register_admin_match_command(tree: app_commands.CommandTree) -> None:
         replay_urls: list[str | None] = data.get("replay_urls") or []
 
         embeds: list[discord.Embed] = [
-            AdminMatchEmbed(match, player_1, player_2, admin)
+            AdminMatchEmbed(match, player_1, player_2, admin, locale=locale)
         ]
 
         for i, replay in enumerate(replays):
             verification = verifications[i] if i < len(verifications) else None
             url = replay_urls[i] if i < len(replay_urls) else None
-            embeds.append(AdminReplayDetailsEmbed(i + 1, replay, verification, url))
+            embeds.append(
+                AdminReplayDetailsEmbed(i + 1, replay, verification, url, locale=locale)
+            )
 
         # Attach raw JSON state as a file.
         raw_state = {

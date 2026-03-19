@@ -14,6 +14,7 @@ from bot.components.views import MatchReportView
 from bot.core.config import BACKEND_URL, ENABLE_REPLAY_VALIDATION
 from bot.core.dependencies import get_cache, get_player_locale
 from bot.core.http import get_session
+from common.i18n import t
 from bot.helpers.message_helpers import (
     queue_message_delete_low,
     queue_message_edit_high,
@@ -47,12 +48,10 @@ async def handle_replay_upload(
 
     match_info = cache.active_match_info.get(user_id)
     if match_info is None:
+        locale = get_player_locale(user_id)
         await queue_message_reply_low(
             message,
-            content=(
-                "❌ You are not currently in an active match. "
-                "Replay uploads are only accepted during an in-progress match."
-            ),
+            content=t("replay_handler.not_in_match", locale),
         )
         return
 
@@ -65,8 +64,9 @@ async def handle_replay_upload(
 
     try:
         # Acknowledge immediately so the player knows we're working.
+        locale = get_player_locale(user_id)
         processing_msg = await queue_message_reply_high(
-            message, content="⏳ Processing replay, please wait…"
+            message, content=t("replay_handler.processing", locale)
         )
 
         replay_bytes = await sc2_attachment.read()
@@ -165,7 +165,7 @@ async def handle_replay_upload(
                 pass
         await queue_message_reply_high(
             message,
-            content="❌ An unexpected error occurred while processing the replay. Please try again.",
+            content=t("replay_handler.unexpected_error", get_player_locale(user_id)),
         )
 
 

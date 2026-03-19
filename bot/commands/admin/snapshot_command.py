@@ -9,6 +9,7 @@ from bot.components.embeds import (
     UnsupportedGameModeEmbed,
 )
 from bot.core.config import BACKEND_URL, GAME_MODE_CHOICES
+from bot.core.dependencies import get_player_locale
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_admin
 
@@ -51,10 +52,11 @@ def register_admin_snapshot_command(tree: app_commands.CommandTree) -> None:
         active = data.get("active_matches") or []
         stats = data.get("dataframe_stats") or {}
 
+        locale = get_player_locale(interaction.user.id)
         await interaction.followup.send(
             embeds=[
-                SystemStatsEmbed(stats),
-                QueueSnapshotEmbed(queue),
-                MatchesEmbed(active),
+                SystemStatsEmbed(stats, locale=locale),
+                QueueSnapshotEmbed(queue, locale=locale),
+                MatchesEmbed(active, locale=locale),
             ]
         )

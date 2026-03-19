@@ -6,7 +6,8 @@ from discord import app_commands
 from bot.components.embeds import ErrorEmbed
 from bot.core.bootstrap import Bot
 from bot.core.config import BOT_TOKEN
-from bot.core.dependencies import set_bot
+from bot.core.dependencies import get_player_locale, set_bot
+from common.i18n import t
 from bot.core.http import init_session, close_session
 from bot.core.message_queue import get_message_queue, initialize_message_queue
 
@@ -133,12 +134,34 @@ async def on_tree_error(
     interaction: discord.Interaction,
     error: app_commands.AppCommandError,
 ) -> None:
+    from bot.helpers.checks import (
+        AlreadyQueueingError,
+        BannedError,
+        NotAcceptedTosError,
+        NotAdminError,
+        NotCompletedSetupError,
+        NotInDMError,
+        NotOwnerError,
+    )
+
+    locale = get_player_locale(interaction.user.id)
     if isinstance(error, app_commands.CheckFailure):
-        description = (
-            str(error)
-            if str(error)
-            else "You do not have permission to use this command."
-        )
+        if isinstance(error, NotInDMError):
+            description = t("error.not_in_dm", locale)
+        elif isinstance(error, BannedError):
+            description = t("error.banned", locale)
+        elif isinstance(error, NotAdminError):
+            description = t("error.not_admin", locale)
+        elif isinstance(error, NotOwnerError):
+            description = t("error.not_owner", locale)
+        elif isinstance(error, NotAcceptedTosError):
+            description = t("error.not_accepted_tos", locale)
+        elif isinstance(error, NotCompletedSetupError):
+            description = t("error.not_completed_setup", locale)
+        elif isinstance(error, AlreadyQueueingError):
+            description = t("error.already_queueing", locale)
+        else:
+            description = str(error) if str(error) else t("error.unauthorized", locale)
 
         embed = ErrorEmbed(
             title="🚫 Unauthorized Command Usage",
@@ -147,9 +170,7 @@ async def on_tree_error(
     else:
         embed = ErrorEmbed(
             title="❓ Unexpected Error",
-            description="An unexpected error occurred. Please try again later.\n"
-            "If the problem persists, please contact the developer.\n"
-            f"Error: {error!r}",
+            description=t("error.unexpected_command", locale) + f"\nError: {error!r}",
         )
 
     if interaction.response.is_done():

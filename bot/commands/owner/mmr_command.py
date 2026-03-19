@@ -5,6 +5,7 @@ from discord import app_commands
 from bot.components.embeds import SetMMRPreviewEmbed, UnsupportedGameModeEmbed
 from bot.components.views import SetMMRConfirmView
 from bot.core.config import GAME_MODE_CHOICES
+from bot.core.dependencies import get_player_locale
 from bot.helpers.checks import check_if_owner
 from common.lookups.race_lookups import get_races
 
@@ -60,7 +61,8 @@ def register_owner_mmr_command(tree: app_commands.CommandTree) -> None:
             f"invoked /mmr for {user.name} ({user.id}): race={race}, new_mmr={new_mmr}"
         )
 
+        locale = get_player_locale(interaction.user.id)
         await interaction.followup.send(
-            embed=SetMMRPreviewEmbed(user, race, new_mmr),
+            embed=SetMMRPreviewEmbed(user, race, new_mmr, locale=locale),
             view=SetMMRConfirmView(interaction.user.id, user, race, new_mmr),
         )

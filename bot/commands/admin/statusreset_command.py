@@ -4,6 +4,7 @@ from discord import app_commands
 
 from bot.components.embeds import StatusResetPreviewEmbed
 from bot.components.views import StatusResetConfirmView
+from bot.core.dependencies import get_player_locale
 from bot.helpers.checks import check_if_admin
 
 logger = structlog.get_logger(__name__)
@@ -29,7 +30,8 @@ def register_admin_statusreset_command(tree: app_commands.CommandTree) -> None:
             f"Admin {interaction.user.name} ({interaction.user.id}) "
             f"invoked /statusreset for {user.name} ({user.id})"
         )
+        locale = get_player_locale(interaction.user.id)
         await interaction.followup.send(
-            embed=StatusResetPreviewEmbed(user),
+            embed=StatusResetPreviewEmbed(user, locale=locale),
             view=StatusResetConfirmView(interaction.user.id, user),
         )
