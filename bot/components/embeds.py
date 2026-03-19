@@ -7,13 +7,14 @@ live next to the embeds that depend on them.
 
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 import discord
 
 from bot.core.config import (
     ALLOW_AI_PLAYERS,
+    CONFIRMATION_TIMEOUT,
     CURRENT_SEASON,
     ENABLE_REPLAY_VALIDATION,
     EXPECTED_LOBBY_SETTINGS,
@@ -330,6 +331,19 @@ class MatchFoundEmbed(discord.Embed):
             title=t("match_found_embed.title.1", locale, match_id=str(match_id)),
             description=t("match_found_embed.description.1", locale),
             color=discord.Color.green(),
+        )
+        assigned_at = ensure_utc(match_data.get("assigned_at"))
+        if assigned_at is not None:
+            deadline_dt = assigned_at + timedelta(seconds=CONFIRMATION_TIMEOUT)
+            deadline_str = to_discord_timestamp(dt=deadline_dt, style="R")
+        else:
+            deadline_str = "—"
+        self.add_field(
+            name=t("match_found_embed.field_name.deadline", locale),
+            value=t(
+                "match_found_embed.field_value.deadline", locale, deadline=deadline_str
+            ),
+            inline=False,
         )
 
 
@@ -1543,14 +1557,11 @@ def _format_duration(seconds: int) -> str:
     return f"{m:02d}:{s:02d}"
 
 
-def _admin_server_display(server_code: str | None) -> str:
-    """Resolve server code to full name, falling back to the code itself."""
+def _admin_server_display(server_code: str | None, locale: str = "enUS") -> str:
+    """Resolve server code to localized full name."""
     if not server_code:
-        return "Unknown"
-    server = get_game_server_by_code(server_code)
-    if server:
-        return f"{server['name']} ({server_code})"
-    return server_code
+        return t("shared.unknown", locale)
+    return _server_display(server_code, locale)
 
 
 class MatchNotFoundEmbed(discord.Embed):
@@ -1585,8 +1596,8 @@ class AdminMatchEmbed(discord.Embed):
         else:
             color = discord.Color.green()
 
-        p1_name = match.get("player_1_name") or "Unknown"
-        p2_name = match.get("player_2_name") or "Unknown"
+        p1_name = match.get("player_1_name") or t("shared.unknown", locale)
+        p2_name = match.get("player_2_name") or t("shared.unknown", locale)
         p1_race = match.get("player_1_race") or ""
         p2_race = match.get("player_2_race") or ""
         p1_mmr = match.get("player_1_mmr") or 0
@@ -1631,7 +1642,14 @@ class AdminMatchEmbed(discord.Embed):
         p2_report_code = match.get("player_2_report")
         p1_report = t(f"match_result.{p1_report_code or 'no_report'}", locale)
         p2_report = t(f"match_result.{p2_report_code or 'no_report'}", locale)
-        reports_text = f"**{p1_name}:** {p1_report}\n**{p2_name}:** {p2_report}"
+        reports_text = t(
+            "admin_match_embed.field_value.reports",
+            locale,
+            p1_name=p1_name,
+            p1_report=p1_report,
+            p2_name=p2_name,
+            p2_report=p2_report,
+        )
 
         admin_intervened = match.get("admin_intervened", False)
         if admin_intervened:
@@ -1671,9 +1689,17 @@ class AdminMatchEmbed(discord.Embed):
             p2_c = p2_change or 0
             p1_new = p1_mmr + p1_c
             p2_new = p2_mmr + p2_c
-            mmr_text = (
-                f"**{p1_name}:** `{p1_c:+d}` ({p1_mmr} → {p1_new})\n"
-                f"**{p2_name}:** `{p2_c:+d}` ({p2_mmr} → {p2_new})"
+            mmr_text = t(
+                "admin_match_embed.field_value.mmr_changes",
+                locale,
+                p1_name=p1_name,
+                p1_change=f"{p1_c:+d}",
+                p1_mmr=str(p1_mmr),
+                p1_new=str(p1_new),
+                p2_name=p2_name,
+                p2_change=f"{p2_c:+d}",
+                p2_mmr=str(p2_mmr),
+                p2_new=str(p2_new),
             )
             self.add_field(
                 name=t("admin_match_embed.field_name.mmr_changes", locale),
@@ -1681,13 +1707,13 @@ class AdminMatchEmbed(discord.Embed):
                 inline=False,
             )
 
-        map_name = match.get("map_name") or "Unknown"
+        map_name = match.get("map_name") or t("shared.unknown", locale)
         server_code = match.get("server_name")
         info_text = t(
             "admin_match_embed.match_info.map_server",
             locale,
             map_name=map_name,
-            server=_admin_server_display(server_code),
+            server=_admin_server_display(server_code, locale),
         )
         info_text += t(
             "admin_match_embed.match_info.assigned",
@@ -1764,7 +1790,14 @@ class AdminMatchEmbed(discord.Embed):
             if p2_replay
             else t("admin_match_embed.replay_no", locale)
         )
-        replay_text = f"**{p1_name}:** {p1_status}\n**{p2_name}:** {p2_status}"
+        replay_text = t(
+            "admin_match_embed.field_value.replay_status",
+            locale,
+            p1_name=p1_name,
+            p1_status=p1_status,
+            p2_name=p2_name,
+            p2_status=p2_status,
+        )
         self.add_field(
             name=t("admin_match_embed.field_name.replay_status", locale),
             value=replay_text,
@@ -1792,12 +1825,12 @@ class AdminReplayDetailsEmbed(discord.Embed):
             color=discord.Color.light_grey(),
         )
 
-        p1_name = replay.get("player_1_name") or "Player 1"
-        p2_name = replay.get("player_2_name") or "Player 2"
+        p1_name = replay.get("player_1_name") or t("shared.player_fallback.1", locale)
+        p2_name = replay.get("player_2_name") or t("shared.player_fallback.2", locale)
         p1_race = replay.get("player_1_race") or ""
         p2_race = replay.get("player_2_race") or ""
         result_str = replay.get("match_result") or "?"
-        map_name = replay.get("map_name") or "Unknown"
+        map_name = replay.get("map_name") or t("shared.unknown", locale)
         duration = replay.get("game_duration_seconds") or 0
         observers: list[str] = replay.get("observers") or []
 
@@ -1811,9 +1844,19 @@ class AdminReplayDetailsEmbed(discord.Embed):
             p2_emote = "🎮"
 
         if result_str in ("player_1_win", "1"):
-            result_display = f"🏆 {p1_name}"
+            result_display = t(
+                "admin_replay_details_embed.winner_p1.1",
+                locale,
+                race_emote=str(p1_emote),
+                name=p1_name,
+            )
         elif result_str in ("player_2_win", "2"):
-            result_display = f"🏆 {p2_name}"
+            result_display = t(
+                "admin_replay_details_embed.winner_p2.1",
+                locale,
+                race_emote=str(p2_emote),
+                name=p2_name,
+            )
         elif result_str in ("draw", "0"):
             result_display = t("replay_success_embed.winner_draw.1", locale)
         else:
@@ -2017,9 +2060,17 @@ class AdminResolutionEmbed(discord.Embed):
             inline=True,
         )
 
-        mmr_text = (
-            f"• {p1_name}: `{p1_change:+d} ({p1_old} → {p1_new})`\n"
-            f"• {p2_name}: `{p2_change:+d} ({p2_old} → {p2_new})`"
+        mmr_text = t(
+            "admin_resolution_embed.field_value.mmr_changes",
+            locale,
+            p1_name=p1_name,
+            p1_change=f"{p1_change:+d}",
+            p1_old=str(p1_old),
+            p1_new=str(p1_new),
+            p2_name=p2_name,
+            p2_change=f"{p2_change:+d}",
+            p2_old=str(p2_old),
+            p2_new=str(p2_new),
         )
         self.add_field(
             name=t("shared.field_name.mmr_changes", locale), value=mmr_text, inline=True
@@ -2075,7 +2126,11 @@ class StatusResetSuccessEmbed(discord.Embed):
                 mention=target.mention,
                 username=target.name,
                 uid=str(target.id),
-                old_status=old_status or "unknown",
+                old_status=(
+                    t(f"player_status.{old_status}", locale)
+                    if old_status
+                    else t("shared.unknown", locale)
+                ),
             ),
             color=discord.Color.green(),
         )
@@ -2128,7 +2183,7 @@ class ToggleAdminSuccessEmbed(discord.Embed):
                 mention=target.mention,
                 username=target.name,
                 uid=str(target.id),
-                action=action.title(),
+                action=t(f"toggle_admin_success_embed.action.{action}", locale),
                 new_role=new_role,
             ),
             color=color,
@@ -2158,7 +2213,7 @@ class SetMMRPreviewEmbed(discord.Embed):
                 username=target.name,
                 uid=str(target.id),
                 race_emote=str(race_emote),
-                race=race,
+                race=_race_display(race, locale),
                 new_mmr=str(new_mmr),
             ),
             color=discord.Color.orange(),
@@ -2179,7 +2234,7 @@ class SetMMRSuccessEmbed(discord.Embed):
         except ValueError:
             race_emote = "🎮"
 
-        old_str = str(old_mmr) if old_mmr is not None else "N/A"
+        old_str = str(old_mmr) if old_mmr is not None else t("shared.na", locale)
 
         super().__init__(
             title=t("set_mmr_success_embed.title.1", locale),
@@ -2190,7 +2245,7 @@ class SetMMRSuccessEmbed(discord.Embed):
                 username=target.name,
                 uid=str(target.id),
                 race_emote=str(race_emote),
-                race=race,
+                race=_race_display(race, locale),
                 old_mmr=old_str,
                 new_mmr=str(new_mmr),
             ),

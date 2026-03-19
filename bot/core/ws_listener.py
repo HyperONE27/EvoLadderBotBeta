@@ -136,6 +136,8 @@ async def _on_match_found(client: discord.Client, match_data: dict) -> None:
                 logger.exception(
                     f"[WS] Failed to DM user {uid} for match_found", exc_info=result
                 )
+            elif isinstance(result, discord.Message):
+                cache.active_match_found_messages[uid] = result
 
     # --- Low priority: update searching embeds (fire-and-forget) ---
     for uid in (p1_uid, p2_uid):
@@ -224,6 +226,11 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
             elif isinstance(result, discord.Message):
                 cache.active_match_messages[uid] = result
 
+    # The match-found messages already have view=None (both players pressed Confirm).
+    for uid in (p1_uid, p2_uid):
+        if uid is not None:
+            cache.active_match_found_messages.pop(uid, None)
+
 
 async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
     """Notify both players that the match was explicitly aborted by a player."""
@@ -233,6 +240,7 @@ async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
     p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
     p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
 
+    await _clear_match_found_messages_low(p1_uid, p2_uid)
     await _send_to_both_localized(
         client, p1_uid, p2_uid, MatchAbortedEmbed, match_data, p1_info, p2_info
     )
@@ -250,6 +258,7 @@ async def _on_match_abandoned(client: discord.Client, match_data: dict) -> None:
     p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
     p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
 
+    await _clear_match_found_messages_low(p1_uid, p2_uid)
     await _send_to_both_localized(
         client, p1_uid, p2_uid, MatchAbandonedEmbed, match_data, p1_info, p2_info
     )
@@ -323,6 +332,24 @@ async def _send_to_both_localized(
             await queue_user_send_low(user, embed=embed_cls(*args, locale=locale))
         except Exception:
             logger.exception(f"[WS] Failed to DM user {uid}")
+
+
+async def _clear_match_found_messages_low(
+    p1_uid: int | None, p2_uid: int | None
+) -> None:
+    """Remove confirm/abort buttons from match-found messages (for the non-acting player)."""
+    cache = get_cache()
+    for uid in (p1_uid, p2_uid):
+        if uid is None:
+            continue
+        match_found_msg = cache.active_match_found_messages.pop(uid, None)
+        if match_found_msg is not None:
+            try:
+                await queue_message_edit_low(match_found_msg, view=None)
+            except Exception:
+                logger.exception(
+                    f"[WS] Failed to remove buttons from match_found message for user {uid}"
+                )
 
 
 async def _clear_match_state_low(p1_uid: int | None, p2_uid: int | None) -> None:

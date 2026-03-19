@@ -2056,7 +2056,16 @@ async def _confirm_match(interaction: discord.Interaction, match_id: int) -> Non
             )
             return
 
-        embed = MatchConfirmedEmbed(match_id, locale=locale)
+        msg = interaction.message
+        if msg and msg.embeds:
+            embed = msg.embeds[0]
+            embed.add_field(
+                name=t("match_found_embed.field_name.confirmed", locale),
+                value=t("match_found_embed.field_value.confirmed", locale),
+                inline=False,
+            )
+        else:
+            embed = MatchConfirmedEmbed(match_id, locale=locale)
         await interaction.edit_original_response(embed=embed, view=None)
 
     except Exception:

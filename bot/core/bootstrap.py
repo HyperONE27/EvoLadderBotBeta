@@ -80,6 +80,10 @@ class Cache:
         # Cleared when the match ends (any terminal WS event).
         self.active_match_info: dict[int, dict] = {}
 
+        # Maps discord_uid → the MatchFoundEmbed message (confirm/abort buttons) so the
+        # WS listener can strip those buttons if the match ends before both confirm.
+        self.active_match_found_messages: dict[int, "discord.Message"] = {}
+
         # Maps discord_uid → the MatchInfoEmbed message so the replay handler
         # can update the embed and enable the report dropdown after a successful upload.
         self.active_match_messages: dict[int, "discord.Message"] = {}
