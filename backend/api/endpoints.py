@@ -1,7 +1,7 @@
 import asyncio
 import structlog
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 
 from backend.api.dependencies import get_backend, get_ws_manager
 from backend.api.websocket import ConnectionManager
@@ -99,6 +99,14 @@ async def greet(
     discord_uid: int,
     app: Backend = Depends(get_backend),
 ) -> GreetingResponse:
+    app.orchestrator.log_event(
+        {
+            "discord_uid": discord_uid,
+            "event_type": "player_command",
+            "action": "greeting",
+            "event_data": {},
+        }
+    )
     return GreetingResponse(message=f"👋 Hello, {discord_uid}!")
 
 
@@ -124,6 +132,18 @@ async def admin_ban(
     success, new_is_banned = app.orchestrator.toggle_ban(request.discord_uid)
     if not success:
         raise HTTPException(status_code=404, detail="Player not found.")
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.admin_discord_uid,
+            "event_type": "admin_command",
+            "action": "ban",
+            "target_discord_uid": request.discord_uid,
+            "event_data": {
+                "target_discord_uid": request.discord_uid,
+                "new_is_banned": new_is_banned,
+            },
+        }
+    )
     return AdminBanResponse(success=True, new_is_banned=new_is_banned)
 
 
@@ -141,6 +161,18 @@ async def admin_statusreset(
     if not success:
         code = 404 if "not found" in (error or "").lower() else 409
         raise HTTPException(status_code=code, detail=error)
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.admin_discord_uid,
+            "event_type": "admin_command",
+            "action": "statusreset",
+            "target_discord_uid": request.discord_uid,
+            "event_data": {
+                "target_discord_uid": request.discord_uid,
+                "old_status": old_status,
+            },
+        }
+    )
     return AdminStatusResetResponse(success=True, old_status=old_status)
 
 
@@ -150,6 +182,7 @@ async def admin_statusreset(
 @router.get("/admin/matches_1v1/{match_id}", response_model=AdminMatchResponse)
 async def admin_match(
     match_id: int,
+    caller_uid: int = Query(...),
     app: Backend = Depends(get_backend),
 ) -> AdminMatchResponse:
     match = app.orchestrator.get_match_1v1(match_id)
@@ -182,6 +215,15 @@ async def admin_match(
         else:
             verifications.append(None)
 
+    app.orchestrator.log_event(
+        {
+            "discord_uid": caller_uid,
+            "event_type": "admin_command",
+            "action": "match_view",
+            "match_id": match_id,
+            "event_data": {"match_id": match_id},
+        }
+    )
     return AdminMatchResponse(
         match=match,
         player_1=player_1,
@@ -212,6 +254,20 @@ async def admin_resolve(
         raise HTTPException(
             status_code=404, detail=result.get("error", "Match not found.")
         )
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.admin_discord_uid,
+            "event_type": "admin_command",
+            "action": "resolve",
+            "game_mode": "1v1",
+            "match_id": match_id,
+            "event_data": {
+                "game_mode": "1v1",
+                "match_id": match_id,
+                "result": request.result,
+            },
+        }
+    )
     await _broadcast_leaderboard_if_dirty(app, ws)
     return AdminResolveResponse(success=True, data=result)
 
@@ -221,6 +277,7 @@ async def admin_resolve(
 
 @router.get("/admin/snapshot_1v1", response_model=AdminSnapshotResponse)
 async def admin_snapshot(
+    caller_uid: int = Query(...),
     app: Backend = Depends(get_backend),
 ) -> AdminSnapshotResponse:
     queue = app.orchestrator.get_queue_snapshot_1v1()
@@ -239,6 +296,14 @@ async def admin_snapshot(
                     "size_mb": round(df.estimated_size("mb"), 3),
                 }
 
+    app.orchestrator.log_event(
+        {
+            "discord_uid": caller_uid,
+            "event_type": "admin_command",
+            "action": "snapshot",
+            "event_data": {},
+        }
+    )
     return AdminSnapshotResponse(
         queue=queue, active_matches=active, dataframe_stats=stats
     )
@@ -257,6 +322,19 @@ async def owner_toggle_admin(
     )
     if not result.get("success"):
         raise HTTPException(status_code=403, detail=result.get("error", "Forbidden."))
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.owner_discord_uid,
+            "event_type": "owner_command",
+            "action": "admin_toggle",
+            "target_discord_uid": request.discord_uid,
+            "event_data": {
+                "target_discord_uid": request.discord_uid,
+                "action": result.get("action"),
+                "new_role": result.get("new_role"),
+            },
+        }
+    )
     return OwnerToggleAdminResponse(**result)
 
 
@@ -274,6 +352,20 @@ async def owner_set_mmr(
     )
     if not success:
         raise HTTPException(status_code=404, detail="Player MMR row not found.")
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.owner_discord_uid,
+            "event_type": "owner_command",
+            "action": "set_mmr",
+            "target_discord_uid": request.discord_uid,
+            "event_data": {
+                "target_discord_uid": request.discord_uid,
+                "race": request.race,
+                "old_mmr": old_mmr,
+                "new_mmr": request.new_mmr,
+            },
+        }
+    )
     await _broadcast_leaderboard_if_dirty(app, ws)
     return OwnerSetMMRResponse(success=True, old_mmr=old_mmr)
 
@@ -285,9 +377,18 @@ async def owner_set_mmr(
 
 @router.get("/leaderboard_1v1", response_model=LeaderboardResponse)
 async def leaderboard_1v1(
+    caller_uid: int = Query(...),
     app: Backend = Depends(get_backend),
 ) -> LeaderboardResponse:
     entries = app.orchestrator.get_leaderboard_1v1()
+    app.orchestrator.log_event(
+        {
+            "discord_uid": caller_uid,
+            "event_type": "player_command",
+            "action": "leaderboard",
+            "event_data": {},
+        }
+    )
     return LeaderboardResponse(leaderboard=[_entry_to_model(e) for e in entries])
 
 
@@ -300,6 +401,14 @@ async def profile(
     app: Backend = Depends(get_backend),
 ) -> ProfileResponse:
     player, mmrs = app.orchestrator.get_profile(discord_uid)
+    app.orchestrator.log_event(
+        {
+            "discord_uid": discord_uid,
+            "event_type": "player_command",
+            "action": "profile",
+            "event_data": {},
+        }
+    )
     return ProfileResponse(player=player, mmrs_1v1=mmrs)
 
 
@@ -325,6 +434,21 @@ async def queue_join(
     if not success:
         code = 400 if message and "race" in message.lower() else 409
         raise HTTPException(status_code=code, detail=message)
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.discord_uid,
+            "event_type": "player_command",
+            "action": "queue_join",
+            "game_mode": "1v1",
+            "event_data": {
+                "bw_race": request.bw_race,
+                "sc2_race": request.sc2_race,
+                "bw_mmr": request.bw_mmr,
+                "sc2_mmr": request.sc2_mmr,
+                "map_vetoes": request.map_vetoes,
+            },
+        }
+    )
     return QueueJoinResponse(success=True, message=None)
 
 
@@ -336,6 +460,15 @@ async def queue_leave(
     success, message = app.orchestrator.leave_queue_1v1(request.discord_uid)
     if not success:
         raise HTTPException(status_code=409, detail=message)
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.discord_uid,
+            "event_type": "player_command",
+            "action": "queue_leave",
+            "game_mode": "1v1",
+            "event_data": {},
+        }
+    )
     return QueueLeaveResponse(success=True, message=None)
 
 
@@ -390,6 +523,16 @@ async def match_confirm(
         if match is not None:
             enriched = app.orchestrator.enrich_match_with_ranks(dict(match))
             await ws.broadcast("both_confirmed", enriched)
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.discord_uid,
+            "event_type": "player_command",
+            "action": "match_confirm",
+            "game_mode": "1v1",
+            "match_id": match_id,
+            "event_data": {"game_mode": "1v1", "match_id": match_id},
+        }
+    )
     return MatchConfirmResponse(success=True, both_confirmed=both_confirmed)
 
 
@@ -413,6 +556,16 @@ async def match_abort(
     if match is not None:
         enriched = app.orchestrator.enrich_match_with_ranks(dict(match))
         await ws.broadcast("match_aborted", enriched)
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.discord_uid,
+            "event_type": "player_command",
+            "action": "match_abort",
+            "game_mode": "1v1",
+            "match_id": match_id,
+            "event_data": {"game_mode": "1v1", "match_id": match_id},
+        }
+    )
     return MatchAbortResponse(success=True, message=None)
 
 
@@ -444,6 +597,20 @@ async def match_report(
         elif result is not None:
             await ws.broadcast("match_completed", enriched)
         await _broadcast_leaderboard_if_dirty(app, ws)
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.discord_uid,
+            "event_type": "player_command",
+            "action": "match_report",
+            "game_mode": "1v1",
+            "match_id": match_id,
+            "event_data": {
+                "game_mode": "1v1",
+                "match_id": match_id,
+                "report": request.report,
+            },
+        }
+    )
     return MatchReportResponse(success=True, message=message, match=match)
 
 
@@ -462,6 +629,14 @@ async def setcountry(
     )
     if not success:
         raise HTTPException(status_code=400, detail=message)
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.discord_uid,
+            "event_type": "player_command",
+            "action": "setcountry",
+            "event_data": {"country_code": request.country_code},
+        }
+    )
     return SetCountryConfirmResponse(success=True, message=message)
 
 
@@ -483,6 +658,20 @@ async def setup(
     )
     if not success:
         raise HTTPException(status_code=400, detail=message)
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.discord_uid,
+            "event_type": "player_command",
+            "action": "setup",
+            "event_data": {
+                "player_name": request.player_name,
+                "battletag": request.battletag,
+                "nationality": request.nationality,
+                "location": request.location,
+                "language": request.language,
+            },
+        }
+    )
     return SetupConfirmResponse(success=True, message=message)
 
 
@@ -501,6 +690,14 @@ async def termsofservice(
     )
     if not success:
         raise HTTPException(status_code=400, detail=message)
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.discord_uid,
+            "event_type": "player_command",
+            "action": "termsofservice",
+            "event_data": {"accepted": request.accepted},
+        }
+    )
     return TermsOfServiceConfirmResponse(success=True, message=message)
 
 
@@ -686,6 +883,22 @@ async def upload_replay(
                 uploader=discord_uid,
             )
 
+    app.orchestrator.log_event(
+        {
+            "discord_uid": discord_uid,
+            "event_type": "player_command",
+            "action": "replay_upload",
+            "game_mode": "1v1",
+            "match_id": match_id,
+            "event_data": {
+                "game_mode": "1v1",
+                "match_id": match_id,
+                "upload_status": upload_status,
+                "auto_resolved": auto_resolved,
+                "replay_id": replay_id,
+            },
+        }
+    )
     return ReplayUploadResponse(
         success=True,
         parsed=parsed,

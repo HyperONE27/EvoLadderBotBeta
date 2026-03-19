@@ -26,6 +26,7 @@ class AdminsResponse(BaseModel):
 
 class AdminBanRequest(BaseModel):
     discord_uid: int
+    admin_discord_uid: int
 
 
 class AdminBanResponse(BaseModel):
@@ -38,6 +39,7 @@ class AdminBanResponse(BaseModel):
 
 class AdminStatusResetRequest(BaseModel):
     discord_uid: int
+    admin_discord_uid: int
 
 
 class AdminStatusResetResponse(BaseModel):
@@ -88,6 +90,7 @@ class AdminMatchResponse(BaseModel):
 class OwnerToggleAdminRequest(BaseModel):
     discord_uid: int
     discord_username: str
+    owner_discord_uid: int
 
 
 class OwnerToggleAdminResponse(BaseModel):
@@ -104,6 +107,7 @@ class OwnerSetMMRRequest(BaseModel):
     discord_uid: int
     race: str
     new_mmr: int
+    owner_discord_uid: int
 
 
 class OwnerSetMMRResponse(BaseModel):

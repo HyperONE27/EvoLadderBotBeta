@@ -28,6 +28,7 @@ def set_country_for_player(
     if country is None:
         return False, f"Country code {country_code!r} not found."
 
+    old_nationality = player.get("nationality")
     player_id: int = player["id"]
     df: pl.DataFrame = self._state_manager.players_df
     self._db_writer.update_player_nationality(player_id, country_code)
@@ -36,6 +37,19 @@ def set_country_for_player(
         nationality=pl.when(pl.col("id") == player_id)
         .then(pl.lit(country_code))
         .otherwise(pl.col("nationality"))
+    )
+
+    self._db_writer.insert_event(
+        {
+            "discord_uid": discord_uid,
+            "event_type": "player_update",
+            "action": "nationality_update",
+            "event_data": {
+                "field_changes": {
+                    "nationality": {"before": old_nationality, "after": country_code}
+                },
+            },
+        }
     )
 
     logger.info(
@@ -91,6 +105,24 @@ def setup_player(
         pl.DataFrame([updated]).cast(df.schema)
     )
 
+    self._db_writer.insert_event(
+        {
+            "discord_uid": discord_uid,
+            "event_type": "player_update",
+            "action": "profile_update",
+            "event_data": {
+                "player_name": player_name,
+                "alt_player_names": alt_player_names,
+                "battletag": battletag,
+                "nationality": nationality_code,
+                "location": location_code,
+                "language": language_code,
+                "completed_setup": True,
+                "completed_setup_at": completed_setup_at.isoformat(),
+            },
+        }
+    )
+
     logger.info(
         f"Successfully completed setup for player {discord_username} ({discord_uid})"
     )
@@ -105,6 +137,7 @@ def set_tos_for_player(
 ) -> tuple[bool, str | None]:
     player = self._handle_missing_player(discord_uid, discord_username)
     player_id: int = player["id"]
+    old_accepted_tos: bool = player.get("accepted_tos", False)
     accepted_tos_at = utc_now()
 
     self._db_writer.upsert_player_tos(player_id, accepted, accepted_tos_at)
@@ -119,6 +152,19 @@ def set_tos_for_player(
     )
     self._state_manager.players_df = df.filter(pl.col("id") != player_id).vstack(
         pl.DataFrame([updated]).cast(df.schema)
+    )
+
+    self._db_writer.insert_event(
+        {
+            "discord_uid": discord_uid,
+            "event_type": "player_update",
+            "action": "tos_update",
+            "event_data": {
+                "field_changes": {
+                    "accepted_tos": {"before": old_accepted_tos, "after": accepted},
+                },
+            },
+        }
     )
 
     verb = "accepted" if accepted else "declined"

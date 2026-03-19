@@ -1,11 +1,38 @@
 from datetime import datetime
 
 import polars as pl
+import structlog
 from supabase import create_client, Client
 from typing import Any, cast
 
 from backend.core.config import DATABASE
 from backend.domain_types.dataframes import TABLE_SCHEMAS
+
+_event_logger = structlog.get_logger("events")
+
+
+def _serialise_event_row(row: dict[str, Any]) -> dict[str, Any]:
+    """Return a copy of *row* with datetime objects converted to ISO strings."""
+    result: dict[str, Any] = {}
+    for k, v in row.items():
+        if isinstance(v, datetime):
+            result[k] = v.isoformat()
+        elif isinstance(v, dict):
+            result[k] = _serialise_nested(v)
+        else:
+            result[k] = v
+    return result
+
+
+def _serialise_nested(obj: Any) -> Any:
+    """Recursively convert datetime objects to ISO strings."""
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        return {k: _serialise_nested(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_serialise_nested(v) for v in obj]
+    return obj
 
 
 # Connection functions
@@ -518,6 +545,27 @@ class DatabaseWriter:
         self.client.table("admins").update(updates).eq(
             "discord_uid", discord_uid
         ).execute()
+
+    # ------------------------------------------------------------------
+    # MMR 1v1 (batch)
+    # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Events (write-only — never loaded into Polars)
+    # ------------------------------------------------------------------
+
+    def insert_event(self, row: dict[str, Any]) -> None:
+        """Insert a single event row.  Failures are logged but never propagated."""
+        try:
+            serialised = _serialise_event_row(row)
+            self.client.table("events").insert(serialised).execute()
+        except Exception as exc:
+            _event_logger.warning(
+                "insert_event failed",
+                error=str(exc),
+                event_type=row.get("event_type"),
+                action=row.get("action"),
+            )
 
     # ------------------------------------------------------------------
     # MMR 1v1 (batch)

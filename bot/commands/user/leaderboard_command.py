@@ -47,14 +47,16 @@ def _country_display(code: str, locale: str = "enUS") -> str:
     return translated if translated != f"country.{code}.name" else code
 
 
-async def _ensure_leaderboard() -> list[dict]:
+async def _ensure_leaderboard(caller_uid: int) -> list[dict]:
     """Return the cached leaderboard, fetching from the backend if empty."""
     cache = get_cache()
     if cache.leaderboard_1v1:
         return cache.leaderboard_1v1
 
     try:
-        async with get_session().get(f"{BACKEND_URL}/leaderboard_1v1") as resp:
+        async with get_session().get(
+            f"{BACKEND_URL}/leaderboard_1v1", params={"caller_uid": caller_uid}
+        ) as resp:
             data = await resp.json()
         entries: list[dict] = data.get("leaderboard", [])
         cache.leaderboard_1v1 = entries
@@ -568,7 +570,7 @@ def register_leaderboard_command(tree: app_commands.CommandTree) -> None:
 
         await interaction.response.defer()
 
-        entries = await _ensure_leaderboard()
+        entries = await _ensure_leaderboard(interaction.user.id)
         view = LeaderboardView(entries, locale=locale)
         embed = view.build_embed()
         await interaction.followup.send(embed=embed, view=view)

@@ -1052,7 +1052,7 @@ async def _send_ban_request(
 ) -> None:
     async with get_session().put(
         f"{BACKEND_URL}/admin/ban",
-        json={"discord_uid": target.id},
+        json={"discord_uid": target.id, "admin_discord_uid": interaction.user.id},
     ) as response:
         data = await response.json()
 
@@ -1241,7 +1241,7 @@ async def _send_statusreset_request(
 ) -> None:
     async with get_session().put(
         f"{BACKEND_URL}/admin/statusreset",
-        json={"discord_uid": target.id},
+        json={"discord_uid": target.id, "admin_discord_uid": interaction.user.id},
     ) as response:
         data = await response.json()
 
@@ -1310,6 +1310,7 @@ async def _send_toggle_admin_request(
         json={
             "discord_uid": target.id,
             "discord_username": target.name,
+            "owner_discord_uid": interaction.user.id,
         },
     ) as response:
         data = await response.json()
@@ -1384,6 +1385,7 @@ async def _send_set_mmr_request(
             "discord_uid": target.id,
             "race": race,
             "new_mmr": new_mmr,
+            "owner_discord_uid": interaction.user.id,
         },
     ) as response:
         data = await response.json()

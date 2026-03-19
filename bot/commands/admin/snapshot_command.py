@@ -48,7 +48,10 @@ def register_admin_snapshot_command(tree: app_commands.CommandTree) -> None:
             f"invoked /snapshot (mode={mode})"
         )
 
-        async with get_session().get(f"{BACKEND_URL}/admin/snapshot_1v1") as response:
+        async with get_session().get(
+            f"{BACKEND_URL}/admin/snapshot_1v1",
+            params={"caller_uid": interaction.user.id},
+        ) as response:
             data = await response.json()
 
         queue = data.get("queue") or []

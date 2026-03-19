@@ -53,13 +53,33 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE TABLE IF NOT EXISTS events (
     id                      BIGSERIAL PRIMARY KEY,
     discord_uid             BIGINT NOT NULL,
+        -- Acting user UID.  Sentinels: 1 = backend process, 2 = bot process.
     event_type              TEXT NOT NULL
-        CHECK (event_type IN 
-            ('admin_command', 'player_command', 'player_update')
-        ),
+        CHECK (event_type IN (
+            'player_command', 'admin_command', 'owner_command',
+            'player_update',  'match_event',   'system_event'
+        )),
+    action                  TEXT NOT NULL,
+        -- Specific sub-type, e.g. "setup", "ban", "match_found", "matchmaking_wave"
+    game_mode               TEXT
+        CHECK (game_mode IN ('1v1', '2v2', 'FFA') OR game_mode IS NULL),
+        -- Populated for queue/match events; NULL otherwise
+    match_id                BIGINT,
+        -- Populated for match_event rows and match-related commands
+    target_discord_uid      BIGINT,
+        -- Populated for admin/owner actions that target another player
     event_data              JSONB NOT NULL,
+        -- Full serialised payload (arguments, before/after values, etc.)
     performed_at            TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Indexes for common query patterns
+-- CREATE INDEX IF NOT EXISTS idx_events_discord_uid  ON events(discord_uid);
+-- CREATE INDEX IF NOT EXISTS idx_events_match_id     ON events(match_id);
+-- CREATE INDEX IF NOT EXISTS idx_events_target_uid   ON events(target_discord_uid);
+-- CREATE INDEX IF NOT EXISTS idx_events_action       ON events(action);
+-- CREATE INDEX IF NOT EXISTS idx_events_event_type   ON events(event_type);
+-- CREATE INDEX IF NOT EXISTS idx_events_performed_at ON events(performed_at DESC);
 
 CREATE TABLE IF NOT EXISTS matches_1v1 (
     id                      BIGSERIAL PRIMARY KEY,

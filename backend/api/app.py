@@ -79,6 +79,14 @@ async def lifespan(app: FastAPI):
     set_backend(backend)
     set_ws_manager(ws_manager)
     backend.orchestrator.reset_all_player_statuses()
+    backend.orchestrator.log_event(
+        {
+            "discord_uid": 1,  # backend sentinel
+            "event_type": "system_event",
+            "action": "startup",
+            "event_data": {},
+        }
+    )
     logger.info("[Backend] Backend initialized.")
 
     matchmaker_task = asyncio.create_task(_matchmaker_loop())

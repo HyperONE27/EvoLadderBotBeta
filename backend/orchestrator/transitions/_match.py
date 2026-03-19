@@ -66,6 +66,19 @@ def run_matchmaking_wave_method(
                 f"{candidate['player_2_discord_uid']}"
             )
 
+    self._db_writer.insert_event(
+        {
+            "discord_uid": 1,  # backend sentinel
+            "event_type": "system_event",
+            "action": "matchmaking_wave",
+            "event_data": {
+                "queue_size": len(queue_snapshot),
+                "matches_created": len(created_matches),
+                "remaining_queue": len(remaining),
+            },
+        }
+    )
+
     logger.info(
         f"Matchmaking wave complete: {len(created_matches)} matches created, "
         f"{len(remaining)} players still in queue"
@@ -141,6 +154,30 @@ def _create_match_from_candidate(
     # Initialise confirmation tracking.
     self._confirmations[match_id] = set()
 
+    self._db_writer.insert_event(
+        {
+            "discord_uid": 1,  # backend sentinel
+            "event_type": "match_event",
+            "action": "match_found",
+            "game_mode": "1v1",
+            "match_id": match_id,
+            "event_data": {
+                "game_mode": "1v1",
+                "match_id": match_id,
+                "p1_uid": p1_uid,
+                "p2_uid": p2_uid,
+                "p1_name": candidate["player_1_name"],
+                "p2_name": candidate["player_2_name"],
+                "p1_race": candidate["player_1_race"],
+                "p2_race": candidate["player_2_race"],
+                "p1_mmr": candidate["player_1_mmr"],
+                "p2_mmr": candidate["player_2_mmr"],
+                "map_name": params["map_name"],
+                "server_name": params["server_name"],
+            },
+        }
+    )
+
     logger.info(
         f"Match #{match_id} created: "
         f"{candidate['player_1_name']} vs {candidate['player_2_name']} "
@@ -167,6 +204,21 @@ def confirm_match(
 
     self._confirmations[match_id].add(discord_uid)
     both = len(self._confirmations[match_id]) >= 2
+
+    self._db_writer.insert_event(
+        {
+            "discord_uid": discord_uid,  # acting player
+            "event_type": "match_event",
+            "action": "match_confirmed",
+            "game_mode": "1v1",
+            "match_id": match_id,
+            "event_data": {
+                "game_mode": "1v1",
+                "match_id": match_id,
+                "both_confirmed": both,
+            },
+        }
+    )
 
     logger.info(
         f"Player {discord_uid} confirmed match #{match_id} (both_confirmed={both})"
@@ -222,6 +274,23 @@ def abort_match(
         player_2_report=p2_report,
     )
 
+    self._db_writer.insert_event(
+        {
+            "discord_uid": discord_uid,  # acting player
+            "event_type": "match_event",
+            "action": "match_aborted",
+            "game_mode": "1v1",
+            "match_id": match_id,
+            "event_data": {
+                "game_mode": "1v1",
+                "match_id": match_id,
+                "aborter_uid": discord_uid,
+                "p1_uid": p1_uid,
+                "p2_uid": p2_uid,
+            },
+        }
+    )
+
     logger.info(f"Match #{match_id} aborted by player {discord_uid}")
     return True, None
 
@@ -266,6 +335,24 @@ def handle_confirmation_timeout(
         now,
         player_1_report=p1_report,
         player_2_report=p2_report,
+    )
+
+    self._db_writer.insert_event(
+        {
+            "discord_uid": 1,  # backend sentinel — timeout, no acting user
+            "event_type": "match_event",
+            "action": "match_abandoned",
+            "game_mode": "1v1",
+            "match_id": match_id,
+            "event_data": {
+                "game_mode": "1v1",
+                "match_id": match_id,
+                "p1_uid": p1_uid,
+                "p2_uid": p2_uid,
+                "p1_report": p1_report,
+                "p2_report": p2_report,
+            },
+        }
     )
 
     logger.info(f"Match #{match_id} abandoned (confirmation timeout)")
@@ -482,6 +569,25 @@ def _finalise_match(
         now,
     )
 
+    self._db_writer.insert_event(
+        {
+            "discord_uid": 1,  # backend sentinel — both-agree auto-resolution
+            "event_type": "match_event",
+            "action": "match_completed",
+            "game_mode": "1v1",
+            "match_id": match_id,
+            "event_data": {
+                "game_mode": "1v1",
+                "match_id": match_id,
+                "result": agreed_result,
+                "p1_uid": match["player_1_discord_uid"],
+                "p2_uid": match["player_2_discord_uid"],
+                "p1_mmr_change": p1_change,
+                "p2_mmr_change": p2_change,
+            },
+        }
+    )
+
     logger.info(
         f"Match #{match_id} finalised: {agreed_result} "
         f"(p1 {match['player_1_mmr']}→{new_p1_mmr}, "
@@ -506,6 +612,24 @@ def _handle_conflict(
         match["player_1_mmr"],
         match["player_2_mmr"],
         now,
+    )
+
+    self._db_writer.insert_event(
+        {
+            "discord_uid": 1,  # backend sentinel — conflict auto-detected
+            "event_type": "match_event",
+            "action": "match_conflict",
+            "game_mode": "1v1",
+            "match_id": match_id,
+            "event_data": {
+                "game_mode": "1v1",
+                "match_id": match_id,
+                "p1_uid": match["player_1_discord_uid"],
+                "p2_uid": match["player_2_discord_uid"],
+                "p1_report": match["player_1_report"],
+                "p2_report": match["player_2_report"],
+            },
+        }
     )
 
     logger.info(f"Match #{match_id} marked as conflict (conflicting reports)")

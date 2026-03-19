@@ -60,9 +60,14 @@ EVENTS_SCHEMA: dict[str, pl.DataType] = {
     "id": pl.Int64,
     "discord_uid": pl.Int64,
     "event_type": pl.String,
-    "event_data": pl.String,
+    "action": pl.String,
+    "game_mode": pl.String,
+    "match_id": pl.Int64,
+    "target_discord_uid": pl.Int64,
+    "event_data": pl.String,  # JSONB — stored as string if ever loaded
     "performed_at": pl.Datetime("us", "utc"),
 }
+# Events are write-only at runtime and are NOT loaded into Polars on startup.
 
 MATCHES_1V1_SCHEMA: dict[str, pl.DataType] = {
     "id": pl.Int64,
@@ -142,7 +147,7 @@ TABLE_SCHEMAS: dict[str, dict[str, pl.DataType]] = {
     "admins": ADMINS_SCHEMA,
     "players": PLAYERS_SCHEMA,
     "notifications": NOTIFICATIONS_SCHEMA,
-    "events": EVENTS_SCHEMA,
+    # "events" is intentionally excluded — write-only at runtime, never loaded into Polars.
     "matches_1v1": MATCHES_1V1_SCHEMA,
     "mmrs_1v1": MMRS_1V1_SCHEMA,
     "preferences_1v1": PREFERENCES_1V1_SCHEMA,
@@ -194,7 +199,11 @@ class EventsRow(TypedDict):
     id: int
     discord_uid: int
     event_type: str
-    event_data: str
+    action: str
+    game_mode: str | None
+    match_id: int | None
+    target_discord_uid: int | None
+    event_data: str  # JSONB stored as string
     performed_at: datetime
 
 

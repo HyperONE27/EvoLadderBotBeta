@@ -25,9 +25,10 @@ logger = structlog.get_logger(__name__)
 # ----------------
 
 
-async def _fetch_match(match_id: int) -> dict[str, Any]:
+async def _fetch_match(match_id: int, caller_uid: int) -> dict[str, Any]:
     async with get_session().get(
-        f"{BACKEND_URL}/admin/matches_1v1/{match_id}"
+        f"{BACKEND_URL}/admin/matches_1v1/{match_id}",
+        params={"caller_uid": caller_uid},
     ) as response:
         data: dict[str, Any] = await response.json()
         return data
@@ -65,7 +66,7 @@ def register_admin_match_command(tree: app_commands.CommandTree) -> None:
             f"invoked /match {match_id} (mode={mode})"
         )
 
-        data = await _fetch_match(match_id)
+        data = await _fetch_match(match_id, interaction.user.id)
         match = data.get("match")
 
         if match is None:

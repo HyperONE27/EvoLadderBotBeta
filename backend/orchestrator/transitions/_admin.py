@@ -60,7 +60,8 @@ def toggle_ban(self: TransitionManager, discord_uid: int) -> tuple[bool, bool]:
 
     player = rows.row(0, named=True)
     player_id: int = player["id"]
-    new_banned = not player["is_banned"]
+    old_banned: bool = player["is_banned"]
+    new_banned = not old_banned
 
     self._db_writer.update_player_ban_status(player_id, new_banned)
 
@@ -68,6 +69,19 @@ def toggle_ban(self: TransitionManager, discord_uid: int) -> tuple[bool, bool]:
         is_banned=pl.when(pl.col("discord_uid") == discord_uid)
         .then(pl.lit(new_banned))
         .otherwise(pl.col("is_banned"))
+    )
+
+    self._db_writer.insert_event(
+        {
+            "discord_uid": discord_uid,
+            "event_type": "player_update",
+            "action": "ban_toggle",
+            "event_data": {
+                "field_changes": {
+                    "is_banned": {"before": old_banned, "after": new_banned}
+                },
+            },
+        }
     )
 
     logger.info(f"Player {discord_uid} ban toggled to {new_banned}")
@@ -132,6 +146,25 @@ def admin_resolve_match(
         now,
         admin_intervened=True,
         admin_discord_uid=admin_discord_uid,
+    )
+
+    self._db_writer.insert_event(
+        {
+            "discord_uid": admin_discord_uid,
+            "event_type": "match_event",
+            "action": "match_resolved",
+            "game_mode": "1v1",
+            "match_id": match_id,
+            "event_data": {
+                "game_mode": "1v1",
+                "match_id": match_id,
+                "result": result,
+                "p1_uid": p1_uid,
+                "p2_uid": p2_uid,
+                "p1_mmr_change": p1_change,
+                "p2_mmr_change": p2_change,
+            },
+        }
     )
 
     logger.info(
