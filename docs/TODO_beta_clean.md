@@ -8,10 +8,10 @@ What remains?
     - 1/7/21/21/21/21/8% splits
     - Ordinal rank calculation
     - Store in Leaderboard1v1 in StateManager
-    - ⏰ Need to spot check /leaderboard and the implementation code
-- ⏰ Every single time a match is resolved, we must trigger the leaderboard recalculation and wait for the result and then get it
-    - ⏰ The letter rank updates need to propagate to the match finalized embeds
-    - ⏰ And make sure the frontend gets the update too via WebSocket
+    - ✅ Need to spot check /leaderboard and the implementation code
+- ✅ Every single time a match is resolved, we must trigger the leaderboard recalculation and wait for the result and then get it
+    - ✅ The letter rank updates need to propagate to the match finalized embeds
+    - ✅ And make sure the frontend gets the update too via WebSocket
 - ⏰ /profile looks weird
 - ⏰ /profile doesn't contain full T/W/L/D (win-rate %) statistics by race and aggregated
 - ⏰ Generally the UI is messed up everywhere
