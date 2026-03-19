@@ -181,11 +181,11 @@ class QueueSetupEmbed(discord.Embed):
         race_lines: list[str] = []
         if bw_race:
             race_lines.append(
-                f"- Brood War: {get_race_emote(bw_race)} {_race_display(bw_race, locale)}"
+                f"- {t('shared.game_name.brood_war', locale)}: {get_race_emote(bw_race)} {_race_display(bw_race, locale)}"
             )
         if sc2_race:
             race_lines.append(
-                f"- StarCraft II: {get_race_emote(sc2_race)} {_race_display(sc2_race, locale)}"
+                f"- {t('shared.game_name.starcraft_ii', locale)}: {get_race_emote(sc2_race)} {_race_display(sc2_race, locale)}"
             )
         race_value = (
             "\n".join(race_lines)

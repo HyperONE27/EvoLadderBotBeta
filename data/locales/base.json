@@ -18,6 +18,8 @@
     "match_result.abandoned": "",
     "match_result.invalidated": "",
     "match_result.no_report": "",
+    "shared.game_name.brood_war": "",
+    "shared.game_name.starcraft_ii": "",
     "shared.not_set": "",
     "shared.result_draw": "",
     "shared.field_name.mmr_changes": "",

@@ -20,6 +20,8 @@
     "match_result.invalidated": "무효 (보고 충돌)",
     "match_result.no_report": "보고 없음",
 
+    "shared.game_name.brood_war": "브루드워",
+    "shared.game_name.starcraft_ii": "스타크래프트 II",
     "shared.not_set": "미설정",
     "shared.result_draw": "⚖️ **무승부**",
     "shared.field_name.mmr_changes": "**MMR 변동:**",

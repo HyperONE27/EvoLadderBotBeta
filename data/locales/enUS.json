@@ -20,6 +20,8 @@
     "match_result.invalidated": "Invalidated (Conflicting Reports)",
     "match_result.no_report": "Not Reported",
 
+    "shared.game_name.brood_war": "Brood War",
+    "shared.game_name.starcraft_ii": "StarCraft II",
     "shared.not_set": "Not set",
     "shared.result_draw": "⚖️ **Draw**",
     "shared.field_name.mmr_changes": "**MMR Changes:**",
