@@ -264,5 +264,9 @@
 
     "error.select_at_least_one_race": "",
     "error.failed_confirm_match": "",
+    "error.failed_submit_report": "",
+    "error.failed_join_queue": "",
+    "error.failed_leave_queue": "",
+    "error.failed_abort_match": "",
     "error.unexpected_error": ""
 }

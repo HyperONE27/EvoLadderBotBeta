@@ -377,5 +377,9 @@
 
     "error.select_at_least_one_race": "You must select at least one race.",
     "error.failed_confirm_match": "Failed to confirm match.",
+    "error.failed_submit_report": "Failed to submit report.",
+    "error.failed_join_queue": "Failed to join queue.",
+    "error.failed_leave_queue": "Failed to leave queue.",
+    "error.failed_abort_match": "Failed to abort match.",
     "error.unexpected_error": "An unexpected error occurred."
 }

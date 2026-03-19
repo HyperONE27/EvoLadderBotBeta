@@ -377,5 +377,9 @@
 
     "error.select_at_least_one_race": "최소 하나의 종족을 선택해야 합니다.",
     "error.failed_confirm_match": "매치 확인에 실패했습니다.",
+    "error.failed_submit_report": "보고 제출에 실패했습니다.",
+    "error.failed_join_queue": "대기열 참가에 실패했습니다.",
+    "error.failed_leave_queue": "대기열 이탈에 실패했습니다.",
+    "error.failed_abort_match": "매치 중단에 실패했습니다.",
     "error.unexpected_error": "예기치 않은 오류가 발생했습니다."
 }

@@ -1577,9 +1577,10 @@ class QueueSetupView(discord.ui.View):
             try:
                 await check_if_queueing(interaction)
             except AlreadyQueueingError as e:
+                _locale = get_player_locale(interaction.user.id)
                 await interaction.response.edit_message(
                     embed=ErrorEmbed(
-                        title="🚫 Unauthorized Command Usage",
+                        title=t("error_embed.title.unauthorized_command", _locale),
                         description=str(e),
                     ),
                     view=None,
@@ -1833,9 +1834,11 @@ class MatchReportView(discord.ui.View):
                 data = await resp.json()
 
             if resp.status >= 400:
+                _locale = get_player_locale(interaction.user.id)
                 await interaction.followup.send(
                     embed=QueueErrorEmbed(
-                        data.get("detail") or "Failed to submit report."
+                        data.get("detail") or t("error.failed_submit_report", _locale),
+                        locale=_locale,
                     ),
                     ephemeral=True,
                 )
@@ -1918,8 +1921,12 @@ async def _join_queue(
             data = await resp.json()
 
         if resp.status >= 400:
+            _locale = get_player_locale(discord_user_id)
             await interaction.edit_original_response(
-                embed=QueueErrorEmbed(data.get("detail") or "Failed to join queue."),
+                embed=QueueErrorEmbed(
+                    data.get("detail") or t("error.failed_join_queue", _locale),
+                    locale=_locale,
+                ),
                 view=None,
             )
             return
@@ -1977,8 +1984,12 @@ async def _leave_queue(
             data = await resp.json()
 
         if resp.status >= 400:
+            _locale = get_player_locale(interaction.user.id)
             await interaction.followup.send(
-                embed=QueueErrorEmbed(data.get("detail") or "Failed to leave queue."),
+                embed=QueueErrorEmbed(
+                    data.get("detail") or t("error.failed_leave_queue", _locale),
+                    locale=_locale,
+                ),
                 ephemeral=True,
             )
             return
@@ -2047,8 +2058,12 @@ async def _abort_match(interaction: discord.Interaction, match_id: int) -> None:
             data = await resp.json()
 
         if resp.status >= 400:
+            _locale = get_player_locale(interaction.user.id)
             await interaction.followup.send(
-                embed=QueueErrorEmbed(data.get("detail") or "Failed to abort match."),
+                embed=QueueErrorEmbed(
+                    data.get("detail") or t("error.failed_abort_match", _locale),
+                    locale=_locale,
+                ),
                 ephemeral=True,
             )
             return
