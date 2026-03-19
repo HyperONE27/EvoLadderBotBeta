@@ -1,4 +1,7 @@
-from pydantic import BaseModel
+from datetime import datetime
+
+from pydantic import BaseModel, Field
+
 from backend.domain_types.dataframes import (
     AdminsRow,
     Matches1v1Row,
@@ -65,9 +68,44 @@ class AdminResolveResponse(BaseModel):
 # --- /admin snapshot ---
 
 
+class ActiveMatchSnapshotRow(BaseModel):
+    """``matches_1v1`` row with ranks and ISO nationalities for admin /snapshot."""
+
+    id: int
+    player_1_discord_uid: int
+    player_2_discord_uid: int
+    player_1_name: str
+    player_2_name: str
+    player_1_race: str
+    player_2_race: str
+    player_1_mmr: int
+    player_2_mmr: int
+    player_1_report: str | None = None
+    player_2_report: str | None = None
+    match_result: str | None = None
+    player_1_mmr_change: int | None = None
+    player_2_mmr_change: int | None = None
+    map_name: str
+    server_name: str
+    assigned_at: datetime | None = None
+    completed_at: datetime | None = None
+    admin_intervened: bool
+    admin_discord_uid: int | None = None
+    player_1_replay_path: str | None = None
+    player_1_replay_row_id: int | None = None
+    player_1_uploaded_at: datetime | None = None
+    player_2_replay_path: str | None = None
+    player_2_replay_row_id: int | None = None
+    player_2_uploaded_at: datetime | None = None
+    player_1_letter_rank: str = "U"
+    player_2_letter_rank: str = "U"
+    player_1_nationality: str = "--"
+    player_2_nationality: str = "--"
+
+
 class AdminSnapshotResponse(BaseModel):
     queue: list[QueueEntry1v1]
-    active_matches: list[Matches1v1Row]
+    active_matches: list[ActiveMatchSnapshotRow]
     dataframe_stats: dict
 
 
@@ -143,9 +181,31 @@ class LeaderboardResponse(BaseModel):
 # --- /profile ---
 
 
+class ProfilePeriodStats(BaseModel):
+    games_played: int = 0
+    games_won: int = 0
+    games_lost: int = 0
+    games_drawn: int = 0
+
+
+class ProfileMmrEntry(BaseModel):
+    id: int
+    discord_uid: int
+    player_name: str
+    race: str
+    mmr: int
+    games_played: int
+    games_won: int
+    games_lost: int
+    games_drawn: int
+    last_played_at: datetime | None = None
+    letter_rank: str = "U"
+    recent: dict[str, ProfilePeriodStats] = Field(default_factory=dict)
+
+
 class ProfileResponse(BaseModel):
     player: PlayersRow | None
-    mmrs_1v1: list[MMRs1v1Row]
+    mmrs_1v1: list[ProfileMmrEntry]
 
 
 # --- /prune ---

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from backend.database.database import DatabaseWriter
 from backend.domain_types.dataframes import (
@@ -53,11 +54,18 @@ class Orchestrator:
 
     def get_profile(
         self, discord_uid: int
-    ) -> tuple[PlayersRow | None, list[MMRs1v1Row]]:
-        """Get a player's profile: their player row and all 1v1 MMR rows."""
+    ) -> tuple[PlayersRow | None, list[dict[str, Any]]]:
+        """Get a player's profile row and enriched 1v1 MMR rows (ranks + recent stats)."""
+
         player = self._state_reader.get_player(discord_uid)
-        mmrs = self._state_reader.get_all_mmrs_1v1(discord_uid)
+        mmrs = self._state_reader.build_profile_mmrs_1v1(discord_uid)
         return player, mmrs
+
+    def get_active_matches_snapshot_1v1(self) -> list[dict[str, Any]]:
+        """Active 1v1 matches with letter ranks and ISO nationalities for /snapshot."""
+
+        raw = self._transition_manager.get_active_matches_1v1()
+        return [self._state_reader.enrich_match_for_snapshot(m) for m in raw]
 
     def get_queue_1v1(self) -> list[QueueEntry1v1]:
         """Return the current 1v1 queue (shallow copy)."""

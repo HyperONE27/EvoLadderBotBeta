@@ -1016,6 +1016,12 @@ def _format_mmr_rows(mmrs: list[dict], locale: str = "enUS") -> str:
         except ValueError:
             race_emote = "🎮"
 
+        rank_letter = m.get("letter_rank") or "U"
+        try:
+            rank_emote = get_rank_emote(str(rank_letter))
+        except ValueError:
+            rank_emote = get_rank_emote("U")
+
         gp: int = m.get("games_played") or 0
         gw: int = m.get("games_won") or 0
         gl: int = m.get("games_lost") or 0
@@ -1023,9 +1029,21 @@ def _format_mmr_rows(mmrs: list[dict], locale: str = "enUS") -> str:
         mmr_val: int = m.get("mmr") or 0
         wr = (gw / gp * 100) if gp > 0 else 0.0
 
+        if gp == 0:
+            line = t(
+                "profile_embed.mmr_row_unranked.1",
+                locale,
+                rank_emote=str(rank_emote),
+                race_emote=str(race_emote),
+                race_name=race_name,
+            )
+            lines.append(line)
+            continue
+
         line = t(
             "profile_embed.mmr_row.1",
             locale,
+            rank_emote=str(rank_emote),
             race_emote=str(race_emote),
             race_name=race_name,
             mmr_val=str(mmr_val),
@@ -1034,6 +1052,27 @@ def _format_mmr_rows(mmrs: list[dict], locale: str = "enUS") -> str:
             gd=str(gd),
             wr=f"{wr:.1f}",
         )
+
+        recent: dict = m.get("recent") or {}
+        for period_key, tr_key in (
+            ("14d", "profile_embed.recent_stats_14d.1"),
+            ("30d", "profile_embed.recent_stats_30d.1"),
+            ("90d", "profile_embed.recent_stats_90d.1"),
+        ):
+            st: dict = recent.get(period_key) or {}
+            w = int(st.get("games_won", 0))
+            lo = int(st.get("games_lost", 0))
+            d = int(st.get("games_drawn", 0))
+            tot = int(st.get("games_played", w + lo + d))
+            wr_p = (w / tot * 100) if tot > 0 else 0.0
+            line += "\n" + t(
+                tr_key,
+                locale,
+                w=str(w),
+                l=str(lo),
+                d=str(d),
+                wr=f"{wr_p:.1f}",
+            )
 
         last_played = m.get("last_played_at")
         if last_played and gp > 0:
@@ -1372,6 +1411,29 @@ def _race_short(race_code: str | None) -> str:
     return race_code[:2]
 
 
+_MATCH_SNAPSHOT_NAME_LEN = 12
+_MATCH_SNAPSHOT_PLAYER_FIELD_LEN = (
+    20  # rank + race + ISO + padded name (monospace column)
+)
+
+
+def _format_match_player_snapshot(
+    name: str | None,
+    race_code: str | None,
+    letter_rank: str | None,
+    nationality: str | None,
+) -> str:
+    """Single player token: ``{letter} {race2} {ISO2} {name:12}`` (truncated)."""
+    rank_ch = (letter_rank or "U")[:1]
+    race = _race_short(race_code).ljust(2)[:2]
+    nat_raw = nationality if nationality and nationality != "--" else "--"
+    nat = (nat_raw[:2]).ljust(2)
+    p_name = (name or "Unknown")[:_MATCH_SNAPSHOT_NAME_LEN].ljust(
+        _MATCH_SNAPSHOT_NAME_LEN
+    )
+    return f"{rank_ch} {race} {nat} {p_name}"
+
+
 def _elapsed_seconds(iso_str: str | None) -> str:
     """Convert an ISO timestamp to an elapsed-seconds string like ' 794s'."""
     dt = ensure_utc(iso_str)
@@ -1412,22 +1474,28 @@ def _format_blank_queue_slot() -> str:
 def _format_match_slot(match: dict, id_width: int) -> str:
     """Format a single active match as a monospace backtick string."""
     match_id = match.get("id") or 0
-    p1_name = (match.get("player_1_name") or "Unknown")[:12]
-    p2_name = (match.get("player_2_name") or "Unknown")[:12]
-    p1_race = _race_short(match.get("player_1_race"))
-    p2_race = _race_short(match.get("player_2_race"))
-    p1_padded = f"{p1_name:<12}"
-    p2_padded = f"{p2_name:<12}"
+    p1_block = _format_match_player_snapshot(
+        match.get("player_1_name"),
+        match.get("player_1_race"),
+        match.get("player_1_letter_rank"),
+        match.get("player_1_nationality"),
+    )
+    p2_block = _format_match_player_snapshot(
+        match.get("player_2_name"),
+        match.get("player_2_race"),
+        match.get("player_2_letter_rank"),
+        match.get("player_2_nationality"),
+    )
 
     elapsed = _elapsed_seconds(match.get("assigned_at"))
     mid = f"{match_id:>{id_width}d}"
 
-    return f"`{mid}` `{p1_race} {p1_padded}` `vs` `{p2_race} {p2_padded}` `{elapsed}`"
+    return f"`{mid}` `{p1_block}` `vs` `{p2_block}` `{elapsed}`"
 
 
 def _format_blank_match_slot(id_width: int) -> str:
     blank_id = " " * id_width
-    blank_player = " " * 15
+    blank_player = " " * _MATCH_SNAPSHOT_PLAYER_FIELD_LEN
     blank_time = " " * 5
     return f"`{blank_id}` `{blank_player}` `vs` `{blank_player}` `{blank_time}`"
 

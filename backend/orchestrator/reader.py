@@ -1,3 +1,7 @@
+from datetime import timedelta
+from typing import Any
+
+from backend.algorithms.game_stats import count_game_stats_in_completed_window
 from backend.domain_types.dataframes import (
     AdminsRow,
     Matches1v1Row,
@@ -15,6 +19,7 @@ from backend.lookups.mmr_1v1_lookups import (
 from backend.lookups.player_lookups import get_player_by_discord_uid
 from backend.lookups.preferences_1v1_lookups import get_preferences_1v1_by_discord_uid
 from backend.orchestrator.state import StateManager
+from common.datetime_helpers import utc_now
 
 
 class StateReader:
@@ -88,28 +93,68 @@ class StateReader:
         """Return the current 1v1 leaderboard."""
         return self._state_manager.leaderboard_1v1
 
-    def enrich_match_with_ranks(self, match_dict: dict) -> dict:
-        """Return a copy of match_dict with player letter ranks from the leaderboard."""
-        enriched = dict(match_dict)
+    def get_letter_rank_1v1(self, discord_uid: int | None, race: str | None) -> str:
+        """Letter rank from the in-memory leaderboard, or ``\"U\"`` if unknown."""
+        if discord_uid is None or not race:
+            return "U"
         leaderboard = self._state_manager.leaderboard_1v1
         lookup: dict[tuple[int, str], str] = {
             (e["discord_uid"], e["race"]): e["letter_rank"] for e in leaderboard
         }
+        return lookup.get((discord_uid, race), "U")
+
+    def enrich_match_with_ranks(self, match_dict: dict) -> dict:
+        """Return a copy of match_dict with player letter ranks from the leaderboard."""
+        enriched = dict(match_dict)
         p1_uid: int | None = match_dict.get("player_1_discord_uid")
         p1_race: str | None = match_dict.get("player_1_race")
         p2_uid: int | None = match_dict.get("player_2_discord_uid")
         p2_race: str | None = match_dict.get("player_2_race")
-        enriched["player_1_letter_rank"] = (
-            lookup.get((p1_uid, p1_race), "U")
-            if p1_uid is not None and p1_race
-            else "U"
-        )
-        enriched["player_2_letter_rank"] = (
-            lookup.get((p2_uid, p2_race), "U")
-            if p2_uid is not None and p2_race
-            else "U"
-        )
+        enriched["player_1_letter_rank"] = self.get_letter_rank_1v1(p1_uid, p1_race)
+        enriched["player_2_letter_rank"] = self.get_letter_rank_1v1(p2_uid, p2_race)
         return enriched
+
+    def enrich_match_for_snapshot(self, match: Matches1v1Row | dict[str, Any]) -> dict:
+        """Match row plus letter ranks and player ISO nationality codes for /snapshot."""
+        m: dict[str, Any] = dict(match)
+        enriched = self.enrich_match_with_ranks(m)
+        p1_uid: int | None = enriched.get("player_1_discord_uid")
+        p2_uid: int | None = enriched.get("player_2_discord_uid")
+        p1 = self.get_player(p1_uid) if p1_uid is not None else None
+        p2 = self.get_player(p2_uid) if p2_uid is not None else None
+        n1 = p1.get("nationality") if p1 is not None else None
+        n2 = p2.get("nationality") if p2 is not None else None
+        enriched["player_1_nationality"] = n1 if n1 else "--"
+        enriched["player_2_nationality"] = n2 if n2 else "--"
+        return enriched
+
+    def get_recent_period_stats_1v1(
+        self, discord_uid: int, race: str
+    ) -> dict[str, dict[str, int]]:
+        """Per-window game counts from ``matches_1v1`` (14d / 30d / 90d by completed_at)."""
+
+        df = self._state_manager.matches_1v1_df
+        now = utc_now()
+        out: dict[str, dict[str, int]] = {}
+        for key, days in (("14d", 14), ("30d", 30), ("90d", 90)):
+            since = now - timedelta(days=days)
+            out[key] = count_game_stats_in_completed_window(
+                df, discord_uid, race, since, now
+            )
+        return out
+
+    def build_profile_mmrs_1v1(self, discord_uid: int) -> list[dict[str, Any]]:
+        """All MMR rows for profile plus ``letter_rank`` and ``recent`` period stats."""
+
+        mmrs = self.get_all_mmrs_1v1(discord_uid)
+        result: list[dict[str, Any]] = []
+        for row in mmrs:
+            race = row["race"]
+            d = dict(row)
+            d["letter_rank"] = self.get_letter_rank_1v1(discord_uid, race)
+            d["recent"] = self.get_recent_period_stats_1v1(discord_uid, race)
+            result.append(d)
+        return result
 
     # ------------------------------------------------------------------
     # Location

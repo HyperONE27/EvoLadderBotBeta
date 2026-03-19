@@ -19,6 +19,7 @@ from backend.api.models import (
     AdminStatusResetResponse,
     AdminResolveRequest,
     AdminResolveResponse,
+    ActiveMatchSnapshotRow,
     AdminSnapshotResponse,
     AdminsResponse,
     LeaderboardEntry,
@@ -41,6 +42,7 @@ from backend.api.models import (
     Preferences1v1Response,
     PreferencesUpsertRequest,
     PreferencesUpsertResponse,
+    ProfileMmrEntry,
     ProfileResponse,
     QueueJoinRequest,
     QueueJoinResponse,
@@ -281,7 +283,8 @@ async def admin_snapshot(
     app: Backend = Depends(get_backend),
 ) -> AdminSnapshotResponse:
     queue = app.orchestrator.get_queue_snapshot_1v1()
-    active = app.orchestrator.get_active_matches_1v1()
+    active_raw = app.orchestrator.get_active_matches_snapshot_1v1()
+    active = [ActiveMatchSnapshotRow.model_validate(r) for r in active_raw]
 
     # DataFrame memory stats.
     sm = app.state_manager
@@ -305,7 +308,9 @@ async def admin_snapshot(
         }
     )
     return AdminSnapshotResponse(
-        queue=queue, active_matches=active, dataframe_stats=stats
+        queue=queue,
+        active_matches=active,
+        dataframe_stats=stats,
     )
 
 
@@ -400,7 +405,8 @@ async def profile(
     discord_uid: int,
     app: Backend = Depends(get_backend),
 ) -> ProfileResponse:
-    player, mmrs = app.orchestrator.get_profile(discord_uid)
+    player, mmrs_raw = app.orchestrator.get_profile(discord_uid)
+    mmrs = [ProfileMmrEntry.model_validate(r) for r in mmrs_raw]
     app.orchestrator.log_event(
         {
             "discord_uid": discord_uid,
