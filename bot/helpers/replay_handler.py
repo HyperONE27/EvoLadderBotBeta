@@ -9,10 +9,11 @@ import aiohttp
 import structlog
 import discord
 
+from bot.components.embeds import MatchInfoEmbed, ReplayErrorEmbed, ReplaySuccessEmbed
+from bot.components.views import MatchReportView
 from bot.core.config import BACKEND_URL, ENABLE_REPLAY_VALIDATION
 from bot.core.dependencies import get_cache
 from bot.core.http import get_session
-from bot.components.embeds import ReplayErrorEmbed, ReplaySuccessEmbed
 from bot.helpers.message_helpers import (
     queue_message_delete_low,
     queue_message_edit_high,
@@ -98,10 +99,6 @@ async def handle_replay_upload(
         parsed: dict = data["parsed"]
         verification: dict | None = data.get("verification")
         auto_resolved: bool = data.get("auto_resolved", False)
-
-        # Lazily import to avoid circular import at module level.
-        from bot.commands.user.queue_command import MatchReportView
-        from bot.components.embeds import MatchInfoEmbed
 
         # Send the replay details as a new message (high priority).
         await queue_message_reply_high(

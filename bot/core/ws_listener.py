@@ -15,7 +15,7 @@ import aiohttp
 import discord
 import structlog
 
-from bot.commands.user.queue_command import (
+from bot.components.views import (
     MatchFoundView,
     MatchReportView,
     _fetch_player_info,
