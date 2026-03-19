@@ -1254,19 +1254,24 @@ def _elapsed_seconds(iso_str: str | None) -> str:
 
 
 def _format_queue_player(entry: dict) -> str:
-    """Format a single queue player as a monospace backtick string."""
+    """Format a single queue player as a monospace backtick string.
+
+    Format: ``{bw_rank} {bw_race} {sc2_rank} {sc2_race} {nat} {name:12}``
+    where rank is the letter rank (U if unranked) or ``-`` if not queueing that
+    game, and race is the 2-char short code or ``--`` if not queueing that game.
+    """
     player_name = (entry.get("player_name") or "Unknown")[:12]
     name_padded = f"{player_name:<12}"
 
     bw_race_code = entry.get("bw_race")
     sc2_race_code = entry.get("sc2_race")
+    bw_rank = entry.get("bw_letter_rank") or "U" if bw_race_code else "-"
+    sc2_rank = entry.get("sc2_letter_rank") or "U" if sc2_race_code else "-"
+    bw_race = _race_short(bw_race_code) if bw_race_code else "--"
+    sc2_race = _race_short(sc2_race_code) if sc2_race_code else "--"
+    nat = (entry.get("nationality") or "--")[:2]
 
-    bw_part = f"  {_race_short(bw_race_code)}" if bw_race_code else "    "
-    sc2_part = f"  {_race_short(sc2_race_code)}" if sc2_race_code else "    "
-
-    cc = "  "
-
-    player_str = f"{bw_part} {sc2_part} {cc} {name_padded}"
+    player_str = f"{bw_rank} {bw_race} {sc2_rank} {sc2_race} {nat} {name_padded}"
     wait_time = _elapsed_seconds(entry.get("joined_at"))
 
     return f"`{player_str}` `{wait_time}`"

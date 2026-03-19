@@ -43,7 +43,7 @@ from bot.core.config import (
     MAX_MAP_VETOES,
     QUEUE_SEARCHING_HEARTBEAT_SECONDS,
 )
-from bot.core.dependencies import get_cache
+from bot.core.dependencies import get_cache, get_player_locale
 from bot.core.http import get_session
 from bot.helpers.checks import AlreadyQueueingError, check_if_queueing
 from bot.helpers.emotes import (
@@ -743,7 +743,7 @@ async def _send_setup_request(
 
     await interaction.response.edit_message(
         embed=SetupSuccessEmbed(
-            player_name, battletag, alt_ids, country, region, language
+            player_name, battletag, alt_ids, country, region, language, locale=language
         ),
         view=None,
     )
@@ -1214,11 +1214,15 @@ async def _send_set_mmr_request(
 
 
 async def _fetch_player_info(discord_uid: int) -> dict[str, Any] | None:
-    """Fetch a player row from the backend API."""
+    """Fetch a player row from the backend API and seed the locale cache."""
     try:
         async with get_session().get(f"{BACKEND_URL}/players/{discord_uid}") as resp:
             data = await resp.json()
             player: dict[str, Any] | None = data.get("player")
+            if player is not None:
+                language = player.get("language")
+                if language:
+                    get_cache().player_locales[discord_uid] = language
             return player
     except Exception:
         logger.warning("Failed to fetch player info", discord_uid=discord_uid)
@@ -1444,7 +1448,10 @@ class QueueSetupView(discord.ui.View):
         new_view = QueueSetupView(
             self.discord_user_id, self.bw_race, self.sc2_race, self.map_vetoes
         )
-        embed = QueueSetupEmbed(self.bw_race, self.sc2_race, self.map_vetoes)
+        locale = get_player_locale(self.discord_user_id)
+        embed = QueueSetupEmbed(
+            self.bw_race, self.sc2_race, self.map_vetoes, locale=locale
+        )
         await interaction.response.edit_message(embed=embed, view=new_view)
 
 
@@ -1518,7 +1525,8 @@ class QueueSearchingView(discord.ui.View):
                 except Exception:
                     pass
 
-                embed = QueueSearchingEmbed(stats)
+                locale = get_player_locale(self._interaction.user.id)
+                embed = QueueSearchingEmbed(stats, locale=locale)
 
                 if not self._token_expired:
                     try:
@@ -1622,8 +1630,13 @@ class MatchReportView(discord.ui.View):
             for option in self.report_select.options:
                 option.default = option.value == report
             self.report_select.disabled = True
+            locale = get_player_locale(interaction.user.id)
             new_embed = MatchInfoEmbed(
-                self._match_data, self._p1_info, self._p2_info, pending_report=report
+                self._match_data,
+                self._p1_info,
+                self._p2_info,
+                pending_report=report,
+                locale=locale,
             )
             await interaction.edit_original_response(embed=new_embed, view=self)
 
@@ -1701,8 +1714,9 @@ async def _join_queue(
         searching_view = QueueSearchingView(
             interaction, discord_user_id, bw_race, sc2_race, map_vetoes
         )
+        locale = get_player_locale(discord_user_id)
         await interaction.edit_original_response(
-            embed=QueueSearchingEmbed(stats),
+            embed=QueueSearchingEmbed(stats, locale=locale),
             view=searching_view,
         )
         await searching_view.start_heartbeat()

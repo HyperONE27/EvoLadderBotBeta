@@ -4,6 +4,7 @@ from discord import app_commands
 
 from bot.components.embeds import ProfileEmbed, ProfileNotFoundEmbed
 from bot.core.config import BACKEND_URL
+from bot.core.dependencies import get_cache, get_player_locale
 from bot.core.http import get_session
 from bot.helpers.checks import (
     check_if_accepted_tos,
@@ -45,13 +46,19 @@ def register_profile_command(tree: app_commands.CommandTree) -> None:
         player, mmrs = await _fetch_profile(discord_uid)
 
         if player is None:
-            await interaction.followup.send(embed=ProfileNotFoundEmbed())
+            locale = get_player_locale(discord_uid)
+            await interaction.followup.send(embed=ProfileNotFoundEmbed(locale=locale))
             return
+
+        language = player.get("language")
+        if language:
+            get_cache().player_locales[discord_uid] = language
+        locale = get_player_locale(discord_uid)
 
         logger.info(
             f"profile_command: found player={player.get('player_name')!r} "
             f"mmrs={len(mmrs)} for user={discord_uid}"
         )
         await interaction.followup.send(
-            embed=ProfileEmbed(interaction.user, player, mmrs)
+            embed=ProfileEmbed(interaction.user, player, mmrs, locale=locale)
         )

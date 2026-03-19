@@ -12,7 +12,7 @@ import discord
 from bot.components.embeds import MatchInfoEmbed, ReplayErrorEmbed, ReplaySuccessEmbed
 from bot.components.views import MatchReportView
 from bot.core.config import BACKEND_URL, ENABLE_REPLAY_VALIDATION
-from bot.core.dependencies import get_cache
+from bot.core.dependencies import get_cache, get_player_locale
 from bot.core.http import get_session
 from bot.helpers.message_helpers import (
     queue_message_delete_low,
@@ -89,10 +89,14 @@ async def handle_replay_upload(
         if processing_msg is not None:
             await queue_message_delete_low(processing_msg)
 
+        locale = get_player_locale(user_id)
+
         if resp.status >= 400:
             await queue_message_reply_high(
                 message,
-                embed=ReplayErrorEmbed(data.get("detail") or "Unknown error"),
+                embed=ReplayErrorEmbed(
+                    data.get("detail") or "Unknown error", locale=locale
+                ),
             )
             return
 
@@ -108,6 +112,7 @@ async def handle_replay_upload(
                 verification_results=verification,
                 enforcement_enabled=ENABLE_REPLAY_VALIDATION,
                 auto_resolved=auto_resolved,
+                locale=locale,
             ),
         )
 
@@ -127,7 +132,7 @@ async def handle_replay_upload(
             p2_name = match_data.get("player_2_name", "Player 2")
 
             new_embed = MatchInfoEmbed(
-                match_data, p1_info, p2_info, replay_uploaded=True
+                match_data, p1_info, p2_info, replay_uploaded=True, locale=locale
             )
             new_view = MatchReportView(
                 match_id,

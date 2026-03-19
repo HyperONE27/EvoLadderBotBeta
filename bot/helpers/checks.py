@@ -2,6 +2,7 @@ import discord
 from discord import app_commands
 
 from bot.core.config import BACKEND_URL
+from bot.core.dependencies import get_cache
 from bot.core.http import get_session
 
 # --- Checks ---
@@ -27,8 +28,12 @@ async def check_if_banned(interaction: discord.Interaction) -> bool:
         return True
 
     player = data.get("player")
-    if player is not None and player.get("is_banned"):
-        raise BannedError()
+    if player is not None:
+        language = player.get("language")
+        if language:
+            get_cache().player_locales[uid] = language
+        if player.get("is_banned"):
+            raise BannedError()
     return True
 
 

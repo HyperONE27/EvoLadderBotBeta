@@ -4,6 +4,7 @@ from discord import app_commands
 
 from bot.components.embeds import TermsOfServiceEmbed
 from bot.components.views import TermsOfServiceView
+from bot.core.dependencies import get_player_locale
 from bot.helpers.checks import check_if_banned, check_if_dm
 
 logger = structlog.get_logger(__name__)
@@ -25,7 +26,8 @@ def register_termsofservice_command(tree: app_commands.CommandTree) -> None:
         discord_uid = interaction.user.id
         discord_username = interaction.user.name
         logger.info(f"User {discord_username} ({discord_uid}) opened Terms of Service")
+        locale = get_player_locale(discord_uid)
         await interaction.followup.send(
-            embed=TermsOfServiceEmbed(),
+            embed=TermsOfServiceEmbed(locale=locale),
             view=TermsOfServiceView(discord_uid, discord_username),
         )

@@ -39,6 +39,7 @@ def join_queue_1v1(
         return False, "At least one race must be selected."
 
     player_name: str = player.get("player_name") or discord_username
+    nationality: str | None = player.get("nationality")
 
     # Ensure MMR rows exist; use provided values if given, else look up/create.
     actual_bw_mmr: int | None = None
@@ -52,6 +53,19 @@ def join_queue_1v1(
         mmr_row = self._handle_missing_mmr_1v1(discord_uid, player_name, sc2_race)
         actual_sc2_mmr = sc2_mmr if sc2_mmr is not None else mmr_row["mmr"]
 
+    # Derive letter ranks from the current leaderboard state.
+    # Players not yet in the leaderboard (games_played == 0) get "U".
+    leaderboard_lookup: dict[tuple[int, str], str] = {
+        (e["discord_uid"], e["race"]): e["letter_rank"]
+        for e in self._state_manager.leaderboard_1v1
+    }
+    bw_letter_rank = (
+        leaderboard_lookup.get((discord_uid, bw_race), "U") if bw_race else None
+    )
+    sc2_letter_rank = (
+        leaderboard_lookup.get((discord_uid, sc2_race), "U") if sc2_race else None
+    )
+
     entry = QueueEntry1v1(
         discord_uid=discord_uid,
         player_name=player_name,
@@ -59,6 +73,9 @@ def join_queue_1v1(
         sc2_race=sc2_race,
         bw_mmr=actual_bw_mmr,
         sc2_mmr=actual_sc2_mmr,
+        bw_letter_rank=bw_letter_rank,
+        sc2_letter_rank=sc2_letter_rank,
+        nationality=nationality,
         map_vetoes=map_vetoes,
         joined_at=utc_now(),
         wait_cycles=0,

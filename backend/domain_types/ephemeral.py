@@ -48,6 +48,13 @@ class QueueEntry1v1(TypedDict):
     )  # Must be a key in state_manager.races and state_manager.races[sc2_race]["is_sc2_race"] must be True
     bw_mmr: int | None
     sc2_mmr: int | None
+    bw_letter_rank: (
+        str | None
+    )  # "U" if unranked, letter rank from leaderboard otherwise
+    sc2_letter_rank: (
+        str | None
+    )  # "U" if unranked, letter rank from leaderboard otherwise
+    nationality: str | None  # ISO country code from player profile
     map_vetoes: list[str]  # Must be a key in state_manager.maps
     joined_at: datetime
     wait_cycles: int

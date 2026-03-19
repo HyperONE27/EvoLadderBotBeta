@@ -9,6 +9,7 @@ from bot.components.views import (
     QueueSetupView,
 )
 from bot.core.config import BACKEND_URL
+from bot.core.dependencies import get_player_locale
 from bot.core.http import get_session
 from bot.helpers.checks import (
     check_if_accepted_tos,
@@ -62,7 +63,8 @@ def register_queue_command(tree: app_commands.CommandTree) -> None:
         except Exception:
             logger.warning("Failed to load preferences", exc_info=True)
 
-        embed = QueueSetupEmbed(bw_race, sc2_race, map_vetoes)
+        locale = get_player_locale(interaction.user.id)
+        embed = QueueSetupEmbed(bw_race, sc2_race, map_vetoes, locale=locale)
         view = QueueSetupView(
             discord_user_id=interaction.user.id,
             bw_race=bw_race,

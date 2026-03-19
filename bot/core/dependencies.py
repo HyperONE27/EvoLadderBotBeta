@@ -21,3 +21,8 @@ def get_cache() -> Cache:
     if _bot.cache is None:
         raise RuntimeError("Cache not initialized")
     return _bot.cache
+
+
+def get_player_locale(uid: int) -> str:
+    """Return the cached locale for a player, defaulting to 'enUS'."""
+    return get_cache().player_locales.get(uid, "enUS")

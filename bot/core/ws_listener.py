@@ -35,7 +35,7 @@ from bot.core.config import (
     MATCH_LOG_CHANNEL_ID,
     WS_RECONNECT_BACKOFF_SECONDS,
 )
-from bot.core.dependencies import get_cache
+from bot.core.dependencies import get_cache, get_player_locale
 from bot.helpers.message_helpers import (
     queue_channel_send_low,
     queue_message_edit_low,
@@ -116,10 +116,11 @@ async def _on_match_found(client: discord.Client, match_data: dict) -> None:
             continue
         try:
             user = await client.fetch_user(uid)
+            locale = get_player_locale(uid)
             dm_coros.append(
                 queue_user_send_high(
                     user,
-                    embed=MatchFoundEmbed(match_data),
+                    embed=MatchFoundEmbed(match_data, locale=locale),
                     view=MatchFoundView(match_id, match_data),
                 )
             )
@@ -155,8 +156,9 @@ async def _on_match_found(client: discord.Client, match_data: dict) -> None:
 async def _edit_searching_embed_low(msg: discord.Message, uid: int) -> None:
     """Fire-and-forget low-priority edit of a searching embed."""
     try:
+        locale = get_player_locale(uid)
         await queue_message_edit_low(
-            msg, embed=QueueSearchingEmbed(match_found=True), view=None
+            msg, embed=QueueSearchingEmbed(match_found=True, locale=locale), view=None
         )
     except Exception:
         logger.exception(f"[WS] Failed to update searching embed for user {uid}")
@@ -173,9 +175,9 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
 
     p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
     p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
-    embed = MatchInfoEmbed(match_data, p1_info, p2_info)
+    # _fetch_player_info seeds player_locales as a side effect.
 
-    # High priority: DM both players with MatchInfoEmbed concurrently.
+    # High priority: DM both players with per-locale MatchInfoEmbed concurrently.
     dm_coros = []
     dm_uids: list[int] = []
     for uid in (p1_uid, p2_uid):
@@ -190,10 +192,11 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
 
         try:
             user = await client.fetch_user(uid)
+            locale = get_player_locale(uid)
             dm_coros.append(
                 queue_user_send_high(
                     user,
-                    embed=embed,
+                    embed=MatchInfoEmbed(match_data, p1_info, p2_info, locale=locale),
                     view=MatchReportView(
                         match_id,
                         p1_name,
@@ -228,11 +231,14 @@ async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
 
     p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
     p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
-    embed = MatchAbortedEmbed(match_data, p1_info, p2_info)
 
-    await _send_to_both_low(client, p1_uid, p2_uid, embed)
+    await _send_to_both_localized(
+        client, p1_uid, p2_uid, MatchAbortedEmbed, match_data, p1_info, p2_info
+    )
     await _clear_match_state_low(p1_uid, p2_uid)
-    await _post_to_match_log_low(client, embed)
+    await _post_to_match_log_low(
+        client, MatchAbortedEmbed(match_data, p1_info, p2_info)
+    )
 
 
 async def _on_match_abandoned(client: discord.Client, match_data: dict) -> None:
@@ -242,11 +248,14 @@ async def _on_match_abandoned(client: discord.Client, match_data: dict) -> None:
 
     p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
     p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
-    embed = MatchAbandonedEmbed(match_data, p1_info, p2_info)
 
-    await _send_to_both_low(client, p1_uid, p2_uid, embed)
+    await _send_to_both_localized(
+        client, p1_uid, p2_uid, MatchAbandonedEmbed, match_data, p1_info, p2_info
+    )
     await _clear_match_state_low(p1_uid, p2_uid)
-    await _post_to_match_log_low(client, embed)
+    await _post_to_match_log_low(
+        client, MatchAbandonedEmbed(match_data, p1_info, p2_info)
+    )
 
 
 async def _on_match_completed(client: discord.Client, match_data: dict) -> None:
@@ -256,11 +265,14 @@ async def _on_match_completed(client: discord.Client, match_data: dict) -> None:
 
     p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
     p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
-    embed = MatchFinalizedEmbed(match_data, p1_info, p2_info)
 
-    await _send_to_both_low(client, p1_uid, p2_uid, embed)
+    await _send_to_both_localized(
+        client, p1_uid, p2_uid, MatchFinalizedEmbed, match_data, p1_info, p2_info
+    )
     await _clear_match_state_low(p1_uid, p2_uid)
-    await _post_to_match_log_low(client, embed)
+    await _post_to_match_log_low(
+        client, MatchFinalizedEmbed(match_data, p1_info, p2_info)
+    )
 
 
 async def _on_match_conflict(client: discord.Client, match_data: dict) -> None:
@@ -270,11 +282,14 @@ async def _on_match_conflict(client: discord.Client, match_data: dict) -> None:
 
     p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
     p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
-    embed = MatchConflictEmbed(match_data, p1_info, p2_info)
 
-    await _send_to_both_low(client, p1_uid, p2_uid, embed)
+    await _send_to_both_localized(
+        client, p1_uid, p2_uid, MatchConflictEmbed, match_data, p1_info, p2_info
+    )
     await _clear_match_state_low(p1_uid, p2_uid)
-    await _post_to_match_log_low(client, embed)
+    await _post_to_match_log_low(
+        client, MatchConflictEmbed(match_data, p1_info, p2_info)
+    )
 
 
 def _on_leaderboard_updated(data: dict) -> None:
@@ -290,18 +305,21 @@ def _on_leaderboard_updated(data: dict) -> None:
 # ---------------------------------------------------------------------------
 
 
-async def _send_to_both_low(
+async def _send_to_both_localized(
     client: discord.Client,
     p1_uid: int | None,
     p2_uid: int | None,
-    embed: discord.Embed,
+    embed_cls: type,
+    *args: object,
 ) -> None:
+    """DM both players with per-locale embeds built from embed_cls(*args, locale=...)."""
     for uid in (p1_uid, p2_uid):
         if uid is None:
             continue
         try:
+            locale = get_player_locale(uid)
             user = await client.fetch_user(uid)
-            await queue_user_send_low(user, embed=embed)
+            await queue_user_send_low(user, embed=embed_cls(*args, locale=locale))
         except Exception:
             logger.exception(f"[WS] Failed to DM user {uid}")
 
