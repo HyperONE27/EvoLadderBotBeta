@@ -2,17 +2,14 @@ import structlog
 import discord
 from discord import app_commands
 
-from bot.components.buttons import ConfirmButton, CancelButton
-from bot.components.embeds import ErrorEmbed
-from bot.core.config import BACKEND_URL
-from bot.core.http import get_session
+from bot.components.embeds import SetCountryNotFoundEmbed, SetCountryPreviewEmbed
+from bot.components.views import SetCountryView
 from bot.helpers.checks import (
     check_if_accepted_tos,
     check_if_banned,
     check_if_completed_setup,
     check_if_dm,
 )
-from bot.helpers.emotes import get_flag_emote
 from common.json_types import Country
 from common.lookups.country_lookups import (
     get_countries,
@@ -21,61 +18,6 @@ from common.lookups.country_lookups import (
 )
 
 logger = structlog.get_logger(__name__)
-
-# ----------
-# Components
-# ----------
-
-# --- Embeds ---
-
-
-class SetCountryNotFoundEmbed(discord.Embed):
-    def __init__(self, country: str):
-        super().__init__(
-            title="❌ Country Not Found",
-            description=f'No country found matching the string "{country}".',
-            color=discord.Color.red(),
-        )
-
-
-class SetCountryPreviewEmbed(discord.Embed):
-    def __init__(self, country: Country):
-        super().__init__(
-            title="🔍 Preview Nationality Selection",
-            description="Please review your nationality selection before confirming:",
-            color=discord.Color.blue(),
-        )
-        self.add_field(
-            name=f"{get_flag_emote(country['code'])} **Nationality**",
-            value=f"`{country['name']} ({country['code']})`",
-        )
-
-
-class SetCountryConfirmEmbed(discord.Embed):
-    def __init__(self, country: Country):
-        super().__init__(
-            title="✅ Nationality Updated",
-            description="Your nationality has been updated successfully.",
-            color=discord.Color.blue(),
-        )
-        self.add_field(
-            name=f"{get_flag_emote(country['code'])} **Nationality**",
-            value=f"`{country['name']} ({country['code']})`",
-        )
-
-
-# --- Views ---
-
-
-class SetCountryView(discord.ui.View):
-    def __init__(self, country: Country):
-        super().__init__()
-
-        async def on_confirm(interaction: discord.Interaction) -> None:
-            await _send_setcountry_request(interaction, country)
-
-        self.add_item(ConfirmButton(callback=on_confirm))
-        self.add_item(CancelButton())
 
 
 # ----------------
@@ -109,39 +51,6 @@ async def _send_confirmation(
     await interaction.followup.send(
         embed=SetCountryPreviewEmbed(country),
         view=SetCountryView(country),
-    )
-
-
-async def _send_setcountry_request(
-    interaction: discord.Interaction,
-    country: Country,
-) -> None:
-    async with get_session().put(
-        f"{BACKEND_URL}/commands/setcountry",
-        json={
-            "discord_uid": interaction.user.id,
-            "discord_username": interaction.user.name,
-            "country_code": country["code"],
-        },
-    ) as response:
-        data = await response.json()
-
-    if not data.get("success"):
-        logger.error(
-            f"setcountry backend failure for user={interaction.user.id}: {data.get('message')}"
-        )
-        await interaction.response.edit_message(
-            embed=ErrorEmbed(
-                title="❌ Update Failed",
-                description=data.get("message") or "An unexpected error occurred.",
-            ),
-            view=None,
-        )
-        return
-
-    await interaction.response.edit_message(
-        embed=SetCountryConfirmEmbed(country),
-        view=None,
     )
 
 

@@ -16,16 +16,18 @@ import discord
 import structlog
 
 from bot.commands.user.queue_command import (
-    MatchAbortedEmbed,
-    MatchAbandonedEmbed,
-    MatchFinalizedEmbed,
-    MatchConflictEmbed,
-    MatchInfoEmbed,
-    MatchFoundEmbed,
     MatchFoundView,
     MatchReportView,
-    QueueSearchingEmbed,
     _fetch_player_info,
+)
+from bot.components.embeds import (
+    MatchAbortedEmbed,
+    MatchAbandonedEmbed,
+    MatchConflictEmbed,
+    MatchFinalizedEmbed,
+    MatchFoundEmbed,
+    MatchInfoEmbed,
+    QueueSearchingEmbed,
 )
 from bot.core.config import (
     BACKEND_URL,
