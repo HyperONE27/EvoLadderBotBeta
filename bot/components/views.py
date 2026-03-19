@@ -53,7 +53,11 @@ from bot.helpers.emotes import (
     get_race_emote,
 )
 from bot.helpers.i18n import LOCALE_DISPLAY_NAMES, get_available_locales
-from bot.helpers.message_helpers import queue_channel_send_low, queue_user_send_low
+from bot.helpers.message_helpers import (
+    queue_channel_send_low,
+    queue_message_edit_low,
+    queue_user_send_low,
+)
 from common.json_types import Country, GeographicRegion
 from common.lookups.map_lookups import get_maps
 from common.lookups.race_lookups import get_bw_race_codes, get_races, get_sc2_race_codes
@@ -1359,12 +1363,12 @@ class QueueSetupView(discord.ui.View):
             try:
                 await check_if_queueing(interaction)
             except AlreadyQueueingError as e:
-                await interaction.response.send_message(
+                await interaction.response.edit_message(
                     embed=ErrorEmbed(
                         title="🚫 Unauthorized Command Usage",
                         description=str(e),
                     ),
-                    ephemeral=True,
+                    view=None,
                 )
                 return
             await _join_queue(
@@ -1484,6 +1488,8 @@ class QueueSearchingView(discord.ui.View):
     ) -> None:
         super().__init__(timeout=None)
         self._interaction = interaction
+        self._message: discord.Message | None = None
+        self._token_expired: bool = False
         self._heartbeat_task: asyncio.Task[None] | None = None
         self.add_item(
             _CancelQueueButton(discord_user_id, bw_race, sc2_race, map_vetoes)
@@ -1512,9 +1518,21 @@ class QueueSearchingView(discord.ui.View):
                 except Exception:
                     pass
 
-                await self._interaction.edit_original_response(
-                    embed=QueueSearchingEmbed(stats),
-                )
+                embed = QueueSearchingEmbed(stats)
+
+                if not self._token_expired:
+                    try:
+                        await self._interaction.edit_original_response(embed=embed)
+                        continue
+                    except discord.HTTPException as e:
+                        if e.status == 401:
+                            self._token_expired = True
+                        else:
+                            raise
+
+                if self._message is not None:
+                    await queue_message_edit_low(self._message, embed=embed)
+
             except asyncio.CancelledError:
                 return
             except Exception:
@@ -1691,6 +1709,7 @@ async def _join_queue(
 
         try:
             msg = await interaction.original_response()
+            searching_view._message = msg
             get_cache().active_searching_messages[discord_user_id] = msg
             get_cache().active_searching_views[discord_user_id] = searching_view
         except Exception:
