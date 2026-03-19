@@ -17,8 +17,8 @@ What remains?
 - ⏰ Generally the UI is messed up everywhere
     - Especially /snapshot
     - ✅ Holy shit fix this
-- ⏰ Implement the infrastructure
-    - of what??? I forgot. I had a thought here and dropped it. probably not important
+- ❌ Implement the infrastructure
+    - ❌ of what??? I forgot. I had a thought here and dropped it. probably not important
 - ✅ mmrs_1v1 W/L/D/T game counts desync from matches_1v1 when a match gets resolved more than once
     - Admin resolutions need to force a recalculation of the affected mmrs_1v1 rows
 - ✅ Fix any other import issues (circular/lazy/etc.)

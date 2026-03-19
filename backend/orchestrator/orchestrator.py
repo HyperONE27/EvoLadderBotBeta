@@ -344,6 +344,10 @@ class Orchestrator:
         """Return the current 1v1 leaderboard."""
         return list(self._state_reader.get_leaderboard_1v1())
 
+    def enrich_match_with_ranks(self, match_dict: dict) -> dict:
+        """Return a copy of match_dict with player letter ranks from the leaderboard."""
+        return self._state_reader.enrich_match_with_ranks(match_dict)
+
     def consume_leaderboard_dirty(self) -> bool:
         """Return True if the leaderboard was rebuilt since the last check."""
         return self._transition_manager.consume_leaderboard_dirty()

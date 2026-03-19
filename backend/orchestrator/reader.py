@@ -88,6 +88,29 @@ class StateReader:
         """Return the current 1v1 leaderboard."""
         return self._state_manager.leaderboard_1v1
 
+    def enrich_match_with_ranks(self, match_dict: dict) -> dict:
+        """Return a copy of match_dict with player letter ranks from the leaderboard."""
+        enriched = dict(match_dict)
+        leaderboard = self._state_manager.leaderboard_1v1
+        lookup: dict[tuple[int, str], str] = {
+            (e["discord_uid"], e["race"]): e["letter_rank"] for e in leaderboard
+        }
+        p1_uid: int | None = match_dict.get("player_1_discord_uid")
+        p1_race: str | None = match_dict.get("player_1_race")
+        p2_uid: int | None = match_dict.get("player_2_discord_uid")
+        p2_race: str | None = match_dict.get("player_2_race")
+        enriched["player_1_letter_rank"] = (
+            lookup.get((p1_uid, p1_race), "U")
+            if p1_uid is not None and p1_race
+            else "U"
+        )
+        enriched["player_2_letter_rank"] = (
+            lookup.get((p2_uid, p2_race), "U")
+            if p2_uid is not None and p2_race
+            else "U"
+        )
+        return enriched
+
     # ------------------------------------------------------------------
     # Location
     # ------------------------------------------------------------------

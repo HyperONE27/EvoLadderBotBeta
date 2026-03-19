@@ -38,7 +38,8 @@ async def _matchmaker_loop() -> None:
                 match_id = match["id"]
 
                 # Broadcast match_found to the bot.
-                await ws.broadcast("match_found", dict(match))
+                enriched = backend.orchestrator.enrich_match_with_ranks(dict(match))
+                await ws.broadcast("match_found", enriched)
 
                 # Schedule a confirmation timeout for this match.
                 asyncio.create_task(
@@ -63,7 +64,8 @@ async def _confirmation_timeout(match_id: int, timeout: int) -> None:
         if success:
             match = backend.orchestrator.get_match_1v1(match_id)
             if match is not None:
-                await ws.broadcast("match_abandoned", dict(match))
+                enriched = backend.orchestrator.enrich_match_with_ranks(dict(match))
+                await ws.broadcast("match_abandoned", enriched)
 
     except Exception:
         logger.exception(f"Confirmation timeout handling failed for match #{match_id}")

@@ -388,7 +388,8 @@ async def match_confirm(
     if both_confirmed:
         match = app.orchestrator.get_match_1v1(match_id)
         if match is not None:
-            await ws.broadcast("both_confirmed", dict(match))
+            enriched = app.orchestrator.enrich_match_with_ranks(dict(match))
+            await ws.broadcast("both_confirmed", enriched)
     return MatchConfirmResponse(success=True, both_confirmed=both_confirmed)
 
 
@@ -410,7 +411,8 @@ async def match_abort(
         raise HTTPException(status_code=code, detail=message)
     match = app.orchestrator.get_match_1v1(match_id)
     if match is not None:
-        await ws.broadcast("match_aborted", dict(match))
+        enriched = app.orchestrator.enrich_match_with_ranks(dict(match))
+        await ws.broadcast("match_aborted", enriched)
     return MatchAbortResponse(success=True, message=None)
 
 
@@ -436,10 +438,11 @@ async def match_report(
         raise HTTPException(status_code=code, detail=message)
     if match is not None:
         result = match.get("match_result")
+        enriched = app.orchestrator.enrich_match_with_ranks(dict(match))
         if result == "conflict":
-            await ws.broadcast("match_conflict", dict(match))
+            await ws.broadcast("match_conflict", enriched)
         elif result is not None:
-            await ws.broadcast("match_completed", dict(match))
+            await ws.broadcast("match_completed", enriched)
         await _broadcast_leaderboard_if_dirty(app, ws)
     return MatchReportResponse(success=True, message=message, match=match)
 
@@ -672,6 +675,7 @@ async def upload_replay(
             auto_resolved = True
 
             # Broadcast match_completed + leaderboard via WebSocket.
+            resolved_match = app.orchestrator.enrich_match_with_ranks(resolved_match)
             await ws.broadcast("match_completed", resolved_match)
             await _broadcast_leaderboard_if_dirty(app, ws)
 

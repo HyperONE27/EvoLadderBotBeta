@@ -338,8 +338,8 @@ class MatchInfoEmbed(discord.Embed):
         p1_flag = get_flag_emote(p1_country)
         p2_flag = get_flag_emote(p2_country)
 
-        p1_rank_emote = get_rank_emote("U")
-        p2_rank_emote = get_rank_emote("U")
+        p1_rank_emote = get_rank_emote(match_data.get("player_1_letter_rank", "U"))
+        p2_rank_emote = get_rank_emote(match_data.get("player_2_letter_rank", "U"))
 
         p1_race_emote = get_race_emote(p1_race) if p1_race else ""
         p2_race_emote = get_race_emote(p2_race) if p2_race else ""
@@ -501,14 +501,14 @@ class MatchAbortedEmbed(discord.Embed):
         p2_country = (p2_info.get("nationality") or "XX") if p2_info else "XX"
 
         p1_hdr = _player_header(
-            get_rank_emote("U"),
+            get_rank_emote(match_data.get("player_1_letter_rank", "U")),
             get_flag_emote(p1_country),
             get_race_emote(p1_race) if p1_race else "",
             p1_name,
             p1_mmr,
         )
         p2_hdr = _player_header(
-            get_rank_emote("U"),
+            get_rank_emote(match_data.get("player_2_letter_rank", "U")),
             get_flag_emote(p2_country),
             get_race_emote(p2_race) if p2_race else "",
             p2_name,
@@ -557,14 +557,14 @@ class MatchAbandonedEmbed(discord.Embed):
         p2_country = (p2_info.get("nationality") or "XX") if p2_info else "XX"
 
         p1_hdr = _player_header(
-            get_rank_emote("U"),
+            get_rank_emote(match_data.get("player_1_letter_rank", "U")),
             get_flag_emote(p1_country),
             get_race_emote(p1_race) if p1_race else "",
             p1_name,
             p1_mmr,
         )
         p2_hdr = _player_header(
-            get_rank_emote("U"),
+            get_rank_emote(match_data.get("player_2_letter_rank", "U")),
             get_flag_emote(p2_country),
             get_race_emote(p2_race) if p2_race else "",
             p2_name,
@@ -616,8 +616,8 @@ class MatchFinalizedEmbed(discord.Embed):
 
         p1_country = (p1_info.get("nationality") or "XX") if p1_info else "XX"
         p2_country = (p2_info.get("nationality") or "XX") if p2_info else "XX"
-        p1_rank = get_rank_emote("U")
-        p2_rank = get_rank_emote("U")
+        p1_rank = get_rank_emote(match_data.get("player_1_letter_rank", "U"))
+        p2_rank = get_rank_emote(match_data.get("player_2_letter_rank", "U"))
         p1_flag = get_flag_emote(p1_country)
         p2_flag = get_flag_emote(p2_country)
         p1_race_emote = get_race_emote(p1_race) if p1_race else ""
@@ -679,14 +679,14 @@ class MatchConflictEmbed(discord.Embed):
         p2_country = (p2_info.get("nationality") or "XX") if p2_info else "XX"
 
         p1_hdr = _player_header(
-            get_rank_emote("U"),
+            get_rank_emote(match_data.get("player_1_letter_rank", "U")),
             get_flag_emote(p1_country),
             get_race_emote(p1_race) if p1_race else "",
             p1_name,
             p1_mmr,
         )
         p2_hdr = _player_header(
-            get_rank_emote("U"),
+            get_rank_emote(match_data.get("player_2_letter_rank", "U")),
             get_flag_emote(p2_country),
             get_race_emote(p2_race) if p2_race else "",
             p2_name,
