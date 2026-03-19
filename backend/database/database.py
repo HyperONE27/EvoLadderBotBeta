@@ -52,7 +52,11 @@ class DatabaseReader:
             # can rely on the schema even when the table has no rows yet.
             return pl.DataFrame(schema=schema)
 
-        return self._validate_schema(pl.DataFrame(data), schema, table_name)
+        return self._validate_schema(
+            pl.DataFrame(data, infer_schema_length=None),
+            schema,
+            table_name,
+        )
 
     def _validate_schema(
         self,
