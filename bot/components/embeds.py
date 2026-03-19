@@ -150,6 +150,13 @@ def _server_display(server_code: str, locale: str = "enUS") -> str:
     return f"{server_name} ({region_name})"
 
 
+def _lobby_setting_display(value: str, locale: str = "enUS") -> str:
+    """Return the localized display string for a lobby setting value (e.g. "Yes", "Faster")."""
+    key = f"match_info_embed.lobby_setting.{value.lower()}"
+    result = t(key, locale)
+    return result if result != key else value
+
+
 def _get_map_link(map_name: str, server_code: str) -> str:
     """Get the appropriate battlenet map link based on server region."""
     map_data = get_map_by_short_name(map_name)
@@ -484,7 +491,9 @@ class MatchInfoEmbed(discord.Embed):
                 "match_info_embed.field_value.3",
                 locale,
                 server=server_full,
-                locked_alliances=str(EXPECTED_LOBBY_SETTINGS["locked_alliances"]),
+                locked_alliances=_lobby_setting_display(
+                    EXPECTED_LOBBY_SETTINGS["locked_alliances"], locale
+                ),
             ),
             inline=True,
         )
@@ -494,9 +503,13 @@ class MatchInfoEmbed(discord.Embed):
             value=t(
                 "match_info_embed.field_value.4",
                 locale,
-                privacy=str(EXPECTED_LOBBY_SETTINGS["privacy"]),
-                speed=str(EXPECTED_LOBBY_SETTINGS["speed"]),
-                duration=str(EXPECTED_LOBBY_SETTINGS["duration"]),
+                privacy=_lobby_setting_display(
+                    EXPECTED_LOBBY_SETTINGS["privacy"], locale
+                ),
+                speed=_lobby_setting_display(EXPECTED_LOBBY_SETTINGS["speed"], locale),
+                duration=_lobby_setting_display(
+                    EXPECTED_LOBBY_SETTINGS["duration"], locale
+                ),
             ),
             inline=True,
         )

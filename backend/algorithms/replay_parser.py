@@ -28,15 +28,34 @@ _RESULT_INT_TO_STR: dict[int, str] = {
 # Hard-coded sc2reader race name → ladder race code mapping.
 # Alias resolution via the races.json lookup is NOT done here because this
 # function runs in a worker process that may not have the lookup modules
-# initialised.  Unknown race names are returned as-is and normalised by the
-# caller before inserting into the database.
+# initialised.  All localised aliases from races.json are listed explicitly so
+# that replays recorded on non-English clients map correctly.
 _RACE_MAP: dict[str, str] = {
+    # English (sc2reader default)
     "Terran": "sc2_terran",
     "Zerg": "sc2_zerg",
     "Protoss": "sc2_protoss",
     "BW Terran": "bw_terran",
     "BW Zerg": "bw_zerg",
     "BW Protoss": "bw_protoss",
+    # Korean
+    "테란": "sc2_terran",
+    "저그": "sc2_zerg",
+    "토스": "sc2_protoss",
+    "스1 테란": "bw_terran",
+    "스1 저그": "bw_zerg",
+    "스1 토스": "bw_protoss",
+    # Chinese (Simplified)
+    "人类": "sc2_terran",
+    "异虫": "sc2_zerg",
+    "星灵": "sc2_protoss",
+    "SC1人类": "bw_terran",
+    "SC1异虫": "bw_zerg",
+    "SC1星灵": "bw_protoss",
+    # Russian
+    "Терраны": "sc2_terran",
+    "Зерги": "sc2_zerg",
+    "Протоссы": "sc2_protoss",
 }
 
 

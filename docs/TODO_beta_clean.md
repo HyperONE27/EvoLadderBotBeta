@@ -17,6 +17,10 @@ What remains?
 - ⏰ Generally the UI is messed up everywhere
     - Especially /snapshot
     - ✅ Holy shit fix this
+- ⏰ /snapshot does not correctly show letter 
+    - Currently shows `Z1 HyperONEFOUR`
+    - It needs to show `D T2 US HyperONEFOUR`
+- ⏰ /snapshot displays matches that should have already been resolved
 - ❌ Implement the infrastructure
     - ❌ of what??? I forgot. I had a thought here and dropped it. probably not important
 - ✅ mmrs_1v1 W/L/D/T game counts desync from matches_1v1 when a match gets resolved more than once

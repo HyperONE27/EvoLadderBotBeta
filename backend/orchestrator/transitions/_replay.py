@@ -184,6 +184,29 @@ def replay_auto_resolve_match(
         player_2_report=p2_report,
     )
 
+    # Same lifecycle event as _finalise_match (manual double-report path).
+    # discord_uid=1 = backend/system; uploader is recorded in event_data.
+    self._db_writer.insert_event(
+        {
+            "discord_uid": 1,
+            "event_type": "match_event",
+            "action": "match_completed",
+            "game_mode": "1v1",
+            "match_id": match_id,
+            "event_data": {
+                "game_mode": "1v1",
+                "match_id": match_id,
+                "result": replay_result,
+                "p1_uid": match["player_1_discord_uid"],
+                "p2_uid": match["player_2_discord_uid"],
+                "p1_mmr_change": p1_change,
+                "p2_mmr_change": p2_change,
+                "via": "replay_auto_resolve",
+                "uploader_discord_uid": uploader_discord_uid,
+            },
+        }
+    )
+
     logger.info(
         f"Match #{match_id} auto-resolved via replay upload by "
         f"{uploader_discord_uid}: {replay_result} "
