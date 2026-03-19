@@ -29,7 +29,10 @@ from datetime import datetime, timedelta, timezone
 
 import polars as pl
 
-from backend.core.config import LEADERBOARD_INACTIVITY_DAYS
+from backend.core.config import (
+    EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER,
+    LEADERBOARD_INACTIVITY_DAYS,
+)
 from backend.domain_types.ephemeral import LeaderboardEntry1v1
 
 # Rank percentages (must sum to 1.0).
@@ -59,9 +62,9 @@ def build_leaderboard_1v1(
     if df.is_empty():
         return []
 
-    # Join nationality from players_df.
-    nationality_map = players_df.select("discord_uid", "nationality")
-    df = df.join(nationality_map, on="discord_uid", how="left")
+    # Join player_name and nationality from players_df (authoritative source).
+    player_map = players_df.select("discord_uid", "nationality", "player_name")
+    df = df.drop("player_name").join(player_map, on="discord_uid", how="left")
 
     # Sort: highest MMR first, most recent activity as tiebreaker.
     df = df.sort(["mmr", "last_played_at"], descending=[True, True])
@@ -110,19 +113,24 @@ def build_leaderboard_1v1(
             a_prev_mmr = mmr_val
         active_ordinal_map[idx] = a_prev_rank
 
-    # --- Letter rank allocation (active entries only) ---
-    total_active = len(active_indices)
-    allocations = _calculate_allocations(total_active)
+    # --- Letter rank allocation ---
+    if EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER:
+        # Allocate only across active players; inactive get "U".
+        rank_indices = active_indices
+    else:
+        # Allocate across all players regardless of activity.
+        rank_indices = list(range(len(rows)))
 
-    # Map active list position → letter rank.
+    allocations = _calculate_allocations(len(rank_indices))
+
     letter_rank_map: dict[int, str] = {}
-    active_pos = 0
+    pos = 0
     for rank_letter in _RANK_ORDER:
         count = allocations[rank_letter]
         for _ in range(count):
-            if active_pos < total_active:
-                letter_rank_map[active_indices[active_pos]] = rank_letter
-                active_pos += 1
+            if pos < len(rank_indices):
+                letter_rank_map[rank_indices[pos]] = rank_letter
+                pos += 1
 
     # --- Build final list ---
     entries: list[LeaderboardEntry1v1] = []

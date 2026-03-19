@@ -3,7 +3,11 @@ import structlog
 import discord
 from discord import app_commands
 
-from bot.core.config import BACKEND_URL, GAME_MODE_CHOICES
+from bot.core.config import (
+    BACKEND_URL,
+    EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER,
+    GAME_MODE_CHOICES,
+)
 from bot.core.dependencies import get_cache
 from bot.core.http import get_session
 from bot.helpers.checks import (
@@ -137,11 +141,11 @@ class LeaderboardEmbed(discord.Embed):
                     rank_emote = get_rank_emote(entry["letter_rank"])
                     race_emote = get_race_emote(entry["race"])
                     flag_emote = get_flag_emote(entry["nationality"] or "XX")
-                    active_rank = entry.get("active_ordinal_rank", -1)
-                    if active_rank > 0:
-                        ordinal = f"{active_rank:>4d}"
+                    if EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER:
+                        active_rank = entry.get("active_ordinal_rank", -1)
+                        ordinal = f"{active_rank:>4d}" if active_rank > 0 else "   -"
                     else:
-                        ordinal = "   -"
+                        ordinal = f"{entry['ordinal_rank']:>4d}"
                     name = f"{entry['player_name'][:12]:<12}"
                     mmr = entry["mmr"]
                     lines.append(

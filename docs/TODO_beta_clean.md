@@ -8,6 +8,7 @@ What remains?
     - 1/7/21/21/21/21/8% splits
     - Ordinal rank calculation
     - Store in Leaderboard1v1 in StateManager
+    - ⏰ Need to spot check /leaderboard and the implementation code
 - ⏰ /profile looks weird
 - ⏰ /profile doesn't contain full T/W/L/D (win-rate %) statistics by race and aggregated
 - ⏰ Generally the UI is messed up everywhere
