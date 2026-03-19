@@ -12,6 +12,7 @@ from common.json_types import (
     Race,
     RegionData,
 )
+from common.i18n import init_i18n
 from common.loader import JSONLoader
 from common.lookups.country_lookups import init_country_lookups
 from common.lookups.cross_table_lookups import init_cross_table_lookups
@@ -103,7 +104,5 @@ class Cache:
             setattr(self, key, value)
 
     def _populate_locale_data(self) -> None:
-        from common.i18n import init_i18n
-
         locales = JSONLoader().load_locale_data()
         init_i18n(locales)

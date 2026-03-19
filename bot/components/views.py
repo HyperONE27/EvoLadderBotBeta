@@ -1359,7 +1359,13 @@ class QueueSetupView(discord.ui.View):
             try:
                 await check_if_queueing(interaction)
             except AlreadyQueueingError as e:
-                await interaction.response.send_message(str(e), ephemeral=True)
+                await interaction.response.send_message(
+                    embed=ErrorEmbed(
+                        title="🚫 Unauthorized Command Usage",
+                        description=str(e),
+                    ),
+                    ephemeral=True,
+                )
                 return
             await _join_queue(
                 interaction,

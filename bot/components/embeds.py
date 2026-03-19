@@ -32,6 +32,7 @@ from bot.helpers.emotes import (
     get_rank_emote,
 )
 from bot.helpers.i18n import LOCALE_DISPLAY_NAMES
+from common.i18n import t
 from common.datetime_helpers import (
     ensure_utc,
     to_discord_timestamp,
@@ -1063,8 +1064,6 @@ class TermsOfServiceDeclinedEmbed(discord.Embed):
 
 class SetCountryNotFoundEmbed(discord.Embed):
     def __init__(self, country: str, locale: str = "enUS"):
-        from common.i18n import t
-
         super().__init__(
             title="❌ Country Not Found",
             description=t(
@@ -1078,8 +1077,6 @@ class SetCountryNotFoundEmbed(discord.Embed):
 
 class SetCountryPreviewEmbed(discord.Embed):
     def __init__(self, country: Country, locale: str = "enUS"):
-        from common.i18n import t
-
         super().__init__(
             title=t("bot.commands.user.setcountry.preview.title", locale),
             description=t("bot.commands.user.setcountry.preview.description", locale),
@@ -1093,8 +1090,6 @@ class SetCountryPreviewEmbed(discord.Embed):
 
 class SetCountryConfirmEmbed(discord.Embed):
     def __init__(self, country: Country, locale: str = "enUS"):
-        from common.i18n import t
-
         super().__init__(
             title=t("bot.commands.user.setcountry.confirm.title", locale),
             description=t("bot.commands.user.setcountry.confirm.description", locale),
