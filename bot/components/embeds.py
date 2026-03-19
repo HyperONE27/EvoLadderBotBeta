@@ -212,7 +212,7 @@ class QueueSetupEmbed(discord.Embed):
                 "queue_setup_embed.field_name.3",
                 locale,
                 veto_count=str(veto_count),
-                max_vetoes=str(MAX_MAP_VETOES),
+                max_map_vetoes=str(MAX_MAP_VETOES),
             ),
             value=veto_value,
             inline=False,
@@ -252,12 +252,12 @@ class QueueSearchingEmbed(discord.Embed):
         next_search = int((now // 60 + 1) * 60)
 
         if match_found:
-            description = t("queue_searching_embed.description.1", locale)
+            description = t("queue_searching_embed.description.2", locale)
         else:
             description = t(
-                "queue_searching_embed.description.2",
+                "queue_searching_embed.description.1",
                 locale,
-                next_search=str(next_search),
+                next_search_ts=f"<t:{next_search}:R>",
                 bw_only=str(bw_only),
                 sc2_only=str(sc2_only),
                 both=str(both),
@@ -530,7 +530,7 @@ class MatchAbortedEmbed(discord.Embed):
         )
         self.add_field(
             name=t("shared.field_name.reason", locale),
-            value=t("match_aborted_embed.field_value.1", locale, aborter=aborter),
+            value=t("match_aborted_embed.field_value.2", locale, aborter=aborter),
             inline=False,
         )
 
@@ -586,7 +586,7 @@ class MatchAbandonedEmbed(discord.Embed):
         )
         self.add_field(
             name=t("shared.field_name.reason", locale),
-            value=t("match_abandoned_embed.field_value.1", locale, abandoner=abandoner),
+            value=t("match_abandoned_embed.field_value.2", locale, abandoner=abandoner),
             inline=False,
         )
 
@@ -635,7 +635,7 @@ class MatchFinalizedEmbed(discord.Embed):
         )
 
         if result == "draw":
-            result_value = t("match_finalized_embed.field_value.1", locale)
+            result_value = t("shared.result_draw", locale)
         elif result == "player_1_win":
             result_value = f"🏆 {p1_rank} {p1_flag} {p1_race_emote} {p1_name}"
         else:
@@ -700,7 +700,7 @@ class MatchConflictEmbed(discord.Embed):
             color=discord.Color.orange(),
         )
         self.add_field(
-            name=t("match_conflict_embed.field_name.1", locale),
+            name=t("shared.field_name.reports", locale),
             value=(
                 f"- {p1_name}: `{_report_display(p1_report, locale)}`\n"
                 f"- {p2_name}: `{_report_display(p2_report, locale)}`"
@@ -709,7 +709,7 @@ class MatchConflictEmbed(discord.Embed):
         )
         self.add_field(
             name=t("shared.field_name.reason", locale),
-            value=t("match_conflict_embed.field_value.1", locale),
+            value=t("match_conflict_embed.field_value.2", locale),
             inline=False,
         )
 
@@ -780,7 +780,7 @@ class SetupSelectionEmbed(discord.Embed):
 
         if country and region and language:
             self.description = selected_block + t(
-                "setup_selection_embed.description.1", locale
+                "setup_selection_embed.confirm_prompt.1", locale
             )
         else:
             missing: list[str] = []
@@ -813,12 +813,12 @@ class SetupPreviewEmbed(discord.Embed):
             color=discord.Color.blue(),
         )
         self.add_field(
-            name=t("setup_preview_embed.field_name.1", locale),
+            name=t("shared.field_name.user_id", locale),
             value=f"`{player_name}`",
             inline=False,
         )
         self.add_field(
-            name=t("setup_preview_embed.field_name.2", locale),
+            name=t("shared.field_name.battletag", locale),
             value=f"`{battletag}`",
             inline=False,
         )
@@ -833,13 +833,13 @@ class SetupPreviewEmbed(discord.Embed):
             inline=False,
         )
         self.add_field(
-            name=t("setup_preview_embed.field_name.3", locale),
+            name=t("shared.field_name.language", locale),
             value=f"`{LOCALE_DISPLAY_NAMES[language][0] if language in LOCALE_DISPLAY_NAMES else language}`",
             inline=False,
         )
         alt_display = ", ".join(f"`{a}`" for a in alt_ids) if alt_ids else "`None`"
         self.add_field(
-            name=t("setup_preview_embed.field_name.4", locale),
+            name=t("shared.field_name.alt_ids", locale),
             value=alt_display,
             inline=False,
         )
@@ -862,12 +862,12 @@ class SetupSuccessEmbed(discord.Embed):
             color=discord.Color.green(),
         )
         self.add_field(
-            name=t("setup_success_embed.field_name.1", locale),
+            name=t("shared.field_name.user_id", locale),
             value=f"`{player_name}`",
             inline=False,
         )
         self.add_field(
-            name=t("setup_success_embed.field_name.2", locale),
+            name=t("shared.field_name.battletag", locale),
             value=f"`{battletag}`",
             inline=False,
         )
@@ -882,13 +882,13 @@ class SetupSuccessEmbed(discord.Embed):
             inline=False,
         )
         self.add_field(
-            name=t("setup_success_embed.field_name.3", locale),
+            name=t("shared.field_name.language", locale),
             value=f"`{LOCALE_DISPLAY_NAMES[language][0] if language in LOCALE_DISPLAY_NAMES else language}`",
             inline=False,
         )
         alt_display = ", ".join(f"`{a}`" for a in alt_ids) if alt_ids else "`None`"
         self.add_field(
-            name=t("setup_success_embed.field_name.4", locale),
+            name=t("shared.field_name.alt_ids", locale),
             value=alt_display,
             inline=False,
         )
