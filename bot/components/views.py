@@ -52,7 +52,7 @@ from bot.helpers.emotes import (
     get_globe_emote,
     get_race_emote,
 )
-from bot.helpers.i18n import LOCALE_DISPLAY_NAMES, get_available_locales
+from common.i18n import LOCALE_DISPLAY_NAMES, get_available_locales
 from bot.helpers.message_helpers import (
     queue_channel_send_low,
     queue_message_edit_low,

@@ -74,6 +74,9 @@ def _entry_to_model(e: LeaderboardEntry1v1) -> LeaderboardEntry:
         nationality=e["nationality"],
         mmr=e["mmr"],
         games_played=e["games_played"],
+        games_won=e["games_won"],
+        games_lost=e["games_lost"],
+        games_drawn=e["games_drawn"],
         last_played_at=(
             e["last_played_at"].isoformat() if e["last_played_at"] else None
         ),

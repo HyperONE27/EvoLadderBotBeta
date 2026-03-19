@@ -7,7 +7,7 @@ from common.config import CONFIRMATION_TIMEOUT as CONFIRMATION_TIMEOUT
 from common.config import CURRENT_SEASON as CURRENT_SEASON
 from common.config import ENABLE_REPLAY_VALIDATION as ENABLE_REPLAY_VALIDATION
 from common.config import (
-    EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER as EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER,
+    EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER_RANK as EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER_RANK,
 )
 from common.config import EXPECTED_LOBBY_SETTINGS as EXPECTED_LOBBY_SETTINGS
 from common.config import GAME_MODES as GAME_MODES
@@ -117,7 +117,7 @@ QUEUE: dict[str, int] = {
 # ---------------------
 
 # LEADERBOARD_INACTIVITY_DAYS          → common/config.py
-# EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER → common/config.py
+# EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER_RANK → common/config.py
 
 # ---------------------
 # Replay configuration

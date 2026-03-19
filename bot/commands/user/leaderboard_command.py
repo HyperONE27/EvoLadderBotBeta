@@ -5,7 +5,7 @@ from discord import app_commands
 
 from bot.core.config import (
     BACKEND_URL,
-    EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER,
+    EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER_RANK,
     GAME_MODE_CHOICES,
 )
 from bot.core.dependencies import get_cache
@@ -17,6 +17,8 @@ from bot.helpers.checks import (
     check_if_dm,
 )
 from bot.helpers.emotes import get_flag_emote, get_race_emote, get_rank_emote
+from common.i18n import t
+from common.lookups.country_lookups import get_common_countries
 from common.lookups.race_lookups import get_bw_race_codes, get_races, get_sc2_race_codes
 
 logger = structlog.get_logger(__name__)
@@ -28,16 +30,21 @@ logger = structlog.get_logger(__name__)
 _PAGE_SIZE = 40
 _PLAYERS_PER_FIELD = 5
 
-_RANK_CYCLE: list[str | None] = [None, "S", "A", "B", "C", "D", "E", "F"]
+_RANKED_ONLY = "_ranked"  # Sentinel: show all players with a letter rank (not U)
+_RANK_CYCLE: list[str | None] = [None, _RANKED_ONLY, "S", "A", "B", "C", "D", "E", "F"]
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 
-def _race_display(race_code: str) -> str:
-    race = get_races().get(race_code)
-    return race["short_name"] if race else race_code
+def _race_display(race_code: str, locale: str = "enUS") -> str:
+    return t(f"race.{race_code}.name", locale)
+
+
+def _country_display(code: str, locale: str = "enUS") -> str:
+    country = get_common_countries().get(code)
+    return country["name"] if country else code
 
 
 async def _ensure_leaderboard() -> list[dict]:
@@ -85,7 +92,9 @@ def _apply_filters(
         nat_set = set(nationality_filter)
         result = [e for e in result if e["nationality"] in nat_set]
 
-    if rank_filter:
+    if rank_filter == _RANKED_ONLY:
+        result = [e for e in result if e["letter_rank"] != "U"]
+    elif rank_filter:
         result = [e for e in result if e["letter_rank"] == rank_filter]
 
     return result
@@ -108,30 +117,60 @@ class LeaderboardEmbed(discord.Embed):
         nationality_filter: list[str] | None = None,
         best_race_only: bool = False,
         rank_filter: str | None = None,
+        locale: str = "enUS",
     ) -> None:
-        super().__init__(title="Leaderboard", color=discord.Color.gold())
+        super().__init__(
+            title=t("leaderboard_embed.title.1", locale), color=discord.Color.gold()
+        )
 
-        # Filter summary
-        parts: list[str] = []
-        if race_filter:
-            parts.append(
-                "**Race:** `" + ", ".join(_race_display(r) for r in race_filter) + "`"
-            )
-        if nationality_filter:
-            parts.append("**Nationality:** `" + ", ".join(nationality_filter) + "`")
-        if rank_filter:
-            parts.append(f"**Rank:** `{rank_filter}`")
+        # Filter summary — display in canonical order, not click order.
+        _race_order = get_bw_race_codes() + get_sc2_race_codes()
+        sorted_races = sorted(
+            race_filter or [],
+            key=lambda r: (
+                _race_order.index(r) if r in _race_order else len(_race_order)
+            ),
+        )
+        all_label = t("leaderboard_embed.label_all.1", locale)
+        race_label = (
+            ", ".join(_race_display(r, locale) for r in sorted_races)
+            if sorted_races
+            else all_label
+        )
+
+        sorted_nats = sorted(
+            nationality_filter or [], key=lambda c: _country_display(c, locale)
+        )
+        nat_label = (
+            ", ".join(_country_display(c, locale) for c in sorted_nats)
+            if sorted_nats
+            else all_label
+        )
+        if rank_filter is None:
+            rank_label = all_label
+        elif rank_filter == _RANKED_ONLY:
+            rank_label = t("leaderboard_embed.label_ranked_only.1", locale)
+        else:
+            rank_label = rank_filter
+        parts: list[str] = [
+            t("leaderboard_embed.filter_race.1", locale, race_label=race_label),
+            t("leaderboard_embed.filter_nationality.1", locale, nat_label=nat_label),
+            t("leaderboard_embed.filter_rank.1", locale, rank_label=rank_label),
+        ]
         if best_race_only:
-            parts.append("**Best Race Only**")
-        if parts:
-            self.add_field(name="", value="\n".join(parts), inline=False)
+            parts.append(t("leaderboard_embed.filter_best_race.1", locale))
+        self.add_field(name="", value="\n".join(parts), inline=False)
 
         # Leaderboard rows
         start = (page - 1) * _PAGE_SIZE
         page_entries = entries[start : start + _PAGE_SIZE]
 
         if not page_entries:
-            self.add_field(name="Leaderboard", value="No players found.", inline=False)
+            self.add_field(
+                name=t("leaderboard_embed.field_name_empty.1", locale),
+                value=t("leaderboard_embed.no_players.1", locale),
+                inline=False,
+            )
         else:
             chunks: list[str] = []
             for i in range(0, len(page_entries), _PLAYERS_PER_FIELD):
@@ -141,7 +180,7 @@ class LeaderboardEmbed(discord.Embed):
                     rank_emote = get_rank_emote(entry["letter_rank"])
                     race_emote = get_race_emote(entry["race"])
                     flag_emote = get_flag_emote(entry["nationality"] or "XX")
-                    if EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER:
+                    if EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER_RANK:
                         active_rank = entry.get("active_ordinal_rank", -1)
                         ordinal = f"{active_rank:>4d}" if active_rank > 0 else "   -"
                     else:
@@ -159,7 +198,12 @@ class LeaderboardEmbed(discord.Embed):
                 pair_start = start + pair_idx * 10 + 1
                 pair_end = pair_start + 9
                 self.add_field(
-                    name=f"Leaderboard ({pair_start}-{pair_end})",
+                    name=t(
+                        "leaderboard_embed.field_name.1",
+                        locale,
+                        start=str(pair_start),
+                        end=str(pair_end),
+                    ),
                     value=chunks[i],
                     inline=True,
                 )
@@ -169,7 +213,13 @@ class LeaderboardEmbed(discord.Embed):
                     self.add_field(name=" ", value=" ", inline=False)
 
         self.set_footer(
-            text=f"Page {page}/{total_pages} \u2022 {total_players} players"
+            text=t(
+                "leaderboard_embed.footer.1",
+                locale,
+                page=str(page),
+                total_pages=str(total_pages),
+                total_players=str(total_players),
+            )
         )
 
 
@@ -210,47 +260,63 @@ class RaceFilterSelect(discord.ui.Select["LeaderboardView"]):
         await self.view.refresh(interaction)
 
 
-class NationalityFilterSelect(discord.ui.Select["LeaderboardView"]):
-    """Country filter — shows top countries from the leaderboard data."""
+def _common_country_options() -> list[discord.SelectOption]:
+    """Return SelectOptions for all common countries, sorted by name."""
+    countries = sorted(get_common_countries().values(), key=lambda c: c["name"])
+    return [
+        discord.SelectOption(
+            label=c["name"],
+            value=c["code"],
+            emoji=get_flag_emote(c["code"]),
+        )
+        for c in countries
+    ]
 
-    def __init__(
-        self, entries: list[dict], selected: list[str] | None = None, *, row: int
-    ) -> None:
+
+class CountryFilterPage1Select(discord.ui.Select["LeaderboardView"]):
+    """Nationality filter — first 25 common countries (sorted by name)."""
+
+    def __init__(self, selected: list[str] | None = None) -> None:
         selected = selected or []
-
-        # Build list of nationalities present in the leaderboard, sorted by frequency.
-        freq: dict[str, int] = {}
-        for e in entries:
-            nat = e.get("nationality") or ""
-            if nat:
-                freq[nat] = freq.get(nat, 0) + 1
-        sorted_nats = sorted(freq, key=lambda n: freq[n], reverse=True)[:25]
-
-        options = [
-            discord.SelectOption(
-                label=code,
-                value=code,
-                emoji=get_flag_emote(code),
-                default=code in selected,
-            )
-            for code in sorted_nats
-        ]
-
-        if not options:
-            options = [discord.SelectOption(label="No countries", value="_none")]
-
+        all_options = _common_country_options()
+        options = all_options[:25]
+        for opt in options:
+            opt.default = opt.value in selected
         super().__init__(
-            placeholder="Filter by nationality...",
+            placeholder="Filter by nationality (Page 1)...",
             min_values=0,
-            max_values=len(options),
+            max_values=25,
             options=options,
-            row=row,
+            row=2,
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
         assert self.view is not None
-        values = [v for v in self.values if v != "_none"]
-        self.view.nationality_filter = values or None
+        self.view.country_page1_selection = list(self.values)
+        self.view.current_page = 1
+        await self.view.refresh(interaction)
+
+
+class CountryFilterPage2Select(discord.ui.Select["LeaderboardView"]):
+    """Nationality filter — next 25 common countries (sorted by name)."""
+
+    def __init__(self, selected: list[str] | None = None) -> None:
+        selected = selected or []
+        all_options = _common_country_options()
+        options = all_options[25:50]
+        for opt in options:
+            opt.default = opt.value in selected
+        super().__init__(
+            placeholder="Filter by nationality (Page 2)...",
+            min_values=0,
+            max_values=25,
+            options=options,
+            row=3,
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        assert self.view is not None
+        self.view.country_page2_selection = list(self.values)
         self.view.current_page = 1
         await self.view.refresh(interaction)
 
@@ -323,6 +389,10 @@ class RankFilterButton(discord.ui.Button["LeaderboardView"]):
             label = "All Ranks"
             emoji = get_rank_emote("U")
             style = discord.ButtonStyle.secondary
+        elif rank_filter == _RANKED_ONLY:
+            label = "Ranked Only"
+            emoji = get_rank_emote("L")
+            style = discord.ButtonStyle.primary
         else:
             label = f"{rank_filter}-Rank"
             emoji = get_rank_emote(rank_filter)
@@ -373,7 +443,8 @@ class ClearFiltersButton(discord.ui.Button["LeaderboardView"]):
     async def callback(self, interaction: discord.Interaction) -> None:
         assert self.view is not None
         self.view.race_filter = None
-        self.view.nationality_filter = None
+        self.view.country_page1_selection = []
+        self.view.country_page2_selection = []
         self.view.rank_filter = None
         self.view.best_race_only = False
         self.view.current_page = 1
@@ -391,10 +462,16 @@ class LeaderboardView(discord.ui.View):
         self._all_entries = entries
         self.current_page: int = 1
         self.race_filter: list[str] | None = None
-        self.nationality_filter: list[str] | None = None
+        self.country_page1_selection: list[str] = []
+        self.country_page2_selection: list[str] = []
         self.rank_filter: str | None = None
         self.best_race_only: bool = False
         self._rebuild_components()
+
+    @property
+    def nationality_filter(self) -> list[str] | None:
+        combined = self.country_page1_selection + self.country_page2_selection
+        return combined or None
 
     def _filtered(self) -> list[dict]:
         return _apply_filters(
@@ -420,12 +497,11 @@ class LeaderboardView(discord.ui.View):
         self.add_item(BestRaceOnlyButton(self.best_race_only))
         self.add_item(ClearFiltersButton())
         self.add_item(RaceFilterSelect(self.race_filter))
-        self.add_item(
-            NationalityFilterSelect(self._all_entries, self.nationality_filter, row=2)
-        )
+        self.add_item(CountryFilterPage1Select(self.country_page1_selection))
+        self.add_item(CountryFilterPage2Select(self.country_page2_selection))
         self.add_item(PageNavigationSelect(total_pages, self.current_page))
 
-    def build_embed(self) -> LeaderboardEmbed:
+    def build_embed(self, locale: str = "enUS") -> LeaderboardEmbed:
         filtered = self._filtered()
         total_pages = self._total_pages(len(filtered))
         return LeaderboardEmbed(
@@ -437,6 +513,7 @@ class LeaderboardView(discord.ui.View):
             nationality_filter=self.nationality_filter,
             best_race_only=self.best_race_only,
             rank_filter=self.rank_filter,
+            locale=locale,
         )
 
     async def refresh(self, interaction: discord.Interaction) -> None:

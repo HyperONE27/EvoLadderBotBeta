@@ -5,9 +5,15 @@ returns a fully ranked ``list[LeaderboardEntry1v1]``.
 
 Ranking rules:
 - All player-race pairs with ``games_played > 0`` are included.
-- Sorted by MMR descending, ``last_played_at`` descending as tiebreaker.
-- ``ordinal_rank`` — dense rank across **all** entries (active + inactive).
-- ``active_ordinal_rank`` — dense rank across active entries only; -1 for inactive.
+- Total ordering (no shared ranks except for truly identical rows):
+    1. MMR descending
+    2. last_played_at descending (more recently played ranks higher)
+    3. win_rate (games_won / games_played) descending
+    4. nonlose_rate ((games_won + games_drawn) / games_played) descending
+    5. games_played descending
+    6. player_name ascending (lexicographically earlier ranks higher)
+- ``ordinal_rank`` — rank across **all** entries (active + inactive).
+- ``active_ordinal_rank`` — rank across active entries only; -1 for inactive.
 - Active = ``last_played_at`` within ``LEADERBOARD_INACTIVITY_DAYS`` of now.
 - Letter ranks are assigned only to active entries using fixed-percentage
   allocation with a guarantee of at least 1 entry per rank (when population
@@ -30,7 +36,7 @@ from datetime import datetime, timedelta, timezone
 import polars as pl
 
 from backend.core.config import (
-    EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER,
+    EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER_RANK,
     LEADERBOARD_INACTIVITY_DAYS,
 )
 from backend.domain_types.ephemeral import LeaderboardEntry1v1
@@ -66,8 +72,29 @@ def build_leaderboard_1v1(
     player_map = players_df.select("discord_uid", "nationality", "player_name")
     df = df.drop("player_name").join(player_map, on="discord_uid", how="left")
 
-    # Sort: highest MMR first, most recent activity as tiebreaker.
-    df = df.sort(["mmr", "last_played_at"], descending=[True, True])
+    # Compute win_rate and nonlose_rate as sort columns.
+    # games_played > 0 is guaranteed by the filter above.
+    df = df.with_columns(
+        (pl.col("games_won") / pl.col("games_played")).alias("win_rate"),
+        ((pl.col("games_won") + pl.col("games_drawn")) / pl.col("games_played")).alias(
+            "nonlose_rate"
+        ),
+    )
+
+    # Sort by full tiebreaker cascade. nulls_last=True ensures any unexpected
+    # null last_played_at values sink to the bottom on the descending pass.
+    df = df.sort(
+        [
+            "mmr",
+            "last_played_at",
+            "win_rate",
+            "nonlose_rate",
+            "games_played",
+            "player_name",
+        ],
+        descending=[True, True, True, True, True, False],
+        nulls_last=True,
+    )
 
     rows = df.select(
         "discord_uid",
@@ -76,18 +103,21 @@ def build_leaderboard_1v1(
         "nationality",
         "mmr",
         "games_played",
+        "games_won",
+        "games_lost",
+        "games_drawn",
         "last_played_at",
     ).to_dicts()
 
-    # --- Ordinal rank (all entries, dense) ---
+    # --- Ordinal rank (all entries) ---
     ordinal_ranks: list[int] = []
-    prev_mmr: int | None = None
+    prev_key: tuple | None = None
     prev_rank = 0
     for idx, row in enumerate(rows):
-        mmr_val: int = row["mmr"]
-        if mmr_val != prev_mmr:
+        key = _rank_key(row)
+        if key != prev_key:
             prev_rank = idx + 1
-            prev_mmr = mmr_val
+            prev_key = key
         ordinal_ranks.append(prev_rank)
 
     # --- Active / inactive split ---
@@ -102,19 +132,19 @@ def build_leaderboard_1v1(
         else:
             inactive_indices.append(idx)
 
-    # --- Active ordinal rank (active entries only, dense) ---
+    # --- Active ordinal rank (active entries only) ---
     active_ordinal_map: dict[int, int] = {}
-    a_prev_mmr: int | None = None
+    a_prev_key: tuple | None = None
     a_prev_rank = 0
     for pos, idx in enumerate(active_indices):
-        mmr_val = rows[idx]["mmr"]
-        if mmr_val != a_prev_mmr:
+        key = _rank_key(rows[idx])
+        if key != a_prev_key:
             a_prev_rank = pos + 1
-            a_prev_mmr = mmr_val
+            a_prev_key = key
         active_ordinal_map[idx] = a_prev_rank
 
     # --- Letter rank allocation ---
-    if EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER:
+    if EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER_RANK:
         # Allocate only across active players; inactive get "U".
         rank_indices = active_indices
     else:
@@ -146,6 +176,9 @@ def build_leaderboard_1v1(
                 nationality=row["nationality"] or "",
                 mmr=row["mmr"],
                 games_played=row["games_played"],
+                games_won=row["games_won"],
+                games_lost=row["games_lost"],
+                games_drawn=row["games_drawn"],
                 last_played_at=row["last_played_at"],
             )
         )
@@ -223,3 +256,21 @@ def _ensure_utc(dt: datetime) -> datetime:
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt
+
+
+_MIN_DATETIME: datetime = datetime.min.replace(tzinfo=timezone.utc)
+
+
+def _rank_key(row: dict) -> tuple:
+    """Return the sort key tuple used for rank equality checks.
+
+    Criteria: MMR desc, last_played_at desc, win_rate desc, nonlose_rate desc,
+    games_played desc, player_name asc.  Two rows share a rank only when all
+    six criteria are identical.
+    """
+    lp = row["last_played_at"]
+    lp_dt = _ensure_utc(lp) if lp is not None else _MIN_DATETIME
+    gp: int = row["games_played"]
+    win_rate = row["games_won"] / gp
+    nonlose_rate = (row["games_won"] + row["games_drawn"]) / gp
+    return (row["mmr"], lp_dt, win_rate, nonlose_rate, gp, row["player_name"] or "")

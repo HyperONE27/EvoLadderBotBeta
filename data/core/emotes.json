@@ -88,5 +88,10 @@
         "name": "u_rank",
         "short_name": "u_",
         "markdown": "<:u_:1427477794220412978>"
+    },
+    "l_rank": {
+        "name": "l_rank",
+        "short_name": "l_",
+        "markdown": "<:l_:1484042406973145260>"
     }
 }

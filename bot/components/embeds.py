@@ -31,8 +31,7 @@ from bot.helpers.emotes import (
     get_race_emote,
     get_rank_emote,
 )
-from bot.helpers.i18n import LOCALE_DISPLAY_NAMES
-from common.i18n import t
+from common.i18n import LOCALE_DISPLAY_NAMES, t
 from common.datetime_helpers import (
     ensure_utc,
     to_discord_timestamp,
@@ -43,7 +42,7 @@ from common.json_types import Country, GeographicRegion
 from common.lookups.country_lookups import get_country_by_code
 from common.lookups.map_lookups import get_map_by_short_name, get_maps
 from common.lookups.mod_lookups import get_mod_by_code
-from common.lookups.race_lookups import get_race_by_code, get_races
+from common.lookups.race_lookups import get_race_by_code
 from common.lookups.region_lookups import (
     get_game_region_by_code,
     get_game_server_by_code,
@@ -83,10 +82,8 @@ class UnsupportedGameModeEmbed(discord.Embed):
 _NUMBER_EMOTES = [":one:", ":two:", ":three:", ":four:"]
 
 
-def _race_display(race_code: str) -> str:
-    races = get_races()
-    race = races.get(race_code)
-    return race["name"] if race else race_code
+def _race_display(race_code: str, locale: str = "enUS") -> str:
+    return t(f"race.{race_code}.name", locale)
 
 
 def _get_map_game(map_name: str) -> str:
@@ -98,16 +95,11 @@ def _get_map_game(map_name: str) -> str:
     return "sc2"
 
 
-def _report_display(report: str) -> str:
-    mapping = {
-        "player_1_win": "Player 1 Win",
-        "player_2_win": "Player 2 Win",
-        "draw": "Draw",
-        "abort": "Aborted",
-        "abandoned": "Abandoned",
-        "invalidated": "Invalidated (Conflicting Reports)",
-    }
-    return mapping.get(report, report)
+def _report_display(report: str, locale: str = "enUS") -> str:
+    key = f"match_result.{report}"
+    result = t(key, locale)
+    # If no translation found, key is returned as-is; fall back to the raw code
+    return result if result != key else report
 
 
 def _server_display(server_code: str) -> str:
@@ -169,29 +161,40 @@ class QueueSetupEmbed(discord.Embed):
         bw_race: str | None,
         sc2_race: str | None,
         map_vetoes: list[str],
+        locale: str = "enUS",
     ) -> None:
         super().__init__(
-            title="🎮 Matchmaking Queue",
+            title=t("queue_setup_embed.title.1", locale),
             color=discord.Color.blue(),
         )
 
         self.add_field(
-            name="⚠️ NEW PLAYERS START HERE ⚠️",
-            value=f"📘 **QUICK START GUIDE:**  [READ THIS BEFORE YOUR FIRST MATCH!]({QUICKSTART_URL})\n",
+            name=t("queue_setup_embed.field_name.1", locale),
+            value=t(
+                "queue_setup_embed.field_value.1", locale, quickstart_url=QUICKSTART_URL
+            ),
             inline=False,
         )
 
         race_lines: list[str] = []
         if bw_race:
             race_lines.append(
-                f"- Brood War: {get_race_emote(bw_race)} {_race_display(bw_race)}"
+                f"- Brood War: {get_race_emote(bw_race)} {_race_display(bw_race, locale)}"
             )
         if sc2_race:
             race_lines.append(
-                f"- StarCraft II: {get_race_emote(sc2_race)} {_race_display(sc2_race)}"
+                f"- StarCraft II: {get_race_emote(sc2_race)} {_race_display(sc2_race, locale)}"
             )
-        race_value = "\n".join(race_lines) if race_lines else "None selected"
-        self.add_field(name="Selected Races", value=race_value, inline=False)
+        race_value = (
+            "\n".join(race_lines)
+            if race_lines
+            else t("queue_setup_embed.race_value_none.1", locale)
+        )
+        self.add_field(
+            name=t("queue_setup_embed.field_name.2", locale),
+            value=race_value,
+            inline=False,
+        )
 
         veto_count = len(map_vetoes)
         if map_vetoes:
@@ -203,34 +206,45 @@ class QueueSetupEmbed(discord.Embed):
                 veto_lines.append(f"{_NUMBER_EMOTES[i]} {game_emote} {map_name}")
             veto_value = "\n".join(veto_lines)
         else:
-            veto_value = "No vetoes"
+            veto_value = t("queue_setup_embed.veto_value_none.1", locale)
         self.add_field(
-            name=f"Vetoed Maps ({veto_count}/{MAX_MAP_VETOES})",
+            name=t(
+                "queue_setup_embed.field_name.3",
+                locale,
+                veto_count=str(veto_count),
+                max_vetoes=str(MAX_MAP_VETOES),
+            ),
             value=veto_value,
             inline=False,
         )
 
 
 class MatchConfirmedEmbed(discord.Embed):
-    def __init__(self, match_id: int) -> None:
+    def __init__(self, match_id: int, locale: str = "enUS") -> None:
         super().__init__(
-            title=f"✅ Match #{match_id} — Confirmed!",
-            description="Waiting for your opponent to confirm...",
+            title=t("match_confirmed_embed.title.1", locale, match_id=str(match_id)),
+            description=t("match_confirmed_embed.description.1", locale),
             color=discord.Color.gold(),
         )
 
 
 class MatchAbortAckEmbed(discord.Embed):
-    def __init__(self) -> None:
+    def __init__(self, locale: str = "enUS") -> None:
         super().__init__(
-            title="🛑 Match Aborted",
-            description="You have aborted the match. You will receive a summary shortly.",
+            title=t("match_abort_ack_embed.title.1", locale),
+            description=t("match_abort_ack_embed.description.1", locale),
             color=discord.Color.red(),
         )
 
 
 class QueueSearchingEmbed(discord.Embed):
-    def __init__(self, stats: dict | None = None, *, match_found: bool = False) -> None:
+    def __init__(
+        self,
+        stats: dict | None = None,
+        *,
+        match_found: bool = False,
+        locale: str = "enUS",
+    ) -> None:
         bw_only = stats.get("bw_only", 0) if stats else 0
         sc2_only = stats.get("sc2_only", 0) if stats else 0
         both = stats.get("both", 0) if stats else 0
@@ -238,65 +252,57 @@ class QueueSearchingEmbed(discord.Embed):
         next_search = int((now // 60 + 1) * 60)
 
         if match_found:
-            description = (
-                "The queue is searching for a game.\n\n- Search interval: 60 seconds"
-            )
+            description = t("queue_searching_embed.description.1", locale)
         else:
-            description = (
-                "The queue is searching for a game.\n\n"
-                f"- Next search: <t:{next_search}:R>\n"
-                "- Search interval: 60 seconds\n"
-                "- Current players queueing:\n"
-                f"  - Brood War: {bw_only}\n"
-                f"  - StarCraft II: {sc2_only}\n"
-                f"  - Both: {both}"
+            description = t(
+                "queue_searching_embed.description.2",
+                locale,
+                next_search=str(next_search),
+                bw_only=str(bw_only),
+                sc2_only=str(sc2_only),
+                both=str(both),
             )
 
         super().__init__(
-            title="🔍 Searching...",
+            title=t("queue_searching_embed.title.1", locale),
             description=description,
             color=discord.Color.blue(),
         )
 
         if match_found:
             self.add_field(
-                name="✅ Match Found!",
-                value=(
-                    "You have been removed from the queue. "
-                    "Check your DMs for match confirmation details."
-                ),
+                name=t("queue_searching_embed.field_name.1", locale),
+                value=t("queue_searching_embed.field_value.1", locale),
                 inline=False,
             )
 
 
 class QueueErrorEmbed(discord.Embed):
-    def __init__(self, error: str) -> None:
+    def __init__(self, error: str, locale: str = "enUS") -> None:
         super().__init__(
-            title="Queue Error",
+            title=t("queue_error_embed.title.1", locale),
             description=error,
             color=discord.Color.red(),
         )
 
 
 class MatchFoundEmbed(discord.Embed):
-    def __init__(self, match_data: dict) -> None:
+    def __init__(self, match_data: dict, locale: str = "enUS") -> None:
         match_id = match_data.get("id", "?")
         super().__init__(
-            title=f"⚔️ Match #{match_id} Found!",
-            description=(
-                "A match has been found for you.\n\n"
-                "Press **Confirm Match** to proceed, or **Abort Match** to cancel.\n"
-                "Full match details will be shown once **both** players confirm."
-            ),
+            title=t("match_found_embed.title.1", locale, match_id=str(match_id)),
+            description=t("match_found_embed.description.1", locale),
             color=discord.Color.green(),
         )
 
 
 class MatchWaitingConfirmEmbed(discord.Embed):
-    def __init__(self, match_id: int) -> None:
+    def __init__(self, match_id: int, locale: str = "enUS") -> None:
         super().__init__(
-            title=f"✅ Match #{match_id} Confirmed!",
-            description="Both players confirmed. Match details are now available below.",
+            title=t(
+                "match_waiting_confirm_embed.title.1", locale, match_id=str(match_id)
+            ),
+            description=t("match_waiting_confirm_embed.description.1", locale),
             color=discord.Color.green(),
         )
 
@@ -311,6 +317,7 @@ class MatchInfoEmbed(discord.Embed):
         p2_info: dict[str, Any] | None = None,
         pending_report: str | None = None,
         replay_uploaded: bool = False,
+        locale: str = "enUS",
     ) -> None:
         match_id = match_data.get("id", "?")
         p1_name = match_data.get("player_1_name", "Player 1")
@@ -346,8 +353,8 @@ class MatchInfoEmbed(discord.Embed):
 
         self.add_field(name="", value="", inline=False)
 
-        p1_race_name = _race_display(p1_race) if p1_race else "Unknown"
-        p2_race_name = _race_display(p2_race) if p2_race else "Unknown"
+        p1_race_name = _race_display(p1_race, locale) if p1_race else "Unknown"
+        p2_race_name = _race_display(p2_race, locale) if p2_race else "Unknown"
 
         p1_discord_username = (
             p1_info.get("discord_username", "Unknown") if p1_info else "Unknown"
@@ -381,7 +388,7 @@ class MatchInfoEmbed(discord.Embed):
             p2_line += f"\n  - (a.k.a. {', '.join(p2_alts)})"
 
         self.add_field(
-            name="**👥 Player and Contact Information:**",
+            name=t("match_info_embed.field_name.1", locale),
             value=f"{p1_line}\n{p2_line}",
             inline=False,
         )
@@ -400,7 +407,7 @@ class MatchInfoEmbed(discord.Embed):
         server_full = _server_display(server_code)
 
         self.add_field(
-            name="**🗺️ Map and Mod Information:**",
+            name=t("match_info_embed.field_name.2", locale),
             value=(
                 f"- Map: `{map_info['name'] if map_info else map_name}`\n"
                 f"  - Map Link: `{map_link}`\n"
@@ -415,21 +422,24 @@ class MatchInfoEmbed(discord.Embed):
         self.add_field(name="", value="", inline=False)
 
         self.add_field(
-            name="🔧 Match Settings:",
-            value=(
-                f"- Server: `{server_full}`\n"
-                f"- In-Game Channel: `SCEvoLadder`\n"
-                f"- Locked Alliances: `{EXPECTED_LOBBY_SETTINGS['locked_alliances']}`"
+            name=t("match_info_embed.field_name.3", locale),
+            value=t(
+                "match_info_embed.field_value.3",
+                locale,
+                server=server_full,
+                locked_alliances=str(EXPECTED_LOBBY_SETTINGS["locked_alliances"]),
             ),
             inline=True,
         )
 
         self.add_field(
             name="\u3164",
-            value=(
-                f"- Game Privacy: `{EXPECTED_LOBBY_SETTINGS['privacy']}`\n"
-                f"- Game Speed: `{EXPECTED_LOBBY_SETTINGS['speed']}`\n"
-                f"- Game Duration: `{EXPECTED_LOBBY_SETTINGS['duration']}`"
+            value=t(
+                "match_info_embed.field_value.4",
+                locale,
+                privacy=str(EXPECTED_LOBBY_SETTINGS["privacy"]),
+                speed=str(EXPECTED_LOBBY_SETTINGS["speed"]),
+                duration=str(EXPECTED_LOBBY_SETTINGS["duration"]),
             ),
             inline=True,
         )
@@ -438,36 +448,34 @@ class MatchInfoEmbed(discord.Embed):
         self.add_field(name="", value="", inline=False)
 
         if pending_report is not None:
-            result_value = (
-                f"- Result: `{_report_display(pending_report)}` ✅\n"
-                "- Waiting for opponent to report..."
+            result_value = t(
+                "match_info_embed.field_value_pending.4",
+                locale,
+                result=_report_display(pending_report, locale),
             )
         else:
-            result_value = "- Result: `Not selected`"
+            result_value = t("match_info_embed.field_value_none.4", locale)
         self.add_field(
-            name="**🏆 Match Result:**",
+            name=t("match_info_embed.field_name.4", locale),
             value=result_value,
             inline=True,
         )
 
         replay_value = (
-            "- Replay Uploaded: `Yes`"
+            t("match_info_embed.field_value_uploaded.5", locale)
             if replay_uploaded
-            else "- Replay Uploaded: `No`\n- Replay Uploaded At: `N/A`"
+            else t("match_info_embed.field_value_no_replay.5", locale)
         )
         self.add_field(
-            name="**📡 Replay Status:**",
+            name=t("match_info_embed.field_name.5", locale),
             value=replay_value,
             inline=True,
         )
 
         if ENABLE_REPLAY_VALIDATION and not replay_uploaded:
-            footer_text = (
-                "ℹ️ To report the match result, upload a replay. "
-                "The dropdown menus below will unlock once a valid replay is uploaded."
-            )
+            footer_text = t("match_info_embed.footer.1", locale)
         else:
-            footer_text = "ℹ️ Report the match result using the dropdown menus below."
+            footer_text = t("match_info_embed.footer.2", locale)
         self.set_footer(text=footer_text)
 
 
@@ -477,6 +485,7 @@ class MatchAbortedEmbed(discord.Embed):
         match_data: dict,
         p1_info: dict[str, Any] | None = None,
         p2_info: dict[str, Any] | None = None,
+        locale: str = "enUS",
     ) -> None:
         match_id = match_data.get("id", "?")
         p1_name = match_data.get("player_1_name", "Player 1")
@@ -510,18 +519,18 @@ class MatchAbortedEmbed(discord.Embed):
             aborter = p2_name
 
         super().__init__(
-            title=f"🛑 Match #{match_id} Aborted",
+            title=t("match_aborted_embed.title.1", locale, match_id=str(match_id)),
             description=f"{p1_hdr} vs {p2_hdr}",
             color=discord.Color.red(),
         )
         self.add_field(
-            name="**MMR Changes:**",
+            name=t("shared.field_name.mmr_changes", locale),
             value=f"• {p1_name}: `+0 ({p1_mmr})`\n• {p2_name}: `+0 ({p2_mmr})`",
             inline=False,
         )
         self.add_field(
-            name="**Reason:**",
-            value=f"The match was aborted by **{aborter}**. No MMR changes were applied.",
+            name=t("shared.field_name.reason", locale),
+            value=t("match_aborted_embed.field_value.1", locale, aborter=aborter),
             inline=False,
         )
 
@@ -532,6 +541,7 @@ class MatchAbandonedEmbed(discord.Embed):
         match_data: dict,
         p1_info: dict[str, Any] | None = None,
         p2_info: dict[str, Any] | None = None,
+        locale: str = "enUS",
     ) -> None:
         match_id = match_data.get("id", "?")
         p1_name = match_data.get("player_1_name", "Player 1")
@@ -565,21 +575,18 @@ class MatchAbandonedEmbed(discord.Embed):
             abandoner = p2_name
 
         super().__init__(
-            title=f"🛑 Match #{match_id} Abandoned",
+            title=t("match_abandoned_embed.title.1", locale, match_id=str(match_id)),
             description=f"{p1_hdr} vs {p2_hdr}",
             color=discord.Color.red(),
         )
         self.add_field(
-            name="**MMR Changes:**",
+            name=t("shared.field_name.mmr_changes", locale),
             value=f"• {p1_name}: `+0 ({p1_mmr})`\n• {p2_name}: `+0 ({p2_mmr})`",
             inline=False,
         )
         self.add_field(
-            name="**Reason:**",
-            value=(
-                f"The match was automatically abandoned because **{abandoner}** "
-                "did not confirm in time."
-            ),
+            name=t("shared.field_name.reason", locale),
+            value=t("match_abandoned_embed.field_value.1", locale, abandoner=abandoner),
             inline=False,
         )
 
@@ -590,6 +597,7 @@ class MatchFinalizedEmbed(discord.Embed):
         match_data: dict,
         p1_info: dict[str, Any] | None = None,
         p2_info: dict[str, Any] | None = None,
+        locale: str = "enUS",
     ) -> None:
         match_id = match_data.get("id", "?")
         result = match_data.get("match_result", "unknown")
@@ -621,13 +629,13 @@ class MatchFinalizedEmbed(discord.Embed):
         )
 
         super().__init__(
-            title=f"🏆 Match #{match_id} Result Finalized",
+            title=t("match_finalized_embed.title.1", locale, match_id=str(match_id)),
             description=f"{p1_hdr} vs {p2_hdr}",
             color=discord.Color.gold(),
         )
 
         if result == "draw":
-            result_value = "⚖️ **Draw**"
+            result_value = t("match_finalized_embed.field_value.1", locale)
         elif result == "player_1_win":
             result_value = f"🏆 {p1_rank} {p1_flag} {p1_race_emote} {p1_name}"
         else:
@@ -636,9 +644,11 @@ class MatchFinalizedEmbed(discord.Embed):
         p1_sign = "+" if p1_change >= 0 else ""
         p2_sign = "+" if p2_change >= 0 else ""
 
-        self.add_field(name="**Result:**", value=result_value, inline=True)
         self.add_field(
-            name="**MMR Changes:**",
+            name=t("shared.field_name.result", locale), value=result_value, inline=True
+        )
+        self.add_field(
+            name=t("shared.field_name.mmr_changes", locale),
             value=(
                 f"- {p1_name}: `{p1_sign}{p1_change} ({p1_mmr} → {p1_new})`\n"
                 f"- {p2_name}: `{p2_sign}{p2_change} ({p2_mmr} → {p2_new})`"
@@ -653,6 +663,7 @@ class MatchConflictEmbed(discord.Embed):
         match_data: dict,
         p1_info: dict[str, Any] | None = None,
         p2_info: dict[str, Any] | None = None,
+        locale: str = "enUS",
     ) -> None:
         match_id = match_data.get("id", "?")
         p1_name = match_data.get("player_1_name", "Player 1")
@@ -684,25 +695,21 @@ class MatchConflictEmbed(discord.Embed):
         p2_report = match_data.get("player_2_report", "?")
 
         super().__init__(
-            title=f"⚠️ Match #{match_id} — Conflicting Reports",
+            title=t("match_conflict_embed.title.1", locale, match_id=str(match_id)),
             description=f"{p1_hdr} vs {p2_hdr}",
             color=discord.Color.orange(),
         )
         self.add_field(
-            name="**Reports:**",
+            name=t("match_conflict_embed.field_name.1", locale),
             value=(
-                f"- {p1_name}: `{_report_display(p1_report)}`\n"
-                f"- {p2_name}: `{_report_display(p2_report)}`"
+                f"- {p1_name}: `{_report_display(p1_report, locale)}`\n"
+                f"- {p2_name}: `{_report_display(p2_report, locale)}`"
             ),
             inline=False,
         )
         self.add_field(
-            name="**Reason:**",
-            value=(
-                "Both players submitted conflicting reports. "
-                "The match result has been marked as **conflict** and no MMR changes were applied. "
-                "Please contact an admin to resolve this."
-            ),
+            name=t("shared.field_name.reason", locale),
+            value=t("match_conflict_embed.field_value.1", locale),
             inline=False,
         )
 
@@ -721,26 +728,21 @@ _COUNTRY_LIMIT_NOTE = (
 
 
 class SetupIntroEmbed(discord.Embed):
-    def __init__(self) -> None:
+    def __init__(self, locale: str = "enUS") -> None:
         super().__init__(
-            title="⚙️ Player Setup",
-            description=(
-                "Welcome to EvoLadder! Click **Begin Setup** to configure your player profile.\n\n"
-                "You will need to provide:\n"
-                "- A **User ID** (your display name on the ladder)\n"
-                "- Your **BattleTag** (e.g. `Username#1234`)\n"
-                "- Your **nationality**, **location**, and **language**\n"
-                "- Optional **alternative IDs**"
-            ),
+            title=t("setup_intro_embed.title.1", locale),
+            description=t("setup_intro_embed.description.1", locale),
             color=discord.Color.blue(),
         )
 
 
 class SetupValidationErrorEmbed(discord.Embed):
-    def __init__(self, title: str, error: str) -> None:
+    def __init__(self, title: str, error: str, locale: str = "enUS") -> None:
         super().__init__(
             title=f"❌ {title}",
-            description=f"**Error:** {error}\n\nPlease try again.",
+            description=t(
+                "setup_validation_error_embed.description.1", locale, error=error
+            ),
             color=discord.Color.red(),
         )
 
@@ -751,9 +753,10 @@ class SetupSelectionEmbed(discord.Embed):
         country: Country | None = None,
         region: GeographicRegion | None = None,
         language: str | None = None,
+        locale: str = "enUS",
     ) -> None:
         super().__init__(
-            title="⚙️ Setup — Nationality, Location & Language",
+            title=t("setup_selection_embed.title.1", locale),
             color=discord.Color.blue(),
         )
         selected_lines: list[str] = []
@@ -776,7 +779,9 @@ class SetupSelectionEmbed(discord.Embed):
             selected_block = ""
 
         if country and region and language:
-            self.description = selected_block + "Click **Confirm** to proceed."
+            self.description = selected_block + t(
+                "setup_selection_embed.description.1", locale
+            )
         else:
             missing: list[str] = []
             if not country:
@@ -800,15 +805,22 @@ class SetupPreviewEmbed(discord.Embed):
         country: Country,
         region: GeographicRegion,
         language: str,
+        locale: str = "enUS",
     ) -> None:
         super().__init__(
-            title="🔍 Preview Setup Information",
-            description="Please review your setup information before confirming:",
+            title=t("setup_preview_embed.title.1", locale),
+            description=t("setup_preview_embed.description.1", locale),
             color=discord.Color.blue(),
         )
-        self.add_field(name=":id: **User ID**", value=f"`{player_name}`", inline=False)
         self.add_field(
-            name=":hash: **BattleTag**", value=f"`{battletag}`", inline=False
+            name=t("setup_preview_embed.field_name.1", locale),
+            value=f"`{player_name}`",
+            inline=False,
+        )
+        self.add_field(
+            name=t("setup_preview_embed.field_name.2", locale),
+            value=f"`{battletag}`",
+            inline=False,
         )
         self.add_field(
             name=f"{get_flag_emote(country['code'])} **Nationality**",
@@ -821,12 +833,16 @@ class SetupPreviewEmbed(discord.Embed):
             inline=False,
         )
         self.add_field(
-            name="🌐 **Language**",
+            name=t("setup_preview_embed.field_name.3", locale),
             value=f"`{LOCALE_DISPLAY_NAMES[language][0] if language in LOCALE_DISPLAY_NAMES else language}`",
             inline=False,
         )
         alt_display = ", ".join(f"`{a}`" for a in alt_ids) if alt_ids else "`None`"
-        self.add_field(name=":id: **Alternative IDs**", value=alt_display, inline=False)
+        self.add_field(
+            name=t("setup_preview_embed.field_name.4", locale),
+            value=alt_display,
+            inline=False,
+        )
 
 
 class SetupSuccessEmbed(discord.Embed):
@@ -838,15 +854,22 @@ class SetupSuccessEmbed(discord.Embed):
         country: Country,
         region: GeographicRegion,
         language: str,
+        locale: str = "enUS",
     ) -> None:
         super().__init__(
-            title="✅ Setup Complete!",
-            description="Your player profile has been successfully configured.",
+            title=t("setup_success_embed.title.1", locale),
+            description=t("setup_success_embed.description.1", locale),
             color=discord.Color.green(),
         )
-        self.add_field(name=":id: **User ID**", value=f"`{player_name}`", inline=False)
         self.add_field(
-            name=":hash: **BattleTag**", value=f"`{battletag}`", inline=False
+            name=t("setup_success_embed.field_name.1", locale),
+            value=f"`{player_name}`",
+            inline=False,
+        )
+        self.add_field(
+            name=t("setup_success_embed.field_name.2", locale),
+            value=f"`{battletag}`",
+            inline=False,
         )
         self.add_field(
             name=f"{get_flag_emote(country['code'])} **Nationality**",
@@ -859,12 +882,16 @@ class SetupSuccessEmbed(discord.Embed):
             inline=False,
         )
         self.add_field(
-            name="🌐 **Language**",
+            name=t("setup_success_embed.field_name.3", locale),
             value=f"`{LOCALE_DISPLAY_NAMES[language][0] if language in LOCALE_DISPLAY_NAMES else language}`",
             inline=False,
         )
         alt_display = ", ".join(f"`{a}`" for a in alt_ids) if alt_ids else "`None`"
-        self.add_field(name=":id: **Alternative IDs**", value=alt_display, inline=False)
+        self.add_field(
+            name=t("setup_success_embed.field_name.4", locale),
+            value=alt_display,
+            inline=False,
+        )
 
 
 # =========================================================================
@@ -872,7 +899,7 @@ class SetupSuccessEmbed(discord.Embed):
 # =========================================================================
 
 
-def _format_mmr_rows(mmrs: list[dict]) -> str:
+def _format_mmr_rows(mmrs: list[dict], locale: str = "enUS") -> str:
     lines: list[str] = []
     for m in mmrs:
         race_code: str = m.get("race") or ""
@@ -891,30 +918,44 @@ def _format_mmr_rows(mmrs: list[dict]) -> str:
         mmr_val: int = m.get("mmr") or 0
         wr = (gw / gp * 100) if gp > 0 else 0.0
 
-        line = f"- {race_emote} **{race_name}:** {mmr_val} MMR • {gw}W-{gl}L-{gd}D ({wr:.1f}%)"
+        line = t(
+            "profile_embed.mmr_row.1",
+            locale,
+            race_emote=str(race_emote),
+            race_name=race_name,
+            mmr_val=str(mmr_val),
+            gw=str(gw),
+            gl=str(gl),
+            gd=str(gd),
+            wr=f"{wr:.1f}",
+        )
 
         last_played = m.get("last_played_at")
         if last_played and gp > 0:
             ts = to_discord_timestamp(raw=last_played, style="f")
             if ts != "—":
-                line += f"\n  - **Last Played:** {ts}"
+                line += "\n" + t("profile_embed.last_played.1", locale, ts=ts)
 
         lines.append(line)
     return "\n".join(lines)
 
 
 class ProfileNotFoundEmbed(discord.Embed):
-    def __init__(self) -> None:
+    def __init__(self, locale: str = "enUS") -> None:
         super().__init__(
-            title="❌ Profile Not Found",
-            description="No profile found. Use `/setup` to create your player profile.",
+            title=t("profile_not_found_embed.title.1", locale),
+            description=t("profile_not_found_embed.description.1", locale),
             color=discord.Color.red(),
         )
 
 
 class ProfileEmbed(discord.Embed):
     def __init__(
-        self, user: discord.User | discord.Member, player: dict, mmrs: list[dict]
+        self,
+        user: discord.User | discord.Member,
+        player: dict,
+        mmrs: list[dict],
+        locale: str = "enUS",
     ) -> None:
         completed = player.get("completed_setup", False)
         color = discord.Color.green() if completed else discord.Color.orange()
@@ -929,26 +970,43 @@ class ProfileEmbed(discord.Embed):
         if user.display_avatar:
             self.set_thumbnail(url=user.display_avatar.url)
 
-        self._add_basic_info(player)
-        self._add_location(player)
-        self._add_mmrs(mmrs)
-        self._add_account_status(player)
+        self._add_basic_info(player, locale)
+        self._add_location(player, locale)
+        self._add_mmrs(mmrs, locale)
+        self._add_account_status(player, locale)
 
-        self.set_footer(text=f"Discord: {user.name} • ID: {user.id}")
+        self.set_footer(
+            text=t(
+                "profile_embed.footer.1", locale, username=user.name, uid=str(user.id)
+            )
+        )
 
-    def _add_basic_info(self, player: dict) -> None:
+    def _add_basic_info(self, player: dict, locale: str = "enUS") -> None:
+        not_set = t("shared.not_set", locale)
         parts = [
-            f"- **Player Name:** {player.get('player_name') or 'Not set'}",
-            f"- **BattleTag:** {player.get('battletag') or 'Not set'}",
+            t(
+                "profile_embed.player_name_label.1",
+                locale,
+                name=player.get("player_name") or not_set,
+            ),
+            t(
+                "profile_embed.battletag_label.1",
+                locale,
+                battletag=player.get("battletag") or not_set,
+            ),
         ]
         alt_ids: list[str] = player.get("alt_player_names") or []
         if alt_ids:
-            parts.append(f"- **Alt IDs:** {', '.join(alt_ids)}")
+            parts.append(
+                t("profile_embed.alt_ids_label.1", locale, alt_ids=", ".join(alt_ids))
+            )
         self.add_field(
-            name="📋 Basic Information", value="\n".join(parts), inline=False
+            name=t("profile_embed.field_name.1", locale),
+            value="\n".join(parts),
+            inline=False,
         )
 
-    def _add_location(self, player: dict) -> None:
+    def _add_location(self, player: dict, locale: str = "enUS") -> None:
         parts: list[str] = []
 
         nationality = player.get("nationality")
@@ -956,31 +1014,58 @@ class ProfileEmbed(discord.Embed):
             country = get_country_by_code(nationality)
             if country:
                 flag = get_flag_emote(nationality)
-                parts.append(f"- **Nationality:** {flag} {country['name']}")
+                parts.append(
+                    t(
+                        "profile_embed.nationality_label.1",
+                        locale,
+                        flag=str(flag),
+                        name=country["name"],
+                    )
+                )
 
         location = player.get("location")
         if location:
             region = get_geographic_region_by_code(location)
             if region:
                 globe = get_globe_emote(region["globe_emote_code"])
-                parts.append(f"- **Location:** {globe} {region['name']}")
+                parts.append(
+                    t(
+                        "profile_embed.location_label.1",
+                        locale,
+                        globe=str(globe),
+                        name=region["name"],
+                    )
+                )
 
         language = player.get("language")
         if language:
             entry = LOCALE_DISPLAY_NAMES.get(language)
             if entry:
-                parts.append(f"- **Language:** {entry[1]} {entry[0]}")
+                parts.append(
+                    t(
+                        "profile_embed.language_label.1",
+                        locale,
+                        flag=entry[1],
+                        name=entry[0],
+                    )
+                )
             else:
-                parts.append(f"- **Language:** {language}")
+                parts.append(
+                    t("profile_embed.language_label.1", locale, flag="", name=language)
+                )
 
         if parts:
-            self.add_field(name="📍 Location", value="\n".join(parts), inline=False)
+            self.add_field(
+                name=t("profile_embed.field_name.2", locale),
+                value="\n".join(parts),
+                inline=False,
+            )
 
-    def _add_mmrs(self, mmrs: list[dict]) -> None:
+    def _add_mmrs(self, mmrs: list[dict], locale: str = "enUS") -> None:
         if not mmrs:
             self.add_field(
-                name="🎮 MMR",
-                value="No ranked games played yet.",
+                name=t("profile_embed.mmr_field_name.1", locale),
+                value=t("profile_embed.no_mmr.1", locale),
                 inline=False,
             )
             return
@@ -988,27 +1073,44 @@ class ProfileEmbed(discord.Embed):
         bw_mmrs = [m for m in mmrs if m.get("race", "").startswith("bw_")]
         sc2_mmrs = [m for m in mmrs if m.get("race", "").startswith("sc2_")]
 
+        bw_emote = get_game_emote("bw")
+        sc2_emote = get_game_emote("sc2")
+
         if bw_mmrs:
             self.add_field(
-                name=f"{get_game_emote('bw')} Brood War MMR",
-                value=_format_mmr_rows(bw_mmrs),
+                name=t(
+                    "profile_embed.bw_mmr_field_name.1", locale, bw_emote=str(bw_emote)
+                ),
+                value=_format_mmr_rows(bw_mmrs, locale),
                 inline=False,
             )
         if sc2_mmrs:
             self.add_field(
-                name=f"{get_game_emote('sc2')} StarCraft II MMR",
-                value=_format_mmr_rows(sc2_mmrs),
+                name=t(
+                    "profile_embed.sc2_mmr_field_name.1",
+                    locale,
+                    sc2_emote=str(sc2_emote),
+                ),
+                value=_format_mmr_rows(sc2_mmrs, locale),
                 inline=False,
             )
 
-    def _add_account_status(self, player: dict) -> None:
+    def _add_account_status(self, player: dict, locale: str = "enUS") -> None:
         tos = player.get("accepted_tos", False)
         setup = player.get("completed_setup", False)
         parts = [
-            f"{'✅' if tos else '❌'} Terms of Service {'accepted' if tos else 'not accepted'}",
-            f"{'✅' if setup else '⚠️'} Setup {'completed' if setup else 'incomplete'}",
+            t("profile_embed.tos_accepted.1", locale)
+            if tos
+            else t("profile_embed.tos_declined.1", locale),
+            t("profile_embed.setup_complete.1", locale)
+            if setup
+            else t("profile_embed.setup_incomplete.1", locale),
         ]
-        self.add_field(name="📊 Account Status", value="\n".join(parts), inline=False)
+        self.add_field(
+            name=t("profile_embed.field_name.3", locale),
+            value="\n".join(parts),
+            inline=False,
+        )
 
 
 # =========================================================================
@@ -1017,42 +1119,33 @@ class ProfileEmbed(discord.Embed):
 
 
 class TermsOfServiceEmbed(discord.Embed):
-    def __init__(self) -> None:
+    def __init__(self, locale: str = "enUS") -> None:
         super().__init__(
-            title="📜 Terms of Service",
-            description=(
-                "Please read our Terms of Service, User Conduct guidelines, Privacy Policy, and Refund Policy. **You must accept these terms in order to use the SC: Evo Complete Ladder Bot.**\n\n"
-                "**Official Terms of Service:**\n"
-                f"🔗 [SC: Evo Ladder ToS]({TOS_URL})\n"
-                f"🔗 [EvoLadderBot ToS (Mirror)]({TOS_MIRROR_URL})\n\n"
-                "By clicking **✅ I Accept These Terms** below, you confirm that you have read and agree to abide by the Terms of Service. "
-                "You can withdraw your agreement to these terms at any time by using this command again and clicking **❌ I Decline These Terms** below.\n\n"
-                "**⚠️ Failure to read or understand these terms is NOT AN ACCEPTABLE DEFENSE for violating them, and may result in your removal from the Service.**"
+            title=t("terms_of_service_embed.title.1", locale),
+            description=t(
+                "terms_of_service_embed.description.1",
+                locale,
+                tos_url=TOS_URL,
+                tos_mirror_url=TOS_MIRROR_URL,
             ),
             color=discord.Color.blue(),
         )
 
 
 class TermsOfServiceAcceptedEmbed(discord.Embed):
-    def __init__(self) -> None:
+    def __init__(self, locale: str = "enUS") -> None:
         super().__init__(
-            title="✅ Terms of Service Accepted",
-            description=(
-                "Thank you for agreeing to the Terms of Service. "
-                "Welcome to the SC: Evo Complete Ladder Bot!"
-            ),
+            title=t("terms_of_service_accepted_embed.title.1", locale),
+            description=t("terms_of_service_accepted_embed.description.1", locale),
             color=discord.Color.green(),
         )
 
 
 class TermsOfServiceDeclinedEmbed(discord.Embed):
-    def __init__(self) -> None:
+    def __init__(self, locale: str = "enUS") -> None:
         super().__init__(
-            title="❌ Terms of Service Declined",
-            description=(
-                "You have declined the Terms of Service. "
-                "As such, you may not use the SC: Evo Complete Ladder Bot."
-            ),
+            title=t("terms_of_service_declined_embed.title.1", locale),
+            description=t("terms_of_service_declined_embed.description.1", locale),
             color=discord.Color.red(),
         )
 
@@ -1065,9 +1158,9 @@ class TermsOfServiceDeclinedEmbed(discord.Embed):
 class SetCountryNotFoundEmbed(discord.Embed):
     def __init__(self, country: str, locale: str = "enUS"):
         super().__init__(
-            title="❌ Country Not Found",
+            title=t("set_country_not_found_embed.title.1", locale),
             description=t(
-                "bot.commands.user.setcountry.not_found.description",
+                "set_country_not_found_embed.description.1",
                 locale,
                 country=country,
             ),
@@ -1078,8 +1171,8 @@ class SetCountryNotFoundEmbed(discord.Embed):
 class SetCountryPreviewEmbed(discord.Embed):
     def __init__(self, country: Country, locale: str = "enUS"):
         super().__init__(
-            title=t("bot.commands.user.setcountry.preview.title", locale),
-            description=t("bot.commands.user.setcountry.preview.description", locale),
+            title=t("set_country_preview_embed.title.1", locale),
+            description=t("set_country_preview_embed.description.1", locale),
             color=discord.Color.blue(),
         )
         self.add_field(
@@ -1091,8 +1184,8 @@ class SetCountryPreviewEmbed(discord.Embed):
 class SetCountryConfirmEmbed(discord.Embed):
     def __init__(self, country: Country, locale: str = "enUS"):
         super().__init__(
-            title=t("bot.commands.user.setcountry.confirm.title", locale),
-            description=t("bot.commands.user.setcountry.confirm.description", locale),
+            title=t("set_country_confirm_embed.title.1", locale),
+            description=t("set_country_confirm_embed.description.1", locale),
             color=discord.Color.blue(),
         )
         self.add_field(
@@ -1596,7 +1689,9 @@ class AdminReplayDetailsEmbed(discord.Embed):
         if verification:
             self.add_field(
                 name="☑️ Replay Verification",
-                value=format_verification(verification, enforcement_enabled=False),
+                value=format_verification(
+                    verification, enforcement_enabled=False, locale="enUS"
+                ),
                 inline=False,
             )
 
@@ -1670,6 +1765,7 @@ class AdminResolutionEmbed(discord.Embed):
         reason: str | None,
         admin_name: str,
         is_admin_confirm: bool = False,
+        locale: str = "enUS",
     ) -> None:
         match_id = data.get("match_id", "?")
         result = data.get("result", "?")
@@ -1707,13 +1803,19 @@ class AdminResolutionEmbed(discord.Embed):
         self.add_field(name="", value="\u3164", inline=False)
 
         result_display = _get_result_display(result, data)
-        self.add_field(name="**Result:**", value=result_display, inline=True)
+        self.add_field(
+            name=t("shared.field_name.result", locale),
+            value=result_display,
+            inline=True,
+        )
 
         mmr_text = (
             f"• {p1_name}: `{p1_change:+d} ({p1_old} → {p1_new})`\n"
             f"• {p2_name}: `{p2_change:+d} ({p2_old} → {p2_new})`"
         )
-        self.add_field(name="**MMR Changes:**", value=mmr_text, inline=True)
+        self.add_field(
+            name=t("shared.field_name.mmr_changes", locale), value=mmr_text, inline=True
+        )
 
         intervention_text = f"**Resolved by:** {admin_name}"
         if reason:
@@ -1875,6 +1977,7 @@ class ReplaySuccessEmbed(discord.Embed):
         verification_results: dict[str, Any] | None = None,
         enforcement_enabled: bool = True,
         auto_resolved: bool = False,
+        locale: str = "enUS",
     ) -> None:
         p1_name: str = replay_data.get("player_1_name", "Player 1")
         p2_name: str = replay_data.get("player_2_name", "Player 2")
@@ -1905,8 +2008,8 @@ class ReplaySuccessEmbed(discord.Embed):
         map_display = map_name.replace(" (", "\n(", 1) if "(" in map_name else map_name
 
         super().__init__(
-            title="📄 Replay Details",
-            description="Summary of the uploaded replay for the match.",
+            title=t("replay_success_embed.title.1", locale),
+            description=t("replay_success_embed.description.1", locale),
             color=discord.Color.light_grey(),
         )
 
@@ -1941,6 +2044,7 @@ class ReplaySuccessEmbed(discord.Embed):
                 verification_results,
                 enforcement_enabled=enforcement_enabled,
                 auto_resolved=auto_resolved,
+                locale=locale,
             )
             self.add_field(
                 name="☑️ Replay Verification",
@@ -1952,17 +2056,14 @@ class ReplaySuccessEmbed(discord.Embed):
 class ReplayErrorEmbed(discord.Embed):
     """Red error embed for a replay parsing failure."""
 
-    def __init__(self, error_message: str) -> None:
+    def __init__(self, error_message: str, locale: str = "enUS") -> None:
         super().__init__(
-            title="❌ Replay Parsing Failed",
-            description=(
-                "The uploaded file could not be parsed as a valid SC2Replay.\n"
-                "Please try again with a different file."
-            ),
+            title=t("replay_error_embed.title.1", locale),
+            description=t("replay_error_embed.description.1", locale),
             color=discord.Color.red(),
         )
         self.add_field(
-            name="Error Details",
+            name=t("replay_error_embed.field_name.1", locale),
             value=f"```{error_message[:1000]}```",
             inline=False,
         )
@@ -1972,100 +2073,153 @@ def format_verification(
     results: dict[str, Any],
     enforcement_enabled: bool = True,
     auto_resolved: bool = False,
+    locale: str = "enUS",
 ) -> str:
     lines: list[str] = []
 
     races_check = results.get("races", {})
     if races_check.get("success"):
-        lines.append("- ✅ **Races Match:** Played races correspond to queued races.")
+        lines.append(t("format_verification.races_match.1", locale))
     else:
         expected = ", ".join(sorted(races_check.get("expected_races", [])))
         played = ", ".join(sorted(races_check.get("played_races", [])))
         lines.append(
-            f"- ❌ **Races Mismatch:** Expected `{expected}`, but played `{played}`."
+            t(
+                "format_verification.races_mismatch.1",
+                locale,
+                expected=expected,
+                played=played,
+            )
         )
 
     map_check = results.get("map", {})
     if map_check.get("success"):
-        lines.append("- ✅ **Map Matches:** Correct map was used.")
+        lines.append(t("format_verification.map_match.1", locale))
     else:
         lines.append(
-            f"- ❌ **Map Mismatch:** Expected `{map_check.get('expected_map')}`, "
-            f"but played `{map_check.get('played_map')}`."
+            t(
+                "format_verification.map_mismatch.1",
+                locale,
+                expected_map=str(map_check.get("expected_map")),
+                played_map=str(map_check.get("played_map")),
+            )
         )
 
     mod_check = results.get("mod", {})
-    prefix = "✅" if mod_check.get("success") else "❌"
-    lines.append(
-        f"- {prefix} **{'Mod Valid' if mod_check.get('success') else 'Mod Invalid'}:** "
-        f"{mod_check.get('message', '')}"
-    )
+    if mod_check.get("success"):
+        lines.append(
+            t(
+                "format_verification.mod_valid.1",
+                locale,
+                message=mod_check.get("message", ""),
+            )
+        )
+    else:
+        lines.append(
+            t(
+                "format_verification.mod_invalid.1",
+                locale,
+                message=mod_check.get("message", ""),
+            )
+        )
 
     ts_check = results.get("timestamp", {})
     if ts_check.get("success"):
         diff = ts_check.get("time_difference_minutes")
         if diff is not None:
             lines.append(
-                f"- ✅ **Timestamp Valid:** Match started within "
-                f"{abs(diff):.1f} min of assignment."
+                t(
+                    "format_verification.timestamp_valid.1",
+                    locale,
+                    diff=f"{abs(diff):.1f}",
+                )
             )
     else:
         if ts_check.get("error"):
             lines.append(
-                f"- ❌ **Timestamp Invalid:** Could not verify. "
-                f"Reason: `{ts_check['error']}`"
+                t(
+                    "format_verification.timestamp_error.1",
+                    locale,
+                    error=str(ts_check["error"]),
+                )
             )
         else:
             diff = ts_check.get("time_difference_minutes")
             if diff is not None:
                 if diff < 0:
                     lines.append(
-                        f"- ❌ **Timestamp Invalid:** Match started "
-                        f"{abs(diff):.1f} min **before** assignment."
+                        t(
+                            "format_verification.timestamp_invalid_before.1",
+                            locale,
+                            diff=f"{abs(diff):.1f}",
+                        )
                     )
                 else:
                     lines.append(
-                        f"- ❌ **Timestamp Invalid:** Match started "
-                        f"{diff:.1f} min **after** assignment (exceeds window)."
+                        t(
+                            "format_verification.timestamp_invalid_after.1",
+                            locale,
+                            diff=f"{diff:.1f}",
+                        )
                     )
             else:
-                lines.append("- ❌ **Timestamp Invalid:** Unknown error.")
+                lines.append(
+                    t("format_verification.timestamp_invalid_unknown.1", locale)
+                )
 
     obs_check = results.get("observers", {})
     if obs_check.get("success"):
-        lines.append("- ✅ **No Observers:** No unauthorized observers detected.")
+        lines.append(t("format_verification.observers_ok.1", locale))
     else:
         names = ", ".join(obs_check.get("observers_found", []))
-        lines.append(f"- ❌ **Observers Detected:** Unauthorized observers: `{names}`.")
+        lines.append(t("format_verification.observers_detected.1", locale, names=names))
 
-    for key, label in (
-        ("game_privacy", "Game Privacy Setting"),
-        ("game_speed", "Game Speed Setting"),
-        ("game_duration", "Game Duration Setting"),
-        ("locked_alliances", "Locked Alliances Setting"),
+    for key, slug in (
+        ("game_privacy", "game_privacy"),
+        ("game_speed", "game_speed"),
+        ("game_duration", "game_duration"),
+        ("locked_alliances", "locked_alliances"),
     ):
         chk = results.get(key, {})
         if chk.get("success"):
-            lines.append(f"- ✅ **{label}:** `{chk.get('found')}`")
+            lines.append(
+                t(
+                    f"format_verification.game_setting_ok.{slug}",
+                    locale,
+                    found=str(chk.get("found")),
+                )
+            )
         else:
             lines.append(
-                f"- ❌ **{label}:** Expected `{chk.get('expected')}`, "
-                f"but found `{chk.get('found')}`."
+                t(
+                    f"format_verification.game_setting_fail.{slug}",
+                    locale,
+                    expected=str(chk.get("expected")),
+                    found=str(chk.get("found")),
+                )
             )
 
     ai_check = results.get("ai_players", {})
     if ai_check:
         if not ai_check.get("ai_detected", False):
-            lines.append("- ✅ **No AI Players:** Both players are human.")
+            lines.append(t("format_verification.ai_ok.1", locale))
         elif ai_check.get("success"):
             lines.append(
-                f"- ⚠️ **AI Player Detected:** Allowed (ALLOW_AI_PLAYERS = {ALLOW_AI_PLAYERS})."
+                t(
+                    "format_verification.ai_allowed.1",
+                    locale,
+                    allow_ai=str(ALLOW_AI_PLAYERS),
+                )
             )
         else:
             names = ", ".join(ai_check.get("ai_player_names", []))
             lines.append(
-                f"- ❌ **AI Player Detected:** ALLOW_AI_PLAYERS = {ALLOW_AI_PLAYERS}; "
-                f"an AI player was detected (`{names}`)."
+                t(
+                    "format_verification.ai_detected.1",
+                    locale,
+                    allow_ai=str(ALLOW_AI_PLAYERS),
+                    names=names,
+                )
             )
 
     all_ok = all(
@@ -2088,35 +2242,14 @@ def format_verification(
     lines.append("")
 
     if auto_resolved:
-        lines.append(
-            "✅ **Verification Complete:** All critical checks passed.\n"
-            "✅ **Match auto-resolved** from replay data. No manual reporting needed."
-        )
+        lines.append(t("format_verification.summary_auto_resolved.1", locale))
     elif all_ok:
-        lines.append(
-            "✅ **Verification Complete:** All checks passed.\n"
-            "ℹ️ This embed is provided for informational purposes only. "
-            "Please report the match result manually.\n"
-            "🔓 Match reporting unlocked. Please report the result "
-            "**using the dropdown menus above.**"
-        )
+        lines.append(t("format_verification.summary_all_ok.1", locale))
     elif critical_failed and enforcement_enabled:
-        lines.append(
-            "❌ **Critical Validation Failure:**\n"
-            "❌ We do not accept games played with the incorrect races, map, or mod.\n"
-            "🔒 Result reporting has been locked. "
-            "Please contact an admin to nullify this match."
-        )
+        lines.append(t("format_verification.summary_critical_fail.1", locale))
+    elif not (enforcement_enabled and critical_failed):
+        lines.append(t("format_verification.summary_issues_unlocked.1", locale))
     else:
-        action = (
-            "🔓 Match reporting unlocked. Please report the result "
-            "**using the dropdown menus above.**"
-            if not (enforcement_enabled and critical_failed)
-            else "🔒 Result reporting has been locked."
-        )
-        lines.append(
-            "⚠️ **Verification Issues:** One or more checks failed.\n"
-            "⚠️ Please review the issues above.\n" + action
-        )
+        lines.append(t("format_verification.summary_issues_locked.1", locale))
 
     return "\n".join(lines)
