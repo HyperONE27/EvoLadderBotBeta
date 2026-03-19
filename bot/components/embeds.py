@@ -1001,7 +1001,12 @@ class ProfileEmbed(discord.Embed):
         title_name = player.get("player_name") or user.name
 
         super().__init__(
-            title=f"{status_icon} Player Profile: {title_name}",
+            title=t(
+                "profile_embed.title.1",
+                locale,
+                status_icon=status_icon,
+                title_name=title_name,
+            ),
             color=color,
         )
 

@@ -16,12 +16,12 @@ What remains?
 - ⏰ /profile doesn't contain full T/W/L/D (win-rate %) statistics by race and aggregated
 - ⏰ Generally the UI is messed up everywhere
     - Especially /snapshot
-    - ⏰ Holy shit fix this
+    - ✅ Holy shit fix this
 - ⏰ Implement the infrastructure
-    - of what??? I forgot
+    - of what??? I forgot. I had a thought here and dropped it. probably not important
 - ✅ mmrs_1v1 W/L/D/T game counts desync from matches_1v1 when a match gets resolved more than once
     - Admin resolutions need to force a recalculation of the affected mmrs_1v1 rows
-- ⏰ Fix any other import issues (circular/lazy/etc.)
+- ✅ Fix any other import issues (circular/lazy/etc.)
 - ✅ Potentially split embeds/views/other components out of the command modules
     - queue_command.py is getting very large
 - ✅ Maybe split up transitions.py

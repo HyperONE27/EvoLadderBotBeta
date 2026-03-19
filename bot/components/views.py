@@ -127,7 +127,9 @@ class CancelButton(discord.ui.Button["discord.ui.View"]):
 
 
 class CountryPage1Select(discord.ui.Select):
-    def __init__(self, countries: list[Country], selected_code: str | None) -> None:
+    def __init__(
+        self, countries: list[Country], selected_code: str | None, locale: str = "enUS"
+    ) -> None:
         options = [
             discord.SelectOption(
                 label=c["name"],
@@ -138,7 +140,7 @@ class CountryPage1Select(discord.ui.Select):
             for c in countries[:25]
         ]
         super().__init__(
-            placeholder="Nationality (Page 1)…",
+            placeholder=t("setup_selection_view.placeholder.nationality_page1", locale),
             min_values=1,
             max_values=1,
             options=options,
@@ -156,7 +158,9 @@ class CountryPage1Select(discord.ui.Select):
 
 
 class CountryPage2Select(discord.ui.Select):
-    def __init__(self, countries: list[Country], selected_code: str | None) -> None:
+    def __init__(
+        self, countries: list[Country], selected_code: str | None, locale: str = "enUS"
+    ) -> None:
         options = [
             discord.SelectOption(
                 label=c["name"],
@@ -167,7 +171,7 @@ class CountryPage2Select(discord.ui.Select):
             for c in countries[25:50]
         ]
         super().__init__(
-            placeholder="Nationality (Page 2)…",
+            placeholder=t("setup_selection_view.placeholder.nationality_page2", locale),
             min_values=1,
             max_values=1,
             options=options,
@@ -186,7 +190,10 @@ class CountryPage2Select(discord.ui.Select):
 
 class RegionSelect(discord.ui.Select):
     def __init__(
-        self, regions: list[GeographicRegion], selected_code: str | None
+        self,
+        regions: list[GeographicRegion],
+        selected_code: str | None,
+        locale: str = "enUS",
     ) -> None:
         options = [
             discord.SelectOption(
@@ -198,7 +205,7 @@ class RegionSelect(discord.ui.Select):
             for r in regions
         ]
         super().__init__(
-            placeholder="Location…",
+            placeholder=t("setup_selection_view.placeholder.location", locale),
             min_values=1,
             max_values=1,
             options=options,
@@ -214,7 +221,9 @@ class RegionSelect(discord.ui.Select):
 
 
 class LanguageSelect(discord.ui.Select):
-    def __init__(self, locales: list[str], selected_code: str | None) -> None:
+    def __init__(
+        self, locales: list[str], selected_code: str | None, locale: str = "enUS"
+    ) -> None:
         options = [
             discord.SelectOption(
                 label=LOCALE_DISPLAY_NAMES[code][0]
@@ -229,7 +238,7 @@ class LanguageSelect(discord.ui.Select):
             for code in locales
         ]
         super().__init__(
-            placeholder="Language…",
+            placeholder=t("setup_selection_view.placeholder.language", locale),
             min_values=1,
             max_values=1,
             options=options,
@@ -355,15 +364,20 @@ class SetupSelectionView(discord.ui.View):
     def _build(self) -> None:
         self.clear_items()
 
-        self.add_item(CountryPage1Select(self.countries, self.country_page1_code))
-        self.add_item(CountryPage2Select(self.countries, self.country_page2_code))
+        self.add_item(
+            CountryPage1Select(self.countries, self.country_page1_code, self.locale)
+        )
+        self.add_item(
+            CountryPage2Select(self.countries, self.country_page2_code, self.locale)
+        )
         self.add_item(
             RegionSelect(
                 self.regions,
                 self.selected_region["code"] if self.selected_region else None,
+                self.locale,
             )
         )
-        self.add_item(LanguageSelect(self.locales, self.selected_language))
+        self.add_item(LanguageSelect(self.locales, self.selected_language, self.locale))
 
         async def on_confirm(interaction: discord.Interaction) -> None:
             if (
@@ -602,6 +616,7 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
             )
             return
         message: discord.Message = self._message
+        _locale = get_player_locale(interaction.user.id)
 
         player_name = self.player_name_input.value.strip()
         battletag = self.battletag_input.value.strip()
@@ -624,11 +639,18 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
             await self._edit(
                 interaction,
                 message=message,
-                embed=SetupValidationErrorEmbed("Invalid User ID", error or ""),
+                embed=SetupValidationErrorEmbed(
+                    t(
+                        "setup_validation_error_embed.title.invalid_player_name",
+                        _locale,
+                    ),
+                    error or "",
+                    locale=_locale,
+                ),
                 view=SetupValidationErrorView(
                     current_presets,
                     message,
-                    locale=get_player_locale(interaction.user.id),
+                    locale=_locale,
                 ),
             )
             return
@@ -639,11 +661,15 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
             await self._edit(
                 interaction,
                 message=message,
-                embed=SetupValidationErrorEmbed("Invalid BattleTag", error or ""),
+                embed=SetupValidationErrorEmbed(
+                    t("setup_validation_error_embed.title.invalid_battletag", _locale),
+                    error or "",
+                    locale=_locale,
+                ),
                 view=SetupValidationErrorView(
                     current_presets,
                     message,
-                    locale=get_player_locale(interaction.user.id),
+                    locale=_locale,
                 ),
             )
             return
@@ -659,12 +685,18 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
                     interaction,
                     message=message,
                     embed=SetupValidationErrorEmbed(
-                        f"Invalid Alternative ID: {token}", error or ""
+                        t(
+                            "setup_validation_error_embed.title.invalid_alt_id",
+                            _locale,
+                            token=token,
+                        ),
+                        error or "",
+                        locale=_locale,
                     ),
                     view=SetupValidationErrorView(
                         current_presets,
                         message,
-                        locale=get_player_locale(interaction.user.id),
+                        locale=_locale,
                     ),
                 )
                 return
@@ -676,12 +708,17 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
                 interaction,
                 message=message,
                 embed=SetupValidationErrorEmbed(
-                    "Duplicate IDs", "All IDs must be unique."
+                    t("setup_validation_error_embed.title.duplicate_ids", _locale),
+                    t(
+                        "setup_validation_error_embed.description.duplicate_ids",
+                        _locale,
+                    ),
+                    locale=_locale,
                 ),
                 view=SetupValidationErrorView(
                     current_presets,
                     message,
-                    locale=get_player_locale(interaction.user.id),
+                    locale=_locale,
                 ),
             )
             return
@@ -806,12 +843,17 @@ async def _send_setup_request(
         data = await response.json()
 
     if response.status >= 400:
-        error = data.get("detail") or "An unexpected error occurred."
+        _locale = get_player_locale(interaction.user.id)
+        error = data.get("detail") or t("error.unexpected_error", _locale)
         logger.error(
             f"_send_setup_request: backend returned {response.status} for user={interaction.user.id}: {error}"
         )
         await interaction.response.edit_message(
-            embed=SetupValidationErrorEmbed("Setup Failed", error),
+            embed=SetupValidationErrorEmbed(
+                t("setup_validation_error_embed.title.setup_failed", _locale),
+                error,
+                locale=_locale,
+            ),
             view=None,
         )
         return
@@ -883,12 +925,15 @@ async def _send_tos_request(
         data = await response.json()
 
     if response.status >= 400:
-        error = data.get("detail") or "An unexpected error occurred."
+        _locale = get_player_locale(discord_uid)
+        error = data.get("detail") or t("error.unexpected_error", _locale)
         logger.error(
             f"TOS upsert failed for {discord_username} ({discord_uid}): {error}"
         )
         await interaction.response.edit_message(
-            embed=ErrorEmbed(title="❌ Error", description=error),
+            embed=ErrorEmbed(
+                title=t("error_embed.title.generic", _locale), description=error
+            ),
             view=None,
         )
         return
@@ -938,12 +983,15 @@ async def _send_setcountry_request(
         data = await response.json()
 
     if response.status >= 400:
-        error = data.get("detail") or "An unexpected error occurred."
+        _locale = get_player_locale(interaction.user.id)
+        error = data.get("detail") or t("error.unexpected_error", _locale)
         logger.error(
             f"setcountry backend failure for user={interaction.user.id}: {error}"
         )
         await interaction.response.edit_message(
-            embed=ErrorEmbed(title="❌ Update Failed", description=error),
+            embed=ErrorEmbed(
+                title=t("error_embed.title.update_failed", _locale), description=error
+            ),
             view=None,
         )
         return
@@ -991,10 +1039,11 @@ async def _send_ban_request(
         data = await response.json()
 
     if response.status >= 400:
+        _locale = get_player_locale(interaction.user.id)
         await interaction.response.edit_message(
             embed=ErrorEmbed(
-                title="❌ Error",
-                description="Failed to toggle ban status. The user may not have a profile.",
+                title=t("error_embed.title.generic", _locale),
+                description=t("error_embed.description.ban_failed", _locale),
             ),
             view=None,
         )
@@ -1064,11 +1113,14 @@ async def _send_resolve_request(
         data = await response.json()
 
     if response.status >= 400:
-        error = data.get("detail") or "An unexpected error occurred."
+        _locale = get_player_locale(interaction.user.id)
+        error = data.get("detail") or t("error.unexpected_error", _locale)
         await interaction.response.edit_message(
             embed=ErrorEmbed(
-                title="❌ Admin: Resolution Failed",
-                description=f"Error: {error}",
+                title=t("error_embed.title.resolution_failed", _locale),
+                description=t(
+                    "error_embed.description.with_error", _locale, error=error
+                ),
             ),
             view=None,
         )
@@ -1174,11 +1226,14 @@ async def _send_statusreset_request(
         data = await response.json()
 
     if response.status >= 400:
-        error = data.get("detail") or "An unexpected error occurred."
+        _locale = get_player_locale(interaction.user.id)
+        error = data.get("detail") or t("error.unexpected_error", _locale)
         await interaction.response.edit_message(
             embed=ErrorEmbed(
-                title="❌ Admin: Status Reset Failed",
-                description=f"Error: {error}",
+                title=t("error_embed.title.status_reset_failed", _locale),
+                description=t(
+                    "error_embed.description.with_error", _locale, error=error
+                ),
             ),
             view=None,
         )
@@ -1240,9 +1295,12 @@ async def _send_toggle_admin_request(
         data = await response.json()
 
     if response.status >= 400:
-        error = data.get("detail") or "An unexpected error occurred."
+        _locale = get_player_locale(interaction.user.id)
+        error = data.get("detail") or t("error.unexpected_error", _locale)
         await interaction.response.edit_message(
-            embed=ErrorEmbed(title="❌ Error", description=error),
+            embed=ErrorEmbed(
+                title=t("error_embed.title.generic", _locale), description=error
+            ),
             view=None,
         )
         return
@@ -1311,10 +1369,11 @@ async def _send_set_mmr_request(
         data = await response.json()
 
     if response.status >= 400:
+        _locale = get_player_locale(interaction.user.id)
         await interaction.response.edit_message(
             embed=ErrorEmbed(
-                title="❌ Error",
-                description="Failed to set MMR. The user may not have an MMR row for this race.",
+                title=t("error_embed.title.generic", _locale),
+                description=t("error_embed.description.mmr_failed", _locale),
             ),
             view=None,
         )
@@ -1797,8 +1856,11 @@ class MatchReportView(discord.ui.View):
 
         except Exception:
             logger.exception("Failed to submit match report")
+            _locale = get_player_locale(interaction.user.id)
             await interaction.followup.send(
-                embed=QueueErrorEmbed("An unexpected error occurred."),
+                embed=QueueErrorEmbed(
+                    t("error.unexpected_error", _locale), locale=_locale
+                ),
                 ephemeral=True,
             )
 
@@ -1827,8 +1889,11 @@ async def _join_queue(
     map_vetoes: list[str],
 ) -> None:
     if bw_race is None and sc2_race is None:
+        _locale = get_player_locale(discord_user_id)
         await interaction.response.send_message(
-            embed=QueueErrorEmbed("You must select at least one race."),
+            embed=QueueErrorEmbed(
+                t("error.select_at_least_one_race", _locale), locale=_locale
+            ),
             ephemeral=True,
         )
         return
@@ -1889,8 +1954,9 @@ async def _join_queue(
 
     except Exception:
         logger.exception("Failed to join queue")
+        _locale = get_player_locale(discord_user_id)
         await interaction.edit_original_response(
-            embed=QueueErrorEmbed("An unexpected error occurred."),
+            embed=QueueErrorEmbed(t("error.unexpected_error", _locale), locale=_locale),
             view=None,
         )
 
@@ -1933,8 +1999,9 @@ async def _leave_queue(
 
     except Exception:
         logger.exception("Failed to leave queue")
+        _locale = get_player_locale(interaction.user.id)
         await interaction.followup.send(
-            embed=QueueErrorEmbed("An unexpected error occurred."),
+            embed=QueueErrorEmbed(t("error.unexpected_error", _locale), locale=_locale),
             ephemeral=True,
         )
 
@@ -1948,21 +2015,24 @@ async def _confirm_match(interaction: discord.Interaction, match_id: int) -> Non
         ) as resp:
             await resp.json()
 
+        locale = get_player_locale(interaction.user.id)
         if resp.status >= 400:
             await interaction.followup.send(
-                embed=QueueErrorEmbed("Failed to confirm match."),
+                embed=QueueErrorEmbed(
+                    t("error.failed_confirm_match", locale), locale=locale
+                ),
                 ephemeral=True,
             )
             return
 
-        locale = get_player_locale(interaction.user.id)
         embed = MatchConfirmedEmbed(match_id, locale=locale)
         await interaction.edit_original_response(embed=embed, view=None)
 
     except Exception:
         logger.exception("Failed to confirm match")
+        _locale = get_player_locale(interaction.user.id)
         await interaction.followup.send(
-            embed=QueueErrorEmbed("An unexpected error occurred."),
+            embed=QueueErrorEmbed(t("error.unexpected_error", _locale), locale=_locale),
             ephemeral=True,
         )
 
@@ -1991,7 +2061,8 @@ async def _abort_match(interaction: discord.Interaction, match_id: int) -> None:
 
     except Exception:
         logger.exception("Failed to abort match")
+        _locale = get_player_locale(interaction.user.id)
         await interaction.followup.send(
-            embed=QueueErrorEmbed("An unexpected error occurred."),
+            embed=QueueErrorEmbed(t("error.unexpected_error", _locale), locale=_locale),
             ephemeral=True,
         )

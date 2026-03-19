@@ -164,12 +164,12 @@ async def on_tree_error(
             description = str(error) if str(error) else t("error.unauthorized", locale)
 
         embed = ErrorEmbed(
-            title="🚫 Unauthorized Command Usage",
+            title=t("error_embed.title.unauthorized_command", locale),
             description=description,
         )
     else:
         embed = ErrorEmbed(
-            title="❓ Unexpected Error",
+            title=t("error_embed.title.unexpected_error", locale),
             description=t("error.unexpected_command", locale) + f"\nError: {error!r}",
         )
 

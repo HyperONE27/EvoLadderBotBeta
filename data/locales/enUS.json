@@ -349,5 +349,33 @@
 
     "match_report_select.placeholder": "Report match result...",
     "match_report_select.victory": "{name} victory",
-    "match_report_select.draw": "Draw"
+    "match_report_select.draw": "Draw",
+
+    "profile_embed.title.1": "{status_icon} Player Profile: {title_name}",
+
+    "setup_selection_view.placeholder.nationality_page1": "Nationality (Page 1)…",
+    "setup_selection_view.placeholder.nationality_page2": "Nationality (Page 2)…",
+    "setup_selection_view.placeholder.location": "Location…",
+    "setup_selection_view.placeholder.language": "Language…",
+
+    "setup_validation_error_embed.title.invalid_player_name": "Invalid User ID",
+    "setup_validation_error_embed.title.invalid_battletag": "Invalid BattleTag",
+    "setup_validation_error_embed.title.invalid_alt_id": "Invalid Alternative ID: {token}",
+    "setup_validation_error_embed.title.duplicate_ids": "Duplicate IDs",
+    "setup_validation_error_embed.description.duplicate_ids": "All IDs must be unique.",
+    "setup_validation_error_embed.title.setup_failed": "Setup Failed",
+
+    "error_embed.title.generic": "❌ Error",
+    "error_embed.title.update_failed": "❌ Update Failed",
+    "error_embed.title.resolution_failed": "❌ Admin: Resolution Failed",
+    "error_embed.description.with_error": "Error: {error}",
+    "error_embed.title.status_reset_failed": "❌ Admin: Status Reset Failed",
+    "error_embed.description.ban_failed": "Failed to toggle ban status. The user may not have a profile.",
+    "error_embed.description.mmr_failed": "Failed to set MMR. The user may not have an MMR row for this race.",
+    "error_embed.title.unauthorized_command": "🚫 Unauthorized Command Usage",
+    "error_embed.title.unexpected_error": "❓ Unexpected Error",
+
+    "error.select_at_least_one_race": "You must select at least one race.",
+    "error.failed_confirm_match": "Failed to confirm match.",
+    "error.unexpected_error": "An unexpected error occurred."
 }

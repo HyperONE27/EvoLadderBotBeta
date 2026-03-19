@@ -236,5 +236,33 @@
     "leaderboard_embed.field_name_empty.1": "",
     "leaderboard_embed.no_players.1": "",
     "leaderboard_embed.field_name.1": "",
-    "leaderboard_embed.footer.1": ""
+    "leaderboard_embed.footer.1": "",
+
+    "profile_embed.title.1": "",
+
+    "setup_selection_view.placeholder.nationality_page1": "",
+    "setup_selection_view.placeholder.nationality_page2": "",
+    "setup_selection_view.placeholder.location": "",
+    "setup_selection_view.placeholder.language": "",
+
+    "setup_validation_error_embed.title.invalid_player_name": "",
+    "setup_validation_error_embed.title.invalid_battletag": "",
+    "setup_validation_error_embed.title.invalid_alt_id": "",
+    "setup_validation_error_embed.title.duplicate_ids": "",
+    "setup_validation_error_embed.description.duplicate_ids": "",
+    "setup_validation_error_embed.title.setup_failed": "",
+
+    "error_embed.title.generic": "",
+    "error_embed.title.update_failed": "",
+    "error_embed.title.resolution_failed": "",
+    "error_embed.description.with_error": "",
+    "error_embed.title.status_reset_failed": "",
+    "error_embed.description.ban_failed": "",
+    "error_embed.description.mmr_failed": "",
+    "error_embed.title.unauthorized_command": "",
+    "error_embed.title.unexpected_error": "",
+
+    "error.select_at_least_one_race": "",
+    "error.failed_confirm_match": "",
+    "error.unexpected_error": ""
 }

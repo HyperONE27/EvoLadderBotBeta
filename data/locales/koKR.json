@@ -349,5 +349,33 @@
 
     "match_report_select.placeholder": "경기 결과 보고...",
     "match_report_select.victory": "{name} 승리",
-    "match_report_select.draw": "무승부"
+    "match_report_select.draw": "무승부",
+
+    "profile_embed.title.1": "{status_icon} 플레이어 프로필: {title_name}",
+
+    "setup_selection_view.placeholder.nationality_page1": "국적 (1페이지)…",
+    "setup_selection_view.placeholder.nationality_page2": "국적 (2페이지)…",
+    "setup_selection_view.placeholder.location": "지역…",
+    "setup_selection_view.placeholder.language": "언어…",
+
+    "setup_validation_error_embed.title.invalid_player_name": "유효하지 않은 유저 ID",
+    "setup_validation_error_embed.title.invalid_battletag": "유효하지 않은 배틀태그",
+    "setup_validation_error_embed.title.invalid_alt_id": "유효하지 않은 대체 ID: {token}",
+    "setup_validation_error_embed.title.duplicate_ids": "중복된 ID",
+    "setup_validation_error_embed.description.duplicate_ids": "모든 ID는 고유해야 합니다.",
+    "setup_validation_error_embed.title.setup_failed": "설정 실패",
+
+    "error_embed.title.generic": "❌ 오류",
+    "error_embed.title.update_failed": "❌ 업데이트 실패",
+    "error_embed.title.resolution_failed": "❌ 관리자: 처리 실패",
+    "error_embed.description.with_error": "오류: {error}",
+    "error_embed.title.status_reset_failed": "❌ 관리자: 상태 초기화 실패",
+    "error_embed.description.ban_failed": "밴 상태 변경에 실패했습니다. 해당 유저의 프로필이 없을 수 있습니다.",
+    "error_embed.description.mmr_failed": "MMR 설정에 실패했습니다. 해당 종족의 MMR 행이 없을 수 있습니다.",
+    "error_embed.title.unauthorized_command": "🚫 권한 없는 명령어 사용",
+    "error_embed.title.unexpected_error": "❓ 예기치 않은 오류",
+
+    "error.select_at_least_one_race": "최소 하나의 종족을 선택해야 합니다.",
+    "error.failed_confirm_match": "매치 확인에 실패했습니다.",
+    "error.unexpected_error": "예기치 않은 오류가 발생했습니다."
 }
