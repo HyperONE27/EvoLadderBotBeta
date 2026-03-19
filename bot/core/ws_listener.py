@@ -238,7 +238,7 @@ async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
     )
     await _clear_match_state_low(p1_uid, p2_uid)
     await _post_to_match_log_low(
-        client, MatchAbortedEmbed(match_data, p1_info, p2_info)
+        client, MatchAbortedEmbed(match_data, p1_info, p2_info, locale="enUS")
     )
 
 
@@ -255,7 +255,7 @@ async def _on_match_abandoned(client: discord.Client, match_data: dict) -> None:
     )
     await _clear_match_state_low(p1_uid, p2_uid)
     await _post_to_match_log_low(
-        client, MatchAbandonedEmbed(match_data, p1_info, p2_info)
+        client, MatchAbandonedEmbed(match_data, p1_info, p2_info, locale="enUS")
     )
 
 
@@ -272,7 +272,7 @@ async def _on_match_completed(client: discord.Client, match_data: dict) -> None:
     )
     await _clear_match_state_low(p1_uid, p2_uid)
     await _post_to_match_log_low(
-        client, MatchFinalizedEmbed(match_data, p1_info, p2_info)
+        client, MatchFinalizedEmbed(match_data, p1_info, p2_info, locale="enUS")
     )
 
 
@@ -289,7 +289,7 @@ async def _on_match_conflict(client: discord.Client, match_data: dict) -> None:
     )
     await _clear_match_state_low(p1_uid, p2_uid)
     await _post_to_match_log_low(
-        client, MatchConflictEmbed(match_data, p1_info, p2_info)
+        client, MatchConflictEmbed(match_data, p1_info, p2_info, locale="enUS")
     )
 
 

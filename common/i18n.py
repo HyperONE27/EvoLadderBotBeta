@@ -24,11 +24,11 @@ _locales_dir = Path(Path(__file__).resolve().parent.parent / "data" / "locales")
 
 # Human-readable display names for each locale code.
 LOCALE_DISPLAY_NAMES: dict[str, tuple[str, str]] = {
-    "enUS": ("English (US)", "🇺🇸"),
-    "esMX": ("Español (MX)", "🇲🇽"),
+    "enUS": ("English", "🇺🇸"),
+    "esMX": ("Español", "🇲🇽"),
     "koKR": ("한국어", "🇰🇷"),
     "ruRU": ("Русский", "🇷🇺"),
-    "zhCN": ("中文 (简体)", "🇨🇳"),
+    "zhCN": ("简体中文", "🇨🇳"),
 }
 
 

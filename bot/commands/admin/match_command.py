@@ -52,9 +52,12 @@ def register_admin_match_command(tree: app_commands.CommandTree) -> None:
         await interaction.response.defer()
 
         mode = game_mode.value if game_mode else "1v1"
+        locale = get_player_locale(interaction.user.id)
 
         if mode != "1v1":
-            await interaction.followup.send(embed=UnsupportedGameModeEmbed(mode))
+            await interaction.followup.send(
+                embed=UnsupportedGameModeEmbed(mode, locale=locale)
+            )
             return
 
         logger.info(
@@ -64,8 +67,6 @@ def register_admin_match_command(tree: app_commands.CommandTree) -> None:
 
         data = await _fetch_match(match_id)
         match = data.get("match")
-
-        locale = get_player_locale(interaction.user.id)
 
         if match is None:
             await interaction.followup.send(

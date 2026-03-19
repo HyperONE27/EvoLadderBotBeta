@@ -51,6 +51,32 @@ from common.lookups.region_lookups import (
 
 
 # =========================================================================
+# Localized display helpers
+# =========================================================================
+
+
+def _localized_country(code: str, locale: str = "enUS") -> str:
+    """Return ``(XX) Localized Name`` for embed display values."""
+    translated = t(f"country.{code}.name", locale)
+    name = translated if translated != f"country.{code}.name" else code
+    return f"({code}) {name}"
+
+
+def _localized_region(code: str, locale: str = "enUS") -> str:
+    """Return ``(XXX) Localized Name`` for embed display values."""
+    translated = t(f"region.{code}.name", locale)
+    name = translated if translated != f"region.{code}.name" else code
+    return f"({code}) {name}"
+
+
+def _localized_language(code: str) -> str:
+    """Return ``(code) Display Name`` for embed display values."""
+    entry = LOCALE_DISPLAY_NAMES.get(code)
+    name = entry[0] if entry else code
+    return f"({code}) {name}"
+
+
+# =========================================================================
 # Generic
 # =========================================================================
 
@@ -104,14 +130,23 @@ def _report_display(report: str, locale: str = "enUS") -> str:
     return result if result != key else report
 
 
-def _server_display(server_code: str) -> str:
-    """Format server code to 'Server Name (Region Name)'."""
+def _server_display(server_code: str, locale: str = "enUS") -> str:
+    """Format server code to 'Localized Server Name (Localized Region Name)'."""
     server = get_game_server_by_code(server_code)
     if not server:
         return server_code
-    region = get_game_region_by_code(server["game_region_code"])
-    region_name = region["name"] if region else server["game_region_code"]
-    return f"{server['name']} ({region_name})"
+    raw_server = t(f"game_server.{server['code']}.name", locale)
+    server_name = (
+        raw_server
+        if raw_server != f"game_server.{server['code']}.name"
+        else server["name"]
+    )
+    region_code = server["game_region_code"]
+    raw_region = t(f"game_region.{region_code}.name", locale)
+    region_name = (
+        raw_region if raw_region != f"game_region.{region_code}.name" else region_code
+    )
+    return f"{server_name} ({region_name})"
 
 
 def _get_map_link(map_name: str, server_code: str) -> str:
@@ -345,7 +380,7 @@ class MatchInfoEmbed(discord.Embed):
         p2_race_emote = get_race_emote(p2_race) if p2_race else ""
 
         title = (
-            f"Match #{match_id}:\n"
+            f"{t('match_info_embed.title.1', locale, match_id=str(match_id))}\n"
             f"{p1_rank_emote} {p1_flag} {p1_race_emote} {p1_name} ({p1_mmr}) "
             f"vs "
             f"{p2_rank_emote} {p2_flag} {p2_race_emote} {p2_name} ({p2_mmr})"
@@ -371,23 +406,27 @@ class MatchInfoEmbed(discord.Embed):
         p1_alts = (p1_info.get("alt_player_names") or []) if p1_info else []
         p2_alts = (p2_info.get("alt_player_names") or []) if p2_info else []
 
+        discord_label = t("match_info_embed.player_line.discord", locale)
+        battletag_label = t("match_info_embed.player_line.battletag", locale)
+        aka_label = t("match_info_embed.player_line.aka", locale)
+
         p1_line = (
             f"- {p1_rank_emote} {p1_flag} {p1_race_emote} {p1_name} ({p1_race_name})"
         )
-        p1_line += f"\n  - Discord: {p1_discord_username} ({p1_uid})"
+        p1_line += f"\n  - {discord_label}: {p1_discord_username} ({p1_uid})"
         if p1_battletag:
-            p1_line += f"\n  - BattleTag: `{p1_battletag}`"
+            p1_line += f"\n  - {battletag_label}: `{p1_battletag}`"
         if p1_alts:
-            p1_line += f"\n  - (a.k.a. {', '.join(p1_alts)})"
+            p1_line += f"\n  - ({aka_label} {', '.join(p1_alts)})"
 
         p2_line = (
             f"- {p2_rank_emote} {p2_flag} {p2_race_emote} {p2_name} ({p2_race_name})"
         )
-        p2_line += f"\n  - Discord: {p2_discord_username} ({p2_uid})"
+        p2_line += f"\n  - {discord_label}: {p2_discord_username} ({p2_uid})"
         if p2_battletag:
-            p2_line += f"\n  - BattleTag: `{p2_battletag}`"
+            p2_line += f"\n  - {battletag_label}: `{p2_battletag}`"
         if p2_alts:
-            p2_line += f"\n  - (a.k.a. {', '.join(p2_alts)})"
+            p2_line += f"\n  - ({aka_label} {', '.join(p2_alts)})"
 
         self.add_field(
             name=t("match_info_embed.field_name.1", locale),
@@ -406,17 +445,19 @@ class MatchInfoEmbed(discord.Embed):
         mod_author = mod["author"] if mod else "SCEvoDev"
         mod_link = _get_mod_link(server_code)
 
-        server_full = _server_display(server_code)
+        server_full = _server_display(server_code, locale)
 
         self.add_field(
             name=t("match_info_embed.field_name.2", locale),
-            value=(
-                f"- Map: `{map_info['name'] if map_info else map_name}`\n"
-                f"  - Map Link: `{map_link}`\n"
-                f"  - Author: `{map_author}`\n"
-                f"- Mod: `{mod_name}`\n"
-                f"  - Mod Link: `{mod_link}`\n"
-                f"  - Author: `{mod_author}`"
+            value=t(
+                "match_info_embed.field_value.2",
+                locale,
+                map_name=map_info["name"] if map_info else map_name,
+                map_link=map_link,
+                map_author=map_author,
+                mod_name=mod_name,
+                mod_link=mod_link,
+                mod_author=mod_author,
             ),
             inline=False,
         )
@@ -760,7 +801,7 @@ class SetupSelectionEmbed(discord.Embed):
                     "setup_selection_embed.nationality_label.1",
                     locale,
                     flag=str(get_flag_emote(country["code"])),
-                    name=country["name"],
+                    name=_localized_country(country["code"], locale),
                 )
             )
         if region:
@@ -769,18 +810,18 @@ class SetupSelectionEmbed(discord.Embed):
                     "setup_selection_embed.location_label.1",
                     locale,
                     globe=str(get_globe_emote(region["globe_emote_code"])),
-                    name=region["name"],
+                    name=_localized_region(region["code"], locale),
                 )
             )
         if language:
             entry = LOCALE_DISPLAY_NAMES.get(language)
-            flag, display = (entry[1], entry[0]) if entry else ("", language)
+            flag = entry[1] if entry else ""
             selected_lines.append(
                 t(
                     "setup_selection_embed.language_label.1",
                     locale,
                     flag=flag,
-                    name=display,
+                    name=_localized_language(language),
                 )
             )
 
@@ -801,11 +842,11 @@ class SetupSelectionEmbed(discord.Embed):
         else:
             missing: list[str] = []
             if not country:
-                missing.append("nationality")
+                missing.append(t("setup_selection_embed.missing.nationality", locale))
             if not region:
-                missing.append("location")
+                missing.append(t("setup_selection_embed.missing.location", locale))
             if not language:
-                missing.append("language")
+                missing.append(t("setup_selection_embed.missing.language", locale))
             self.description = (
                 selected_block
                 + t(
@@ -850,7 +891,7 @@ class SetupPreviewEmbed(discord.Embed):
                 locale,
                 flag=str(get_flag_emote(country["code"])),
             ),
-            value=f"`{country['name']} ({country['code']})`",
+            value=f"`{_localized_country(country['code'], locale)}`",
             inline=False,
         )
         self.add_field(
@@ -859,12 +900,12 @@ class SetupPreviewEmbed(discord.Embed):
                 locale,
                 globe=str(get_globe_emote(region["globe_emote_code"])),
             ),
-            value=f"`{region['name']}`",
+            value=f"`{_localized_region(region['code'], locale)}`",
             inline=False,
         )
         self.add_field(
             name=t("shared.field_name.language", locale),
-            value=f"`{LOCALE_DISPLAY_NAMES[language][0] if language in LOCALE_DISPLAY_NAMES else language}`",
+            value=f"`{_localized_language(language)}`",
             inline=False,
         )
         alt_display = ", ".join(f"`{a}`" for a in alt_ids) if alt_ids else "`None`"
@@ -907,7 +948,7 @@ class SetupSuccessEmbed(discord.Embed):
                 locale,
                 flag=str(get_flag_emote(country["code"])),
             ),
-            value=f"`{country['name']} ({country['code']})`",
+            value=f"`{_localized_country(country['code'], locale)}`",
             inline=False,
         )
         self.add_field(
@@ -916,12 +957,12 @@ class SetupSuccessEmbed(discord.Embed):
                 locale,
                 globe=str(get_globe_emote(region["globe_emote_code"])),
             ),
-            value=f"`{region['name']}`",
+            value=f"`{_localized_region(region['code'], locale)}`",
             inline=False,
         )
         self.add_field(
             name=t("shared.field_name.language", locale),
-            value=f"`{LOCALE_DISPLAY_NAMES[language][0] if language in LOCALE_DISPLAY_NAMES else language}`",
+            value=f"`{_localized_language(language)}`",
             inline=False,
         )
         alt_display = ", ".join(f"`{a}`" for a in alt_ids) if alt_ids else "`None`"
@@ -941,8 +982,7 @@ def _format_mmr_rows(mmrs: list[dict], locale: str = "enUS") -> str:
     lines: list[str] = []
     for m in mmrs:
         race_code: str = m.get("race") or ""
-        race = get_race_by_code(race_code)
-        race_name = race["name"] if race else race_code
+        race_name = _race_display(race_code, locale)
 
         try:
             race_emote = get_race_emote(race_code)
@@ -1062,7 +1102,7 @@ class ProfileEmbed(discord.Embed):
                         "profile_embed.nationality_label.1",
                         locale,
                         flag=str(flag),
-                        name=country["name"],
+                        name=_localized_country(nationality, locale),
                     )
                 )
 
@@ -1076,26 +1116,22 @@ class ProfileEmbed(discord.Embed):
                         "profile_embed.location_label.1",
                         locale,
                         globe=str(globe),
-                        name=region["name"],
+                        name=_localized_region(location, locale),
                     )
                 )
 
         language = player.get("language")
         if language:
             entry = LOCALE_DISPLAY_NAMES.get(language)
-            if entry:
-                parts.append(
-                    t(
-                        "profile_embed.language_label.1",
-                        locale,
-                        flag=entry[1],
-                        name=entry[0],
-                    )
+            flag = entry[1] if entry else ""
+            parts.append(
+                t(
+                    "profile_embed.language_label.1",
+                    locale,
+                    flag=flag,
+                    name=_localized_language(language),
                 )
-            else:
-                parts.append(
-                    t("profile_embed.language_label.1", locale, flag="", name=language)
-                )
+            )
 
         if parts:
             self.add_field(
@@ -1224,7 +1260,7 @@ class SetCountryPreviewEmbed(discord.Embed):
                 locale,
                 flag=str(get_flag_emote(country["code"])),
             ),
-            value=f"`{country['name']} ({country['code']})`",
+            value=f"`{_localized_country(country['code'], locale)}`",
         )
 
 
@@ -1241,7 +1277,7 @@ class SetCountryConfirmEmbed(discord.Embed):
                 locale,
                 flag=str(get_flag_emote(country["code"])),
             ),
-            value=f"`{country['name']} ({country['code']})`",
+            value=f"`{_localized_country(country['code'], locale)}`",
         )
 
 
@@ -1428,7 +1464,7 @@ class QueueSnapshotEmbed(discord.Embed):
             description += f"{left}{spacer}{right}\n"
 
         if queue_size > MAX_QUEUE_SLOTS:
-            description += f"\n_... and {queue_size - MAX_QUEUE_SLOTS} more_"
+            description += f"\n_{t('shared.and_n_more', locale, n=str(queue_size - MAX_QUEUE_SLOTS))}_"
 
         self.description = description
 
@@ -1459,7 +1495,7 @@ class MatchesEmbed(discord.Embed):
                 description += _format_blank_match_slot(id_width) + "\n"
 
         if match_count > MAX_MATCH_SLOTS:
-            description += f"\n_... and {match_count - MAX_MATCH_SLOTS} more_"
+            description += f"\n_{t('shared.and_n_more', locale, n=str(match_count - MAX_MATCH_SLOTS))}_"
 
         self.description = description
 
@@ -1566,10 +1602,15 @@ class AdminMatchEmbed(discord.Embed):
 
         super().__init__(
             title=t("admin_match_embed.title.1", locale, match_id=str(match_id)),
-            description=(
-                f"{p1_prefix} **{p1_name}** (MMR: {p1_mmr})"
-                f"  vs  "
-                f"{p2_prefix} **{p2_name}** (MMR: {p2_mmr})"
+            description=t(
+                "admin_match_embed.description.1",
+                locale,
+                p1_prefix=p1_prefix,
+                p1_name=p1_name,
+                p1_mmr=str(p1_mmr),
+                p2_prefix=p2_prefix,
+                p2_name=p2_name,
+                p2_mmr=str(p2_mmr),
             ),
             color=color,
         )
@@ -1774,7 +1815,7 @@ class AdminReplayDetailsEmbed(discord.Embed):
         elif result_str in ("player_2_win", "2"):
             result_display = f"🏆 {p2_name}"
         elif result_str in ("draw", "0"):
-            result_display = "⚖️ Draw"
+            result_display = t("replay_success_embed.winner_draw.1", locale)
         else:
             result_display = str(result_str)
 
@@ -1952,10 +1993,17 @@ class AdminResolutionEmbed(discord.Embed):
 
         super().__init__(
             title=t(title_key, locale, match_id=str(match_id)),
-            description=(
-                f"**{p1_prefix} {p1_name} ({p1_old} → {p1_new})** "
-                f"vs "
-                f"**{p2_prefix} {p2_name} ({p2_old} → {p2_new})**"
+            description=t(
+                "admin_resolution_embed.description.1",
+                locale,
+                p1_prefix=p1_prefix,
+                p1_name=p1_name,
+                p1_old=str(p1_old),
+                p1_new=str(p1_new),
+                p2_prefix=p2_prefix,
+                p2_name=p2_name,
+                p2_old=str(p2_old),
+                p2_new=str(p2_new),
             ),
             color=color,
         )
@@ -2179,17 +2227,33 @@ class ReplaySuccessEmbed(discord.Embed):
         p2_race_emote = get_race_emote(p2_race_str)
 
         if winner_result == 1:
-            winner_text = f"🥇 {p1_race_emote} {p1_name}"
+            winner_text = t(
+                "replay_success_embed.winner_p1.1",
+                locale,
+                race_emote=p1_race_emote,
+                name=p1_name,
+            )
         elif winner_result == 2:
-            winner_text = f"🥇 {p2_race_emote} {p2_name}"
+            winner_text = t(
+                "replay_success_embed.winner_p2.1",
+                locale,
+                race_emote=p2_race_emote,
+                name=p2_name,
+            )
         else:
-            winner_text = "⚖️ Draw"
+            winner_text = t("replay_success_embed.winner_draw.1", locale)
 
         minutes, seconds = divmod(duration_seconds, 60)
         duration_text = f"{minutes:02d}:{seconds:02d}"
 
         observers_text = (
-            "⚠️ " + ", ".join(observers) if observers else "✅ No observers present"
+            t(
+                "replay_success_embed.observers_detected.1",
+                locale,
+                names=", ".join(observers),
+            )
+            if observers
+            else t("replay_success_embed.observers_ok.1", locale)
         )
 
         map_display = map_name.replace(" (", "\n(", 1) if "(" in map_name else map_name

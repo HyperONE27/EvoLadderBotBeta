@@ -8,7 +8,7 @@ from bot.core.config import (
     EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER_RANK,
     GAME_MODE_CHOICES,
 )
-from bot.core.dependencies import get_cache
+from bot.core.dependencies import get_cache, get_player_locale
 from bot.core.http import get_session
 from bot.helpers.checks import (
     check_if_accepted_tos,
@@ -43,8 +43,8 @@ def _race_display(race_code: str, locale: str = "enUS") -> str:
 
 
 def _country_display(code: str, locale: str = "enUS") -> str:
-    country = get_common_countries().get(code)
-    return country["name"] if country else code
+    translated = t(f"country.{code}.name", locale)
+    return translated if translated != f"country.{code}.name" else code
 
 
 async def _ensure_leaderboard() -> list[dict]:
@@ -229,24 +229,23 @@ class LeaderboardEmbed(discord.Embed):
 
 
 class RaceFilterSelect(discord.ui.Select["LeaderboardView"]):
-    def __init__(self, selected: list[str] | None = None) -> None:
+    def __init__(self, selected: list[str] | None = None, locale: str = "enUS") -> None:
         selected = selected or []
         options: list[discord.SelectOption] = []
         all_codes = get_bw_race_codes() + get_sc2_race_codes()
         for code in all_codes:
-            race = get_races().get(code)
-            if race is None:
+            if get_races().get(code) is None:
                 continue
             options.append(
                 discord.SelectOption(
-                    label=race["name"],
+                    label=_race_display(code, locale),
                     value=code,
                     emoji=get_race_emote(code),
                     default=code in selected,
                 )
             )
         super().__init__(
-            placeholder="Filter by race...",
+            placeholder=t("leaderboard.select.race_placeholder", locale),
             min_values=0,
             max_values=len(options),
             options=options,
@@ -260,30 +259,30 @@ class RaceFilterSelect(discord.ui.Select["LeaderboardView"]):
         await self.view.refresh(interaction)
 
 
-def _common_country_options() -> list[discord.SelectOption]:
-    """Return SelectOptions for all common countries, sorted by name."""
-    countries = sorted(get_common_countries().values(), key=lambda c: c["name"])
+def _common_country_options(locale: str = "enUS") -> list[discord.SelectOption]:
+    """Return SelectOptions for all common countries, sorted by ISO code."""
+    country_list = sorted(get_common_countries().values(), key=lambda c: c["code"])
     return [
         discord.SelectOption(
-            label=c["name"],
+            label=f"({c['code']}) {_country_display(c['code'], locale)}",
             value=c["code"],
             emoji=get_flag_emote(c["code"]),
         )
-        for c in countries
+        for c in country_list
     ]
 
 
 class CountryFilterPage1Select(discord.ui.Select["LeaderboardView"]):
-    """Nationality filter — first 25 common countries (sorted by name)."""
+    """Nationality filter -- first 25 common countries (sorted by localized name)."""
 
-    def __init__(self, selected: list[str] | None = None) -> None:
+    def __init__(self, selected: list[str] | None = None, locale: str = "enUS") -> None:
         selected = selected or []
-        all_options = _common_country_options()
+        all_options = _common_country_options(locale)
         options = all_options[:25]
         for opt in options:
             opt.default = opt.value in selected
         super().__init__(
-            placeholder="Filter by nationality (Page 1)...",
+            placeholder=t("leaderboard.select.nationality_page1_placeholder", locale),
             min_values=0,
             max_values=25,
             options=options,
@@ -298,16 +297,16 @@ class CountryFilterPage1Select(discord.ui.Select["LeaderboardView"]):
 
 
 class CountryFilterPage2Select(discord.ui.Select["LeaderboardView"]):
-    """Nationality filter — next 25 common countries (sorted by name)."""
+    """Nationality filter -- next 25 common countries (sorted by localized name)."""
 
-    def __init__(self, selected: list[str] | None = None) -> None:
+    def __init__(self, selected: list[str] | None = None, locale: str = "enUS") -> None:
         selected = selected or []
-        all_options = _common_country_options()
+        all_options = _common_country_options(locale)
         options = all_options[25:50]
         for opt in options:
             opt.default = opt.value in selected
         super().__init__(
-            placeholder="Filter by nationality (Page 2)...",
+            placeholder=t("leaderboard.select.nationality_page2_placeholder", locale),
             min_values=0,
             max_values=25,
             options=options,
@@ -322,17 +321,24 @@ class CountryFilterPage2Select(discord.ui.Select["LeaderboardView"]):
 
 
 class PageNavigationSelect(discord.ui.Select["LeaderboardView"]):
-    def __init__(self, total_pages: int, current_page: int) -> None:
+    def __init__(
+        self, total_pages: int, current_page: int, locale: str = "enUS"
+    ) -> None:
         options = [
             discord.SelectOption(
-                label=f"Page {p}",
+                label=t("leaderboard.select.page_option", locale, page=str(p)),
                 value=str(p),
                 default=p == current_page,
             )
             for p in range(1, total_pages + 1)
         ]
         super().__init__(
-            placeholder=f"Page {current_page}/{total_pages}",
+            placeholder=t(
+                "leaderboard.select.page_placeholder",
+                locale,
+                current=str(current_page),
+                total=str(total_pages),
+            ),
             min_values=1,
             max_values=1,
             options=options,
@@ -351,9 +357,9 @@ class PageNavigationSelect(discord.ui.Select["LeaderboardView"]):
 
 
 class PreviousPageButton(discord.ui.Button["LeaderboardView"]):
-    def __init__(self, *, disabled: bool = False) -> None:
+    def __init__(self, *, disabled: bool = False, locale: str = "enUS") -> None:
         super().__init__(
-            label="Previous Page",
+            label=t("leaderboard.button.previous_page", locale),
             emoji="\u2b05\ufe0f",
             style=discord.ButtonStyle.secondary,
             row=0,
@@ -368,9 +374,9 @@ class PreviousPageButton(discord.ui.Button["LeaderboardView"]):
 
 
 class NextPageButton(discord.ui.Button["LeaderboardView"]):
-    def __init__(self, *, disabled: bool = False) -> None:
+    def __init__(self, *, disabled: bool = False, locale: str = "enUS") -> None:
         super().__init__(
-            label="Next Page",
+            label=t("leaderboard.button.next_page", locale),
             emoji="\u27a1\ufe0f",
             style=discord.ButtonStyle.secondary,
             row=0,
@@ -384,17 +390,17 @@ class NextPageButton(discord.ui.Button["LeaderboardView"]):
 
 
 class RankFilterButton(discord.ui.Button["LeaderboardView"]):
-    def __init__(self, rank_filter: str | None = None) -> None:
+    def __init__(self, rank_filter: str | None = None, locale: str = "enUS") -> None:
         if rank_filter is None:
-            label = "All Ranks"
+            label = t("leaderboard.button.all_ranks", locale)
             emoji = get_rank_emote("U")
             style = discord.ButtonStyle.secondary
         elif rank_filter == _RANKED_ONLY:
-            label = "Ranked Only"
+            label = t("leaderboard.button.ranked_only", locale)
             emoji = get_rank_emote("L")
             style = discord.ButtonStyle.primary
         else:
-            label = f"{rank_filter}-Rank"
+            label = t("leaderboard.button.rank_filter", locale, rank=rank_filter)
             emoji = get_rank_emote(rank_filter)
             style = discord.ButtonStyle.primary
         super().__init__(label=label, emoji=emoji, style=style, row=0)
@@ -412,9 +418,9 @@ class RankFilterButton(discord.ui.Button["LeaderboardView"]):
 
 
 class BestRaceOnlyButton(discord.ui.Button["LeaderboardView"]):
-    def __init__(self, best_race_only: bool = False) -> None:
+    def __init__(self, best_race_only: bool = False, locale: str = "enUS") -> None:
         super().__init__(
-            label="Best Race Only",
+            label=t("leaderboard.button.best_race_only", locale),
             emoji="\u2705" if best_race_only else "\U0001f7e9",
             style=(
                 discord.ButtonStyle.primary
@@ -432,9 +438,9 @@ class BestRaceOnlyButton(discord.ui.Button["LeaderboardView"]):
 
 
 class ClearFiltersButton(discord.ui.Button["LeaderboardView"]):
-    def __init__(self) -> None:
+    def __init__(self, locale: str = "enUS") -> None:
         super().__init__(
-            label="Clear All Filters",
+            label=t("leaderboard.button.clear_filters", locale),
             emoji="\U0001f5d1\ufe0f",
             style=discord.ButtonStyle.danger,
             row=0,
@@ -457,9 +463,10 @@ class ClearFiltersButton(discord.ui.Button["LeaderboardView"]):
 
 
 class LeaderboardView(discord.ui.View):
-    def __init__(self, entries: list[dict]) -> None:
+    def __init__(self, entries: list[dict], locale: str = "enUS") -> None:
         super().__init__(timeout=300)
         self._all_entries = entries
+        self.locale: str = locale
         self.current_page: int = 1
         self.race_filter: list[str] | None = None
         self.country_page1_selection: list[str] = []
@@ -490,18 +497,25 @@ class LeaderboardView(discord.ui.View):
         self.clear_items()
         filtered = self._filtered()
         total_pages = self._total_pages(len(filtered))
+        loc = self.locale
 
-        self.add_item(PreviousPageButton(disabled=self.current_page <= 1))
-        self.add_item(NextPageButton(disabled=self.current_page >= total_pages))
-        self.add_item(RankFilterButton(self.rank_filter))
-        self.add_item(BestRaceOnlyButton(self.best_race_only))
-        self.add_item(ClearFiltersButton())
-        self.add_item(RaceFilterSelect(self.race_filter))
-        self.add_item(CountryFilterPage1Select(self.country_page1_selection))
-        self.add_item(CountryFilterPage2Select(self.country_page2_selection))
-        self.add_item(PageNavigationSelect(total_pages, self.current_page))
+        self.add_item(PreviousPageButton(disabled=self.current_page <= 1, locale=loc))
+        self.add_item(
+            NextPageButton(disabled=self.current_page >= total_pages, locale=loc)
+        )
+        self.add_item(RankFilterButton(self.rank_filter, locale=loc))
+        self.add_item(BestRaceOnlyButton(self.best_race_only, locale=loc))
+        self.add_item(ClearFiltersButton(locale=loc))
+        self.add_item(RaceFilterSelect(self.race_filter, locale=loc))
+        self.add_item(
+            CountryFilterPage1Select(self.country_page1_selection, locale=loc)
+        )
+        self.add_item(
+            CountryFilterPage2Select(self.country_page2_selection, locale=loc)
+        )
+        self.add_item(PageNavigationSelect(total_pages, self.current_page, locale=loc))
 
-    def build_embed(self, locale: str = "enUS") -> LeaderboardEmbed:
+    def build_embed(self) -> LeaderboardEmbed:
         filtered = self._filtered()
         total_pages = self._total_pages(len(filtered))
         return LeaderboardEmbed(
@@ -513,7 +527,7 @@ class LeaderboardView(discord.ui.View):
             nationality_filter=self.nationality_filter,
             best_race_only=self.best_race_only,
             rank_filter=self.rank_filter,
-            locale=locale,
+            locale=self.locale,
         )
 
     async def refresh(self, interaction: discord.Interaction) -> None:
@@ -539,15 +553,22 @@ def register_leaderboard_command(tree: app_commands.CommandTree) -> None:
         interaction: discord.Interaction,
         game_mode: str = "1v1",
     ) -> None:
+        locale = get_player_locale(interaction.user.id)
+
         if game_mode != "1v1":
             await interaction.response.send_message(
-                "Only 1v1 leaderboard is currently available.", ephemeral=True
+                t(
+                    "unsupported_game_mode_embed.description.1",
+                    locale,
+                    game_mode=game_mode,
+                ),
+                ephemeral=True,
             )
             return
 
         await interaction.response.defer()
 
         entries = await _ensure_leaderboard()
-        view = LeaderboardView(entries)
+        view = LeaderboardView(entries, locale=locale)
         embed = view.build_embed()
         await interaction.followup.send(embed=embed, view=view)

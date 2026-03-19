@@ -51,17 +51,18 @@ def register_owner_mmr_command(tree: app_commands.CommandTree) -> None:
         await interaction.response.defer()
 
         mode = game_mode.value if game_mode else "1v1"
+        locale = get_player_locale(interaction.user.id)
 
         if mode != "1v1":
-            await interaction.followup.send(embed=UnsupportedGameModeEmbed(mode))
+            await interaction.followup.send(
+                embed=UnsupportedGameModeEmbed(mode, locale=locale)
+            )
             return
 
         logger.info(
             f"Owner {interaction.user.name} ({interaction.user.id}) "
             f"invoked /mmr for {user.name} ({user.id}): race={race}, new_mmr={new_mmr}"
         )
-
-        locale = get_player_locale(interaction.user.id)
         await interaction.followup.send(
             embed=SetMMRPreviewEmbed(user, race, new_mmr, locale=locale),
             view=SetMMRConfirmView(interaction.user.id, user, race, new_mmr),

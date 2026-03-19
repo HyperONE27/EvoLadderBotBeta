@@ -5,6 +5,7 @@ from discord import app_commands
 from bot.components.embeds import SetupIntroEmbed
 from bot.components.views import SetupIntroView
 from bot.core.config import BACKEND_URL
+from bot.core.dependencies import get_player_locale
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_accepted_tos, check_if_banned, check_if_dm
 
@@ -56,12 +57,14 @@ def register_setup_command(tree: app_commands.CommandTree) -> None:
                 exc_info=True,
             )
 
+        locale = get_player_locale(interaction.user.id)
         await interaction.followup.send(
-            embed=SetupIntroEmbed(),
+            embed=SetupIntroEmbed(locale=locale),
             view=SetupIntroView(
                 modal_presets=modal_presets,
                 preselected_nationality=preselected_nationality,
                 preselected_location=preselected_location,
                 preselected_language=preselected_language,
+                locale=locale,
             ),
         )

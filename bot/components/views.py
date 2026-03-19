@@ -70,6 +70,27 @@ from common.lookups.region_lookups import (
 logger = structlog.get_logger(__name__)
 
 
+def _localized_country_label(code: str, locale: str = "enUS") -> str:
+    """Return ``(XX) Localized Name`` for dropdown labels."""
+    translated = t(f"country.{code}.name", locale)
+    name = translated if translated != f"country.{code}.name" else code
+    return f"({code}) {name}"
+
+
+def _localized_region_label(code: str, locale: str = "enUS") -> str:
+    """Return ``(XXX) Localized Name`` for dropdown labels."""
+    translated = t(f"region.{code}.name", locale)
+    name = translated if translated != f"region.{code}.name" else code
+    return f"({code}) {name}"
+
+
+def _localized_language_label(code: str) -> str:
+    """Return ``(code) Display Name`` for dropdown labels."""
+    entry = LOCALE_DISPLAY_NAMES.get(code)
+    name = entry[0] if entry else code
+    return f"({code}) {name}"
+
+
 # =========================================================================
 # Reusable buttons
 # =========================================================================
@@ -132,7 +153,7 @@ class CountryPage1Select(discord.ui.Select):
     ) -> None:
         options = [
             discord.SelectOption(
-                label=c["name"],
+                label=_localized_country_label(c["code"], locale),
                 value=c["code"],
                 emoji=get_flag_emote(c["code"]),
                 default=(c["code"] == selected_code),
@@ -163,7 +184,7 @@ class CountryPage2Select(discord.ui.Select):
     ) -> None:
         options = [
             discord.SelectOption(
-                label=c["name"],
+                label=_localized_country_label(c["code"], locale),
                 value=c["code"],
                 emoji=get_flag_emote(c["code"]),
                 default=(c["code"] == selected_code),
@@ -197,7 +218,7 @@ class RegionSelect(discord.ui.Select):
     ) -> None:
         options = [
             discord.SelectOption(
-                label=r["name"],
+                label=_localized_region_label(r["code"], locale),
                 value=r["code"],
                 emoji=get_globe_emote(r["globe_emote_code"]),
                 default=(r["code"] == selected_code),
@@ -226,9 +247,7 @@ class LanguageSelect(discord.ui.Select):
     ) -> None:
         options = [
             discord.SelectOption(
-                label=LOCALE_DISPLAY_NAMES[code][0]
-                if code in LOCALE_DISPLAY_NAMES
-                else code,
+                label=_localized_language_label(code),
                 value=code,
                 emoji=LOCALE_DISPLAY_NAMES[code][1]
                 if code in LOCALE_DISPLAY_NAMES
@@ -261,22 +280,19 @@ _BATTLETAG_RE = re.compile(r"^.{1,12}#\d{3,12}$")
 
 
 def _validate_player_name(
-    name: str, *, allow_international: bool = False
+    name: str, *, allow_international: bool = False, locale: str = "enUS"
 ) -> tuple[bool, str | None]:
     pattern = _PLAYER_NAME_INTL_RE if allow_international else _PLAYER_NAME_RE
     if not pattern.match(name):
         if allow_international:
-            return (
-                False,
-                "Must be 3–12 characters. Spaces and most symbols are not allowed.",
-            )
-        return False, "Must be 3–12 characters using only letters, digits, -, _, ."
+            return False, t("validation.player_name.intl.description", locale)
+        return False, t("validation.player_name.ascii.description", locale)
     return True, None
 
 
-def _validate_battletag(tag: str) -> tuple[bool, str | None]:
+def _validate_battletag(tag: str, locale: str = "enUS") -> tuple[bool, str | None]:
     if not _BATTLETAG_RE.match(tag):
-        return False, "Must follow the format Name#Digits (e.g. Username#1234)."
+        return False, t("validation.battletag.description", locale)
     return True, None
 
 
@@ -286,7 +302,7 @@ def _country_page_codes(
     """Return (page1_code, page2_code) for pre-selecting a country in the dropdowns."""
     if not nationality_code:
         return None, None
-    countries = sorted(get_common_countries().values(), key=lambda c: c["name"])
+    countries = sorted(get_common_countries().values(), key=lambda c: c["code"])
     page1 = {c["code"] for c in countries[:25]}
     page2 = {c["code"] for c in countries[25:50]}
     if nationality_code in page1:
@@ -324,7 +340,7 @@ class SetupIntroView(discord.ui.View):
         self.add_item(
             ConfirmButton(callback=on_begin, label=t("button.begin_setup", locale))
         )
-        self.add_item(CancelButton())
+        self.add_item(CancelButton(locale=locale))
 
 
 class SetupSelectionView(discord.ui.View):
@@ -354,7 +370,7 @@ class SetupSelectionView(discord.ui.View):
         self.locale = locale
 
         self.countries: list[Country] = sorted(
-            get_common_countries().values(), key=lambda c: c["name"]
+            get_common_countries().values(), key=lambda c: c["code"]
         )
         self.regions: list[GeographicRegion] = list(get_geographic_regions().values())
         self.locales: list[str] = get_available_locales()
@@ -633,7 +649,7 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
             "alt_ids": raw_alt_ids,
         }
 
-        ok, error = _validate_player_name(player_name)
+        ok, error = _validate_player_name(player_name, locale=_locale)
         if not ok:
             logger.debug(f"SetupModal validation failed (player_name): {error}")
             await self._edit(
@@ -655,7 +671,7 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
             )
             return
 
-        ok, error = _validate_battletag(battletag)
+        ok, error = _validate_battletag(battletag, locale=_locale)
         if not ok:
             logger.debug(f"SetupModal validation failed (battletag): {error}")
             await self._edit(
@@ -676,7 +692,9 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
 
         alt_ids: list[str] = []
         for token in raw_alt_ids.split():
-            ok, error = _validate_player_name(token, allow_international=True)
+            ok, error = _validate_player_name(
+                token, allow_international=True, locale=_locale
+            )
             if not ok:
                 logger.debug(
                     f"SetupModal validation failed (alt_id {token!r}): {error}"
@@ -736,10 +754,10 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
             if self._preselected_location
             else None
         )
+        _locale = get_player_locale(interaction.user.id)
         page1_code, page2_code = _country_page_codes(
             preselected_country["code"] if preselected_country else None
         )
-        _locale = get_player_locale(interaction.user.id)
         await self._edit(
             interaction,
             message=message,
@@ -1184,7 +1202,9 @@ async def _send_to_match_log(
         if channel is None:
             channel = await interaction.client.fetch_channel(MATCH_LOG_CHANNEL_ID)
         if channel is not None and isinstance(channel, discord.TextChannel):
-            embed = AdminResolutionEmbed(data, reason=reason, admin_name=admin_name)
+            embed = AdminResolutionEmbed(
+                data, reason=reason, admin_name=admin_name, locale="enUS"
+            )
             await queue_channel_send_low(channel, embed=embed)
     except Exception:
         logger.warning("Failed to send admin resolve embed to match log channel")

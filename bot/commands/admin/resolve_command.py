@@ -7,6 +7,7 @@ from bot.components.views import ResolveConfirmView
 from bot.core.config import GAME_MODE_CHOICES
 from bot.core.dependencies import get_player_locale
 from bot.helpers.checks import check_if_admin
+from common.i18n import t
 
 logger = structlog.get_logger(__name__)
 
@@ -37,9 +38,12 @@ def register_admin_resolve_command(tree: app_commands.CommandTree) -> None:
         await interaction.response.defer()
 
         mode = game_mode.value if game_mode else "1v1"
+        locale = get_player_locale(interaction.user.id)
 
         if mode != "1v1":
-            await interaction.followup.send(embed=UnsupportedGameModeEmbed(mode))
+            await interaction.followup.send(
+                embed=UnsupportedGameModeEmbed(mode, locale=locale)
+            )
             return
 
         logger.info(
@@ -47,10 +51,10 @@ def register_admin_resolve_command(tree: app_commands.CommandTree) -> None:
             f"invoked /resolve {match_id} result={result.value} (mode={mode})"
         )
 
-        locale = get_player_locale(interaction.user.id)
+        result_display = t(f"resolve_result_display.{result.value}", locale)
         await interaction.followup.send(
             embed=ResolvePreviewEmbed(
-                match_id, result.value, result.name, reason, locale=locale
+                match_id, result.value, result_display, reason, locale=locale
             ),
             view=ResolveConfirmView(
                 interaction.user.id,
