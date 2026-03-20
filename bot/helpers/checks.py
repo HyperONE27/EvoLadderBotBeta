@@ -1,9 +1,13 @@
 import discord
+import structlog
 from discord import app_commands
 
 from bot.core.config import BACKEND_URL
 from bot.core.dependencies import get_cache
 from bot.core.http import get_session
+from common.i18n import t
+
+logger = structlog.get_logger(__name__)
 
 # --- Checks ---
 
@@ -97,6 +101,39 @@ async def check_if_admin(interaction: discord.Interaction) -> bool:
     return True
 
 
+async def check_if_name_unique(
+    player_name: str, exclude_discord_uid: int, locale: str
+) -> None:
+    """Raise NameNotUniqueError if player_name is already used by another account."""
+    try:
+        async with get_session().get(
+            f"{BACKEND_URL}/players/player_name_availability",
+            params={
+                "player_name": player_name,
+                "exclude_discord_uid": exclude_discord_uid,
+            },
+        ) as resp:
+            if resp.status != 200:
+                logger.warning(
+                    "player_name_availability_non_200",
+                    status=resp.status,
+                    player_name=player_name,
+                )
+                return
+            data = await resp.json()
+    except Exception:
+        logger.warning(
+            "player_name_availability_request_failed",
+            player_name=player_name,
+            exc_info=True,
+        )
+        return
+    if not data.get("available", True):
+        raise NameNotUniqueError(
+            t("setup_validation_error_embed.error.player_name_taken", locale)
+        )
+
+
 async def check_if_owner(interaction: discord.Interaction) -> bool:
     """Hit GET /admins/{uid} and check role is 'owner'."""
     uid = interaction.user.id
@@ -157,3 +194,10 @@ class NotCompletedSetupError(app_commands.CheckFailure):
 class AlreadyQueueingError(app_commands.CheckFailure):
     def __init__(self) -> None:
         super().__init__("You are already in the queue.")
+
+
+class NameNotUniqueError(app_commands.CheckFailure):
+    """Chosen player_name is already registered to another Discord account."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)

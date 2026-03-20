@@ -6,6 +6,11 @@ What remains?
 
 - ⏰ Write pre-beta feature announcement
 - ⏰ Re-write Terms of Service
+- ⏰ Player names should be unique
+- ⏰ Player names cannot contain symbols
+    - Letters only...
+    - How do I tackle this for many languages and scripts?
+- ⏰ Apparently /setup is still not intuitive
 - ⏰ Make sure visibility is solid
     - Maybe some more admin/owner commands
         - Directly reading DataFrame rows

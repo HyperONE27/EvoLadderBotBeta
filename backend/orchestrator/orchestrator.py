@@ -59,6 +59,14 @@ class Orchestrator:
         """Get a player by their Discord UID."""
         return self._state_reader.get_player(discord_uid)
 
+    def is_player_name_available(
+        self, player_name: str, exclude_discord_uid: int | None = None
+    ) -> bool:
+        """True if no other player row uses this exact player_name."""
+        return self._state_reader.is_player_name_available(
+            player_name, exclude_discord_uid
+        )
+
     def get_preferences_1v1(self, discord_uid: int) -> Preferences1v1Row | None:
         """Get a player's 1v1 preferences by their Discord UID."""
         return self._state_reader.get_preferences_1v1(discord_uid)

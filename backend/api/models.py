@@ -387,6 +387,10 @@ class PlayersResponse(BaseModel):
     player: PlayersRow | None
 
 
+class PlayerNameAvailabilityResponse(BaseModel):
+    available: bool
+
+
 class Matches1v1Response(BaseModel):
     match: Matches1v1Row | None
 

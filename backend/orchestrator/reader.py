@@ -20,7 +20,10 @@ from backend.lookups.mmr_1v1_lookups import (
     get_mmr_1v1_by_discord_uid_and_race,
     get_mmrs_1v1_by_discord_uid,
 )
-from backend.lookups.player_lookups import get_player_by_discord_uid
+from backend.lookups.player_lookups import (
+    get_player_by_discord_uid,
+    is_player_name_taken,
+)
 from backend.lookups.preferences_1v1_lookups import get_preferences_1v1_by_discord_uid
 from backend.orchestrator.state import StateManager
 from common.datetime_helpers import utc_now
@@ -45,6 +48,12 @@ class StateReader:
     def get_player(self, discord_uid: int) -> PlayersRow | None:
         """Get a player by their Discord UID."""
         return get_player_by_discord_uid(discord_uid)
+
+    def is_player_name_available(
+        self, player_name: str, exclude_discord_uid: int | None = None
+    ) -> bool:
+        """True if no other player row uses this exact player_name."""
+        return not is_player_name_taken(player_name, exclude_discord_uid)
 
     # ------------------------------------------------------------------
     # MMR

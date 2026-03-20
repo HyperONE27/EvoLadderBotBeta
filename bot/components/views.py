@@ -51,7 +51,12 @@ from bot.helpers.activity_analytics import (
     activity_chart_title,
     fetch_queue_join_analytics,
 )
-from bot.helpers.checks import AlreadyQueueingError, check_if_queueing
+from bot.helpers.checks import (
+    AlreadyQueueingError,
+    NameNotUniqueError,
+    check_if_name_unique,
+    check_if_queueing,
+)
 from bot.helpers.embed_branding import apply_default_embed_footer
 from bot.helpers.emotes import (
     get_flag_emote,
@@ -741,6 +746,29 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
                         "setup_validation_error_embed.description.duplicate_ids",
                         _locale,
                     ),
+                    locale=_locale,
+                ),
+                view=SetupValidationErrorView(
+                    current_presets,
+                    message,
+                    locale=_locale,
+                ),
+            )
+            return
+
+        try:
+            await check_if_name_unique(player_name, interaction.user.id, _locale)
+        except NameNotUniqueError as e:
+            logger.debug("SetupModal validation failed (player_name not unique): %s", e)
+            await self._edit(
+                interaction,
+                message=message,
+                embed=SetupValidationErrorEmbed(
+                    t(
+                        "setup_validation_error_embed.title.player_name_taken",
+                        _locale,
+                    ),
+                    str(e),
                     locale=_locale,
                 ),
                 view=SetupValidationErrorView(

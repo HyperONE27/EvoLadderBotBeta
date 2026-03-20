@@ -42,6 +42,7 @@ from backend.api.models import (
     OwnerSetMMRResponse,
     OwnerToggleAdminRequest,
     OwnerToggleAdminResponse,
+    PlayerNameAvailabilityResponse,
     PlayersResponse,
     Preferences1v1Response,
     PreferencesUpsertRequest,
@@ -808,6 +809,21 @@ async def termsofservice(
 
 
 # --- General endpoints ---
+
+
+@router.get(
+    "/players/player_name_availability",
+    response_model=PlayerNameAvailabilityResponse,
+)
+async def player_name_availability(
+    player_name: str,
+    exclude_discord_uid: int | None = None,
+    app: Backend = Depends(get_backend),
+) -> PlayerNameAvailabilityResponse:
+    available = app.orchestrator.is_player_name_available(
+        player_name, exclude_discord_uid
+    )
+    return PlayerNameAvailabilityResponse(available=available)
 
 
 @router.get("/players/{discord_uid}", response_model=PlayersResponse)
