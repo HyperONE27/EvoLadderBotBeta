@@ -191,9 +191,18 @@ async def _edit_searching_embed_low(msg: discord.Message, uid: int) -> None:
     """Fire-and-forget low-priority edit of a searching embed."""
     try:
         locale = get_player_locale(uid)
-        await queue_message_edit_low(
-            msg, embed=QueueSearchingEmbed(match_found=True, locale=locale), view=None
-        )
+        embed = QueueSearchingEmbed(match_found=True, locale=locale)
+        try:
+            await queue_message_edit_low(msg, embed=embed, view=None)
+        except discord.HTTPException as e:
+            if e.status == 401:
+                ch = msg.channel
+                if not isinstance(ch, discord.DMChannel):
+                    raise
+                partial = ch.get_partial_message(msg.id)
+                await queue_message_edit_low(partial, embed=embed, view=None)
+            else:
+                raise
     except Exception:
         logger.exception(f"[WS] Failed to update searching embed for user {uid}")
 

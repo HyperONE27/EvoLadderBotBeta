@@ -1842,25 +1842,53 @@ class QueueSearchingView(discord.ui.View):
 
                 locale = get_player_locale(self._interaction.user.id)
                 embed = QueueSearchingEmbed(stats, locale=locale)
-
-                if not self._token_expired:
-                    try:
-                        await self._interaction.edit_original_response(embed=embed)
-                        continue
-                    except discord.HTTPException as e:
-                        if e.status == 401:
-                            self._token_expired = True
-                        else:
-                            raise
-
-                if self._message is not None:
-                    await queue_message_edit_low(self._message, embed=embed)
+                await self._apply_searching_heartbeat_embed(embed)
 
             except asyncio.CancelledError:
                 return
             except Exception:
                 logger.warning("queue_heartbeat_error", exc_info=True)
                 await asyncio.sleep(QUEUE_SEARCHING_HEARTBEAT_SECONDS)
+
+    async def _apply_searching_heartbeat_embed(self, embed: discord.Embed) -> None:
+        """Edit the searching DM using the interaction webhook while valid, else bot token."""
+
+        if not self._token_expired:
+            try:
+                await self._interaction.edit_original_response(embed=embed, view=self)
+                return
+            except discord.HTTPException as e:
+                # Webhook token for interaction responses expires (~15 min). After that,
+                # edit_original_response and WebhookMessage.edit both 401 — use channel edit.
+                if e.status != 401:
+                    raise
+                self._token_expired = True
+                logger.info(
+                    "queue_searching_webhook_token_expired",
+                    discord_uid=self._interaction.user.id,
+                )
+
+        ref = self._message
+        if ref is None:
+            logger.warning(
+                "queue_heartbeat_no_cached_message",
+                discord_uid=self._interaction.user.id,
+            )
+            return
+
+        ch = ref.channel
+        if not isinstance(ch, discord.DMChannel):
+            logger.warning(
+                "queue_heartbeat_expected_dm",
+                channel_type=type(ch).__name__,
+                discord_uid=self._interaction.user.id,
+            )
+            return
+
+        partial = ch.get_partial_message(ref.id)
+        updated = await queue_message_edit_low(partial, embed=embed, view=self)
+        self._message = updated
+        get_cache().active_searching_messages[self._interaction.user.id] = updated
 
     def stop_heartbeat(self) -> None:
         if self._heartbeat_task and not self._heartbeat_task.done():
@@ -2050,8 +2078,6 @@ async def _join_queue(
             embed=QueueSearchingEmbed(stats, locale=locale),
             view=searching_view,
         )
-        await searching_view.start_heartbeat()
-
         try:
             msg = await interaction.original_response()
             searching_view._message = msg
@@ -2062,6 +2088,8 @@ async def _join_queue(
                 "Could not cache searching message reference",
                 discord_user_id=discord_user_id,
             )
+
+        await searching_view.start_heartbeat()
 
     except Exception:
         logger.exception("Failed to join queue")

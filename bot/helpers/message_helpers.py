@@ -168,7 +168,7 @@ async def queue_channel_send_low(
 
 
 async def queue_message_edit_low(
-    message: discord.Message,
+    message: discord.Message | discord.PartialMessage,
     content: Any = MISSING,
     embed: Any = MISSING,
     view: Any = MISSING,

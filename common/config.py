@@ -59,7 +59,7 @@ ALLOW_AI_PLAYERS: bool = True
 # ---------------------------------------------------------------------------
 
 # X-axis bin width for join-attempt line charts (matplotlib / Discord attachment).
-ACTIVITY_QUEUE_JOIN_CHART_BUCKET_MINUTES: int = 5
+ACTIVITY_QUEUE_JOIN_CHART_BUCKET_MINUTES: int = 60
 
 # For future “deduped join attempt” series: minimum seconds between counted
 # ``queue_join`` events per (discord_uid, game_mode) unless interrupted by
