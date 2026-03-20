@@ -1644,16 +1644,24 @@ _ACTIVITY_RANGE_TO_TD = {
 
 
 class ActivityChartView(discord.ui.View):
-    def __init__(self, game_mode: str, author_id: int, locale: str) -> None:
+    def __init__(
+        self,
+        game_mode: str,
+        author_id: int,
+        locale: str,
+        range_key: str = "24h",
+    ) -> None:
         super().__init__(timeout=600)
         self.game_mode = game_mode
         self.author_id = author_id
         self.locale = locale
-        self.add_item(ActivityRangeSelect(self))
+        self.add_item(ActivityRangeSelect(self, range_key))
 
 
 class ActivityRangeSelect(discord.ui.Select):
-    def __init__(self, chart_view: ActivityChartView) -> None:
+    def __init__(
+        self, chart_view: ActivityChartView, current_range: str = "24h"
+    ) -> None:
         self._activity_chart_view = chart_view
         loc = chart_view.locale
         super().__init__(
@@ -1663,14 +1671,17 @@ class ActivityRangeSelect(discord.ui.Select):
                 discord.SelectOption(
                     label=t("activity_select.option.24h", loc),
                     value="24h",
+                    default=(current_range == "24h"),
                 ),
                 discord.SelectOption(
                     label=t("activity_select.option.7d", loc),
                     value="7d",
+                    default=(current_range == "7d"),
                 ),
                 discord.SelectOption(
                     label=t("activity_select.option.30d", loc),
                     value="30d",
+                    default=(current_range == "30d"),
                 ),
             ],
         )
@@ -1684,6 +1695,9 @@ class ActivityRangeSelect(discord.ui.Select):
             )
             return
         key = self.values[0]
+        # Mark the chosen option as default so the menu displays the selection.
+        for opt in self.options:
+            opt.default = opt.value == key
         delta = _ACTIVITY_RANGE_TO_TD[key]
         end = utc_now()
         start = end - delta

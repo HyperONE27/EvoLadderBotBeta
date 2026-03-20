@@ -57,54 +57,53 @@ def build_activity_embed_fields(
 
     if range_key == "24h":
         peak_dt, peak_count = max(parsed, key=lambda x: x[1])
-        peak_label = (
+        peak_value = (
             f"{_day_name(peak_dt.weekday(), locale)} {peak_dt.strftime('%H:00')} UTC"
+            f" ({peak_count})"
         )
 
-        # Last 3h: buckets whose timestamp is within 3h of the latest bucket.
-        if parsed:
-            max_t = max(dt for dt, _ in parsed)
-            cutoff = max_t - timedelta(hours=3)
-            last3h = sum(c for dt, c in parsed if dt >= cutoff)
-        else:
-            last3h = 0
+        max_t = max(dt for dt, _ in parsed)
+        cutoff = max_t - timedelta(hours=3)
+        last3h = sum(c for dt, c in parsed if dt >= cutoff)
 
-        total_lbl = t("activity_stats.total.label", locale)
-        peak_lbl = t("activity_stats.peak.label", locale)
-        last3h_lbl = t("activity_stats.last3h.label", locale)
-        name = t("activity_stats.field.summary", locale)
-        value = (
-            f"**{total_lbl}:** {total}"
-            f" · **{peak_lbl}:** {peak_label} ({peak_count})"
-            f" · **{last3h_lbl}:** {last3h}"
-        )
-        return [(name, value, False)]
+        return [
+            (t("activity_stats.total.name", locale), str(total), True),
+            (t("activity_stats.peak.name", locale), peak_value, True),
+            (t("activity_stats.last3h.name", locale), str(last3h), True),
+        ]
 
-    # 7d / 30d — top 3 windows by (weekday, hour) average.
-    window_sums: dict[tuple[int, int], int] = defaultdict(int)
-    window_occurrences: dict[tuple[int, int], int] = defaultdict(int)
+    # 7d / 30d: best window per day of week, sorted by that day's peak avg descending.
+    day_hour_sums: dict[tuple[int, int], int] = defaultdict(int)
+    day_hour_counts: dict[tuple[int, int], int] = defaultdict(int)
     for dt, count in parsed:
-        key = (dt.weekday(), dt.hour)
-        window_sums[key] += count
-        window_occurrences[key] += 1
+        slot = (dt.weekday(), dt.hour)
+        day_hour_sums[slot] += count
+        day_hour_counts[slot] += 1
 
     averages: dict[tuple[int, int], float] = {
-        k: window_sums[k] / window_occurrences[k] for k in window_sums
+        k: day_hour_sums[k] / day_hour_counts[k] for k in day_hour_sums
     }
-    top3 = sorted(averages, key=lambda k: averages[k], reverse=True)[:3]
 
-    windows_lines = [
-        f"{i + 1}. {_day_name(wday, locale)} {hour:02d}:00 UTC"
-        f" — {t('activity_stats.window.avg', locale, avg=f'{averages[(wday, hour)]:.1f}')}"
-        for i, (wday, hour) in enumerate(top3)
+    # For each weekday that appears in the data, find its peak hour.
+    best_per_day: dict[int, tuple[int, float]] = {}  # weekday → (hour, avg)
+    for (wday, hour), avg in averages.items():
+        if wday not in best_per_day or avg > best_per_day[wday][1]:
+            best_per_day[wday] = (hour, avg)
+
+    # Sort days by their peak avg descending (busiest day first).
+    sorted_days = sorted(best_per_day.items(), key=lambda x: x[1][1], reverse=True)
+
+    lines = [
+        f"{_day_name(wday, locale)} {hour:02d}:00 UTC"
+        f" · {t('activity_stats.window.avg', locale, avg=f'{avg:.1f}')}"
+        for wday, (hour, avg) in sorted_days
     ]
 
-    fields: list[tuple[str, str, bool]] = [
+    return [
         (t("activity_stats.total.name", locale), str(total), True),
         (
             t("activity_stats.windows.name", locale),
-            "\n".join(windows_lines) if windows_lines else "—",
-            True,
+            "\n".join(lines) if lines else "—",
+            False,
         ),
     ]
-    return fields
