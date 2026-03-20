@@ -120,7 +120,7 @@ DISCORD_MESSAGE_RATE_LIMIT: int = 40
 QUEUE_SEARCHING_HEARTBEAT_SECONDS: int = 45
 
 # ---------------------
-# Display limits
+# Admin /snapshot display limits
 # ---------------------
 
 MAX_QUEUE_SLOTS: int = 30
