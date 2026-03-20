@@ -75,4 +75,4 @@ ACTIVITY_ANALYTICS_MAX_RANGE_DAYS: int = 90
 
 # Default cooldown (minutes) for new notification rows and when ``/notifyme`` omits
 # an explicit value. Must stay within DB CHECK on ``queue_notify_cooldown_minutes``.
-QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT: int = 60
+QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT: int = 15

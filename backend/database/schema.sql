@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 
     -- Minutes between anonymous “someone is queueing” DMs for this subscriber.
     -- Default matches QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT in common/config.py.
-    queue_notify_cooldown_minutes   SMALLINT NOT NULL DEFAULT 60
+    queue_notify_cooldown_minutes   SMALLINT NOT NULL DEFAULT 15
         CHECK (
                 queue_notify_cooldown_minutes >= 5
                 AND queue_notify_cooldown_minutes <= 1440

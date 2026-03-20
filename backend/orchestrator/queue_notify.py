@@ -45,6 +45,7 @@ def compute_queue_activity_targets(
             "completed_setup",
             "accepted_tos",
             "is_banned",
+            "player_status",
         ),
         on="discord_uid",
         how="inner",
@@ -54,6 +55,7 @@ def compute_queue_activity_targets(
         & pl.col("completed_setup")
         & pl.col("accepted_tos")
         & ~pl.col("is_banned")
+        & (pl.col("player_status") == "idle")
     )
 
     uids: list[int] = []
