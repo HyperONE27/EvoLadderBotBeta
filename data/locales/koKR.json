@@ -52,6 +52,7 @@
     "activity_select.option.30d": "지난 30일",
     "activity_select.option.7d": "지난 7일",
     "activity_select.placeholder.1": "Chart time range",
+    "activity_stats.avg_per_day.name": "일평균",
     "activity_stats.last3h.name": "최근 3시간",
     "activity_stats.peak.name": "최고 시간대",
     "activity_stats.total.name": "총계",

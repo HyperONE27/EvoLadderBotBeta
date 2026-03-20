@@ -52,6 +52,7 @@
     "activity_select.option.30d": "Последние 30 дней",
     "activity_select.option.7d": "Последние 7 дней",
     "activity_select.placeholder.1": "Временной диапазон диаграммы",
+    "activity_stats.avg_per_day.name": "Сред/день",
     "activity_stats.last3h.name": "Последние 3ч",
     "activity_stats.peak.name": "Пиковый час",
     "activity_stats.total.name": "Всего",

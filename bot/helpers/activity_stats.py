@@ -21,6 +21,8 @@ _DAY_KEYS = [
     "day.sun",
 ]
 
+_RANGE_DAYS = {"24h": 1, "7d": 7, "30d": 30}
+
 
 def _parse_buckets(buckets: list[dict]) -> list[tuple[datetime, int]]:
     out: list[tuple[datetime, int]] = []
@@ -38,6 +40,11 @@ def _parse_buckets(buckets: list[dict]) -> list[tuple[datetime, int]]:
 
 def _day_name(weekday: int, locale: str) -> str:
     return t(_DAY_KEYS[weekday], locale)
+
+
+def _fmt_avg(avg: float) -> str:
+    """Format avg as integer when ≥ 10, otherwise one decimal."""
+    return str(int(round(avg))) if avg >= 10 else f"{avg:.1f}"
 
 
 def build_activity_embed_fields(
@@ -59,7 +66,7 @@ def build_activity_embed_fields(
         peak_dt, peak_count = max(parsed, key=lambda x: x[1])
         peak_value = (
             f"{_day_name(peak_dt.weekday(), locale)} {peak_dt.strftime('%H:00')} UTC"
-            f" ({peak_count})"
+            f" · **{peak_count}**"
         )
 
         max_t = max(dt for dt, _ in parsed)
@@ -94,16 +101,25 @@ def build_activity_embed_fields(
     sorted_days = sorted(best_per_day.items(), key=lambda x: x[1][1], reverse=True)
 
     lines = [
-        f"{_day_name(wday, locale)} {hour:02d}:00 UTC"
-        f" · {t('activity_stats.window.avg', locale, avg=f'{avg:.1f}')}"
-        for wday, (hour, avg) in sorted_days
+        f"{i + 1}. {_day_name(wday, locale)}: {hour:02d}:00 UTC"
+        f" · **{t('activity_stats.window.avg', locale, avg=_fmt_avg(avg))}**"
+        for i, (wday, (hour, avg)) in enumerate(sorted_days)
     ]
+
+    # Avg per day over the range window.
+    range_days = _RANGE_DAYS.get(range_key, 1)
+    avg_per_day = total / range_days
 
     return [
         (t("activity_stats.total.name", locale), str(total), True),
         (
+            t("activity_stats.avg_per_day.name", locale),
+            _fmt_avg(avg_per_day),
+            True,
+        ),
+        (
             t("activity_stats.windows.name", locale),
             "\n".join(lines) if lines else "—",
-            False,
+            True,
         ),
     ]

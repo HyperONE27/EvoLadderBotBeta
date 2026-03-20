@@ -52,6 +52,7 @@
     "activity_select.option.30d": "Last 30 days",
     "activity_select.option.7d": "Last 7 days",
     "activity_select.placeholder.1": "Chart time range",
+    "activity_stats.avg_per_day.name": "Avg / Day",
     "activity_stats.last3h.name": "Last 3h",
     "activity_stats.peak.name": "Peak Hour",
     "activity_stats.total.name": "Total",
