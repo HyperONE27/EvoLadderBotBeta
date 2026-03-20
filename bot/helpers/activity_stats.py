@@ -23,6 +23,10 @@ _DAY_KEYS = [
 
 _RANGE_DAYS = {"24h": 1, "7d": 7, "30d": 30}
 
+# Hangul Filler — renders as blank but satisfies Discord's non-empty field name
+# requirement.  Same trick used in MatchInfoEmbed.
+_BLANK = "\u3164"
+
 
 def _parse_buckets(buckets: list[dict]) -> list[tuple[datetime, int]]:
     out: list[tuple[datetime, int]] = []
@@ -43,7 +47,7 @@ def _day_name(weekday: int, locale: str) -> str:
 
 
 def _fmt_avg(avg: float) -> str:
-    """Format avg as integer when ≥ 10, otherwise one decimal."""
+    """Integer when ≥ 10, one decimal below that."""
     return str(int(round(avg))) if avg >= 10 else f"{avg:.1f}"
 
 
@@ -79,7 +83,9 @@ def build_activity_embed_fields(
             (t("activity_stats.last3h.name", locale), str(last3h), True),
         ]
 
-    # 7d / 30d: best window per day of week, sorted by that day's peak avg descending.
+    # 7d / 30d ---------------------------------------------------------------
+
+    # Compute avg joins per (weekday, hour) slot.
     day_hour_sums: dict[tuple[int, int], int] = defaultdict(int)
     day_hour_counts: dict[tuple[int, int], int] = defaultdict(int)
     for dt, count in parsed:
@@ -91,13 +97,13 @@ def build_activity_embed_fields(
         k: day_hour_sums[k] / day_hour_counts[k] for k in day_hour_sums
     }
 
-    # For each weekday that appears in the data, find its peak hour.
+    # Best window (hour) per day of week.
     best_per_day: dict[int, tuple[int, float]] = {}  # weekday → (hour, avg)
     for (wday, hour), avg in averages.items():
         if wday not in best_per_day or avg > best_per_day[wday][1]:
             best_per_day[wday] = (hour, avg)
 
-    # Sort days by their peak avg descending (busiest day first).
+    # Sort days busiest-first.
     sorted_days = sorted(best_per_day.items(), key=lambda x: x[1][1], reverse=True)
 
     lines = [
@@ -106,20 +112,19 @@ def build_activity_embed_fields(
         for i, (wday, (hour, avg)) in enumerate(sorted_days)
     ]
 
-    # Avg per day over the range window.
+    # Row 1 (non-inline): Total · Avg/Day on a single line.
     range_days = _RANGE_DAYS.get(range_key, 1)
     avg_per_day = total / range_days
+    total_name = t("activity_stats.total.name", locale)
+    avg_name = t("activity_stats.avg_per_day.name", locale)
+    summary = f"**{total_name}:** {total}  ·  **{avg_name}:** {_fmt_avg(avg_per_day)}"
+
+    # Rows 2-3 (inline): Peak Per Day — top 4 in col 1, remaining in col 2.
+    col1 = "\n".join(lines[:4]) if lines[:4] else _BLANK
+    col2 = "\n".join(lines[4:]) if lines[4:] else _BLANK
 
     return [
-        (t("activity_stats.total.name", locale), str(total), True),
-        (
-            t("activity_stats.avg_per_day.name", locale),
-            _fmt_avg(avg_per_day),
-            True,
-        ),
-        (
-            t("activity_stats.windows.name", locale),
-            "\n".join(lines) if lines else "—",
-            True,
-        ),
+        (_BLANK, summary, False),
+        (t("activity_stats.windows.name", locale), col1, True),
+        (_BLANK, col2, True),
     ]
