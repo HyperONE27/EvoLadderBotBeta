@@ -661,7 +661,7 @@
     "toggle_admin_success_embed.title_promoted.1": "⬆️ 관리자 역할 업데이트됨",
     "unsupported_game_mode_embed.description.1": "`{game_mode}`은(는) 아직 지원되지 않습니다. 현재는 `1v1`만 사용 가능합니다.",
     "unsupported_game_mode_embed.title.1": "🚧 지원하지 않는 게임 모드",
-    "validation.battletag.description": "이름#숫자 형식이어야 합니다 (예: Username#1234).",
-    "validation.player_name.ascii.description": "3~12자여야 하며 영문자, 숫자, -, _, . 만 사용할 수 있습니다.",
+    "validation.battletag.description": "이름#숫자 형식(예: 사용자#1234). 이름에는 어떤 언어의 글자·숫자·조합 부호만; # 뒤 숫자는 3~5자리.",
+    "validation.player_name.ascii.description": "3~12자의 영문 알파벳(A–Z, a–z)만 사용할 수 있습니다.",
     "validation.player_name.intl.description": "3~12자여야 합니다. 공백과 대부분의 특수문자는 허용되지 않습니다."
 }

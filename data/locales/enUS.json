@@ -693,7 +693,7 @@
     "toggle_admin_success_embed.title_promoted.1": "⬆️ Admin Role Updated",
     "unsupported_game_mode_embed.description.1": "`{game_mode}` is not yet supported. Only `1v1` is currently available.",
     "unsupported_game_mode_embed.title.1": "🚧 Unsupported Game Mode",
-    "validation.battletag.description": "Must follow the format Name#Digits (e.g. Username#1234).",
-    "validation.player_name.ascii.description": "Must be 3–12 characters using only letters, digits, -, _, .",
+    "validation.battletag.description": "Use Name#Digits (e.g. Игрок#1234). Only letters (any language), digits, and accents in the name; 3–5 digits after #.",
+    "validation.player_name.ascii.description": "Must be 3–12 English letters (A–Z, a–z) only.",
     "validation.player_name.intl.description": "Must be 3–12 characters. Spaces and most symbols are not allowed."
 }
