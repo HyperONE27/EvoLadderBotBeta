@@ -515,6 +515,7 @@
     "profile_not_found_embed.title.1": "❌ 프로필을 찾을 수 없음",
     "queue_join_activity_notify_embed.description.1": "지금 **{mode_label}** 래더 대기열에 참가 중인 사람이 있습니다.",
     "queue_join_activity_notify_embed.title.1": "대기열 활동",
+    "queue_notify.footer.cooldown.1": "설정에 따라 {minutes}분 동안 이와 같은 알림을 다시 받지 않습니다.",
     "queue_error_embed.title.1": "대기열 오류",
     "queue_searching_embed.description.1": "대기열에서 게임을 찾고 있습니다.\n\n- 다음 검색: {next_search_ts}\n- 검색 간격: 60초\n- 현재 대기 중인 플레이어:\n  - 스타1: {bw_only}\n  - 스타2: {sc2_only}\n  - 둘 다: {both}",
     "queue_searching_embed.description.2": "대기열에서 게임을 찾고 있습니다.\n\n- 검색 간격: 60초",

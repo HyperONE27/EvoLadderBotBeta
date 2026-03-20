@@ -515,6 +515,7 @@
     "profile_not_found_embed.title.1": "❌ Профиль не найден",
     "queue_join_activity_notify_embed.description.1": "Кто-то сейчас стоит в очереди на лестницу **{mode_label}**.",
     "queue_join_activity_notify_embed.title.1": "Активность в очереди",
+    "queue_notify.footer.cooldown.1": "По вашим настройкам вы не будете получать ещё одно такое уведомление в течение {minutes} мин.",
     "queue_error_embed.title.1": "Ошибка очереди",
     "queue_searching_embed.description.1": "Очередь ищет игру.\n\n- Следующий поиск: {next_search_ts}\n- Интервал поиска: 60 секунд\n- Текущие игроки в очереди:\n  - Война выводков: {bw_only}\n  - StarCraft II: {sc2_only}\n  - Оба: {both}",
     "queue_searching_embed.description.2": "Очередь ищет игру.\n\n- Интервал поиска: 60 ​​секунд",
