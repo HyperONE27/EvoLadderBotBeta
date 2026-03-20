@@ -15,6 +15,7 @@ from bot.helpers.activity_analytics import (
     activity_chart_title,
     fetch_queue_join_analytics,
 )
+from bot.helpers.activity_stats import build_activity_embed_fields
 from bot.helpers.checks import (
     check_if_accepted_tos,
     check_if_banned,
@@ -81,9 +82,13 @@ def register_activity_command(tree: app_commands.CommandTree) -> None:
             file = discord.File(png, filename="activity.png")
             embed = discord.Embed(
                 title=title,
-                description=t("activity_embed.description.initial.1", locale),
+                description=t("activity_embed.description.24h.1", locale),
                 color=discord.Color.dark_teal(),
             )
+            for name, value, inline in build_activity_embed_fields(
+                buckets, "24h", locale
+            ):
+                embed.add_field(name=name, value=value, inline=inline)
             apply_default_embed_footer(embed, locale=locale)
             view = ActivityChartView(game_mode, interaction.user.id, locale)
             await interaction.followup.send(embed=embed, file=file, view=view)

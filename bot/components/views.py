@@ -52,6 +52,7 @@ from bot.helpers.activity_analytics import (
     activity_chart_title,
     fetch_queue_join_analytics,
 )
+from bot.helpers.activity_stats import build_activity_embed_fields
 from bot.helpers.checks import (
     AlreadyQueueingError,
     NameNotUniqueError,
@@ -1697,9 +1698,13 @@ class ActivityRangeSelect(discord.ui.Select):
             file = discord.File(png, filename="activity.png")
             embed = discord.Embed(
                 title=title,
-                description=t("activity_embed.description.1", view.locale),
+                description=t(f"activity_embed.description.{key}.1", view.locale),
                 color=discord.Color.dark_teal(),
             )
+            for name, value, inline in build_activity_embed_fields(
+                buckets, key, view.locale
+            ):
+                embed.add_field(name=name, value=value, inline=inline)
             apply_default_embed_footer(embed, locale=view.locale)
             await interaction.edit_original_response(
                 embed=embed,

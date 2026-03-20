@@ -1,4 +1,10 @@
-"""PNG line chart for queue join analytics (matplotlib Agg backend)."""
+"""PNG line chart for queue join analytics (matplotlib Agg backend).
+
+Chart text (axis labels, tick labels, title) is intentionally English-only.
+Rendering on Railway does not have CJK fonts installed, and adding a CJK font
+dependency just for axis tick labels is not worth the complexity. Localised
+strings are handled at the embed level, not inside the chart image.
+"""
 
 from __future__ import annotations
 
@@ -26,6 +32,10 @@ _LABEL_COLOR = "#888888"
 _TEXT_COLOR = "#e0e0e0"
 _SPINE_COLOR = "#444444"
 _PEAK_COLOR = "#ff4444"
+_MARKER_COLOR = "#7aa8ff"
+
+# Hardcoded English — see module docstring.
+_DAY_ABBREVS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 
 def _apply_style(fig: plt.Figure, ax: plt.Axes) -> None:
@@ -39,6 +49,12 @@ def _apply_style(fig: plt.Figure, ax: plt.Axes) -> None:
     ax.xaxis.grid(False)
     ax.set_axisbelow(True)
     ax.tick_params(axis="both", length=0, pad=8, colors=_LABEL_COLOR)
+
+
+def _tick_label(x: float, _pos: int) -> str:
+    """Format an x-axis tick as 'Mon 14:00'."""
+    dt = mdates.num2date(x)
+    return f"{_DAY_ABBREVS[dt.weekday()]} {dt.strftime('%H:00')}"
 
 
 def render_queue_join_chart_png(
@@ -56,7 +72,7 @@ def render_queue_join_chart_png(
     chart_title = f"Queue Activity · {game_mode}" if game_mode else title
 
     if not buckets:
-        fig, ax = plt.subplots(figsize=(10, 4))
+        fig, ax = plt.subplots(figsize=(10, 5))
         _apply_style(fig, ax)
         empty_msg = t("activity_chart.empty.1", locale)
         ax.text(0.5, 0.5, empty_msg, ha="center", va="center", color=_TEXT_COLOR)
@@ -83,7 +99,7 @@ def render_queue_join_chart_png(
         times.append(dt)
         counts.append(int(b["count"]))
 
-    fig, ax = plt.subplots(figsize=(10, 4))
+    fig, ax = plt.subplots(figsize=(10, 5))
     _apply_style(fig, ax)
 
     # date2num satisfies matplotlib stubs; plain datetime lists trip mypy on some stubs.
@@ -129,10 +145,15 @@ def render_queue_join_chart_png(
     )
     ax.add_collection(lc)
 
+    # Gentle circle markers at each interval.
+    ax.scatter(
+        x_nums, counts_arr, color=_MARKER_COLOR, s=18, zorder=5, alpha=0.7, linewidths=0
+    )
+
     # Red dot at peak.
     peak_idx = int(np.argmax(counts_arr))
     ax.scatter(
-        [x_nums[peak_idx]], [counts_arr[peak_idx]], color=_PEAK_COLOR, s=70, zorder=5
+        [x_nums[peak_idx]], [counts_arr[peak_idx]], color=_PEAK_COLOR, s=70, zorder=6
     )
 
     ax.set_title(chart_title, fontsize=13, fontweight="600", color=_TEXT_COLOR, pad=16)
@@ -142,10 +163,21 @@ def render_queue_join_chart_png(
     ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(integer=True))
 
     locator = mdates.AutoDateLocator()
-    formatter = mdates.ConciseDateFormatter(locator)
-    formatter.show_offset = False
     ax.xaxis.set_major_locator(locator)
-    ax.xaxis.set_major_formatter(formatter)
+    ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(_tick_label))
+
+    # Discreet UTC label at the bottom-right of the plot area.
+    ax.text(
+        1.0,
+        -0.07,
+        "UTC",
+        transform=ax.transAxes,
+        ha="right",
+        va="top",
+        fontsize=8,
+        color=_LABEL_COLOR,
+        alpha=0.6,
+    )
 
     fig.autofmt_xdate()
     fig.tight_layout()
