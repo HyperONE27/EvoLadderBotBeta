@@ -104,7 +104,13 @@ async def check_if_admin(interaction: discord.Interaction) -> bool:
 async def check_if_name_unique(
     player_name: str, exclude_discord_uid: int, locale: str
 ) -> None:
-    """Raise NameNotUniqueError if player_name is already used by another account."""
+    """Raise NameNotUniqueError if player_name is already used by another account.
+
+    Fail-open: if the backend is unreachable or returns a non-200, the check
+    passes silently rather than blocking the /setup flow.  This matches the
+    pattern used by check_if_banned, check_if_accepted_tos, etc.  Duplicate
+    names are non-critical and can be resolved by admins.
+    """
     try:
         async with get_session().get(
             f"{BACKEND_URL}/players/player_name_availability",
@@ -114,12 +120,14 @@ async def check_if_name_unique(
             },
         ) as resp:
             if resp.status != 200:
+                body = await resp.text()
                 logger.warning(
                     "player_name_availability_non_200",
                     status=resp.status,
+                    body=body,
                     player_name=player_name,
                 )
-                return
+                return  # fail-open
             data = await resp.json()
     except Exception:
         logger.warning(
@@ -127,7 +135,7 @@ async def check_if_name_unique(
             player_name=player_name,
             exc_info=True,
         )
-        return
+        return  # fail-open
     if not data.get("available", True):
         raise NameNotUniqueError(
             t("setup_validation_error_embed.error.player_name_taken", locale)

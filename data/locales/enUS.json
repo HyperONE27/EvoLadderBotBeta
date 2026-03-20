@@ -515,6 +515,7 @@
     "profile_not_found_embed.title.1": "❌ Profile Not Found",
     "queue_join_activity_notify_embed.description.1": "Someone is queueing for **{mode_label}** ladder right now.",
     "queue_join_activity_notify_embed.title.1": "Queue activity",
+    "queue_notify.footer.cooldown.1": "Per your settings, you will not receive another notification like this for {minutes} minute{suffix}.",
     "queue_error_embed.title.1": "Queue Error",
     "queue_searching_embed.description.1": "The queue is searching for a game.\n\n- Next search: {next_search_ts}\n- Search interval: 60 seconds\n- Current players queueing:\n  - Brood War: {bw_only}\n  - StarCraft II: {sc2_only}\n  - Both: {both}",
     "queue_searching_embed.description.2": "The queue is searching for a game.\n\n- Search interval: 60 seconds",

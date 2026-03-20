@@ -110,6 +110,7 @@ async def _on_queue_join_activity(client: discord.Client, data: dict) -> None:
 
     raw_uids = data.get("notify_discord_uids") or []
     footers: dict[str, str] = data.get("footers") or {}
+    payload_locales: dict[str, str] = data.get("locales") or {}
     game_mode = str(data.get("game_mode", "1v1"))
 
     for uid in raw_uids:
@@ -126,12 +127,16 @@ async def _on_queue_join_activity(client: discord.Client, data: dict) -> None:
                 exc_info=True,
             )
             continue
+        # Prefer locale from payload (sourced from player's DB language column);
+        # seed the bot cache so future embeds for this user are also localized.
+        locale = payload_locales.get(str(discord_uid)) or get_player_locale(discord_uid)
+        if str(discord_uid) in payload_locales:
+            get_cache().player_locales[discord_uid] = locale
         footer = footers.get(str(discord_uid), "")
-        locale = get_player_locale(discord_uid)
         embed = QueueJoinActivityNotifyEmbed(game_mode=game_mode, locale=locale)
         if footer:
             embed.set_footer(text=footer)
-        apply_default_embed_footer(embed, locale=locale)
+            apply_default_embed_footer(embed, locale=locale)
         await queue_user_send_low(user, embed=embed)
 
 

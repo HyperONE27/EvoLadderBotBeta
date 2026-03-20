@@ -467,8 +467,7 @@ class Orchestrator:
         """Subscribers + footers for ``queue_join_activity`` WS event; updates *last_sent*."""
 
         now = utc_now()
-        uids, footers = compute_queue_activity_targets(
-            self._transition_manager._state_manager,
+        uids, footers, locales = compute_queue_activity_targets(
             joiner_uid,
             game_mode,
             last_sent,
@@ -478,4 +477,5 @@ class Orchestrator:
             "game_mode": game_mode,
             "notify_discord_uids": uids,
             "footers": footers,
+            "locales": locales,
         }

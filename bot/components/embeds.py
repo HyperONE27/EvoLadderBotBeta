@@ -25,7 +25,7 @@ from bot.core.config import (
     TOS_MIRROR_URL,
     TOS_URL,
 )
-from bot.helpers.embed_branding import BrandedEmbed
+from bot.helpers.embed_branding import apply_default_embed_footer
 from bot.helpers.emotes import (
     get_flag_emote,
     get_game_emote,
@@ -87,7 +87,7 @@ def _localized_language(code: str) -> str:
 # =========================================================================
 
 
-class ErrorEmbed(BrandedEmbed):
+class ErrorEmbed(discord.Embed):
     """Standard red error embed used across all commands."""
 
     def __init__(self, title: str, description: str, *, locale: str = "enUS") -> None:
@@ -95,11 +95,12 @@ class ErrorEmbed(BrandedEmbed):
             title=title,
             description=description,
             color=discord.Color.red(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class UnsupportedGameModeEmbed(BrandedEmbed):
+
+class UnsupportedGameModeEmbed(discord.Embed):
     def __init__(self, game_mode: str, locale: str = "enUS") -> None:
         super().__init__(
             title=t("unsupported_game_mode_embed.title.1", locale),
@@ -107,8 +108,9 @@ class UnsupportedGameModeEmbed(BrandedEmbed):
                 "unsupported_game_mode_embed.description.1", locale, game_mode=game_mode
             ),
             color=discord.Color.orange(),
-            locale=locale,
         )
+
+        apply_default_embed_footer(self, locale=locale)
 
 
 # =========================================================================
@@ -205,7 +207,7 @@ def _player_header(
     return f"{rank_emote} {flag_emote} {race_emote} **{name} {mmr_part}**"
 
 
-class QueueSetupEmbed(BrandedEmbed):
+class QueueSetupEmbed(discord.Embed):
     """Queue setup configuration display."""
 
     def __init__(
@@ -218,7 +220,6 @@ class QueueSetupEmbed(BrandedEmbed):
         super().__init__(
             title=t("queue_setup_embed.title.1", locale),
             color=discord.Color.blue(),
-            locale=locale,
         )
 
         self.add_field(
@@ -271,28 +272,32 @@ class QueueSetupEmbed(BrandedEmbed):
             inline=False,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class MatchConfirmedEmbed(BrandedEmbed):
+
+class MatchConfirmedEmbed(discord.Embed):
     def __init__(self, match_id: int, locale: str = "enUS") -> None:
         super().__init__(
             title=t("match_confirmed_embed.title.1", locale, match_id=str(match_id)),
             description=t("match_confirmed_embed.description.1", locale),
             color=discord.Color.gold(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class MatchAbortAckEmbed(BrandedEmbed):
+
+class MatchAbortAckEmbed(discord.Embed):
     def __init__(self, locale: str = "enUS") -> None:
         super().__init__(
             title=t("match_abort_ack_embed.title.1", locale),
             description=t("match_abort_ack_embed.description.1", locale),
             color=discord.Color.red(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class QueueSearchingEmbed(BrandedEmbed):
+
+class QueueSearchingEmbed(discord.Embed):
     def __init__(
         self,
         stats: dict | None = None,
@@ -322,7 +327,6 @@ class QueueSearchingEmbed(BrandedEmbed):
             title=t("queue_searching_embed.title.1", locale),
             description=description,
             color=discord.Color.blue(),
-            locale=locale,
         )
 
         if match_found:
@@ -332,18 +336,21 @@ class QueueSearchingEmbed(BrandedEmbed):
                 inline=False,
             )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class QueueErrorEmbed(BrandedEmbed):
+
+class QueueErrorEmbed(discord.Embed):
     def __init__(self, error: str, locale: str = "enUS") -> None:
         super().__init__(
             title=t("queue_error_embed.title.1", locale),
             description=error,
             color=discord.Color.red(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class QueueJoinActivityNotifyEmbed(BrandedEmbed):
+
+class QueueJoinActivityNotifyEmbed(discord.Embed):
     """Anonymous DM when another user joins the queue (queue_join_activity WS)."""
 
     def __init__(self, *, game_mode: str, locale: str = "enUS") -> None:
@@ -360,18 +367,18 @@ class QueueJoinActivityNotifyEmbed(BrandedEmbed):
                 mode_label=mode_label,
             ),
             color=discord.Color.blue(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class MatchFoundEmbed(BrandedEmbed):
+
+class MatchFoundEmbed(discord.Embed):
     def __init__(self, match_data: dict, locale: str = "enUS") -> None:
         match_id = match_data.get("id", "?")
         super().__init__(
             title=t("match_found_embed.title.1", locale, match_id=str(match_id)),
             description=t("match_found_embed.description.1", locale),
             color=discord.Color.green(),
-            locale=locale,
         )
         assigned_at = ensure_utc(match_data.get("assigned_at"))
         if assigned_at is not None:
@@ -387,8 +394,10 @@ class MatchFoundEmbed(BrandedEmbed):
             inline=False,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class MatchWaitingConfirmEmbed(BrandedEmbed):
+
+class MatchWaitingConfirmEmbed(discord.Embed):
     def __init__(self, match_id: int, locale: str = "enUS") -> None:
         super().__init__(
             title=t(
@@ -396,11 +405,12 @@ class MatchWaitingConfirmEmbed(BrandedEmbed):
             ),
             description=t("match_waiting_confirm_embed.description.1", locale),
             color=discord.Color.green(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class MatchInfoEmbed(BrandedEmbed):
+
+class MatchInfoEmbed(discord.Embed):
     """Full match details embed matching the alpha UI layout."""
 
     def __init__(
@@ -442,9 +452,7 @@ class MatchInfoEmbed(BrandedEmbed):
             f"{p2_rank_emote} {p2_flag} {p2_race_emote} {p2_name} ({p2_mmr})"
         )
 
-        super().__init__(
-            title=title, description="", color=discord.Color.teal(), locale=locale
-        )
+        super().__init__(title=title, description="", color=discord.Color.teal())
 
         self.add_field(name="", value="", inline=False)
 
@@ -585,8 +593,10 @@ class MatchInfoEmbed(BrandedEmbed):
             footer_text = t("match_info_embed.footer.2", locale)
         self.set_footer(text=footer_text)
 
+        apply_default_embed_footer(self, locale=locale)
 
-class MatchAbortedEmbed(BrandedEmbed):
+
+class MatchAbortedEmbed(discord.Embed):
     def __init__(
         self,
         match_data: dict,
@@ -629,7 +639,6 @@ class MatchAbortedEmbed(BrandedEmbed):
             title=t("match_aborted_embed.title.1", locale, match_id=str(match_id)),
             description=f"{p1_hdr} vs {p2_hdr}",
             color=discord.Color.red(),
-            locale=locale,
         )
         self.add_field(
             name=t("shared.field_name.mmr_changes", locale),
@@ -642,8 +651,10 @@ class MatchAbortedEmbed(BrandedEmbed):
             inline=False,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class MatchAbandonedEmbed(BrandedEmbed):
+
+class MatchAbandonedEmbed(discord.Embed):
     def __init__(
         self,
         match_data: dict,
@@ -686,7 +697,6 @@ class MatchAbandonedEmbed(BrandedEmbed):
             title=t("match_abandoned_embed.title.1", locale, match_id=str(match_id)),
             description=f"{p1_hdr} vs {p2_hdr}",
             color=discord.Color.red(),
-            locale=locale,
         )
         self.add_field(
             name=t("shared.field_name.mmr_changes", locale),
@@ -699,8 +709,10 @@ class MatchAbandonedEmbed(BrandedEmbed):
             inline=False,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class MatchFinalizedEmbed(BrandedEmbed):
+
+class MatchFinalizedEmbed(discord.Embed):
     def __init__(
         self,
         match_data: dict,
@@ -741,7 +753,6 @@ class MatchFinalizedEmbed(BrandedEmbed):
             title=t("match_finalized_embed.title.1", locale, match_id=str(match_id)),
             description=f"{p1_hdr} vs {p2_hdr}",
             color=discord.Color.gold(),
-            locale=locale,
         )
 
         if result == "draw":
@@ -766,8 +777,10 @@ class MatchFinalizedEmbed(BrandedEmbed):
             inline=True,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class MatchConflictEmbed(BrandedEmbed):
+
+class MatchConflictEmbed(discord.Embed):
     def __init__(
         self,
         match_data: dict,
@@ -808,7 +821,6 @@ class MatchConflictEmbed(BrandedEmbed):
             title=t("match_conflict_embed.title.1", locale, match_id=str(match_id)),
             description=f"{p1_hdr} vs {p2_hdr}",
             color=discord.Color.orange(),
-            locale=locale,
         )
         self.add_field(
             name=t("shared.field_name.reports", locale),
@@ -824,23 +836,26 @@ class MatchConflictEmbed(BrandedEmbed):
             inline=False,
         )
 
+        apply_default_embed_footer(self, locale=locale)
+
 
 # =========================================================================
 # Setup
 # =========================================================================
 
 
-class SetupIntroEmbed(BrandedEmbed):
+class SetupIntroEmbed(discord.Embed):
     def __init__(self, locale: str = "enUS") -> None:
         super().__init__(
             title=t("setup_intro_embed.title.1", locale),
             description=t("setup_intro_embed.description.1", locale),
             color=discord.Color.blue(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class SetupValidationErrorEmbed(BrandedEmbed):
+
+class SetupValidationErrorEmbed(discord.Embed):
     def __init__(self, title: str, error: str, locale: str = "enUS") -> None:
         super().__init__(
             title=f"❌ {title}",
@@ -848,11 +863,12 @@ class SetupValidationErrorEmbed(BrandedEmbed):
                 "setup_validation_error_embed.description.1", locale, error=error
             ),
             color=discord.Color.red(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class SetupSelectionEmbed(BrandedEmbed):
+
+class SetupSelectionEmbed(discord.Embed):
     def __init__(
         self,
         country: Country | None = None,
@@ -863,7 +879,6 @@ class SetupSelectionEmbed(BrandedEmbed):
         super().__init__(
             title=t("setup_selection_embed.title.1", locale),
             color=discord.Color.blue(),
-            locale=locale,
         )
         selected_lines: list[str] = []
         if country:
@@ -929,8 +944,10 @@ class SetupSelectionEmbed(BrandedEmbed):
                 + t("setup_selection_embed.country_limit_note.1", locale)
             )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class SetupPreviewEmbed(BrandedEmbed):
+
+class SetupPreviewEmbed(discord.Embed):
     def __init__(
         self,
         player_name: str,
@@ -945,7 +962,6 @@ class SetupPreviewEmbed(BrandedEmbed):
             title=t("setup_preview_embed.title.1", locale),
             description=t("setup_preview_embed.description.1", locale),
             color=discord.Color.blue(),
-            locale=locale,
         )
         self.add_field(
             name=t("shared.field_name.user_id", locale),
@@ -987,8 +1003,10 @@ class SetupPreviewEmbed(BrandedEmbed):
             inline=False,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class SetupSuccessEmbed(BrandedEmbed):
+
+class SetupSuccessEmbed(discord.Embed):
     def __init__(
         self,
         player_name: str,
@@ -1003,7 +1021,6 @@ class SetupSuccessEmbed(BrandedEmbed):
             title=t("setup_success_embed.title.1", locale),
             description=t("setup_success_embed.description.1", locale),
             color=discord.Color.green(),
-            locale=locale,
         )
         self.add_field(
             name=t("shared.field_name.user_id", locale),
@@ -1044,6 +1061,8 @@ class SetupSuccessEmbed(BrandedEmbed):
             value=alt_display,
             inline=False,
         )
+
+        apply_default_embed_footer(self, locale=locale)
 
 
 # =========================================================================
@@ -1143,17 +1162,18 @@ def _format_mmr_rows(mmrs: list[dict], locale: str = "enUS") -> str:
     return "\n".join(lines)
 
 
-class ProfileNotFoundEmbed(BrandedEmbed):
+class ProfileNotFoundEmbed(discord.Embed):
     def __init__(self, locale: str = "enUS") -> None:
         super().__init__(
             title=t("profile_not_found_embed.title.1", locale),
             description=t("profile_not_found_embed.description.1", locale),
             color=discord.Color.red(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class ProfileEmbed(BrandedEmbed):
+
+class ProfileEmbed(discord.Embed):
     def __init__(
         self,
         user: discord.User | discord.Member,
@@ -1174,7 +1194,6 @@ class ProfileEmbed(BrandedEmbed):
                 title_name=title_name,
             ),
             color=color,
-            locale=locale,
         )
 
         if user.display_avatar:
@@ -1190,6 +1209,8 @@ class ProfileEmbed(BrandedEmbed):
                 "profile_embed.footer.1", locale, username=user.name, uid=str(user.id)
             )
         )
+
+        apply_default_embed_footer(self, locale=locale)
 
     def _add_basic_info(self, player: dict, locale: str = "enUS") -> None:
         not_set = t("shared.not_set", locale)
@@ -1326,7 +1347,7 @@ class ProfileEmbed(BrandedEmbed):
 # =========================================================================
 
 
-class TermsOfServiceEmbed(BrandedEmbed):
+class TermsOfServiceEmbed(discord.Embed):
     def __init__(self, locale: str = "enUS") -> None:
         super().__init__(
             title=t("terms_of_service_embed.title.1", locale),
@@ -1337,28 +1358,31 @@ class TermsOfServiceEmbed(BrandedEmbed):
                 tos_mirror_url=TOS_MIRROR_URL,
             ),
             color=discord.Color.blue(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class TermsOfServiceAcceptedEmbed(BrandedEmbed):
+
+class TermsOfServiceAcceptedEmbed(discord.Embed):
     def __init__(self, locale: str = "enUS") -> None:
         super().__init__(
             title=t("terms_of_service_accepted_embed.title.1", locale),
             description=t("terms_of_service_accepted_embed.description.1", locale),
             color=discord.Color.green(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class TermsOfServiceDeclinedEmbed(BrandedEmbed):
+
+class TermsOfServiceDeclinedEmbed(discord.Embed):
     def __init__(self, locale: str = "enUS") -> None:
         super().__init__(
             title=t("terms_of_service_declined_embed.title.1", locale),
             description=t("terms_of_service_declined_embed.description.1", locale),
             color=discord.Color.red(),
-            locale=locale,
         )
+
+        apply_default_embed_footer(self, locale=locale)
 
 
 # =========================================================================
@@ -1366,7 +1390,7 @@ class TermsOfServiceDeclinedEmbed(BrandedEmbed):
 # =========================================================================
 
 
-class SetCountryNotFoundEmbed(BrandedEmbed):
+class SetCountryNotFoundEmbed(discord.Embed):
     def __init__(self, country: str, locale: str = "enUS"):
         super().__init__(
             title=t("set_country_not_found_embed.title.1", locale),
@@ -1376,17 +1400,17 @@ class SetCountryNotFoundEmbed(BrandedEmbed):
                 country=country,
             ),
             color=discord.Color.red(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class SetCountryPreviewEmbed(BrandedEmbed):
+
+class SetCountryPreviewEmbed(discord.Embed):
     def __init__(self, country: Country, locale: str = "enUS"):
         super().__init__(
             title=t("set_country_preview_embed.title.1", locale),
             description=t("set_country_preview_embed.description.1", locale),
             color=discord.Color.blue(),
-            locale=locale,
         )
         self.add_field(
             name=t(
@@ -1397,14 +1421,15 @@ class SetCountryPreviewEmbed(BrandedEmbed):
             value=f"`{_localized_country(country['code'], locale)}`",
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class SetCountryConfirmEmbed(BrandedEmbed):
+
+class SetCountryConfirmEmbed(discord.Embed):
     def __init__(self, country: Country, locale: str = "enUS"):
         super().__init__(
             title=t("set_country_confirm_embed.title.1", locale),
             description=t("set_country_confirm_embed.description.1", locale),
             color=discord.Color.blue(),
-            locale=locale,
         )
         self.add_field(
             name=t(
@@ -1415,13 +1440,15 @@ class SetCountryConfirmEmbed(BrandedEmbed):
             value=f"`{_localized_country(country['code'], locale)}`",
         )
 
+        apply_default_embed_footer(self, locale=locale)
+
 
 # =========================================================================
 # Admin: Ban
 # =========================================================================
 
 
-class BanPreviewEmbed(BrandedEmbed):
+class BanPreviewEmbed(discord.Embed):
     def __init__(self, target: discord.User, locale: str = "enUS") -> None:
         super().__init__(
             title=t("ban_preview_embed.title.1", locale),
@@ -1433,11 +1460,12 @@ class BanPreviewEmbed(BrandedEmbed):
                 uid=str(target.id),
             ),
             color=discord.Color.orange(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class BanSuccessEmbed(BrandedEmbed):
+
+class BanSuccessEmbed(discord.Embed):
     def __init__(
         self, target: discord.User, new_is_banned: bool, locale: str = "enUS"
     ) -> None:
@@ -1463,8 +1491,9 @@ class BanSuccessEmbed(BrandedEmbed):
                 status=t(status_key, locale),
             ),
             color=color,
-            locale=locale,
         )
+
+        apply_default_embed_footer(self, locale=locale)
 
 
 # =========================================================================
@@ -1571,14 +1600,13 @@ def _format_blank_match_slot(id_width: int) -> str:
     return f"`{blank_id}` `{blank_player}` `vs` `{blank_player}` `{blank_time}`"
 
 
-class SystemStatsEmbed(BrandedEmbed):
+class SystemStatsEmbed(discord.Embed):
     """Embed 1: DataFrame memory stats."""
 
     def __init__(self, dataframe_stats: dict, locale: str = "enUS") -> None:
         super().__init__(
             title=t("system_stats_embed.title.1", locale),
             color=discord.Color.blue(),
-            locale=locale,
         )
 
         if dataframe_stats:
@@ -1600,8 +1628,10 @@ class SystemStatsEmbed(BrandedEmbed):
                 inline=False,
             )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class QueueSnapshotEmbed(BrandedEmbed):
+
+class QueueSnapshotEmbed(discord.Embed):
     """Embed 2: Queue players in monospace backtick format, two columns of 15."""
 
     def __init__(self, queue: list[dict], locale: str = "enUS") -> None:
@@ -1609,7 +1639,6 @@ class QueueSnapshotEmbed(BrandedEmbed):
         super().__init__(
             title=t("queue_snapshot_embed.title.1", locale),
             color=discord.Color.green(),
-            locale=locale,
         )
 
         description = (
@@ -1636,8 +1665,10 @@ class QueueSnapshotEmbed(BrandedEmbed):
 
         self.description = description
 
+        apply_default_embed_footer(self, locale=locale)
 
-class MatchesEmbed(BrandedEmbed):
+
+class MatchesEmbed(discord.Embed):
     """Embed 3: Active matches in monospace backtick format."""
 
     def __init__(self, active_matches: list[dict], locale: str = "enUS") -> None:
@@ -1645,7 +1676,6 @@ class MatchesEmbed(BrandedEmbed):
         super().__init__(
             title=t("matches_embed.title.1", locale),
             color=discord.Color.orange(),
-            locale=locale,
         )
 
         id_width = 5
@@ -1667,6 +1697,8 @@ class MatchesEmbed(BrandedEmbed):
             description += f"\n_{t('shared.and_n_more', locale, n=str(match_count - MAX_MATCH_SLOTS))}_"
 
         self.description = description
+
+        apply_default_embed_footer(self, locale=locale)
 
 
 # =========================================================================
@@ -1719,7 +1751,7 @@ def _admin_server_display(server_code: str | None, locale: str = "enUS") -> str:
     return _server_display(server_code, locale)
 
 
-class MatchNotFoundEmbed(BrandedEmbed):
+class MatchNotFoundEmbed(discord.Embed):
     def __init__(self, match_id: int, locale: str = "enUS") -> None:
         super().__init__(
             title=t("match_not_found_embed.title.1", locale),
@@ -1727,11 +1759,12 @@ class MatchNotFoundEmbed(BrandedEmbed):
                 "match_not_found_embed.description.1", locale, match_id=str(match_id)
             ),
             color=discord.Color.red(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class AdminMatchEmbed(BrandedEmbed):
+
+class AdminMatchEmbed(discord.Embed):
     """Main admin match overview — full matches_1v1 row data."""
 
     def __init__(
@@ -1780,7 +1813,6 @@ class AdminMatchEmbed(BrandedEmbed):
                 p2_mmr=str(p2_mmr),
             ),
             color=color,
-            locale=locale,
         )
 
         self.add_field(
@@ -1961,8 +1993,10 @@ class AdminMatchEmbed(BrandedEmbed):
             inline=False,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class AdminReplayDetailsEmbed(BrandedEmbed):
+
+class AdminReplayDetailsEmbed(discord.Embed):
     """Per-player replay details — mirrors the player-facing ReplaySuccessEmbed
     format with full verification."""
 
@@ -1980,7 +2014,6 @@ class AdminReplayDetailsEmbed(BrandedEmbed):
             ),
             description=t("admin_replay_details_embed.description.1", locale),
             color=discord.Color.light_grey(),
-            locale=locale,
         )
 
         p1_name = replay.get("player_1_name") or t("shared.player_fallback.1", locale)
@@ -2081,6 +2114,8 @@ class AdminReplayDetailsEmbed(BrandedEmbed):
                 inline=False,
             )
 
+        apply_default_embed_footer(self, locale=locale)
+
 
 # =========================================================================
 # Admin: Resolve
@@ -2124,7 +2159,7 @@ def _get_result_display(result: str, data: dict, locale: str = "enUS") -> str:
     return result
 
 
-class ResolvePreviewEmbed(BrandedEmbed):
+class ResolvePreviewEmbed(discord.Embed):
     def __init__(
         self,
         match_id: int,
@@ -2149,11 +2184,12 @@ class ResolvePreviewEmbed(BrandedEmbed):
             title=t("resolve_preview_embed.title.1", locale),
             description=description,
             color=discord.Color.orange(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class AdminResolutionEmbed(BrandedEmbed):
+
+class AdminResolutionEmbed(discord.Embed):
     """Admin Resolution embed — used for admin confirmation, player DMs,
     and match log channel."""
 
@@ -2208,7 +2244,6 @@ class AdminResolutionEmbed(BrandedEmbed):
                 p2_new=str(p2_new),
             ),
             color=color,
-            locale=locale,
         )
 
         self.add_field(name="", value="\u3164", inline=False)
@@ -2249,13 +2284,15 @@ class AdminResolutionEmbed(BrandedEmbed):
             inline=False,
         )
 
+        apply_default_embed_footer(self, locale=locale)
+
 
 # =========================================================================
 # Admin: Status Reset
 # =========================================================================
 
 
-class StatusResetPreviewEmbed(BrandedEmbed):
+class StatusResetPreviewEmbed(discord.Embed):
     def __init__(self, target: discord.User, locale: str = "enUS") -> None:
         super().__init__(
             title=t("status_reset_preview_embed.title.1", locale),
@@ -2267,11 +2304,12 @@ class StatusResetPreviewEmbed(BrandedEmbed):
                 uid=str(target.id),
             ),
             color=discord.Color.orange(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class StatusResetSuccessEmbed(BrandedEmbed):
+
+class StatusResetSuccessEmbed(discord.Embed):
     def __init__(
         self,
         target: discord.User,
@@ -2294,7 +2332,6 @@ class StatusResetSuccessEmbed(BrandedEmbed):
                 ),
             ),
             color=discord.Color.green(),
-            locale=locale,
         )
         self.add_field(
             name=t("status_reset_success_embed.field_name.1", locale),
@@ -2302,13 +2339,15 @@ class StatusResetSuccessEmbed(BrandedEmbed):
             inline=True,
         )
 
+        apply_default_embed_footer(self, locale=locale)
+
 
 # =========================================================================
 # Owner: Admin
 # =========================================================================
 
 
-class ToggleAdminPreviewEmbed(BrandedEmbed):
+class ToggleAdminPreviewEmbed(discord.Embed):
     def __init__(self, target: discord.User, locale: str = "enUS") -> None:
         super().__init__(
             title=t("toggle_admin_preview_embed.title.1", locale),
@@ -2320,11 +2359,12 @@ class ToggleAdminPreviewEmbed(BrandedEmbed):
                 uid=str(target.id),
             ),
             color=discord.Color.orange(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class ToggleAdminSuccessEmbed(BrandedEmbed):
+
+class ToggleAdminSuccessEmbed(discord.Embed):
     def __init__(
         self, target: discord.User, action: str, new_role: str, locale: str = "enUS"
     ) -> None:
@@ -2350,8 +2390,9 @@ class ToggleAdminSuccessEmbed(BrandedEmbed):
                 new_role=new_role,
             ),
             color=color,
-            locale=locale,
         )
+
+        apply_default_embed_footer(self, locale=locale)
 
 
 # =========================================================================
@@ -2359,7 +2400,7 @@ class ToggleAdminSuccessEmbed(BrandedEmbed):
 # =========================================================================
 
 
-class SetMMRPreviewEmbed(BrandedEmbed):
+class SetMMRPreviewEmbed(discord.Embed):
     def __init__(
         self, target: discord.User, race: str, new_mmr: int, locale: str = "enUS"
     ) -> None:
@@ -2381,11 +2422,12 @@ class SetMMRPreviewEmbed(BrandedEmbed):
                 new_mmr=str(new_mmr),
             ),
             color=discord.Color.orange(),
-            locale=locale,
         )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class SetMMRSuccessEmbed(BrandedEmbed):
+
+class SetMMRSuccessEmbed(discord.Embed):
     def __init__(
         self,
         target: discord.User,
@@ -2415,8 +2457,9 @@ class SetMMRSuccessEmbed(BrandedEmbed):
                 new_mmr=str(new_mmr),
             ),
             color=discord.Color.green(),
-            locale=locale,
         )
+
+        apply_default_embed_footer(self, locale=locale)
 
 
 # =========================================================================
@@ -2424,7 +2467,7 @@ class SetMMRSuccessEmbed(BrandedEmbed):
 # =========================================================================
 
 
-class ReplaySuccessEmbed(BrandedEmbed):
+class ReplaySuccessEmbed(discord.Embed):
     """Full replay details embed shown after a successful replay parse."""
 
     def __init__(
@@ -2483,7 +2526,6 @@ class ReplaySuccessEmbed(BrandedEmbed):
             title=t("replay_success_embed.title.1", locale),
             description=t("replay_success_embed.description.1", locale),
             color=discord.Color.light_grey(),
-            locale=locale,
         )
 
         self.add_field(name="", value="\u3164", inline=False)
@@ -2531,7 +2573,6 @@ class ReplaySuccessEmbed(BrandedEmbed):
                 verification_results,
                 enforcement_enabled=enforcement_enabled,
                 auto_resolved=auto_resolved,
-                locale=locale,
             )
             self.add_field(
                 name=t("shared.field_name.replay_verification", locale),
@@ -2539,8 +2580,10 @@ class ReplaySuccessEmbed(BrandedEmbed):
                 inline=False,
             )
 
+        apply_default_embed_footer(self, locale=locale)
 
-class ReplayErrorEmbed(BrandedEmbed):
+
+class ReplayErrorEmbed(discord.Embed):
     """Red error embed for a replay parsing failure."""
 
     def __init__(self, error_message: str, locale: str = "enUS") -> None:
@@ -2548,13 +2591,14 @@ class ReplayErrorEmbed(BrandedEmbed):
             title=t("replay_error_embed.title.1", locale),
             description=t("replay_error_embed.description.1", locale),
             color=discord.Color.red(),
-            locale=locale,
         )
         self.add_field(
             name=t("replay_error_embed.field_name.1", locale),
             value=f"```{error_message[:1000]}```",
             inline=False,
         )
+
+        apply_default_embed_footer(self, locale=locale)
 
 
 def format_verification(

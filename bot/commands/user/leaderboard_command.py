@@ -16,7 +16,7 @@ from bot.helpers.checks import (
     check_if_completed_setup,
     check_if_dm,
 )
-from bot.helpers.embed_branding import BrandedEmbed
+from bot.helpers.embed_branding import apply_default_embed_footer
 from bot.helpers.emotes import get_flag_emote, get_race_emote, get_rank_emote
 from common.i18n import t
 from common.lookups.country_lookups import get_common_countries
@@ -108,7 +108,7 @@ def _apply_filters(
 # ---------------------------------------------------------------------------
 
 
-class LeaderboardEmbed(BrandedEmbed):
+class LeaderboardEmbed(discord.Embed):
     def __init__(
         self,
         entries: list[dict],
@@ -125,7 +125,6 @@ class LeaderboardEmbed(BrandedEmbed):
         super().__init__(
             title=t("leaderboard_embed.title.1", locale),
             color=discord.Color.gold(),
-            locale=locale,
         )
 
         # Filter summary — display in canonical order, not click order.
@@ -226,6 +225,7 @@ class LeaderboardEmbed(BrandedEmbed):
                 total_players=str(total_players),
             )
         )
+        apply_default_embed_footer(self, locale=locale)
 
 
 # ---------------------------------------------------------------------------

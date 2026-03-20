@@ -273,6 +273,7 @@ Dev: `ruff`, `mypy`
 ### When Making Changes
 
 - Run `make quality` to run local CI (ruff + mypy) and make sure all your changes pass.
+- Write a descriptive commit title (imperative mood, e.g. "fix queue heartbeat race condition") and a short body explaining *why* when the change isn't obvious. No bare `"."` commits.
 - The matchmaker is stateless and pure — it can be unit-tested with synthetic `QueueEntry1v1` lists without any I/O.
 - Replay parsing runs in a subprocess pool — avoid adding async or event-loop-dependent code to `replay_parser.py`.
 - All DataFrame mutations go through `TransitionManager` — never modify `StateManager` DataFrames directly.

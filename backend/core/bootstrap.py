@@ -10,7 +10,7 @@ from backend.lookups.admin_lookups import init_admin_lookups
 from backend.lookups.match_1v1_lookups import init_match_1v1_lookups
 from backend.lookups.mmr_1v1_lookups import init_mmr_1v1_lookups
 
-# from backend.lookups.notification_lookups import init_notification_lookups
+from backend.lookups.notification_lookups import init_notification_lookups
 from backend.lookups.player_lookups import init_player_lookups
 from backend.lookups.preferences_1v1_lookups import init_preferences_1v1_lookups
 from backend.lookups.replay_1v1_lookups import init_replay_1v1_lookups
@@ -71,7 +71,7 @@ class Backend:
             init_match_1v1_lookups,
             init_mmr_1v1_lookups,
             init_mod_lookups,
-            # init_notification_lookups,
+            init_notification_lookups,
             init_player_lookups,
             init_preferences_1v1_lookups,
             init_race_lookups,
