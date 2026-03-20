@@ -52,6 +52,7 @@ from bot.helpers.activity_analytics import (
     fetch_queue_join_analytics,
 )
 from bot.helpers.checks import AlreadyQueueingError, check_if_queueing
+from bot.helpers.embed_branding import apply_default_embed_footer
 from bot.helpers.emotes import (
     get_flag_emote,
     get_game_emote,
@@ -420,6 +421,7 @@ class SetupSelectionView(discord.ui.View):
                         get_player_locale(interaction.user.id),
                     )
                 )
+                apply_default_embed_footer(embed)
                 fresh = SetupSelectionView(
                     player_name=self.player_name,
                     battletag=self.battletag,
@@ -1643,6 +1645,7 @@ class ActivityRangeSelect(discord.ui.Select):
                 description=t("activity_embed.description.1", view.locale),
                 color=discord.Color.dark_teal(),
             )
+            apply_default_embed_footer(embed)
             await interaction.edit_original_response(
                 embed=embed,
                 attachments=[file],

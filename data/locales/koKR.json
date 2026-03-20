@@ -428,7 +428,7 @@
     "match_info_embed.field_value_none.4": "- 결과: `선택 안 됨`",
     "match_info_embed.field_value_pending.4": "- 결과: `{result}` ✅\n- 상대방의 보고를 기다리는 중...",
     "match_info_embed.field_value_uploaded.5": "- 리플레이 업로드: `예`",
-    "match_info_embed.footer.1": "ℹ️ 매치 결과를 보고하려면 리플레이를 업로드하세요. 유효한 리플레이를 업로드하면 아래 드롭다운 메뉴가 활성화됩니다.",
+    "match_info_embed.footer.1": "ℹ️ 매치 결과를 보고하려면 리플레이를 업로드하세요.\n유효한 리플레이를 업로드하면 아래 드롭다운 메뉴가 활성화됩니다.",
     "match_info_embed.footer.2": "ℹ️ 아래 드롭다운 메뉴를 사용하여 매치 결과를 보고하세요.",
     "match_info_embed.lobby_setting.faster": "아주 빠름",
     "match_info_embed.lobby_setting.infinite": "무한",

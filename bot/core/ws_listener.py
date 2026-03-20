@@ -37,6 +37,7 @@ from bot.core.config import (
     WS_RECONNECT_BACKOFF_SECONDS,
 )
 from bot.core.dependencies import get_cache, get_player_locale
+from bot.helpers.embed_branding import apply_default_embed_footer
 from bot.helpers.message_helpers import (
     queue_channel_send_low,
     queue_message_edit_low,
@@ -130,6 +131,7 @@ async def _on_queue_join_activity(client: discord.Client, data: dict) -> None:
         embed = QueueJoinActivityNotifyEmbed(game_mode=game_mode, locale=locale)
         if footer:
             embed.set_footer(text=footer)
+        apply_default_embed_footer(embed)
         await queue_user_send_low(user, embed=embed)
 
 

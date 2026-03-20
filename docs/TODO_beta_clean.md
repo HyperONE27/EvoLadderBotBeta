@@ -4,6 +4,8 @@ What remains?
 
 # FINISH BY PRE-BETA
 
+- ⏰ Write pre-beta feature announcement
+- ⏰ Re-write Terms of Service
 - ⏰ Make sure visibility is solid
     - Maybe some more admin/owner commands
         - Directly reading DataFrame rows

@@ -21,6 +21,7 @@ from bot.helpers.checks import (
     check_if_completed_setup,
     check_if_dm,
 )
+from bot.helpers.embed_branding import apply_default_embed_footer
 from common.datetime_helpers import utc_now
 from common.i18n import t
 
@@ -52,16 +53,18 @@ def register_activity_command(tree: app_commands.CommandTree) -> None:
     ) -> None:
         locale = get_player_locale(interaction.user.id)
         if game_mode != "1v1":
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title=t("unsupported_game_mode_embed.title.1", locale),
-                    description=t(
-                        "unsupported_game_mode_embed.description.1",
-                        locale,
-                        game_mode=game_mode,
-                    ),
-                    color=discord.Color.orange(),
+            uembed = discord.Embed(
+                title=t("unsupported_game_mode_embed.title.1", locale),
+                description=t(
+                    "unsupported_game_mode_embed.description.1",
+                    locale,
+                    game_mode=game_mode,
                 ),
+                color=discord.Color.orange(),
+            )
+            apply_default_embed_footer(uembed)
+            await interaction.response.send_message(
+                embed=uembed,
                 ephemeral=True,
             )
             return
@@ -79,6 +82,7 @@ def register_activity_command(tree: app_commands.CommandTree) -> None:
                 description=t("activity_embed.description.initial.1", locale),
                 color=discord.Color.dark_teal(),
             )
+            apply_default_embed_footer(embed)
             view = ActivityChartView(game_mode, interaction.user.id, locale)
             await interaction.followup.send(embed=embed, file=file, view=view)
         except Exception:

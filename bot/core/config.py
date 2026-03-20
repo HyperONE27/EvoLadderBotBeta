@@ -108,6 +108,9 @@ MATCH_LOG_CHANNEL_ID: int = _get_int_env("MATCH_LOG_CHANNEL_ID")
 # Discord API
 # ---------------------
 
+# Optional public URL for the footer icon on branded embeds (see embed_branding).
+BOT_ICON_URL: str = (os.getenv("BOT_ICON_URL") or "").strip()
+
 DISCORD_MESSAGE_RATE_LIMIT: int = 40
 
 # ---------------------

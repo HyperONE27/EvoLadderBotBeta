@@ -445,7 +445,7 @@
     "match_info_embed.field_value_none.4": "- Result: `Not selected`",
     "match_info_embed.field_value_pending.4": "- Result: `{result}` ✅\n- Waiting for opponent to report...",
     "match_info_embed.field_value_uploaded.5": "- Replay Uploaded: `Yes`",
-    "match_info_embed.footer.1": "ℹ️ To report the match result, upload a replay. The dropdown menus below will unlock once a valid replay is uploaded.",
+    "match_info_embed.footer.1": "ℹ️ To report the match result, upload a replay.\nThe dropdown menus below will unlock once a valid replay is uploaded.",
     "match_info_embed.footer.2": "ℹ️ Report the match result using the dropdown menus below.",
     "match_info_embed.lobby_setting.faster": "Faster",
     "match_info_embed.lobby_setting.infinite": "Infinite",

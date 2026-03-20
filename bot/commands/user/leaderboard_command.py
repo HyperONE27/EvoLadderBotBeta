@@ -16,6 +16,7 @@ from bot.helpers.checks import (
     check_if_completed_setup,
     check_if_dm,
 )
+from bot.helpers.embed_branding import BrandedEmbed
 from bot.helpers.emotes import get_flag_emote, get_race_emote, get_rank_emote
 from common.i18n import t
 from common.lookups.country_lookups import get_common_countries
@@ -107,7 +108,7 @@ def _apply_filters(
 # ---------------------------------------------------------------------------
 
 
-class LeaderboardEmbed(discord.Embed):
+class LeaderboardEmbed(BrandedEmbed):
     def __init__(
         self,
         entries: list[dict],

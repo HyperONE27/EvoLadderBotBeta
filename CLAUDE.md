@@ -54,6 +54,7 @@ Both processes require a `.env` file in the project root. Required variables:
 
 **Optional:**
 - `REPLAY_WORKER_PROCESSES` (default: 2) — number of `ProcessPoolExecutor` workers for replay parsing
+- `BOT_ICON_URL` — public HTTPS URL for the footer icon on branded embeds (`bot/helpers/embed_branding.py`); omit or leave empty for text-only footer
 
 ## Architecture
 
