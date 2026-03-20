@@ -62,7 +62,7 @@ def register_activity_command(tree: app_commands.CommandTree) -> None:
                 ),
                 color=discord.Color.orange(),
             )
-            apply_default_embed_footer(uembed)
+            apply_default_embed_footer(uembed, locale=locale)
             await interaction.response.send_message(
                 embed=uembed,
                 ephemeral=True,
@@ -82,7 +82,7 @@ def register_activity_command(tree: app_commands.CommandTree) -> None:
                 description=t("activity_embed.description.initial.1", locale),
                 color=discord.Color.dark_teal(),
             )
-            apply_default_embed_footer(embed)
+            apply_default_embed_footer(embed, locale=locale)
             view = ActivityChartView(game_mode, interaction.user.id, locale)
             await interaction.followup.send(embed=embed, file=file, view=view)
         except Exception:

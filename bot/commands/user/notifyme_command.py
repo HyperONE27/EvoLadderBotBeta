@@ -60,7 +60,7 @@ def register_notifyme_command(tree: app_commands.CommandTree) -> None:
                 ),
                 color=discord.Color.orange(),
             )
-            apply_default_embed_footer(uembed)
+            apply_default_embed_footer(uembed, locale=locale)
             await interaction.response.send_message(
                 embed=uembed,
                 ephemeral=True,

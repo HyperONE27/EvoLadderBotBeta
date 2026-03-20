@@ -170,11 +170,13 @@ async def on_tree_error(
         embed = ErrorEmbed(
             title=t("error_embed.title.unauthorized_command", locale),
             description=description,
+            locale=locale,
         )
     else:
         embed = ErrorEmbed(
             title=t("error_embed.title.unexpected_error", locale),
             description=t("error.unexpected_command", locale) + f"\nError: {error!r}",
+            locale=locale,
         )
 
     if interaction.response.is_done():

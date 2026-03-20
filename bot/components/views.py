@@ -409,19 +409,20 @@ class SetupSelectionView(discord.ui.View):
                 or not self.selected_region
                 or not self.selected_language
             ):
+                _loc = get_player_locale(interaction.user.id)
                 embed = SetupSelectionEmbed(
                     self.selected_country,
                     self.selected_region,
                     self.selected_language,
-                    locale=get_player_locale(interaction.user.id),
+                    locale=_loc,
                 )
                 embed.set_footer(
                     text=t(
                         "setup_selection_view.incomplete_footer.1",
-                        get_player_locale(interaction.user.id),
+                        _loc,
                     )
                 )
-                apply_default_embed_footer(embed)
+                apply_default_embed_footer(embed, locale=_loc)
                 fresh = SetupSelectionView(
                     player_name=self.player_name,
                     battletag=self.battletag,
@@ -959,7 +960,9 @@ async def _send_tos_request(
         )
         await interaction.response.edit_message(
             embed=ErrorEmbed(
-                title=t("error_embed.title.generic", _locale), description=error
+                title=t("error_embed.title.generic", _locale),
+                description=error,
+                locale=_locale,
             ),
             view=None,
         )
@@ -1017,7 +1020,9 @@ async def _send_setcountry_request(
         )
         await interaction.response.edit_message(
             embed=ErrorEmbed(
-                title=t("error_embed.title.update_failed", _locale), description=error
+                title=t("error_embed.title.update_failed", _locale),
+                description=error,
+                locale=_locale,
             ),
             view=None,
         )
@@ -1071,6 +1076,7 @@ async def _send_ban_request(
             embed=ErrorEmbed(
                 title=t("error_embed.title.generic", _locale),
                 description=t("error_embed.description.ban_failed", _locale),
+                locale=_locale,
             ),
             view=None,
         )
@@ -1148,6 +1154,7 @@ async def _send_resolve_request(
                 description=t(
                     "error_embed.description.with_error", _locale, error=error
                 ),
+                locale=_locale,
             ),
             view=None,
         )
@@ -1263,6 +1270,7 @@ async def _send_statusreset_request(
                 description=t(
                     "error_embed.description.with_error", _locale, error=error
                 ),
+                locale=_locale,
             ),
             view=None,
         )
@@ -1329,7 +1337,9 @@ async def _send_toggle_admin_request(
         error = data.get("detail") or t("error.unexpected_error", _locale)
         await interaction.response.edit_message(
             embed=ErrorEmbed(
-                title=t("error_embed.title.generic", _locale), description=error
+                title=t("error_embed.title.generic", _locale),
+                description=error,
+                locale=_locale,
             ),
             view=None,
         )
@@ -1405,6 +1415,7 @@ async def _send_set_mmr_request(
             embed=ErrorEmbed(
                 title=t("error_embed.title.generic", _locale),
                 description=t("error_embed.description.mmr_failed", _locale),
+                locale=_locale,
             ),
             view=None,
         )
@@ -1645,7 +1656,7 @@ class ActivityRangeSelect(discord.ui.Select):
                 description=t("activity_embed.description.1", view.locale),
                 color=discord.Color.dark_teal(),
             )
-            apply_default_embed_footer(embed)
+            apply_default_embed_footer(embed, locale=view.locale)
             await interaction.edit_original_response(
                 embed=embed,
                 attachments=[file],
@@ -1689,6 +1700,7 @@ class QueueSetupView(discord.ui.View):
                     embed=ErrorEmbed(
                         title=t("error_embed.title.unauthorized_command", _locale),
                         description=str(e),
+                        locale=_locale,
                     ),
                     view=None,
                 )

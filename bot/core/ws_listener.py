@@ -131,7 +131,7 @@ async def _on_queue_join_activity(client: discord.Client, data: dict) -> None:
         embed = QueueJoinActivityNotifyEmbed(game_mode=game_mode, locale=locale)
         if footer:
             embed.set_footer(text=footer)
-        apply_default_embed_footer(embed)
+        apply_default_embed_footer(embed, locale=locale)
         await queue_user_send_low(user, embed=embed)
 
 

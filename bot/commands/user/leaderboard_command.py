@@ -123,7 +123,9 @@ class LeaderboardEmbed(BrandedEmbed):
         locale: str = "enUS",
     ) -> None:
         super().__init__(
-            title=t("leaderboard_embed.title.1", locale), color=discord.Color.gold()
+            title=t("leaderboard_embed.title.1", locale),
+            color=discord.Color.gold(),
+            locale=locale,
         )
 
         # Filter summary — display in canonical order, not click order.

@@ -319,6 +319,7 @@
     "country.ZM.name": "Zambia",
     "country.ZW.name": "Zimbabwe",
     "country.ZZ.name": "Other",
+    "embed_brand.footer.1": "SC: Evo Complete Ladder Bot",
     "error.already_queueing": "You are already in the queue.",
     "error.banned": "Your account has been banned. You cannot use bot commands.\nIf you believe this is an error, please contact an admin.",
     "error.failed_abort_match": "Failed to abort match.",

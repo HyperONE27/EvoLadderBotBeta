@@ -302,6 +302,7 @@
     "country.ZM.name": "잠비아",
     "country.ZW.name": "짐바브웨",
     "country.ZZ.name": "기타",
+    "embed_brand.footer.1": "SC: Evo Complete 래더 봇",
     "error.already_queueing": "이미 대기열에 있습니다.",
     "error.banned": "계정이 정지되었습니다. 봇 명령어를 사용할 수 없습니다.\n문제가 있다고 생각하시면 관리자에게 문의하세요.",
     "error.failed_abort_match": "매치 중단에 실패했습니다.",
