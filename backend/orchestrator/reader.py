@@ -1,13 +1,17 @@
 from datetime import timedelta
 from typing import Any
 
+import polars as pl
+
 from backend.algorithms.game_stats import count_game_stats_in_completed_window
 from backend.domain_types.dataframes import (
     AdminsRow,
     Matches1v1Row,
     MMRs1v1Row,
+    NotificationsRow,
     PlayersRow,
     Preferences1v1Row,
+    row_as,
 )
 from backend.domain_types.ephemeral import LeaderboardEntry1v1, QueueEntry1v1
 from backend.lookups.admin_lookups import get_admin_by_discord_uid
@@ -166,3 +170,16 @@ class StateReader:
         if player is None:
             return None
         return player.get("location")
+
+    # ------------------------------------------------------------------
+    # Notifications
+    # ------------------------------------------------------------------
+
+    def get_notifications_row(self, discord_uid: int) -> NotificationsRow | None:
+        """Return cached notifications row if present (does not create a row)."""
+
+        df = self._state_manager.notifications_df
+        rows = df.filter(pl.col("discord_uid") == discord_uid)
+        if rows.is_empty():
+            return None
+        return row_as(NotificationsRow, rows.row(0, named=True))

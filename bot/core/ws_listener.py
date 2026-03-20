@@ -21,6 +21,7 @@ from bot.components.views import (
     _fetch_player_info,
 )
 from bot.components.embeds import (
+    QueueJoinActivityNotifyEmbed,
     MatchAbortedEmbed,
     MatchAbandonedEmbed,
     MatchConflictEmbed,
@@ -97,8 +98,39 @@ async def _handle_message(client: discord.Client, raw: str) -> None:
         await _on_match_conflict(client, data)
     elif event == "leaderboard_updated":
         _on_leaderboard_updated(data)
+    elif event == "queue_join_activity":
+        await _on_queue_join_activity(client, data)
     else:
         logger.warning(f"[WS] Unknown event type: {event}")
+
+
+async def _on_queue_join_activity(client: discord.Client, data: dict) -> None:
+    """Send anonymous low-priority DMs to opt-in subscribers."""
+
+    raw_uids = data.get("notify_discord_uids") or []
+    footers: dict[str, str] = data.get("footers") or {}
+    game_mode = str(data.get("game_mode", "1v1"))
+
+    for uid in raw_uids:
+        try:
+            discord_uid = int(uid)
+        except (TypeError, ValueError):
+            continue
+        try:
+            user = await client.fetch_user(discord_uid)
+        except Exception:
+            logger.warning(
+                "[WS] queue_join_activity fetch_user failed",
+                discord_uid=discord_uid,
+                exc_info=True,
+            )
+            continue
+        footer = footers.get(str(discord_uid), "")
+        locale = get_player_locale(discord_uid)
+        embed = QueueJoinActivityNotifyEmbed(game_mode=game_mode, locale=locale)
+        if footer:
+            embed.set_footer(text=footer)
+        await queue_user_send_low(user, embed=embed)
 
 
 async def _on_match_found(client: discord.Client, match_data: dict) -> None:

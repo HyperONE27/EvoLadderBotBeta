@@ -8,11 +8,13 @@ from __future__ import annotations
 import asyncio
 import re
 import time
+from datetime import timedelta
 from typing import Any, Awaitable, Callable
 
 import discord
 import structlog
 
+from bot.components.queue_activity_chart import render_queue_join_chart_png
 from bot.components.embeds import (
     AdminResolutionEmbed,
     BanSuccessEmbed,
@@ -45,6 +47,10 @@ from bot.core.config import (
 )
 from bot.core.dependencies import get_cache, get_player_locale
 from bot.core.http import get_session
+from bot.helpers.activity_analytics import (
+    activity_chart_title,
+    fetch_queue_join_analytics,
+)
 from bot.helpers.checks import AlreadyQueueingError, check_if_queueing
 from bot.helpers.emotes import (
     get_flag_emote,
@@ -58,6 +64,7 @@ from bot.helpers.message_helpers import (
     queue_message_edit_low,
     queue_user_send_low,
 )
+from common.datetime_helpers import utc_now
 from common.json_types import Country, GeographicRegion
 from common.lookups.map_lookups import get_maps
 from common.lookups.race_lookups import get_bw_race_codes, get_races, get_sc2_race_codes
@@ -1572,6 +1579,81 @@ class MatchReportSelect(discord.ui.Select):
 # =========================================================================
 # Queue: views
 # =========================================================================
+
+_ACTIVITY_RANGE_TO_TD = {
+    "24h": timedelta(hours=24),
+    "7d": timedelta(days=7),
+    "30d": timedelta(days=30),
+}
+
+
+class ActivityChartView(discord.ui.View):
+    def __init__(self, game_mode: str, author_id: int, locale: str) -> None:
+        super().__init__(timeout=600)
+        self.game_mode = game_mode
+        self.author_id = author_id
+        self.locale = locale
+        self.add_item(ActivityRangeSelect(self))
+
+
+class ActivityRangeSelect(discord.ui.Select):
+    def __init__(self, chart_view: ActivityChartView) -> None:
+        self._activity_chart_view = chart_view
+        loc = chart_view.locale
+        super().__init__(
+            custom_id="activity_chart_range",
+            placeholder=t("activity_select.placeholder.1", loc),
+            options=[
+                discord.SelectOption(
+                    label=t("activity_select.option.24h", loc),
+                    value="24h",
+                ),
+                discord.SelectOption(
+                    label=t("activity_select.option.7d", loc),
+                    value="7d",
+                ),
+                discord.SelectOption(
+                    label=t("activity_select.option.30d", loc),
+                    value="30d",
+                ),
+            ],
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self._activity_chart_view
+        if interaction.user.id != view.author_id:
+            await interaction.response.send_message(
+                t("activity_command.error.not_yours.1", view.locale),
+                ephemeral=True,
+            )
+            return
+        key = self.values[0]
+        delta = _ACTIVITY_RANGE_TO_TD[key]
+        end = utc_now()
+        start = end - delta
+        await interaction.response.defer()
+        try:
+            data = await fetch_queue_join_analytics(view.game_mode, start, end)
+            buckets = data.get("buckets") or []
+            title = activity_chart_title(view.locale, view.game_mode, key)
+            png = render_queue_join_chart_png(buckets, title=title, locale=view.locale)
+            file = discord.File(png, filename="activity.png")
+            embed = discord.Embed(
+                title=title,
+                description=t("activity_embed.description.1", view.locale),
+                color=discord.Color.dark_teal(),
+            )
+            await interaction.edit_original_response(
+                embed=embed,
+                attachments=[file],
+                view=view,
+            )
+        except Exception:
+            logger.exception("activity range refresh failed")
+            await interaction.followup.send(
+                t("activity_command.error.refresh_failed.1", view.locale),
+                ephemeral=True,
+            )
 
 
 class QueueSetupView(discord.ui.View):

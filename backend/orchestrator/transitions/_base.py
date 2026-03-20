@@ -29,6 +29,9 @@ def _handle_missing_player(
     logger.info(f"Creating new player row for {discord_username} with ID {discord_uid}")
     created = self._db_writer.add_player(discord_uid, discord_username)
     self._state_manager.players_df = df.vstack(pl.DataFrame([created]).cast(df.schema))
+    from backend.orchestrator.transitions import _notifications as _notifications_mod
+
+    _notifications_mod.ensure_notification_row(self, discord_uid)
     logger.info(
         f"Successfully created new player row for {discord_username} with ID {discord_uid}"
     )

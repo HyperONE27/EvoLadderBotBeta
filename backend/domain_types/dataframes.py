@@ -54,6 +54,11 @@ NOTIFICATIONS_SCHEMA: dict[str, pl.DataType] = {
     "id": pl.Int64,
     "discord_uid": pl.Int64,
     "read_quick_start_guide": pl.Boolean,
+    "notify_queue_1v1": pl.Boolean,
+    "notify_queue_2v2": pl.Boolean,
+    "notify_queue_ffa": pl.Boolean,
+    "queue_notify_cooldown_minutes": pl.Int16,
+    "updated_at": pl.Datetime("us", "utc"),
 }
 
 EVENTS_SCHEMA: dict[str, pl.DataType] = {
@@ -193,6 +198,11 @@ class NotificationsRow(TypedDict):
     id: int
     discord_uid: int
     read_quick_start_guide: bool
+    notify_queue_1v1: bool
+    notify_queue_2v2: bool
+    notify_queue_ffa: bool
+    queue_notify_cooldown_minutes: int
+    updated_at: datetime
 
 
 class EventsRow(TypedDict):

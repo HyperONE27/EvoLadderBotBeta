@@ -331,6 +331,26 @@ class QueueErrorEmbed(discord.Embed):
         )
 
 
+class QueueJoinActivityNotifyEmbed(discord.Embed):
+    """Anonymous DM when another user joins the queue (queue_join_activity WS)."""
+
+    def __init__(self, *, game_mode: str, locale: str = "enUS") -> None:
+        gm = game_mode.lower().replace("-", "_")
+        mode_key = f"shared.ladder_mode.{gm}"
+        mode_label = t(mode_key, locale)
+        if mode_label == mode_key:
+            mode_label = game_mode.upper() if gm == "ffa" else game_mode
+        super().__init__(
+            title=t("queue_join_activity_notify_embed.title.1", locale),
+            description=t(
+                "queue_join_activity_notify_embed.description.1",
+                locale,
+                mode_label=mode_label,
+            ),
+            color=discord.Color.blue(),
+        )
+
+
 class MatchFoundEmbed(discord.Embed):
     def __init__(self, match_data: dict, locale: str = "enUS") -> None:
         match_id = match_data.get("id", "?")

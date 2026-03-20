@@ -1,6 +1,9 @@
+import asyncio
 from concurrent.futures import ProcessPoolExecutor
+from datetime import datetime
 
 from backend.core.config import REPLAY_WORKER_PROCESSES
+from backend.api.websocket import ConnectionManager
 from backend.database.database import DatabaseWriter
 from backend.database.storage import StorageWriter
 from backend.lookups.admin_lookups import init_admin_lookups
@@ -27,8 +30,28 @@ from common.lookups.region_lookups import init_region_lookups
 class Backend:
     def __init__(self) -> None:
         self.process_pool = ProcessPoolExecutor(max_workers=REPLAY_WORKER_PROCESSES)
+        self._queue_notify_lock = asyncio.Lock()
+        self._queue_notify_last_sent: dict[int, datetime] = {}
         self._initialize_orchestrator()
         self._initialize_lookups()
+
+    async def broadcast_queue_join_activity_if_needed(
+        self,
+        ws: ConnectionManager,
+        joiner_uid: int,
+        game_mode: str,
+    ) -> None:
+        """Notify opt-in subscribers (anonymous DMs) after a successful queue join."""
+
+        async with self._queue_notify_lock:
+            payload = self.orchestrator.build_queue_join_activity_payload(
+                joiner_uid,
+                game_mode,
+                self._queue_notify_last_sent,
+            )
+        if not payload.get("notify_discord_uids"):
+            return
+        await ws.broadcast("queue_join_activity", payload)
 
     def _initialize_orchestrator(self) -> None:
         # Initialize orchestrator components

@@ -45,10 +45,29 @@ CREATE TABLE IF NOT EXISTS players (
 );
 
 CREATE TABLE IF NOT EXISTS notifications (
-    id                      BIGSERIAL PRIMARY KEY,
-    discord_uid             BIGINT NOT NULL UNIQUE,
-    read_quick_start_guide  BOOLEAN NOT NULL DEFAULT FALSE
+    id                              BIGSERIAL PRIMARY KEY,
+    discord_uid                     BIGINT NOT NULL UNIQUE,
+    read_quick_start_guide          BOOLEAN NOT NULL DEFAULT FALSE,
+
+    -- Queue activity pings (/notifyme). One flag per ladder mode (2v2/FFA stubbed).
+    notify_queue_1v1                BOOLEAN NOT NULL DEFAULT FALSE,
+    notify_queue_2v2                BOOLEAN NOT NULL DEFAULT FALSE,
+    notify_queue_ffa                BOOLEAN NOT NULL DEFAULT FALSE,
+
+    -- Minutes between anonymous “someone is queueing” DMs for this subscriber.
+    -- Default matches QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT in common/config.py.
+    queue_notify_cooldown_minutes   SMALLINT NOT NULL DEFAULT 60
+        CHECK (
+                queue_notify_cooldown_minutes >= 5
+                AND queue_notify_cooldown_minutes <= 1440
+            ),
+    updated_at                      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_notifications_notify_1v1
+    ON notifications (notify_queue_1v1)
+    WHERE notify_queue_1v1 = TRUE;
+-- Optional later: partial indexes for 2v2/FFA when those columns go live.
 
 CREATE TABLE IF NOT EXISTS events (
     id                      BIGSERIAL PRIMARY KEY,

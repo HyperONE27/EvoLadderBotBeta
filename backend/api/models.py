@@ -296,6 +296,43 @@ class QueueStatsResponse(BaseModel):
     both: int
 
 
+# --- /analytics/queue_joins ---
+
+
+class QueueJoinAnalyticsBucket(BaseModel):
+    t: str
+    count: int
+
+
+class QueueJoinAnalyticsResponse(BaseModel):
+    game_mode: str
+    bucket_minutes: int
+    dedupe: bool
+    buckets: list[QueueJoinAnalyticsBucket]
+
+
+# --- /notifications ---
+
+
+class NotificationsOut(BaseModel):
+    id: int
+    discord_uid: int
+    read_quick_start_guide: bool
+    notify_queue_1v1: bool
+    notify_queue_2v2: bool
+    notify_queue_ffa: bool
+    queue_notify_cooldown_minutes: int
+    updated_at: str | None = None
+
+
+class NotificationsUpsertRequest(BaseModel):
+    discord_uid: int
+    notify_queue_1v1: bool | None = None
+    notify_queue_2v2: bool | None = None
+    notify_queue_ffa: bool | None = None
+    queue_notify_cooldown_minutes: int | None = Field(None, ge=5, le=1440)
+
+
 # --- /setcountry ---
 
 

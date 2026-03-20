@@ -1,5 +1,6 @@
 import asyncio
 import structlog
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 
@@ -10,7 +11,8 @@ from backend.algorithms.replay_parser import parse_replay
 from backend.algorithms.replay_verifier import verify_replay
 from backend.lookups.admin_lookups import get_admin_by_discord_uid
 from backend.lookups.replay_1v1_lookups import get_replays_1v1_by_match_id
-from common.datetime_helpers import utc_now
+from common.config import ACTIVITY_ANALYTICS_MAX_RANGE_DAYS
+from common.datetime_helpers import ensure_utc, utc_now
 from backend.api.models import (
     AdminBanRequest,
     AdminBanResponse,
@@ -34,6 +36,8 @@ from backend.api.models import (
     MatchReportResponse,
     MMRs1v1AllResponse,
     MMRs1v1Response,
+    NotificationsOut,
+    NotificationsUpsertRequest,
     OwnerSetMMRRequest,
     OwnerSetMMRResponse,
     OwnerToggleAdminRequest,
@@ -44,6 +48,8 @@ from backend.api.models import (
     PreferencesUpsertResponse,
     ProfileMmrEntry,
     ProfileResponse,
+    QueueJoinAnalyticsBucket,
+    QueueJoinAnalyticsResponse,
     QueueJoinRequest,
     QueueJoinResponse,
     QueueLeaveRequest,
@@ -423,10 +429,103 @@ async def profile(
 # --- /queue ---
 
 
+def _notification_row_to_out(row: dict[str, Any]) -> NotificationsOut:
+    ua = row.get("updated_at")
+    ua_str: str | None
+    if ua is None:
+        ua_str = None
+    elif hasattr(ua, "isoformat"):
+        ua_str = ua.isoformat()
+    else:
+        ua_str = str(ua)
+    return NotificationsOut(
+        id=int(row["id"]),
+        discord_uid=int(row["discord_uid"]),
+        read_quick_start_guide=bool(row["read_quick_start_guide"]),
+        notify_queue_1v1=bool(row["notify_queue_1v1"]),
+        notify_queue_2v2=bool(row["notify_queue_2v2"]),
+        notify_queue_ffa=bool(row["notify_queue_ffa"]),
+        queue_notify_cooldown_minutes=int(row["queue_notify_cooldown_minutes"]),
+        updated_at=ua_str,
+    )
+
+
+@router.get("/analytics/queue_joins", response_model=QueueJoinAnalyticsResponse)
+async def analytics_queue_joins(
+    start: str = Query(..., description="ISO 8601 range start (UTC)"),
+    end: str = Query(..., description="ISO 8601 range end (UTC)"),
+    game_mode: str = Query("1v1"),
+    dedupe: bool = Query(False),
+    bucket_minutes: int | None = Query(None, ge=1, le=1440),
+    app: Backend = Depends(get_backend),
+) -> QueueJoinAnalyticsResponse:
+    if game_mode not in ("1v1", "2v2", "FFA"):
+        raise HTTPException(status_code=400, detail="Invalid game_mode")
+    st = ensure_utc(start)
+    en = ensure_utc(end)
+    if st is None or en is None:
+        raise HTTPException(status_code=400, detail="Invalid start or end datetime")
+    if st >= en:
+        raise HTTPException(status_code=400, detail="start must be before end")
+    max_delta = ACTIVITY_ANALYTICS_MAX_RANGE_DAYS * 24 * 3600
+    if (en - st).total_seconds() > max_delta:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Range too large (max {ACTIVITY_ANALYTICS_MAX_RANGE_DAYS} days)",
+        )
+
+    bucket_m, buckets = app.orchestrator.get_queue_join_analytics(
+        st,
+        en,
+        game_mode,
+        bucket_minutes=bucket_minutes,
+        dedupe=dedupe,
+    )
+    return QueueJoinAnalyticsResponse(
+        game_mode=game_mode,
+        bucket_minutes=bucket_m,
+        dedupe=dedupe,
+        buckets=[QueueJoinAnalyticsBucket(**b) for b in buckets],
+    )
+
+
+@router.get("/notifications/{discord_uid}", response_model=NotificationsOut)
+async def get_notifications(
+    discord_uid: int,
+    app: Backend = Depends(get_backend),
+) -> NotificationsOut:
+    row = app.orchestrator.ensure_notifications(discord_uid)
+    return _notification_row_to_out(row)
+
+
+@router.put("/notifications", response_model=NotificationsOut)
+async def put_notifications(
+    request: NotificationsUpsertRequest,
+    app: Backend = Depends(get_backend),
+) -> NotificationsOut:
+    if (
+        request.notify_queue_1v1 is None
+        and request.notify_queue_2v2 is None
+        and request.notify_queue_ffa is None
+        and request.queue_notify_cooldown_minutes is None
+    ):
+        raise HTTPException(status_code=400, detail="No preference fields to update")
+    app.orchestrator.ensure_notifications(request.discord_uid)
+    row = app.orchestrator.upsert_notifications(
+        request.discord_uid,
+        notify_queue_1v1=request.notify_queue_1v1,
+        notify_queue_2v2=request.notify_queue_2v2,
+        notify_queue_ffa=request.notify_queue_ffa,
+        queue_notify_cooldown_minutes=request.queue_notify_cooldown_minutes,
+    )
+    return _notification_row_to_out(row)
+
+
 @router.post("/queue_1v1/join", response_model=QueueJoinResponse)
 async def queue_join(
     request: QueueJoinRequest,
     app: Backend = Depends(get_backend),
+    ws: ConnectionManager = Depends(get_ws_manager),
 ) -> QueueJoinResponse:
     success, message = app.orchestrator.join_queue_1v1(
         request.discord_uid,
@@ -455,6 +554,7 @@ async def queue_join(
             },
         }
     )
+    await app.broadcast_queue_join_activity_if_needed(ws, request.discord_uid, "1v1")
     return QueueJoinResponse(success=True, message=None)
 
 

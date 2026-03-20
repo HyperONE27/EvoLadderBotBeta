@@ -16,6 +16,7 @@ from backend.orchestrator.transitions import (
     _leaderboard,
     _match,
     _mmr,
+    _notifications,
     _player,
     _queue,
     _replay,
@@ -50,6 +51,10 @@ class TransitionManager:
     # -- queue transitions (_queue.py) ---------------------------------------
     join_queue_1v1 = _queue.join_queue_1v1
     leave_queue_1v1 = _queue.leave_queue_1v1
+
+    # -- notifications (_notifications.py) -----------------------------------
+    ensure_notification_row = _notifications.ensure_notification_row
+    upsert_notifications_preferences = _notifications.upsert_notifications_preferences
 
     # -- MMR helpers (_mmr.py) -----------------------------------------------
     _handle_missing_mmr_1v1 = _mmr._handle_missing_mmr_1v1

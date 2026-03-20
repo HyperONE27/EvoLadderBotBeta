@@ -53,3 +53,26 @@ ENABLE_REPLAY_VALIDATION: bool = True
 EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER_RANK: bool = True
 
 ALLOW_AI_PLAYERS: bool = True
+
+# ---------------------------------------------------------------------------
+# Queue activity charts (/activity)
+# ---------------------------------------------------------------------------
+
+# X-axis bin width for join-attempt line charts (matplotlib / Discord attachment).
+ACTIVITY_QUEUE_JOIN_CHART_BUCKET_MINUTES: int = 5
+
+# For future “deduped join attempt” series: minimum seconds between counted
+# ``queue_join`` events per (discord_uid, game_mode) unless interrupted by
+# ``queue_leave``, match pairing, etc. Raw join counts use no deduplication.
+ACTIVITY_QUEUE_JOIN_DEDUPE_SECONDS: int = 60
+
+# Maximum (end - start) for GET /analytics/queue_joins.
+ACTIVITY_ANALYTICS_MAX_RANGE_DAYS: int = 90
+
+# ---------------------------------------------------------------------------
+# Queue activity notifications (/notifyme)
+# ---------------------------------------------------------------------------
+
+# Default cooldown (minutes) for new notification rows and when ``/notifyme`` omits
+# an explicit value. Must stay within DB CHECK on ``queue_notify_cooldown_minutes``.
+QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT: int = 60

@@ -81,3 +81,52 @@ What remains?
             - Full MMR timeline charts
             - Winrate analysis by race, time, map, etc.
             - Perks might not be ready for full beta launch
+
+---
+
+# Queue activity & notify (design backlog — circle back)
+
+This section captures decisions for **`/activity`** and **`/notifyme`** so implementation can proceed without re-deriving product intent.
+
+## Events and “who left the queue”
+
+- **Persist** `queue_join` (and when ready, `queue_leave`) on the existing **`events`** table with consistent `game_mode`, `discord_uid`, `performed_at`, and small `event_data` as needed.
+- **For `/activity` v1**, treat analytics as **queue join attempts only** — no requirement (yet) to pair joins with exits. That keeps the first chart simple and avoids incomplete interval logic.
+- **Ways a player effectively leaves the queue** (for *future* dwell-time / pairing work, not required for the join-attempt chart):
+    1. **`queue_leave`** (explicit).
+    2. **Match lifecycle** — include their `discord_uid` in a **`match_found`** (or equivalent) event so intervals can close when they are matched.
+    3. **Admin `statusreset`** — record something like **`event_type = admin_command`**, **`action = statusreset`**, **`target_discord_uid = {discord_uid}`** (acting admin in `discord_uid` or documented in `event_data`). When pairing join→end, treat this like a synthetic leave for that target uid.
+- Until join/leave/match/statusreset are all emitted reliably, **time-in-queue** derived from pairing will be noisy; **join-attempt counts** remain the robust default metric.
+
+## `/activity` (DM-only)
+
+- **Chart type:** **Line plot** (users expect a trend over time), not a bar histogram — though both are aggregations over buckets.
+- **Bucket width:** **`ACTIVITY_QUEUE_JOIN_CHART_BUCKET_MINUTES`** in **[`common/config.py`](../common/config.py)** (default **5**). Re-export via `backend/core/config.py` and `bot/core/config.py`. Backend aggregation API buckets `queue_join` rows into intervals of that width; bot builds **matplotlib → PNG** and attaches to the DM.
+- **Range control:** `discord.ui.Select` (and optional slash args) to change the displayed window; aligns with earlier “initial/final range” UX.
+- **`game_mode`:** **1v1** first; **2v2 / FFA** stubbed in UI until modes exist.
+- **Spam / deduplication:**
+    - Implement **deduped** join series in the backend using **`ACTIVITY_QUEUE_JOIN_DEDUPE_SECONDS`** (same `common/config.py`): e.g. do not increment the deduped count for a `queue_join` if the previous countable event for that `(discord_uid, game_mode)` was another `queue_join` inside the window, until a `queue_leave`, match event, or **`statusreset`**-style row “resets” the gate.
+    - **Product v1:** expose **raw** join counts in the chart only; keep **deduped** logic implemented and tested so a second series or toggle can be wired later without refactor.
+- **Security:** low adversarial expectation; optional max date range / max points on the API is still a cheap guard.
+
+## `/notifyme` (DM-only)
+
+- **Preferences** live on **`notifications`** (extend table): per-mode opt-in flags (stub 2v2/FFA), plus per-user cooldown (minutes); keep **`read_quick_start_guide`** as today.
+- **Default cooldown** when not specified on the command: **`QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT`** in **`common/config.py`**, re-exported the same way.
+- **Cooldown enforcement:** in-memory `last_sent` map (lost on restart is acceptable).
+- **DM delivery:** **low-priority** [message queue](../bot/core/message_queue.py) jobs.
+- **Content:** anonymous embed (“Someone is queueing now!” / mode-aware), **no joiner identity**; footer states when the next ping is allowed per their settings.
+- **Gates:** DM channel, **setup + ToS + not banned**, **opt-in** only.
+
+## Config summary
+
+| Constant | Location | Purpose |
+|----------|----------|---------|
+| `ACTIVITY_QUEUE_JOIN_CHART_BUCKET_MINUTES` | `common/config.py` | Line chart x-axis bin width (minutes) |
+| `ACTIVITY_QUEUE_JOIN_DEDUPE_SECONDS` | `common/config.py` | Deduped series gap rule (implementation-first; UI later) |
+| `QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT` | `common/config.py` | Default `/notifyme` cooldown / DB row default |
+
+## Deferred
+
+- **Weekly digest** of activity — owner will decide separately.
+- **Dwell time** reports from join→(leave | match | statusreset) pairing — after event coverage is complete.

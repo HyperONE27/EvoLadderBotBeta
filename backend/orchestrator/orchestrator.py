@@ -1,18 +1,29 @@
 from datetime import datetime
 from typing import Any
 
-from backend.database.database import DatabaseWriter
+from backend.algorithms.queue_join_analytics import (
+    bucket_deduped_queue_join_counts,
+    bucket_queue_join_counts,
+)
+from backend.core.config import (
+    ACTIVITY_QUEUE_JOIN_CHART_BUCKET_MINUTES,
+    ACTIVITY_QUEUE_JOIN_DEDUPE_SECONDS,
+)
+from backend.database.database import DatabaseReader, DatabaseWriter
 from backend.domain_types.dataframes import (
     AdminsRow,
     Matches1v1Row,
     MMRs1v1Row,
+    NotificationsRow,
     PlayersRow,
     Preferences1v1Row,
 )
 from backend.domain_types.ephemeral import LeaderboardEntry1v1, QueueEntry1v1
+from backend.orchestrator.queue_notify import compute_queue_activity_targets
 from backend.orchestrator.reader import StateReader
 from backend.orchestrator.state import StateManager
 from backend.orchestrator.transitions import TransitionManager
+from common.datetime_helpers import utc_now
 
 
 class Orchestrator:
@@ -367,3 +378,96 @@ class Orchestrator:
     def log_event(self, row: dict) -> None:
         """Insert a single event row. Non-critical — failures are swallowed."""
         self._transition_manager._db_writer.insert_event(row)
+
+    # ------------------------------------------------------------------
+    # Queue join analytics (/activity)
+    # ------------------------------------------------------------------
+
+    def get_queue_join_analytics(
+        self,
+        start: datetime,
+        end: datetime,
+        game_mode: str,
+        *,
+        bucket_minutes: int | None = None,
+        dedupe: bool = False,
+    ) -> tuple[int, list[dict[str, Any]]]:
+        """Return ``(bucket_minutes, [{ "t": iso, "count": int }, ...])``."""
+
+        bucket = bucket_minutes or ACTIVITY_QUEUE_JOIN_CHART_BUCKET_MINUTES
+        reader = DatabaseReader()
+        events = reader.fetch_queue_join_events(start, end, game_mode)
+        if dedupe:
+            buckets = bucket_deduped_queue_join_counts(
+                events,
+                start,
+                end,
+                bucket,
+                ACTIVITY_QUEUE_JOIN_DEDUPE_SECONDS,
+            )
+        else:
+            buckets = bucket_queue_join_counts(
+                (t for t, _ in events),
+                start,
+                end,
+                bucket,
+            )
+        rows: list[dict[str, Any]] = [
+            {"t": bt.isoformat(), "count": c} for bt, c in buckets
+        ]
+        return bucket, rows
+
+    # ------------------------------------------------------------------
+    # Notifications (/notifyme)
+    # ------------------------------------------------------------------
+
+    def get_notifications(self, discord_uid: int) -> NotificationsRow | None:
+        """Cached notifications row only — use ensure for create."""
+
+        return self._state_reader.get_notifications_row(discord_uid)
+
+    def ensure_notifications(self, discord_uid: int) -> dict:
+        """Create default notifications row when missing and return it as dict."""
+
+        return self._transition_manager.ensure_notification_row(discord_uid)
+
+    def upsert_notifications(
+        self,
+        discord_uid: int,
+        *,
+        notify_queue_1v1: bool | None = None,
+        notify_queue_2v2: bool | None = None,
+        notify_queue_ffa: bool | None = None,
+        queue_notify_cooldown_minutes: int | None = None,
+    ) -> dict:
+        """Persist notification preference updates."""
+
+        return self._transition_manager.upsert_notifications_preferences(
+            discord_uid,
+            notify_queue_1v1=notify_queue_1v1,
+            notify_queue_2v2=notify_queue_2v2,
+            notify_queue_ffa=notify_queue_ffa,
+            queue_notify_cooldown_minutes=queue_notify_cooldown_minutes,
+        )
+
+    def build_queue_join_activity_payload(
+        self,
+        joiner_uid: int,
+        game_mode: str,
+        last_sent: dict[int, datetime],
+    ) -> dict[str, Any]:
+        """Subscribers + footers for ``queue_join_activity`` WS event; updates *last_sent*."""
+
+        now = utc_now()
+        uids, footers = compute_queue_activity_targets(
+            self._transition_manager._state_manager,
+            joiner_uid,
+            game_mode,
+            last_sent,
+            now,
+        )
+        return {
+            "game_mode": game_mode,
+            "notify_discord_uids": uids,
+            "footers": footers,
+        }

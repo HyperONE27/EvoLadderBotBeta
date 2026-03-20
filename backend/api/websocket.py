@@ -8,7 +8,11 @@ The bot connects to ``/ws`` and receives JSON messages of the form::
     {"event": "<event_type>", "data": { ... }}
 
 Event types: ``match_found``, ``both_confirmed``, ``match_aborted``,
-``match_completed``, ``match_conflict``.
+``match_abandoned``, ``match_completed``, ``match_conflict``,
+``leaderboard_updated``, ``queue_join_activity``.
+
+``queue_join_activity`` data includes ``game_mode``, ``notify_discord_uids``,
+and ``footers`` (subscriber uid string to DM footer text).
 """
 
 import json

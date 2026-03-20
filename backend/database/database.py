@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import polars as pl
 import structlog
@@ -7,6 +7,8 @@ from typing import Any, cast
 
 from backend.core.config import DATABASE
 from backend.domain_types.dataframes import TABLE_SCHEMAS
+from common.config import QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT
+from common.datetime_helpers import ensure_utc, utc_now
 
 _event_logger = structlog.get_logger("events")
 
@@ -114,6 +116,55 @@ class DatabaseReader:
         except Exception as e:
             raise ValueError(f"Table '{table_name}' schema validation failed: {e}")
 
+    def fetch_queue_join_events(
+        self,
+        start: datetime,
+        end: datetime,
+        game_mode: str,
+    ) -> list[tuple[datetime, int]]:
+        """Return ``(performed_at_utc, discord_uid)`` for queue_join events in range."""
+
+        start_utc = start if start.tzinfo else start.replace(tzinfo=timezone.utc)
+        end_utc = end if end.tzinfo else end.replace(tzinfo=timezone.utc)
+        start_utc = start_utc.astimezone(timezone.utc)
+        end_utc = end_utc.astimezone(timezone.utc)
+
+        page = 1000
+        offset = 0
+        out: list[tuple[datetime, int]] = []
+        start_s = start_utc.isoformat()
+        end_s = end_utc.isoformat()
+
+        while True:
+            resp = (
+                self.client.table("events")
+                .select("performed_at,discord_uid")
+                .eq("action", "queue_join")
+                .eq("game_mode", game_mode)
+                .eq("event_type", "player_command")
+                .gte("performed_at", start_s)
+                .lte("performed_at", end_s)
+                .order("performed_at")
+                .range(offset, offset + page - 1)
+                .execute()
+            )
+            rows = resp.data or []
+            for r in rows:
+                if not isinstance(r, dict):
+                    continue
+                row = cast(dict[str, Any], r)
+                ts = ensure_utc(row.get("performed_at"))
+                if ts is None:
+                    continue
+                uid = row.get("discord_uid")
+                if uid is None:
+                    continue
+                out.append((ts, int(uid)))
+            if len(rows) < page:
+                break
+            offset += page
+        return out
+
 
 class DatabaseWriter:
     def __init__(self) -> None:
@@ -140,6 +191,50 @@ class DatabaseWriter:
             "current_match_id": None,
         }
         response = self.client.table("players").insert(data).execute()
+        return cast(dict[str, Any], response.data[0])
+
+    def insert_notification_row(self, discord_uid: int) -> dict[str, Any]:
+        """Insert default notifications row for a new player. Fails if row exists."""
+        data: dict[str, Any] = {
+            "discord_uid": discord_uid,
+            "read_quick_start_guide": False,
+            "notify_queue_1v1": False,
+            "notify_queue_2v2": False,
+            "notify_queue_ffa": False,
+            "queue_notify_cooldown_minutes": QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT,
+            "updated_at": utc_now().isoformat(),
+        }
+        response = self.client.table("notifications").insert(data).execute()
+        return cast(dict[str, Any], response.data[0])
+
+    def upsert_notifications_full_row(self, row: dict[str, Any]) -> dict[str, Any]:
+        """Upsert a full ``notifications`` row on ``discord_uid`` conflict."""
+
+        payload = dict(row)
+        payload["updated_at"] = utc_now().isoformat()
+        response = (
+            self.client.table("notifications")
+            .upsert(payload, on_conflict="discord_uid")
+            .execute()
+        )
+        if not response.data:
+            raise RuntimeError("notifications upsert returned no data")
+        return cast(dict[str, Any], response.data[0])
+
+    def fetch_notification_by_discord_uid(
+        self, discord_uid: int
+    ) -> dict[str, Any] | None:
+        """Load one notifications row from the database."""
+
+        response = (
+            self.client.table("notifications")
+            .select("*")
+            .eq("discord_uid", discord_uid)
+            .limit(1)
+            .execute()
+        )
+        if not response.data:
+            return None
         return cast(dict[str, Any], response.data[0])
 
     def update_player_nationality(self, player_id: int, country_code: str) -> None:
