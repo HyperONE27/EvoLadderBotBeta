@@ -112,19 +112,19 @@ def build_activity_embed_fields(
         for i, (wday, (hour, avg)) in enumerate(sorted_days)
     ]
 
-    # Row 1 (non-inline): Total · Avg/Day on a single line.
+    # Row 1 (2 inline): Total | Avg/Day
     range_days = _RANGE_DAYS.get(range_key, 1)
     avg_per_day = total / range_days
-    total_name = t("activity_stats.total.name", locale)
-    avg_name = t("activity_stats.avg_per_day.name", locale)
-    summary = f"**{total_name}:** {total}  ·  **{avg_name}:** {_fmt_avg(avg_per_day)}"
 
-    # Rows 2-3 (inline): Peak Per Day — top 4 in col 1, remaining in col 2.
+    # Row 2 (2 inline): Peak Per Day — top 4 in col 1, remaining in col 2.
     col1 = "\n".join(lines[:4]) if lines[:4] else _BLANK
     col2 = "\n".join(lines[4:]) if lines[4:] else _BLANK
 
     return [
-        (_BLANK, summary, False),
+        (t("activity_stats.total.name", locale), str(total), True),
+        (t("activity_stats.avg_per_day.name", locale), _fmt_avg(avg_per_day), True),
+        # Zero-width space separator forces a new inline row below.
+        ("\u200b", "\u200b", False),
         (t("activity_stats.windows.name", locale), col1, True),
         (_BLANK, col2, True),
     ]

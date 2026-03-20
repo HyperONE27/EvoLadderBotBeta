@@ -57,7 +57,7 @@
     "activity_stats.peak.name": "Пиковый час",
     "activity_stats.total.name": "Всего",
     "activity_stats.window.avg": "сред. {avg}",
-    "activity_stats.windows.name": "Пик по дням",
+    "activity_stats.windows.name": "Пиковые дни и часы",
     "ban_preview_embed.description.1": "Вы собираетесь изменить статус запрета для:\n\n**Пользователь:** {mention} (`{username}` / `{uid}`)\n\nЕсли пользователь в настоящее время **разбанен**, он будет **забанен**.\nЕсли пользователь в настоящее время **забанен**, он будет **разбанен**.\n\nПожалуйста, подтвердите ниже.",
     "ban_preview_embed.title.1": "⚠️ Переключить запрет",
     "ban_success_embed.description.1": "**Пользователь:** {mention} (`{username}` / `{uid}`)\n**Статус:** {status}",

@@ -57,7 +57,7 @@
     "activity_stats.peak.name": "최고 시간대",
     "activity_stats.total.name": "총계",
     "activity_stats.window.avg": "평균 {avg}",
-    "activity_stats.windows.name": "요일별 최고 시간대",
+    "activity_stats.windows.name": "최고 활동일 및 시간대",
     "ban_preview_embed.description.1": "다음 사용자의 차단 상태를 변경하려 합니다:\n\n**사용자:** {mention} (`{username}` / `{uid}`)\n\n현재 **차단 해제** 상태라면 **차단**됩니다.\n현재 **차단** 상태라면 **차단 해제**됩니다.\n\n아래에서 확인하세요.",
     "ban_preview_embed.title.1": "⚠️ 차단 토글",
     "ban_success_embed.description.1": "**사용자:** {mention} (`{username}` / `{uid}`)\n**상태:** {status}",

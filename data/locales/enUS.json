@@ -57,7 +57,7 @@
     "activity_stats.peak.name": "Peak Hour",
     "activity_stats.total.name": "Total",
     "activity_stats.window.avg": "avg {avg}",
-    "activity_stats.windows.name": "Peak Per Day",
+    "activity_stats.windows.name": "Peak Days and Peak Per Day",
     "ban_preview_embed.description.1": "You are about to toggle the ban status for:\n\n**User:** {mention} (`{username}` / `{uid}`)\n\nIf the user is currently **unbanned**, they will be **banned**.\nIf the user is currently **banned**, they will be **unbanned**.\n\nPlease confirm below.",
     "ban_preview_embed.title.1": "⚠️ Toggle Ban",
     "ban_success_embed.description.1": "**User:** {mention} (`{username}` / `{uid}`)\n**Status:** {status}",
