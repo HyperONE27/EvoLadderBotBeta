@@ -105,6 +105,16 @@
         }
     },
     "2v2": {
+        "season_alpha": {
+            "": {
+                "short_name": "",
+                "name": "",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+                "as_link": ""
+            }
+        },
         "season_beta": {
             "": {
                 "short_name": "",
@@ -117,6 +127,16 @@
         }
     },
     "FFA": {
+        "season_alpha": {
+            "": {
+                "short_name": "",
+                "name": "",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+                "as_link": ""
+            }
+        },
         "season_beta": {
             "": {
                 "short_name": "",

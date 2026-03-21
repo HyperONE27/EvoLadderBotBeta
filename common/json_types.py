@@ -14,6 +14,7 @@ class Country(TypedDict):
 class CrossTableData(TypedDict):
     region_order: list[str]
     mappings: dict[str, dict[str, str]]
+    pings: dict[str, dict[str, list[int] | None]]
 
 
 # emotes.json data structure

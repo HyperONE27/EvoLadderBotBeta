@@ -1,0 +1,1011 @@
+# 2v2 Implementation Plan
+
+## Overview
+
+2v2 is a parallel gamemode alongside 1v1. All 1v1 infrastructure is preserved
+untouched. The 2v2 path adds:
+
+- A party system (pre-match team formation)
+- A 2v2 queue (individual players queuing, paired at wave time)
+- A 2v2 matchmaking algorithm (teams vs teams)
+- Four new DB tables (`matches_2v2`, `mmrs_2v2`, `preferences_2v2`, `replays_2v2`)
+- A new `in_party` player status
+- Parallel bot commands and backend endpoints
+
+The guiding principle mirrors 1v1: the 2v2 matchmaker is a **stateless pure
+function** over a queue list, all mutations go through `TransitionManager`, and
+all real-time signals go through the existing WebSocket.
+
+---
+
+## 1. Schema Changes
+
+### 1a. Existing table: `players`
+
+Add `'in_party'` to the `player_status` CHECK constraint:
+
+```sql
+CHECK (player_status IN
+    ('idle', 'queueing', 'in_match', 'timed_out', 'in_party')
+)
+```
+
+When a player accepts a party invite:
+- `player_status = 'in_party'`
+- `current_match_mode = '2v2'`
+- `current_match_id = NULL`
+
+When a player leaves a party or the party is disbanded:
+- `player_status = 'idle'`
+- `current_match_mode = NULL`
+
+When a party queues (both members run `/queue 2v2`):
+- `player_status = 'queueing'` (same as 1v1; `in_party` is not a queueing state)
+- `current_match_mode = '2v2'`
+
+`/admin statusreset` clears `in_party` → `idle` automatically because it
+already calls `_set_player_status(uid, "idle", match_mode=None, match_id=None)`.
+The transition also needs to purge the player from the in-memory `parties_2v2`
+dict (see §3).
+
+The existing `reset_all_player_statuses()` at backend startup resets every
+player to `idle` unconditionally; the `parties_2v2` dict is already empty
+after a restart, so no extra work is needed there.
+
+---
+
+### 1b. New table: `mmrs_2v2`
+
+MMR is per **unique player pair**, not per race. There is no `race` column.
+
+```sql
+CREATE TABLE IF NOT EXISTS mmrs_2v2 (
+    id                      BIGSERIAL PRIMARY KEY,
+    player_1_discord_uid    BIGINT NOT NULL,   -- smaller of the two UIDs (normalized)
+    player_2_discord_uid    BIGINT NOT NULL,   -- larger of the two UIDs (normalized)
+    player_1_name           TEXT NOT NULL,
+    player_2_name           TEXT NOT NULL,
+    mmr                     SMALLINT NOT NULL,
+    games_played            INTEGER NOT NULL DEFAULT 0,
+    games_won               INTEGER NOT NULL DEFAULT 0,
+    games_lost              INTEGER NOT NULL DEFAULT 0,
+    games_drawn             INTEGER NOT NULL DEFAULT 0,
+    last_played_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (player_1_uid, player_2_uid)
+);
+```
+
+UIDs are stored in ascending order (smaller first) so that the pair
+`(A, B)` and `(B, A)` always resolve to the same row. The lookup key is
+always `(min(uid_1, uid_2), max(uid_1, uid_2))`.
+
+ELO is calculated at the team level using the pair MMR directly. Both players
+on the team win or lose the same amount together — there are no individual
+per-race 2v2 ratings.
+
+---
+
+### 1c. New table: `matches_2v2`
+
+Four players: Team 1 (players 1 & 2) vs Team 2 (players 3 & 4).
+Races are recorded as played (assigned at match creation, confirmed/corrected
+by replay). One report per team.
+
+```sql
+CREATE TABLE IF NOT EXISTS matches_2v2 (
+    id                          BIGSERIAL PRIMARY KEY,
+
+    -- Team 1
+    team_1_player_1_uid         BIGINT NOT NULL,
+    team_1_player_2_uid         BIGINT NOT NULL,
+    team_1_player_1_name        TEXT NOT NULL,
+    team_1_player_2_name        TEXT NOT NULL,
+    team_1_player_1_race        TEXT NOT NULL
+        CHECK (team_1_player_1_race IN (
+            'bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss'
+        )),
+    team_1_player_2_race        TEXT NOT NULL
+        CHECK (team_1_player_2_race IN (
+            'bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss'
+        )),
+    team_1_mmr                  SMALLINT NOT NULL,   -- pair MMR at match time
+
+    -- Team 2
+    team_2_player_1_uid         BIGINT NOT NULL,
+    team_2_player_2_uid         BIGINT NOT NULL,
+    team_2_player_1_name        TEXT NOT NULL,
+    team_2_player_2_name        TEXT NOT NULL,
+    team_2_player_1_race        TEXT NOT NULL
+        CHECK (team_2_player_1_race IN (
+            'bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss'
+        )),
+    team_2_player_2_race        TEXT NOT NULL
+        CHECK (team_2_player_2_race IN (
+            'bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss'
+        )),
+    team_2_mmr                  SMALLINT NOT NULL,
+
+    -- Reporting (one per team; either member may submit)
+    team_1_reporter_uid         BIGINT,
+    team_1_report               TEXT
+        CHECK (team_1_report IN (
+            'team_1_win', 'team_2_win', 'draw',
+            'abort', 'abandoned', 'invalidated', 'no_report'
+        )),
+    team_2_reporter_uid         BIGINT,
+    team_2_report               TEXT
+        CHECK (team_2_report IN (
+            'team_1_win', 'team_2_win', 'draw',
+            'abort', 'abandoned', 'invalidated', 'no_report'
+        )),
+
+    -- Resolution
+    match_result                TEXT
+        CHECK (match_result IN (
+            'team_1_win', 'team_2_win', 'draw', 'conflict',
+            'abort', 'abandoned', 'invalidated', 'no_report'
+        )),
+    team_1_mmr_change           SMALLINT,
+    team_2_mmr_change           SMALLINT,
+
+    -- Map / server
+    map_name                    TEXT NOT NULL,
+    server_name                 TEXT NOT NULL,
+
+    -- Timestamps
+    assigned_at                 TIMESTAMPTZ,
+    completed_at                TIMESTAMPTZ,
+
+    -- Admin
+    admin_intervened            BOOLEAN NOT NULL DEFAULT FALSE,
+    admin_discord_uid           BIGINT DEFAULT NULL,
+
+    -- Replays (one upload slot per team)
+    team_1_replay_path          TEXT,
+    team_1_replay_row_id        BIGINT,
+    team_1_uploaded_at          TIMESTAMPTZ,
+    team_2_replay_path          TEXT,
+    team_2_replay_row_id        BIGINT,
+    team_2_uploaded_at          TIMESTAMPTZ
+);
+```
+
+**Reporting rule:** Either member of a team may call `PUT
+/matches_2v2/{match_id}/report`. The endpoint checks that the submitter is
+on the relevant team, that no report has already been submitted for that
+team, and records `team_N_reporter_uid` + `team_N_report`. Once both teams
+have reported, the match resolves normally (or marks conflict).
+
+---
+
+### 1d. New table: `preferences_2v2`
+
+Identical shape to `preferences_1v1`. Stores the last race/veto choices for
+the `/queue 2v2` pre-fill, keyed per individual player.
+
+```sql
+CREATE TABLE IF NOT EXISTS preferences_2v2 (
+    id                  BIGSERIAL PRIMARY KEY,
+    discord_uid         BIGINT NOT NULL UNIQUE,
+    last_chosen_races   TEXT[],
+    last_chosen_vetoes  TEXT[]
+);
+```
+
+---
+
+### 1e. New table: `replays_2v2`
+
+Same shape as `replays_1v1` extended to four players.
+
+```sql
+CREATE TABLE IF NOT EXISTS replays_2v2 (
+    id                          BIGSERIAL PRIMARY KEY,
+    matches_2v2_id              BIGINT NOT NULL,
+    replay_path                 TEXT NOT NULL UNIQUE,
+    replay_hash                 TEXT NOT NULL,
+    replay_time                 TIMESTAMPTZ NOT NULL,
+    uploaded_at                 TIMESTAMPTZ NOT NULL,
+    -- Four players (team_1_p1, team_1_p2, team_2_p1, team_2_p2)
+    team_1_player_1_name        TEXT NOT NULL,
+    team_1_player_2_name        TEXT NOT NULL,
+    team_2_player_1_name        TEXT NOT NULL,
+    team_2_player_2_name        TEXT NOT NULL,
+    team_1_player_1_race        TEXT NOT NULL
+        CHECK (team_1_player_1_race IN (
+            'bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss'
+        )),
+    team_1_player_2_race        TEXT NOT NULL
+        CHECK (team_1_player_2_race IN (
+            'bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss'
+        )),
+    team_2_player_1_race        TEXT NOT NULL
+        CHECK (team_2_player_1_race IN (
+            'bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss'
+        )),
+    team_2_player_2_race        TEXT NOT NULL
+        CHECK (team_2_player_2_race IN (
+            'bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss'
+        )),
+    match_result                TEXT NOT NULL
+        CHECK (match_result IN ('team_1_win', 'team_2_win', 'draw')),
+    -- sc2reader handles (all four players pooled)
+    team_1_player_1_handle      TEXT NOT NULL,
+    team_1_player_2_handle      TEXT NOT NULL,
+    team_2_player_1_handle      TEXT NOT NULL,
+    team_2_player_2_handle      TEXT NOT NULL,
+    observers                   TEXT[] NOT NULL DEFAULT '{}',
+    map_name                    TEXT NOT NULL,
+    game_duration_seconds       INTEGER NOT NULL,
+    game_privacy                TEXT NOT NULL,
+    game_speed                  TEXT NOT NULL,
+    game_duration_setting       TEXT NOT NULL,
+    locked_alliances            TEXT NOT NULL,
+    cache_handles               TEXT[] NOT NULL,
+    upload_status               TEXT NOT NULL
+        CHECK (upload_status IN ('pending', 'completed', 'failed'))
+);
+```
+
+---
+
+## 2. Polars Schemas and Row Types (`backend/domain_types/dataframes.py`)
+
+Add schemas and TypedDicts for all four new tables, following the exact same
+pattern as the existing `_1v1` variants.
+
+New schema constants: `MATCHES_2V2_SCHEMA`, `MMRS_2V2_SCHEMA`,
+`PREFERENCES_2V2_SCHEMA`, `REPLAYS_2V2_SCHEMA`.
+
+Add all four to `TABLE_SCHEMAS` so `DatabaseReader.load_all_tables()` picks
+them up automatically.
+
+New TypedDicts: `Matches2v2Row`, `MMRs2v2Row`, `Preferences2v2Row`,
+`Replays2v2Row`. Also update `PlayersRow.player_status` type annotation to
+make it clear `'in_party'` is now a valid value (it's still `str`, so no
+change in practice — just document it).
+
+---
+
+## 3. In-Memory State (`backend/orchestrator/state.py`)
+
+### New DataFrames
+
+```python
+self.matches_2v2_df: pl.DataFrame = pl.DataFrame()
+self.mmrs_2v2_df: pl.DataFrame = pl.DataFrame()
+self.preferences_2v2_df: pl.DataFrame = pl.DataFrame()
+self.replays_2v2_df: pl.DataFrame = pl.DataFrame()
+```
+
+These are populated at startup the same way as the 1v1 DataFrames (via
+`_populate_postgres_data()`, which iterates `TABLE_SCHEMAS` automatically
+once the schemas are added).
+
+### New Ephemeral Collections
+
+```python
+self.queue_2v2: list[QueueEntry2v2] = []
+self.parties_2v2: dict[int, PartyEntry2v2] = {}   # keyed by leader_uid
+```
+
+`parties_2v2` is a plain dict; scanning it is O(n) over the number of active
+parties which will be small. `reset_all_player_statuses()` does NOT need to
+touch this dict because it is already empty after a restart. However,
+`reset_player_status` (the admin single-player reset) DOES need to scan and
+purge the affected player from `parties_2v2` (see §6c).
+
+---
+
+## 4. Ephemeral Types (`backend/domain_types/ephemeral.py`)
+
+### `PartyEntry2v2`
+
+```python
+class PartyEntry2v2(TypedDict):
+    leader_uid: int
+    leader_name: str
+    member_uid: int
+    member_name: str
+    created_at: datetime
+```
+
+Stored in `StateManager.parties_2v2` keyed by `leader_uid`. The member can
+look up their party by scanning values for `member_uid`. (Party size is always
+exactly 2; no need for a list.)
+
+### `QueueEntry2v2`
+
+Individual queue entry — one per player, not per team.
+
+```python
+class QueueEntry2v2(TypedDict):
+    discord_uid: int
+    player_name: str
+    party_partner_uid: int   # the other party member's UID
+    bw_race: str | None
+    sc2_race: str | None
+    map_vetoes: list[str]
+    joined_at: datetime
+    wait_cycles: int
+```
+
+`party_partner_uid` is included directly so the matchmaker can pair entries
+as a pure function without needing access to `parties_2v2`.
+
+### `QueueEntry2v2Team`
+
+Formed at wave time by the matchmaker from two paired `QueueEntry2v2` objects.
+Internal to the matchmaker; never stored.
+
+```python
+class QueueEntry2v2Team(TypedDict):
+    player_1_uid: int
+    player_2_uid: int
+    player_1_name: str
+    player_2_name: str
+    player_1_bw_race: str | None
+    player_1_sc2_race: str | None
+    player_2_bw_race: str | None
+    player_2_sc2_race: str | None
+    team_mmr: int
+    map_vetoes: list[str]   # union of both players' vetoes
+    joined_at: datetime     # earlier of the two join timestamps
+    wait_cycles: int        # max of the two wait_cycles values
+```
+
+### `MatchCandidate2v2`
+
+Output of the 2v2 matchmaker. Includes **assigned races** for each player
+(determined during pool assignment; see §7).
+
+```python
+class MatchCandidate2v2(TypedDict):
+    team_1_player_1_uid: int
+    team_1_player_2_uid: int
+    team_1_player_1_name: str
+    team_1_player_2_name: str
+    team_1_player_1_race: str   # specific race assigned for this match
+    team_1_player_2_race: str
+    team_1_mmr: int
+    team_1_map_vetoes: list[str]
+    team_2_player_1_uid: int
+    team_2_player_2_uid: int
+    team_2_player_1_name: str
+    team_2_player_2_name: str
+    team_2_player_1_race: str
+    team_2_player_2_race: str
+    team_2_mmr: int
+    team_2_map_vetoes: list[str]
+```
+
+### `MatchParams2v2`
+
+Same shape as `MatchParams1v1` — map, server, channel. The 2v2 map pool
+uses the same `maps.json` structure (or a 2v2-specific season key if
+introduced later).
+
+---
+
+## 5. Party System
+
+### 5a. Party Lifecycle
+
+```
+[both idle]
+    │
+    ├─ Leader runs /party @member ──→ pending invite stored in-memory
+    │                                  member receives DM with Accept/Decline
+    │
+    ├─ Member accepts ──→ both: player_status='in_party', current_match_mode='2v2'
+    │                           PartyEntry2v2 added to StateManager.parties_2v2
+    │
+    ├─ Member declines ──→ pending invite removed; no status change
+    │
+    ├─ [party formed; both in_party]
+    │
+    ├─ Each player independently runs /queue 2v2
+    │    └─ player_status='queueing', added to queue_2v2
+    │
+    ├─ [matchmaking wave fires; both present → team formed → match found]
+    │    └─ both: player_status='in_match'
+    │
+    ├─ [match completes] ──→ both: player_status='in_party' (back to party, not idle)
+    │                              party persists for the next queue
+    │
+    └─ Leader or member runs /party leave ──→ both: player_status='idle'
+                                                   party removed from dict
+```
+
+After a match completes, both players return to `in_party` (not `idle`), so
+they can immediately re-queue without re-forming the party.
+
+### 5b. Pending Invites
+
+Pending invites are also ephemeral in-memory. `StateManager` gets:
+
+```python
+self.pending_party_invites_2v2: dict[int, PendingPartyInvite2v2] = {}
+# keyed by invitee_uid
+```
+
+```python
+class PendingPartyInvite2v2(TypedDict):
+    inviter_uid: int
+    inviter_name: str
+    invitee_uid: int
+    invitee_name: str
+    invited_at: datetime
+```
+
+Only one pending invite per invitee at a time. A new invite from a different
+leader overwrites the old one (the old invite button simply stops working since
+the accept endpoint checks that the invite is still current).
+
+Invites do **not** expire automatically (keep it simple). If either player
+changes status before accepting, the accept endpoint rejects it.
+
+### 5c. Party Guards
+
+- `/party @user`: inviter must be `idle` or `in_party` as leader with no
+  current member yet (re-invite on empty party). Invitee must be `idle`.
+  Inviting someone who is `in_party`, `queueing`, or `in_match` is rejected
+  with a clear error message. These checks happen on the backend endpoint, not
+  just on the bot side, so they are enforced even if the bot is misbehaving.
+- Accepting an invite: invitee must still be `idle`. Inviter must still be
+  `idle` (they cannot have queued or joined another party in the meantime).
+- `/party leave`: works from `in_party` status. Also works from `queueing`
+  status — leaving the party while in queue auto-leaves the queue first,
+  returns both players to `idle`.
+
+### 5d. Bot Commands (`/party`)
+
+New command group registered in `bot/commands/user/party_command.py`:
+
+**`/party @user`**
+- Checks: `check_if_dm`, `check_if_banned`, `check_if_completed_setup`,
+  `check_if_accepted_tos`
+- Calls `PUT /party_2v2/invite` on the backend
+- On success: sends an invite DM to the target with an embed showing the
+  inviter's name and an Accept / Decline button view
+- Accept button → `PUT /party_2v2/respond` with `accepted=true`
+- Decline button → `PUT /party_2v2/respond` with `accepted=false`
+
+**`/party leave`**
+- No special pre-checks beyond basic ones
+- Calls `DELETE /party_2v2/leave`
+- Notifies both players via DM on success
+
+**`/party status`**
+- Calls `GET /party_2v2/{discord_uid}`
+- Returns an embed showing current party state (or "You are not in a party")
+
+### 5e. New Bot Check: `check_if_not_in_party`
+
+Used as a guard on `/party @user` to prevent sending invites while already
+fully-partied. Reads `player_status` from `GET /players/{uid}`.
+
+### 5f. Backend Endpoints (party)
+
+- `PUT /party_2v2/invite` — validate, create pending invite, return invite
+  details for the bot to relay to the invitee via DM
+- `PUT /party_2v2/respond` — accept/decline; on accept, set both players to
+  `in_party` and add `PartyEntry2v2` to state
+- `DELETE /party_2v2/leave` — remove player from party; if leader leaves,
+  disband; if member leaves, leader returns to idle; both players get status
+  reset
+- `GET /party_2v2/{discord_uid}` — return party info for this player (or null)
+
+### 5g. Backend Transitions (`_party.py` — new module)
+
+New module `backend/orchestrator/transitions/_party.py` with:
+- `create_party_invite(self, inviter_uid, inviter_name, invitee_uid, invitee_name)`
+- `respond_to_party_invite(self, invitee_uid, accepted)`
+- `leave_party(self, discord_uid)` — handles both leader and member leaving,
+  returns both UIDs so the orchestrator/bot can notify them
+
+Bound into `TransitionManager.__init__.py` alongside the other modules.
+
+### 5h. Interaction with `/admin statusreset`
+
+`reset_player_status` in `_admin.py` (called by `/admin statusreset`) should
+also call `leave_party` logic for the target player — or at minimum, scan and
+remove the player from `parties_2v2` and reset their party partner's status
+to `idle` if their partner is now partnerless. The cleanest approach: after
+`_set_player_status(uid, "idle", ...)`, call a `_purge_party_membership(uid)`
+helper that removes the player from any party and resets the remaining party
+member to `idle` (without the full `leave_party` event flow, since this is
+an admin action).
+
+---
+
+## 6. Queue System
+
+### 6a. `/queue` Command Changes
+
+The existing `/queue` command is renamed internally to be explicitly 1v1.
+A `game_mode` optional parameter is added:
+
+```
+/queue [game_mode: 1v1 | 2v2]   (default: 1v1)
+```
+
+When `game_mode=2v2`:
+1. Check `check_if_in_party` (new check — player must have `player_status='in_party'`)
+2. Load saved `preferences_2v2` from `GET /preferences_2v2/{uid}`
+3. Show race/veto setup view (same UI as 1v1, just different endpoint target)
+4. On confirm → `POST /queue_2v2/join`
+5. Player status becomes `queueing`, `current_match_mode='2v2'`
+
+### 6b. New Bot Check: `check_if_in_party`
+
+```python
+async def check_if_in_party(interaction) -> bool:
+    # GET /players/{uid}, check player_status == 'in_party'
+    # Raises NotInPartyError if not
+```
+
+This is **only** used as a guard for `/queue game_mode=2v2`.
+
+### 6c. Backend: `join_queue_2v2` / `leave_queue_2v2`
+
+New functions in `_queue.py` (or a separate `_queue_2v2.py`):
+
+`join_queue_2v2`:
+- Player must be `in_party` to join (not `idle`, not `queueing`)
+- Look up party to get `party_partner_uid`
+- Look up or create `mmrs_2v2` row for this pair (using normalized UID pair)
+- Build `QueueEntry2v2` and append to `state_manager.queue_2v2`
+- Set `player_status = 'queueing'`, `current_match_mode = '2v2'`
+
+`leave_queue_2v2`:
+- Remove from `queue_2v2`
+- Set `player_status = 'in_party'` (back to party, not idle — the party
+  remains; only the queue entry is removed)
+
+### 6d. Backend Endpoints (queue)
+
+- `POST /queue_2v2/join`
+- `DELETE /queue_2v2/leave`
+- `GET /queue_2v2/stats` — breakdown similar to 1v1 (bw_bw, sc2_sc2, mixed
+  team counts)
+
+---
+
+## 7. Matchmaking Algorithm (`backend/algorithms/matchmaker_2v2.py`)
+
+New file, same stateless pure-function design as `matchmaker.py`.
+
+Entry point: `run_matchmaking_wave_2v2(queue: list[QueueEntry2v2]) -> tuple[list[QueueEntry2v2], list[MatchCandidate2v2]]`
+
+### 7a. Step 1 — Form Teams
+
+Group `queue` by `party_partner_uid` pairs. A team is valid only when both
+members are present. Unpaired entries (partner not yet in queue) are returned
+as remaining with incremented `wait_cycles`.
+
+```
+for each entry in queue:
+    if partner is also in queue → form QueueEntry2v2Team
+    else → remains in queue (wait_cycles += 1)
+```
+
+`QueueEntry2v2Team` fields:
+- `team_mmr`: looked up from `mmrs_2v2` for this pair (default MMR if no
+  record exists)
+- `map_vetoes`: union of both players' vetoes
+- `wait_cycles`: `max(p1.wait_cycles, p2.wait_cycles)`
+- `joined_at`: `min(p1.joined_at, p2.joined_at)`
+- Race fields: preserved as-is from each player's queue entry (resolved in
+  the next step)
+
+### 7b. Step 2 — Categorise Teams into Pools
+
+A team's **possible compositions** are determined by what each member queued:
+
+| Player 1 \ Player 2 | bw_only | sc2_only | both |
+|---|---|---|---|
+| **bw_only** | BW+BW only | mixed only | BW+BW or mixed |
+| **sc2_only** | mixed only | SC2+SC2 only | SC2+SC2 or mixed |
+| **both** | BW+BW or mixed | SC2+SC2 or mixed | BW+BW, SC2+SC2, or mixed |
+
+Three pools: `pure_bw`, `pure_sc2`, `mixed`.
+
+- A team is **eligible for `pure_bw`** if both players have a `bw_race`.
+- A team is **eligible for `pure_sc2`** if both players have a `sc2_race`.
+- A team is **eligible for `mixed`** if at least one player has `bw_race` and
+  at least one has `sc2_race` (the two players need not be the same ones
+  covering both sides; e.g., P1=BW only + P2=SC2 only qualifies as mixed-only).
+
+A team that qualifies for multiple pools (flexible) is distributed using the
+same equalise logic as the 1v1 matchmaker (balance pool sizes first, then
+skill). This is applied independently between the `pure_bw`/`pure_sc2` pair
+and the `mixed` pool is separate.
+
+Valid matches:
+- `pure_bw` team vs `pure_sc2` team
+- `mixed` team vs `mixed` team
+
+### 7c. Step 3 — Race Assignment
+
+When a team is assigned to a pool, the specific race for each player is pinned:
+
+- **`pure_bw` pool**: each player plays their `bw_race`.
+- **`pure_sc2` pool**: each player plays their `sc2_race`.
+- **`mixed` pool**: one player plays BW, the other plays SC2.
+  - If only one player has `bw_race` → that player plays BW.
+  - If only one player has `sc2_race` → that player plays SC2.
+  - If both have both → P1 plays BW, P2 plays SC2 (deterministic; players
+    can coordinate privately beforehand or swap in-game).
+
+### 7d. Step 4 — Build Candidates and Match
+
+Same MMR window and scoring formula as 1v1 but using `team_mmr`:
+
+```
+max_diff    = BASE_MMR_WINDOW + wait_cycles * MMR_WINDOW_GROWTH_PER_CYCLE
+wait_factor = max(team_1.wait_cycles, team_2.wait_cycles)
+score       = mmr_diff² − 2^wait_factor × WAIT_PRIORITY_COEFFICIENT
+```
+
+The Hungarian algorithm is reused as-is (it operates on a cost matrix, agnostic
+to what the rows/columns represent).
+
+### 7e. Step 5 — Map Selection (Veto Counting)
+
+In 2v2, up to four players can each veto maps, potentially exhausting the
+entire pool. The 1v1 `_available_maps` approach (eliminate vetoed maps, pick
+randomly from remainder) breaks down.
+
+New function `_available_maps_2v2`:
+- Count how many of the four players vetoed each map.
+- Find the minimum veto count across all maps.
+- Pick randomly from maps at the minimum count.
+
+This guarantees a map is always selected regardless of how many vetoes are
+submitted. Maps with 0 vetoes are always preferred; in the extreme case where
+every map is vetoed, the least-vetoed map(s) are used.
+
+Server resolution is unchanged (cross-table lookup; for 2v2, use the region
+of player 1 from team 1, or the "most central" region — simplest is to use
+team_1_p1's region, same as 1v1 p1's region).
+
+---
+
+## 8. Match Lifecycle (2v2)
+
+### 8a. Match Creation
+
+`run_matchmaking_wave` in `_match.py` gets a `run_matchmaking_wave_2v2` sibling
+that:
+1. Calls `matchmaker_2v2.run_matchmaking_wave_2v2(queue_2v2)`
+2. For each `MatchCandidate2v2`:
+   - Looks up `mmrs_2v2` row IDs for both pairs
+   - Calls `resolve_match_params_2v2` (map + server)
+   - Inserts a `matches_2v2` row
+   - Sets all four players to `in_match`
+3. Returns created match rows (for WS broadcast)
+
+### 8b. Confirmation
+
+Same flow as 1v1 (`confirm_match_2v2`). Any of the four players can confirm.
+"Both confirmed" means at least one player per team has confirmed (2 of 4), OR
+all four have confirmed — TBD on exact rule. Simplest: require one confirmation
+per team (party leader or any member).
+
+60-second confirmation timeout applies. On abandonment, all four players return
+to `in_party` status (not idle — the parties persist).
+
+### 8c. Reporting
+
+`PUT /matches_2v2/{match_id}/report`
+
+Any player on a team may call this endpoint to submit that team's report. The
+endpoint:
+1. Identifies which team the caller is on.
+2. Checks that no report has been submitted for that team yet.
+3. Records `team_N_reporter_uid` and `team_N_report`.
+4. If both teams have now reported: resolve if they agree; mark conflict if not.
+
+On resolution (either agreed result or conflict), all four players return to
+`in_party`.
+
+### 8d. MMR Updates
+
+ELO is calculated at team level using the pair's `mmrs_2v2.mmr` as the
+effective rating. Both players' names in the `mmrs_2v2` row are updated if
+they have changed. The `mmrs_2v2` row for each team is updated in-place
+(games_played, games_won/lost/drawn, mmr, last_played_at).
+
+### 8e. Replay Upload
+
+Same DM-based flow as 1v1. Either team member can upload. The upload is
+associated with their team's replay slot. `sc2reader` handles 2v2 replays
+natively (it parses all players present). The verifier needs to check four
+players instead of two, but the core parsing is unchanged.
+
+### 8f. WebSocket Events
+
+All six existing event types are reused. The payload includes `"game_mode":
+"2v2"` so the bot's WS listener can route to the right handler. No new event
+type names are needed.
+
+New WS events needed for party:
+- `party_invite_accepted` — both members notified when party forms (so the
+  bot can send a confirmation DM to the leader)
+
+---
+
+## 9. Admin Changes
+
+### 9a. `/admin snapshot game_mode=2v2`
+
+New endpoint `GET /admin/snapshot_2v2` returns:
+- `parties`: list of all active `PartyEntry2v2` objects (not yet queueing,
+  just formed)
+- `queue`: `queue_2v2` entries grouped by party
+- `active_matches`: all 2v2 matches with `match_result IS NULL`
+- `dataframe_stats`: row counts for the four 2v2 DataFrames
+
+The snapshot command already has the `game_mode` parameter and the
+`UnsupportedGameModeEmbed` fallback — just wire up the 2v2 case.
+
+### 9b. `/admin statusreset` (unchanged interface, extended behavior)
+
+No interface change. The backend `reset_player_status` transition is modified
+to also call `_purge_party_membership(discord_uid)`, which:
+- Removes the player from `parties_2v2` (whether leader or member)
+- If the partner is still `in_party`, resets the partner to `idle` and clears
+  their `current_match_mode`
+- Removes both players' pending invite entries if any
+
+---
+
+## 10. Files Created
+
+| File | Purpose |
+|---|---|
+| `backend/algorithms/matchmaker_2v2.py` | Stateless 2v2 matchmaking |
+| `backend/algorithms/match_params_2v2.py` | Map veto counting + server resolution |
+| `backend/orchestrator/transitions/_party.py` | Party lifecycle transitions |
+| `backend/orchestrator/transitions/_queue_2v2.py` | 2v2 queue join/leave |
+| `backend/orchestrator/transitions/_match_2v2.py` | 2v2 match wave, confirm, report, resolve |
+| `backend/orchestrator/transitions/_mmr_2v2.py` | 2v2 MMR helpers |
+| `backend/orchestrator/transitions/_replay_2v2.py` | 2v2 replay insert/update |
+| `bot/commands/user/party_command.py` | `/party` command group |
+
+## 11. Files Modified
+
+| File | Change |
+|---|---|
+| `backend/database/schema.sql` | `in_party` status; 4 new tables |
+| `backend/domain_types/dataframes.py` | 4 new schemas + row types |
+| `backend/domain_types/ephemeral.py` | New ephemeral types |
+| `backend/orchestrator/state.py` | New DFs + ephemeral collections |
+| `backend/orchestrator/transitions/__init__.py` | Bind new module methods |
+| `backend/orchestrator/orchestrator.py` | Expose new public methods |
+| `backend/orchestrator/transitions/_admin.py` | `reset_player_status` purges party |
+| `backend/orchestrator/transitions/_player.py` | `reset_all_player_statuses` comment on parties |
+| `backend/api/endpoints.py` | New party + queue + match 2v2 endpoints |
+| `backend/api/app.py` | Add `_matchmaker_loop_2v2` task |
+| `bot/commands/user/queue_command.py` | Add `game_mode` parameter |
+| `bot/helpers/checks.py` | `check_if_in_party`, `check_if_not_in_party` |
+| `bot/core/app.py` | Register party command |
+| `bot/core/ws_listener.py` | Route 2v2 match events |
+
+---
+
+## 12. Hard Problems
+
+### 12a. Replay Player Identification
+
+In 1v1, player identity in the replay is solved by race: the match is always
+BW vs SC2, so the race uniquely identifies each player's slot. The verifier
+does a simple set equality check and the parser assigns player_1/player_2 by
+index.
+
+In 2v2 this breaks in two distinct ways, and they interact.
+
+**What sc2reader gives us for a 2v2 replay:**
+Each of the 4 players has: `name` (in-game display name), `play_race`,
+`team_id` (1 or 2), `is_observer`. Toon handles are extracted separately
+via `_find_toon_handles(replay.raw_data)` by position. The parser currently
+hard-rejects replays where `len(replay.players) != 2` — this guard must be
+changed to accept 4 for 2v2.
+
+**Problem A: Mapping replay teams to match teams**
+
+The replay's team 1 and team 2 (from `team_id`) do not necessarily correspond
+to match team 1 and team 2. Players may join the lobby in any order. You
+need to determine which replay team is match team 1 and which is match team 2
+before you can read a result.
+
+For **BW+BW vs SC2+SC2**: the two replay teams have different race prefixes
+(one is all bw_*, the other is all sc2_*). Team mapping is unambiguous without
+name matching.
+
+For **mixed vs mixed (BW+SC2 vs BW+SC2)**: both replay teams contain one bw_*
+and one sc2_* player. Race alone cannot distinguish them. You need to match at
+least one known player to their replay entry to determine team mapping.
+
+**Problem B: Within-team player identity**
+
+Once you know which replay team maps to which match team, you need to identify
+which player within the team is team_N_player_1 vs team_N_player_2. This
+matters for the `replays_2v2` record (which handle belongs to which slot).
+
+For **BW+BW**: if the two BW players chose different specific races (e.g.
+bw_terran + bw_zerg), identity is unambiguous. If both chose the same specific
+race (e.g. both bw_terran), it is not — this is the genuinely hard sub-case.
+
+For **SC2+SC2**: same logic.
+
+For **mixed teams**: one player is BW, one is SC2 — race prefix disambiguates
+within the team cleanly.
+
+**Available matching signals (ranked by reliability):**
+
+1. **Race (specific, not just prefix)**: Works when no two players on the same
+   team chose the same specific race. Covers the majority of cases.
+
+2. **Toon handle**: sc2reader extracts `toon_handle` strings (format
+   `"1-S2-1-3456789"`) — a unique SC2 profile ID. If stored against a player's
+   profile, exact matching is possible. Currently not stored at setup time.
+   Could be progressively accumulated from replays after first match.
+
+3. **Soft name matching**: sc2reader's `player.name` is the in-game display
+   name. The `battletag` field in the player profile is `"Name#1234"`;
+   stripping the `#suffix` and normalizing case gives a reasonable match
+   signal. `alt_player_names` and `player_name` also apply. False negatives
+   occur when the player changed their BattleTag display name or uses an alt
+   account.
+
+4. **LLM name matching**: Send the 4 expected names (player_name, battletag
+   display) and the 4 replay names to a Claude API call and ask it to produce
+   a mapping. Handles unicode, abbreviations, and name variations. Adds
+   latency (~1s) and API cost per upload, but is a strong fallback when soft
+   matching is ambiguous.
+
+**Practical approach:**
+
+Verification results should carry a confidence level:
+- **Race-identified**: team mapping and within-team identity resolved purely by
+  race. Auto-resolution safe.
+- **Name-matched**: team mapping resolved via soft name matching. Report
+  confidence alongside verification result; allow auto-resolution but flag it.
+- **Ambiguous**: team mapping could not be determined. Do not auto-resolve;
+  fall back to manual reporting.
+
+For the initial implementation, target at minimum:
+- Race identification (covers BW+BW vs SC2+SC2 fully, and within-team identity
+  in most mixed cases)
+- Soft name matching as fallback for team mapping in mixed vs mixed
+- Graceful degradation to manual reporting when both fail
+
+The LLM approach and toon handle accumulation are deferred improvements.
+
+**Note:** The `replays_2v2` row records handles by position. When within-team
+identity is ambiguous (same specific race on both players), the handle
+assignment is best-effort. This is acceptable — the record is for auditing,
+not for enforcing match results.
+
+---
+
+### 12b. Server Selection for 4 Players
+
+The current 1v1 server selection is a symmetric lookup:
+`cross_table["mappings"][region_A][region_B] → server`. It encodes an
+implicit judgment about which server is "best" for each pair of geographic
+regions. This works cleanly for 2 players; it does not generalise to 4.
+
+**Why the 4-player case is hard:**
+
+With 4 players potentially spread across 4 different geographic regions, you
+need a server that is acceptable to all of them and ideally fair between the
+two teams. The cross_table gives you categorical decisions, not the underlying
+ping estimates that drove those decisions. Extending it to handle all
+(region, region, region, region) tuples is combinatorially infeasible (16⁴ =
+65536 combinations, many symmetric but still enormous).
+
+**What the data would need to look like:**
+
+A `ping_estimates.json` mapping each geographic region to a **ping range**
+`[min_ms, max_ms]` per game server, or `null` if the combination is so poor
+it should not be actively chosen. The system has 16 geographic regions and 9
+game servers (USW, USC, USE, BRZ, EUC, SNG, AUS, KOR, TWN), giving 144
+entries. Values do not need to be empirically precise — rough geographic
+approximations are sufficient.
+
+```json
+{
+  "NAW": {"USW": [20, 50], "USC": [40, 70], "USE": [65, 95], "EUC": [130, 160], "KOR": [160, 220], "SNG": null, "TWN": null, "AUS": null, "BRZ": [100, 160]},
+  "KRJ": {"USW": [160, 220], "KOR": [20, 45], "TWN": [35, 70], "SNG": [60, 110], "EUC": [260, 340], "AUS": [130, 200], "BRZ": null, ...}
+}
+```
+
+**Range vs single value:** Using a range `[min, max]` is more honest than a
+single number — it captures the variability introduced by ISP, routing, and
+geographic spread within a region. `null` means "treat as infinite" at
+algorithm time (not "hard exclude") — this ensures the scoring function always
+produces a result rather than needing special-case fallback logic when every
+server has at least one null for some player.
+
+**Scalar conversion at algorithm time:**
+
+```python
+_PING_INF = 9999
+
+def _to_scalar(val: list[int] | None) -> int:
+    return val[1] if val is not None else _PING_INF  # upper bound (pessimistic)
+```
+
+Using the upper bound (worst case) rather than midpoint is appropriate for
+competitive fairness — you want to guarantee the worst case is acceptable,
+not just that the average is acceptable.
+
+**The scoring algorithm:**
+
+Given a candidate server S and the four players' regions R1..R4 (R1,R2 on
+team 1; R3,R4 on team 2):
+
+```
+p(R, S)   = _to_scalar(ping_estimates[R][S])
+team1_avg = (p(R1,S) + p(R2,S)) / 2
+team2_avg = (p(R3,S) + p(R4,S)) / 2
+score(S)  = (team1_avg + team2_avg) / 2   +   |team1_avg - team2_avg|
+```
+
+The first term minimises overall ping; the second penalises team imbalance.
+The coefficient of 1.0 on the fairness term is a starting point and can be
+tuned. A server with any `null` entry will have score ≥ 9999/2 ≈ 4999 and
+will only be chosen if all alternatives are equally bad. Pick the server with
+the minimum score.
+
+This is a clean, interpretable algorithm. The only dependency is the ping
+table, which needs to be filled in as a data task before the algorithm can
+be used.
+
+**Short-term fallback:**
+
+Until the ping table is populated, fall back to treating 2v2 server selection
+as two independent 1v1 lookups: use `cross_table[team_1_player_1_region][team_2_player_1_region]`.
+This ignores the second player on each team but produces a correct server
+most of the time and requires no new data. Document it as a known
+simplification.
+
+**Data task before implementation:**
+
+Before implementing `server_selector_2v2.py` properly, fill in
+`data/core/ping_estimates.json` with approximate latencies for all 16 × 9
+combinations. This is a manual one-time task, not a code task, but it is
+a prerequisite for the algorithm.
+
+---
+
+## 13. Open Questions / Future Considerations
+
+- **Confirmation rule**: One per team (either member) or all four? One per team
+  is simpler.
+- **2v2 map pool**: `maps.json` already has a `"2v2"` top-level key with the
+  same season-key structure as `"1v1"`. `match_params_2v2.py` accesses
+  `maps["2v2"][season]` directly. **Also a latent bug to fix in 1v1**: the
+  existing `_available_maps` in `match_params.py` iterates `maps.values()`
+  (all game modes) rather than `maps["1v1"]` — harmless now because 2v2/FFA
+  entries are empty stubs, but will silently corrupt the 1v1 map pool once
+  2v2 maps are added. Fix `_available_maps` to scope to `maps["1v1"]` as part
+  of this work.
+- **Server resolution for 2v2**: Use team_1_p1's region for now; could average
+  all four players' regions later.
+- **`/admin setmmr` for 2v2**: Would need to target a pair, not an individual.
+  Defer until needed.
+- **Leaderboard for 2v2**: `leaderboard_2v2` is stubbed in `StateManager`.
+  Defer, same as 1v1 was deferred initially.
+- **`/profile` 2v2 stats**: Could show pair-level MMR history. Defer.

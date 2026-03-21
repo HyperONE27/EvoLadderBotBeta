@@ -186,5 +186,23 @@
         "FER": {
             "FER": "KOR"
         }
+    },
+    "pings": {
+        "NAW": {"USW": [0,   60],  "USC": [50,  100], "USE": [50,  100], "BRZ": null, "EUC": [140, 180], "SNG": [160, 220], "AUS": null,       "KOR": [120, 160], "TWN": [140, 180]},
+        "NAC": {"USW": [50,  100], "USC": [0,   60],  "USE": [40,  100], "BRZ": null, "EUC": [100, 140], "SNG": null,       "AUS": null,       "KOR": [140, 180], "TWN": [160, 200]},
+        "NAE": {"USW": [50,  100], "USC": [0,   60],  "USE": [0,   60],  "BRZ": null, "EUC": [60,  100], "SNG": null,       "AUS": null,       "KOR": [150, 190], "TWN": [170, 210]},
+        "CAM": {"USW": [80,  120], "USC": [70,  110], "USE": [70,  110], "BRZ": null, "EUC": [200, 250], "SNG": [180, 220], "AUS": null,       "KOR": [140, 200], "TWN": null      },
+        "SAM": {"USW": [110, 150], "USC": [100, 140], "USE": [100, 140], "BRZ": null, "EUC": [200, 250], "SNG": null,       "AUS": null,       "KOR": null,       "TWN": null      },
+        "EUW": {"USW": [130, 160], "USC": [110, 130], "USE": [110, 130], "BRZ": null, "EUC": [0,   60],  "SNG": null,       "AUS": null,       "KOR": null,       "TWN": null      },
+        "EUE": {"USW": [150, 180], "USC": [130, 160], "USE": [130, 160], "BRZ": null, "EUC": [0,   60],  "SNG": null,       "AUS": null,       "KOR": null,       "TWN": null      },
+        "AFR": {"USW": null,       "USC": [140, 180], "USE": [130, 170], "BRZ": null, "EUC": [40,  140], "SNG": [140, 200], "AUS": null,       "KOR": null,       "TWN": null      },
+        "MEA": {"USW": [200, 250], "USC": [160, 200], "USE": [150, 190], "BRZ": null, "EUC": [60,  100], "SNG": [140, 180], "AUS": null,       "KOR": null,       "TWN": null      },
+        "SEA": {"USW": [160, 200], "USC": null,       "USE": null,       "BRZ": null, "EUC": null,       "SNG": [0,   60],  "AUS": [40,  120], "KOR": [100, 140], "TWN": [100, 140]},
+        "KRJ": {"USW": [120, 140], "USC": [150, 170], "USE": [150, 170], "BRZ": null, "EUC": null,       "SNG": [60,  100], "AUS": null,       "KOR": [0,   20],  "TWN": [40,  60] },
+        "CHN": {"USW": [120, 160], "USC": null,       "USE": null,       "BRZ": null, "EUC": null,       "SNG": [80,  140], "AUS": null,       "KOR": [40,  100], "TWN": [40,  100]},
+        "THM": {"USW": [130, 160], "USC": [150, 180], "USE": [160, 190], "BRZ": null, "EUC": null,       "SNG": [60,  120], "AUS": [100, 160], "KOR": [40,  100], "TWN": [0,   40] },
+        "OCE": {"USW": [140, 220], "USC": null,       "USE": null,       "BRZ": null, "EUC": null,       "SNG": [80,  140], "AUS": [0,   60],  "KOR": [160, 220], "TWN": [160, 220]},
+        "USB": {"USW": [200, 250], "USC": [240, 260], "USE": null,       "BRZ": null, "EUC": [80,  120], "SNG": [140, 160], "AUS": null,       "KOR": [80,  120], "TWN": [80,  120]},
+        "FER": {"USW": [200, 250], "USC": [240, 260], "USE": null,       "BRZ": null, "EUC": [120, 150], "SNG": [80,  120], "AUS": null,       "KOR": [40,  80],  "TWN": null      }
     }
 }

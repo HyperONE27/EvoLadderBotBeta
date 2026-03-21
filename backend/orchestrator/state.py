@@ -24,6 +24,7 @@ class StateManager:
         self.cross_table: CrossTableData = {
             "region_order": [],
             "mappings": {},
+            "pings": {},
         }
         self.emotes: dict[str, Emote] = {}
         self.maps: dict[str, GameModeData] = {}

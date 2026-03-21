@@ -6,6 +6,7 @@ What remains?
 
 - ⏰ Write pre-beta feature announcement
 - ⏰ Re-write Terms of Service
+- ⏰ Store canonical copies of migrated old database so I can easily launch the pre-beta
 - ✅ Player names should be unique
 - ✅ Player names cannot contain symbols
     - Letters only...
@@ -20,9 +21,10 @@ What remains?
         - write-through guarantees writes hit the DB
         - but not that DFs might not silently corrupt...(?)
 - ⏰ Add unit tests
-- ⏰ Need some dashboard to help people see when peak hours are
-    - ⏰ Need to keep track of queue join attempts
-    - ⏰ the events table {event_type = player_command, action=queue_join, game_mode=1v1, performed_at=timestamp}
+- ⏰ /notifyme needs to send an embed, not just a message, it's fugly right now
+- ✅ Need some dashboard to help people see when peak hours are
+    - ✅ Need to keep track of queue join attempts
+    - ✅ the events table {event_type = player_command, action=queue_join, game_mode=1v1, performed_at=timestamp}
         - this gives us everything we need, just need to graph this
 - ✅ /leaderboard is completely unimplemented
     - 1/7/21/21/21/21/8% splits

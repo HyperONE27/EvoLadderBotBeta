@@ -124,7 +124,7 @@ def build_activity_embed_fields(
         (t("activity_stats.total.name", locale), str(total), True),
         (t("activity_stats.avg_per_day.name", locale), _fmt_avg(avg_per_day), True),
         # Zero-width space separator forces a new inline row below.
-        ("\u200b", "\u200b", False),
+        (" ", " ", False),
         (t("activity_stats.windows.name", locale), col1, True),
         (_BLANK, col2, True),
     ]
