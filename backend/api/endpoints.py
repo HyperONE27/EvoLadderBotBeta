@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 from backend.api.dependencies import get_backend, get_ws_manager
 from backend.api.websocket import ConnectionManager
 from backend.core.config import CURRENT_SEASON
-from backend.algorithms.replay_parser import parse_replay
-from backend.algorithms.replay_verifier import verify_replay
+from backend.algorithms.replay_parser import parse_replay_1v1
+from backend.algorithms.replay_verifier import verify_replay_1v1
 from backend.lookups.admin_lookups import get_admin_by_discord_uid
 from backend.lookups.replay_1v1_lookups import get_replays_1v1_by_match_id
 from common.config import ACTIVITY_ANALYTICS_MAX_RANGE_DAYS
@@ -217,7 +217,7 @@ async def admin_match(
     for replay in replays:
         replay_urls.append(replay.get("replay_path"))
         if match is not None:
-            verification = verify_replay(
+            verification = verify_replay_1v1(
                 dict(replay), dict(match), app.state_manager.mods, season_maps
             )
             verifications.append(verification)
@@ -903,7 +903,7 @@ async def upload_replay(
     loop = asyncio.get_running_loop()
     try:
         parsed: dict = await loop.run_in_executor(
-            app.process_pool, parse_replay, replay_bytes
+            app.process_pool, parse_replay_1v1, replay_bytes
         )
     except Exception as exc:
         logger.exception("Replay parse executor failed", match_id=match_id)
@@ -958,7 +958,7 @@ async def upload_replay(
 
     # --- 7. Verify ---
     season_maps = app.state_manager.maps.get("1v1", {}).get(CURRENT_SEASON, {})
-    verification = verify_replay(
+    verification = verify_replay_1v1(
         parsed, dict(match), app.state_manager.mods, season_maps
     )
 

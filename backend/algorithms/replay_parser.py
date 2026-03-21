@@ -19,10 +19,16 @@ import xxhash
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-_RESULT_INT_TO_STR: dict[int, str] = {
+_RESULT_INT_TO_STR_1V1: dict[int, str] = {
     0: "draw",
     1: "player_1_win",
     2: "player_2_win",
+}
+
+_RESULT_INT_TO_STR_2V2: dict[int, str] = {
+    0: "draw",
+    1: "team_1_win",
+    2: "team_2_win",
 }
 
 # Hard-coded sc2reader race name → ladder race code mapping.
@@ -111,9 +117,9 @@ def _extract_cache_handles(replay: Any) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-def parse_replay(replay_bytes: bytes) -> dict[str, Any]:
+def parse_replay_1v1(replay_bytes: bytes) -> dict[str, Any]:
     """
-    Parse raw .SC2Replay bytes and return a dict with all fields needed for
+    Parse a 1v1 .SC2Replay and return a dict with all fields needed for
     the ``replays_1v1`` table (except ``replay_path``, ``uploaded_at``, and
     ``matches_1v1_id``, which are assigned by the caller at upload time).
 
@@ -210,9 +216,177 @@ def parse_replay(replay_bytes: bytes) -> dict[str, Any]:
             "player_1_race": player_1_race,
             "player_2_race": player_2_race,
             "result_int": result_int,
-            "match_result": _RESULT_INT_TO_STR[result_int],
+            "match_result": _RESULT_INT_TO_STR_1V1[result_int],
             "player_1_handle": player_1_handle,
             "player_2_handle": player_2_handle,
+            "observers": observers,
+            "map_name": replay.map_name,
+            "game_duration_seconds": duration,
+            "game_privacy": replay.attributes[16]["Game Privacy"],
+            "game_speed": replay.attributes[16]["Game Speed"],
+            "game_duration_setting": replay.attributes[16]["Game Duration"],
+            "locked_alliances": replay.attributes[16]["Locked Alliances"],
+            "cache_handles": cache_handles,
+        }
+
+    except Exception as exc:
+        return {"error": f"sc2reader failed: {type(exc).__name__}: {exc}"}
+
+    finally:
+        sys.stderr = original_stderr
+        devnull.close()
+
+
+def _infer_winner_2v2(replay: Any) -> Any:
+    """Attempt to infer the winning team when replay.winner is None.
+
+    # TODO: implement team-level defeat inference (e.g. tracking
+    # "was defeated!" messages per team and deducing the survivor).
+    """
+    return None
+
+
+def parse_replay_2v2(replay_bytes: bytes) -> dict[str, Any]:
+    """
+    Parse a 2v2 .SC2Replay and return a dict with all fields needed for
+    the ``replays_2v2`` table (except ``replay_path``, ``uploaded_at``, and
+    ``matches_2v2_id``, which are assigned by the caller at upload time).
+
+    Players are assigned to teams via ``replay.teams``, not by positional
+    index in ``replay.players``.  Toon handles are in player-number (pid)
+    order and mapped to team slots via each player's ``.pid`` attribute.
+
+    Returns:
+        On success: ``{"error": None, "replay_hash": ..., ...}``
+        On failure: ``{"error": "<message>"}``
+    """
+    logging.getLogger("sc2reader").setLevel(logging.CRITICAL)
+    devnull = open(os.devnull, "w")
+    original_stderr = sys.stderr
+    sys.stderr = devnull
+
+    try:
+        replay = sc2reader.load_replay(io.BytesIO(replay_bytes), load_level=4)
+
+        # --- Guards ---
+        if len(replay.players) != 4:
+            return {"error": f"Expected 4 players, got {len(replay.players)}."}
+        if getattr(replay, "type", None) != "2v2":
+            return {
+                "error": f"Expected 2v2 game type, got '{getattr(replay, 'type', 'unknown')}'."
+            }
+        if len(replay.teams) != 2:
+            return {"error": f"Expected 2 teams, got {len(replay.teams)}."}
+
+        # --- Hash ---
+        replay_hash: str = xxhash.xxh64(replay_bytes).hexdigest()
+
+        # --- Cache handles ---
+        cache_handles = _extract_cache_handles(replay)
+        if not cache_handles:
+            return {"error": "No cache_handles found in replay data."}
+
+        # --- Team / player extraction ---
+        # replay.teams[0] = Team 1, replay.teams[1] = Team 2.
+        # Each team's .players list has 2 Player objects.
+        team_1_players = replay.teams[0].players
+        team_2_players = replay.teams[1].players
+
+        if len(team_1_players) != 2 or len(team_2_players) != 2:
+            return {
+                "error": (
+                    f"Expected 2 players per team, got "
+                    f"{len(team_1_players)} and {len(team_2_players)}."
+                )
+            }
+
+        t1p1 = team_1_players[0]
+        t1p2 = team_1_players[1]
+        t2p1 = team_2_players[0]
+        t2p2 = team_2_players[1]
+
+        # --- Races ---
+        t1p1_race = _fix_race(t1p1.play_race)
+        t1p2_race = _fix_race(t1p2.play_race)
+        t2p1_race = _fix_race(t2p1.play_race)
+        t2p2_race = _fix_race(t2p2.play_race)
+
+        # --- Winner ---
+        winner = replay.winner
+        if winner is None:
+            winner = _infer_winner_2v2(replay)
+
+        if winner is None:
+            result_int = 0
+        else:
+            team_number = getattr(winner, "number", None)
+            if team_number == 1:
+                result_int = 1
+            elif team_number == 2:
+                result_int = 2
+            else:
+                result_int = 0
+
+        # --- Toon handles ---
+        # Handles are in pid order (handles[0] = pid 1, handles[1] = pid 2, etc.)
+        # but team composition is arbitrary (Team 1 may be pids 1+4, not 1+2).
+        # Build a pid → handle mapping and look up each team member's handle.
+        toon_handles = _find_toon_handles(replay.raw_data)
+        if len(toon_handles) < 4:
+            pid_to_handle: dict[int, str] = {}
+        else:
+            pid_to_handle = {p.pid: toon_handles[p.pid - 1] for p in replay.players}
+
+        t1p1_handle = pid_to_handle.get(t1p1.pid, "")
+        t1p2_handle = pid_to_handle.get(t1p2.pid, "")
+        t2p1_handle = pid_to_handle.get(t2p1.pid, "")
+        t2p2_handle = pid_to_handle.get(t2p2.pid, "")
+
+        # --- Duration (seconds, Faster speed) ---
+        duration = 0
+        if hasattr(replay, "game_events"):
+            for event in replay.game_events:
+                if event.name == "PlayerLeaveEvent":
+                    if event.player and not event.player.is_observer:
+                        duration = int(round(event.second / 1.4))
+                        break
+        if duration == 0 and hasattr(replay, "game_length"):
+            duration = int(round(replay.game_length.seconds))
+
+        # --- Observers ---
+        observers: list[str] = [o.name for o in replay.observers]
+
+        # --- Replay date ---
+        if hasattr(replay, "date") and replay.date:
+            dt = replay.date
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            replay_time: str = dt.isoformat()
+        else:
+            replay_time = "1970-01-01T00:00:00+00:00"
+
+        return {
+            "error": None,
+            "replay_hash": replay_hash,
+            "replay_time": replay_time,
+            # Team 1
+            "team_1_player_1_name": t1p1.name,
+            "team_1_player_2_name": t1p2.name,
+            "team_1_player_1_race": t1p1_race,
+            "team_1_player_2_race": t1p2_race,
+            "team_1_player_1_handle": t1p1_handle,
+            "team_1_player_2_handle": t1p2_handle,
+            # Team 2
+            "team_2_player_1_name": t2p1.name,
+            "team_2_player_2_name": t2p2.name,
+            "team_2_player_1_race": t2p1_race,
+            "team_2_player_2_race": t2p2_race,
+            "team_2_player_1_handle": t2p1_handle,
+            "team_2_player_2_handle": t2p2_handle,
+            # Result
+            "result_int": result_int,
+            "match_result": _RESULT_INT_TO_STR_2V2[result_int],
+            # Shared
             "observers": observers,
             "map_name": replay.map_name,
             "game_duration_seconds": duration,

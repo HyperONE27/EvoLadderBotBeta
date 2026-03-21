@@ -1,0 +1,1684 @@
+================================================================================
+2v2 REPLAY PARSING + VERIFICATION DEBUG OUTPUT
+================================================================================
+
+--------------------------------------------------------------------------------
+FILE: replays\3. Ro8\Lambo-Harstem vs ZaRDieNT-DefMars\Game 1\Reclamation.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    590fb83827b8fbc2
+    replay_time:    2026-02-28T15:45:31+00:00
+    map_name:       Reclamation LE
+    match_result:   team_2_win (int: 2)
+    duration:       874s
+    observers:      ['Steadfast']
+
+    Team 1:
+      P1: Lambo                 race=bw_zerg          handle=2-S2-1-3437681
+      P2: Harstem               race=sc2_protoss      handle=2-S2-1-7100931
+    Team 2:
+      P1: DefMars               race=sc2_protoss      handle=2-S2-1-7476935
+      P2: ZaRDieNT              race=bw_terran        handle=2-S2-2-242472
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_zerg', 'sc2_protoss']
+      played_races: ['bw_zerg', 'sc2_protoss']
+    races_team_2: [PASS]
+      expected_races: ['bw_terran', 'sc2_protoss']
+      played_races: ['bw_terran', 'sc2_protoss']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Reclamation LE
+      played_map: Reclamation LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['Steadfast']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_2_win
+
+--------------------------------------------------------------------------------
+FILE: replays\3. Ro8\Lambo-Harstem vs ZaRDieNT-DefMars\Game 2\Undercurrent.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    37576ffc61c728ec
+    replay_time:    2026-02-28T15:56:39+00:00
+    map_name:       Undercurrent LE
+    match_result:   draw (int: 0)
+    duration:       541s
+    observers:      ['Steadfast']
+
+    Team 1:
+      P1: Lambo                 race=sc2_zerg         handle=2-S2-1-3437681
+      P2: Harstem               race=sc2_protoss      handle=2-S2-1-7100931
+    Team 2:
+      P1: DefMars               race=bw_protoss       handle=2-S2-1-7476935
+      P2: ZaRDieNT              race=bw_terran        handle=2-S2-2-242472
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['sc2_protoss', 'sc2_zerg']
+      played_races: ['sc2_protoss', 'sc2_zerg']
+    races_team_2: [PASS]
+      expected_races: ['bw_protoss', 'bw_terran']
+      played_races: ['bw_protoss', 'bw_terran']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Undercurrent LE
+      played_map: Undercurrent LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['Steadfast']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: draw
+
+--------------------------------------------------------------------------------
+FILE: replays\3. Ro8\Lambo-Harstem vs ZaRDieNT-DefMars\Game 3\New Bed of Chaos.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    f42491e514b247e7
+    replay_time:    2026-02-28T16:06:41+00:00
+    map_name:       New Bed of Chaos LE
+    match_result:   draw (int: 0)
+    duration:       317s
+    observers:      ['Steadfast']
+
+    Team 1:
+      P1: Lambo                 race=bw_zerg          handle=2-S2-1-3437681
+      P2: Harstem               race=sc2_protoss      handle=2-S2-1-7100931
+    Team 2:
+      P1: DefMars               race=sc2_protoss      handle=2-S2-1-7476935
+      P2: ZaRDieNT              race=bw_terran        handle=2-S2-2-242472
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_zerg', 'sc2_protoss']
+      played_races: ['bw_zerg', 'sc2_protoss']
+    races_team_2: [PASS]
+      expected_races: ['bw_terran', 'sc2_protoss']
+      played_races: ['bw_terran', 'sc2_protoss']
+    mirror_match: False
+    map: [PASS]
+      expected_map: New Bed of Chaos LE
+      played_map: New Bed of Chaos LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['Steadfast']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: draw
+
+--------------------------------------------------------------------------------
+FILE: replays\3. Ro8\SHIN-NightMare vs HonMonO-threepoint\Game 1\Undercurrent.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    8131b12845da4e39
+    replay_time:    2026-02-28T14:40:50+00:00
+    map_name:       Undercurrent LE
+    match_result:   draw (int: 0)
+    duration:       202s
+    observers:      ['맨그러슬', 'TheStC']
+
+    Team 1:
+      P1: SHIN                  race=bw_zerg          handle=3-S2-1-1176147
+      P2: SZNightMare           race=sc2_protoss      handle=3-S2-1-4405272
+    Team 2:
+      P1: 토르오빠벤시언니              race=bw_zerg          handle=3-S2-1-6295458
+      P2: 갱생모노                  race=sc2_terran       handle=3-S2-1-5842530
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_zerg', 'sc2_protoss']
+      played_races: ['bw_zerg', 'sc2_protoss']
+    races_team_2: [PASS]
+      expected_races: ['bw_zerg', 'sc2_terran']
+      played_races: ['bw_zerg', 'sc2_terran']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Undercurrent LE
+      played_map: Undercurrent LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['맨그러슬', 'TheStC']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: draw
+
+--------------------------------------------------------------------------------
+FILE: replays\3. Ro8\SHIN-NightMare vs HonMonO-threepoint\Game 2\Rohana.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    2489bff80cac8972
+    replay_time:    2026-02-28T14:51:09+00:00
+    map_name:       Rohana LE
+    match_result:   team_1_win (int: 1)
+    duration:       511s
+    observers:      ['맨그러슬', 'TheStC']
+
+    Team 1:
+      P1: SHIN                  race=sc2_zerg         handle=3-S2-1-1176147
+      P2: SZNightMare           race=sc2_protoss      handle=3-S2-1-4405272
+    Team 2:
+      P1: 토르오빠벤시언니              race=bw_zerg          handle=3-S2-1-6295458
+      P2: 갱생모노                  race=bw_terran        handle=3-S2-1-5842530
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['sc2_protoss', 'sc2_zerg']
+      played_races: ['sc2_protoss', 'sc2_zerg']
+    races_team_2: [PASS]
+      expected_races: ['bw_terran', 'bw_zerg']
+      played_races: ['bw_terran', 'bw_zerg']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Rohana LE
+      played_map: Rohana LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['맨그러슬', 'TheStC']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_1_win
+
+--------------------------------------------------------------------------------
+FILE: replays\3. Ro8\SHIN-NightMare vs HonMonO-threepoint\Game 3\Reclamation.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    8131b12845da4e39
+    replay_time:    2026-02-28T14:40:50+00:00
+    map_name:       Undercurrent LE
+    match_result:   draw (int: 0)
+    duration:       202s
+    observers:      ['맨그러슬', 'TheStC']
+
+    Team 1:
+      P1: SHIN                  race=bw_zerg          handle=3-S2-1-1176147
+      P2: SZNightMare           race=sc2_protoss      handle=3-S2-1-4405272
+    Team 2:
+      P1: 토르오빠벤시언니              race=bw_zerg          handle=3-S2-1-6295458
+      P2: 갱생모노                  race=sc2_terran       handle=3-S2-1-5842530
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_zerg', 'sc2_protoss']
+      played_races: ['bw_zerg', 'sc2_protoss']
+    races_team_2: [PASS]
+      expected_races: ['bw_zerg', 'sc2_terran']
+      played_races: ['bw_zerg', 'sc2_terran']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Undercurrent LE
+      played_map: Undercurrent LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['맨그러슬', 'TheStC']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: draw
+
+--------------------------------------------------------------------------------
+FILE: replays\3. Ro8\Solar-ByuN vs goblin-Blask\Game 1\Undercurrent.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    dfa93330fd35dbfb
+    replay_time:    2026-02-28T15:21:07+00:00
+    map_name:       Undercurrent LE
+    match_result:   team_1_win (int: 1)
+    duration:       897s
+    observers:      ['TheStC', 'NightWind', 'MANGRUSL', 'HyperONE']
+
+    Team 1:
+      P1: Solar                 race=bw_zerg          handle=1-S2-1-4985994
+      P2: ByuN                  race=sc2_terran       handle=1-S2-1-9628827
+    Team 2:
+      P1: Blask                 race=bw_protoss       handle=1-S2-1-4300376
+      P2: goblin                race=sc2_terran       handle=1-S2-1-20807579
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_zerg', 'sc2_terran']
+      played_races: ['bw_zerg', 'sc2_terran']
+    races_team_2: [PASS]
+      expected_races: ['bw_protoss', 'sc2_terran']
+      played_races: ['bw_protoss', 'sc2_terran']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Undercurrent LE
+      played_map: Undercurrent LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['TheStC', 'NightWind', 'MANGRUSL', 'HyperONE']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_1_win
+
+--------------------------------------------------------------------------------
+FILE: replays\3. Ro8\Solar-ByuN vs goblin-Blask\Game 2\New Bed of Chaos.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    b0ec741e8e397943
+    replay_time:    2026-02-28T15:30:16+00:00
+    map_name:       New Bed of Chaos LE
+    match_result:   team_1_win (int: 1)
+    duration:       450s
+    observers:      ['TheStC', 'NightWind', 'MANGRUSL', 'HyperONE']
+
+    Team 1:
+      P1: Solar                 race=bw_zerg          handle=1-S2-1-4985994
+      P2: ByuN                  race=bw_terran        handle=1-S2-1-9628827
+    Team 2:
+      P1: Blask                 race=sc2_terran       handle=1-S2-1-4300376
+      P2: goblin                race=sc2_protoss      handle=1-S2-1-20807579
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_terran', 'bw_zerg']
+      played_races: ['bw_terran', 'bw_zerg']
+    races_team_2: [PASS]
+      expected_races: ['sc2_protoss', 'sc2_terran']
+      played_races: ['sc2_protoss', 'sc2_terran']
+    mirror_match: False
+    map: [PASS]
+      expected_map: New Bed of Chaos LE
+      played_map: New Bed of Chaos LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['TheStC', 'NightWind', 'MANGRUSL', 'HyperONE']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_1_win
+
+--------------------------------------------------------------------------------
+FILE: replays\3. Ro8\Solar-ByuN vs goblin-Blask\Game 3\Rohana.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    dfa93330fd35dbfb
+    replay_time:    2026-02-28T15:21:07+00:00
+    map_name:       Undercurrent LE
+    match_result:   team_1_win (int: 1)
+    duration:       897s
+    observers:      ['TheStC', 'NightWind', 'MANGRUSL', 'HyperONE']
+
+    Team 1:
+      P1: Solar                 race=bw_zerg          handle=1-S2-1-4985994
+      P2: ByuN                  race=sc2_terran       handle=1-S2-1-9628827
+    Team 2:
+      P1: Blask                 race=bw_protoss       handle=1-S2-1-4300376
+      P2: goblin                race=sc2_terran       handle=1-S2-1-20807579
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_zerg', 'sc2_terran']
+      played_races: ['bw_zerg', 'sc2_terran']
+    races_team_2: [PASS]
+      expected_races: ['bw_protoss', 'sc2_terran']
+      played_races: ['bw_protoss', 'sc2_terran']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Undercurrent LE
+      played_map: Undercurrent LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['TheStC', 'NightWind', 'MANGRUSL', 'HyperONE']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_1_win
+
+--------------------------------------------------------------------------------
+FILE: replays\3. Ro8\uThermal-SKillous vs ART-iosup\Game 1\Team Biodome.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    272c78b795945c3c
+    replay_time:    2026-02-28T15:21:07+00:00
+    map_name:       [SO] Team Biodome
+    match_result:   team_1_win (int: 1)
+    duration:       244s
+    observers:      []
+
+    Team 1:
+      P1: LQDSKillous           race=sc2_protoss      handle=1-S2-1-6174761
+      P2: cheesemaniac          race=bw_terran        handle=1-S2-1-4354376
+    Team 2:
+      P1: ArT                   race=sc2_protoss      handle=1-S2-2-1554081
+      P2: iosup                 race=bw_zerg          handle=1-S2-1-13123899
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_terran', 'sc2_protoss']
+      played_races: ['bw_terran', 'sc2_protoss']
+    races_team_2: [PASS]
+      expected_races: ['bw_zerg', 'sc2_protoss']
+      played_races: ['bw_zerg', 'sc2_protoss']
+    mirror_match: False
+    map: [PASS]
+      expected_map: [SO] Team Biodome
+      played_map: [SO] Team Biodome
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [PASS]
+      observers_found: []
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_1_win
+
+--------------------------------------------------------------------------------
+FILE: replays\3. Ro8\uThermal-SKillous vs ART-iosup\Game 2\Memecatcher.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    a0cca2dd58b13f4a
+    replay_time:    2026-02-28T15:33:03+00:00
+    map_name:       Memecatcher SEL
+    match_result:   team_1_win (int: 1)
+    duration:       422s
+    observers:      []
+
+    Team 1:
+      P1: SKillous              race=sc2_protoss      handle=2-S2-1-5357527
+      P2: ratgameplay           race=bw_terran        handle=2-S2-1-1143713
+    Team 2:
+      P1: ART                   race=sc2_protoss      handle=2-S2-2-1895663
+      P2: iosup                 race=bw_zerg          handle=2-S2-1-10391741
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_terran', 'sc2_protoss']
+      played_races: ['bw_terran', 'sc2_protoss']
+    races_team_2: [PASS]
+      expected_races: ['bw_zerg', 'sc2_protoss']
+      played_races: ['bw_zerg', 'sc2_protoss']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Memecatcher SEL
+      played_map: Memecatcher SEL
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [PASS]
+      observers_found: []
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_1_win
+
+--------------------------------------------------------------------------------
+FILE: replays\3. Ro8\uThermal-SKillous vs ART-iosup\Game 3\Jacob's Summit.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    272c78b795945c3c
+    replay_time:    2026-02-28T15:21:07+00:00
+    map_name:       [SO] Team Biodome
+    match_result:   team_1_win (int: 1)
+    duration:       244s
+    observers:      []
+
+    Team 1:
+      P1: LQDSKillous           race=sc2_protoss      handle=1-S2-1-6174761
+      P2: cheesemaniac          race=bw_terran        handle=1-S2-1-4354376
+    Team 2:
+      P1: ArT                   race=sc2_protoss      handle=1-S2-2-1554081
+      P2: iosup                 race=bw_zerg          handle=1-S2-1-13123899
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_terran', 'sc2_protoss']
+      played_races: ['bw_terran', 'sc2_protoss']
+    races_team_2: [PASS]
+      expected_races: ['bw_zerg', 'sc2_protoss']
+      played_races: ['bw_zerg', 'sc2_protoss']
+    mirror_match: False
+    map: [PASS]
+      expected_map: [SO] Team Biodome
+      played_map: [SO] Team Biodome
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [PASS]
+      observers_found: []
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_1_win
+
+--------------------------------------------------------------------------------
+FILE: replays\4. Ro4\ByuN-Solar vs Lambo-Harstem\Game 1\Rust Bucket.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    e6e3977d04bbfc3c
+    replay_time:    2026-02-28T16:19:46+00:00
+    map_name:       Rust Bucket LE
+    match_result:   draw (int: 0)
+    duration:       342s
+    observers:      ['Steadfast']
+
+    Team 1:
+      P1: Lambo                 race=bw_zerg          handle=1-S2-1-3858508
+      P2: Harstem               race=sc2_protoss      handle=1-S2-1-8138623
+    Team 2:
+      P1: Solar                 race=bw_zerg          handle=1-S2-1-4985994
+      P2: ByuN                  race=sc2_terran       handle=1-S2-1-9628827
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_zerg', 'sc2_protoss']
+      played_races: ['bw_zerg', 'sc2_protoss']
+    races_team_2: [PASS]
+      expected_races: ['bw_zerg', 'sc2_terran']
+      played_races: ['bw_zerg', 'sc2_terran']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Rust Bucket LE
+      played_map: Rust Bucket LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['Steadfast']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: draw
+
+--------------------------------------------------------------------------------
+FILE: replays\4. Ro4\ByuN-Solar vs Lambo-Harstem\Game 2\New Bed of Chaos.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    396cebe6d04a1858
+    replay_time:    2026-02-28T16:30:54+00:00
+    map_name:       New Bed of Chaos LE
+    match_result:   team_2_win (int: 2)
+    duration:       529s
+    observers:      ['Steadfast']
+
+    Team 1:
+      P1: Lambo                 race=sc2_zerg         handle=1-S2-1-3858508
+      P2: Harstem               race=bw_protoss       handle=1-S2-1-8138623
+    Team 2:
+      P1: ByuN                  race=bw_terran        handle=1-S2-1-9628827
+      P2: Solar                 race=sc2_zerg         handle=1-S2-1-4985994
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_protoss', 'sc2_zerg']
+      played_races: ['bw_protoss', 'sc2_zerg']
+    races_team_2: [PASS]
+      expected_races: ['bw_terran', 'sc2_zerg']
+      played_races: ['bw_terran', 'sc2_zerg']
+    mirror_match: False
+    map: [PASS]
+      expected_map: New Bed of Chaos LE
+      played_map: New Bed of Chaos LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['Steadfast']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_2_win
+
+--------------------------------------------------------------------------------
+FILE: replays\4. Ro4\ByuN-Solar vs Lambo-Harstem\Game 3\Yellowjacket.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    587d9d056924b96b
+    replay_time:    2026-02-28T16:41:22+00:00
+    map_name:       Yellowjacket
+    match_result:   team_1_win (int: 1)
+    duration:       497s
+    observers:      ['Steadfast']
+
+    Team 1:
+      P1: Lambo                 race=sc2_zerg         handle=1-S2-1-3858508
+      P2: Harstem               race=sc2_protoss      handle=1-S2-1-8138623
+    Team 2:
+      P1: Solar                 race=bw_zerg          handle=1-S2-1-4985994
+      P2: ByuN                  race=bw_terran        handle=1-S2-1-9628827
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['sc2_protoss', 'sc2_zerg']
+      played_races: ['sc2_protoss', 'sc2_zerg']
+    races_team_2: [PASS]
+      expected_races: ['bw_terran', 'bw_zerg']
+      played_races: ['bw_terran', 'bw_zerg']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Yellowjacket
+      played_map: Yellowjacket
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['Steadfast']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_1_win
+
+--------------------------------------------------------------------------------
+FILE: replays\4. Ro4\ByuN-Solar vs Lambo-Harstem\Game 4\Undercurrent.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    f1cd1a2069e2eee1
+    replay_time:    2026-02-28T16:49:13+00:00
+    map_name:       Undercurrent LE
+    match_result:   team_2_win (int: 2)
+    duration:       324s
+    observers:      ['Steadfast']
+
+    Team 1:
+      P1: Lambo                 race=bw_zerg          handle=1-S2-1-3858508
+      P2: Harstem               race=sc2_protoss      handle=1-S2-1-8138623
+    Team 2:
+      P1: Solar                 race=sc2_zerg         handle=1-S2-1-4985994
+      P2: ByuN                  race=bw_terran        handle=1-S2-1-9628827
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_zerg', 'sc2_protoss']
+      played_races: ['bw_zerg', 'sc2_protoss']
+    races_team_2: [PASS]
+      expected_races: ['bw_terran', 'sc2_zerg']
+      played_races: ['bw_terran', 'sc2_zerg']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Undercurrent LE
+      played_map: Undercurrent LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['Steadfast']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_2_win
+
+--------------------------------------------------------------------------------
+FILE: replays\4. Ro4\ByuN-Solar vs Lambo-Harstem\Game 5\Rohana.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    622080ae24cbd91d
+    replay_time:    2026-02-28T16:59:47+00:00
+    map_name:       Rohana LE
+    match_result:   team_2_win (int: 2)
+    duration:       506s
+    observers:      ['TheStC', 'Steadfast']
+
+    Team 1:
+      P1: Lambo                 race=sc2_zerg         handle=1-S2-1-3858508
+      P2: Harstem               race=sc2_protoss      handle=1-S2-1-8138623
+    Team 2:
+      P1: ByuN                  race=bw_terran        handle=1-S2-1-9628827
+      P2: Solar                 race=bw_zerg          handle=1-S2-1-4985994
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['sc2_protoss', 'sc2_zerg']
+      played_races: ['sc2_protoss', 'sc2_zerg']
+    races_team_2: [PASS]
+      expected_races: ['bw_terran', 'bw_zerg']
+      played_races: ['bw_terran', 'bw_zerg']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Rohana LE
+      played_map: Rohana LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['TheStC', 'Steadfast']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_2_win
+
+--------------------------------------------------------------------------------
+FILE: replays\4. Ro4\uThermal-SKillous vs SHIN-NightMare\Game 1\Rohana.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    be86973f8a64e492
+    replay_time:    2026-02-28T15:55:15+00:00
+    map_name:       Rohana LE
+    match_result:   team_1_win (int: 1)
+    duration:       562s
+    observers:      ['MANGRUSL', 'NightWind', 'TheStC', 'HyperONE']
+
+    Team 1:
+      P1: cheesemaniac          race=bw_terran        handle=1-S2-1-4354376
+      P2: LQDSKillous           race=sc2_protoss      handle=1-S2-1-6174761
+    Team 2:
+      P1: SHIN                  race=bw_zerg          handle=1-S2-1-3095658
+      P2: SZNightMare           race=sc2_protoss      handle=1-S2-1-5628502
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_terran', 'sc2_protoss']
+      played_races: ['bw_terran', 'sc2_protoss']
+    races_team_2: [PASS]
+      expected_races: ['bw_zerg', 'sc2_protoss']
+      played_races: ['bw_zerg', 'sc2_protoss']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Rohana LE
+      played_map: Rohana LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['MANGRUSL', 'NightWind', 'TheStC', 'HyperONE']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_1_win
+
+--------------------------------------------------------------------------------
+FILE: replays\4. Ro4\uThermal-SKillous vs SHIN-NightMare\Game 2\Team Biodome.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    3ccad535205b0800
+    replay_time:    2026-02-28T16:04:23+00:00
+    map_name:       [SO] Team Biodome
+    match_result:   team_2_win (int: 2)
+    duration:       434s
+    observers:      ['MANGRUSL', 'NightWind', 'TheStC', 'HyperONE']
+
+    Team 1:
+      P1: cheesemaniac          race=bw_terran        handle=1-S2-1-4354376
+      P2: LQDSKillous           race=bw_protoss       handle=1-S2-1-6174761
+    Team 2:
+      P1: SHIN                  race=sc2_zerg         handle=1-S2-1-3095658
+      P2: SZNightMare           race=sc2_protoss      handle=1-S2-1-5628502
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_protoss', 'bw_terran']
+      played_races: ['bw_protoss', 'bw_terran']
+    races_team_2: [PASS]
+      expected_races: ['sc2_protoss', 'sc2_zerg']
+      played_races: ['sc2_protoss', 'sc2_zerg']
+    mirror_match: False
+    map: [PASS]
+      expected_map: [SO] Team Biodome
+      played_map: [SO] Team Biodome
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['MANGRUSL', 'NightWind', 'TheStC', 'HyperONE']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_2_win
+
+--------------------------------------------------------------------------------
+FILE: replays\4. Ro4\uThermal-SKillous vs SHIN-NightMare\Game 3\Yellowjacket.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    185d4709042dda19
+    replay_time:    2026-02-28T16:20:25+00:00
+    map_name:       Yellowjacket
+    match_result:   team_1_win (int: 1)
+    duration:       821s
+    observers:      ['MANGRUSL', 'NightWind', 'TheStC', 'HyperONE']
+
+    Team 1:
+      P1: cheesemaniac          race=sc2_terran       handle=1-S2-1-4354376
+      P2: LQDSKillous           race=sc2_protoss      handle=1-S2-1-6174761
+    Team 2:
+      P1: SHIN                  race=bw_zerg          handle=1-S2-1-3095658
+      P2: SZNightMare           race=bw_protoss       handle=1-S2-1-5628502
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['sc2_protoss', 'sc2_terran']
+      played_races: ['sc2_protoss', 'sc2_terran']
+    races_team_2: [PASS]
+      expected_races: ['bw_protoss', 'bw_zerg']
+      played_races: ['bw_protoss', 'bw_zerg']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Yellowjacket
+      played_map: Yellowjacket
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['MANGRUSL', 'NightWind', 'TheStC', 'HyperONE']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_1_win
+
+--------------------------------------------------------------------------------
+FILE: replays\4. Ro4\uThermal-SKillous vs SHIN-NightMare\Game 4\Rust Bucket.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    52794e25cf2809e4
+    replay_time:    2026-02-28T16:32:08+00:00
+    map_name:       Rust Bucket LE
+    match_result:   team_2_win (int: 2)
+    duration:       602s
+    observers:      ['MANGRUSL', 'NightWind', 'TheStC', 'HyperONE']
+
+    Team 1:
+      P1: cheesemaniac          race=bw_terran        handle=1-S2-1-4354376
+      P2: LQDSKillous           race=bw_protoss       handle=1-S2-1-6174761
+    Team 2:
+      P1: SHIN                  race=sc2_zerg         handle=1-S2-1-3095658
+      P2: SZNightMare           race=sc2_protoss      handle=1-S2-1-5628502
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_protoss', 'bw_terran']
+      played_races: ['bw_protoss', 'bw_terran']
+    races_team_2: [PASS]
+      expected_races: ['sc2_protoss', 'sc2_zerg']
+      played_races: ['sc2_protoss', 'sc2_zerg']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Rust Bucket LE
+      played_map: Rust Bucket LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['MANGRUSL', 'NightWind', 'TheStC', 'HyperONE']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_2_win
+
+--------------------------------------------------------------------------------
+FILE: replays\4. Ro4\uThermal-SKillous vs SHIN-NightMare\Game 5\New Bed of Chaos.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    15b28283c4bd6274
+    replay_time:    2026-02-28T16:44:27+00:00
+    map_name:       New Bed of Chaos LE
+    match_result:   team_2_win (int: 2)
+    duration:       451s
+    observers:      ['MANGRUSL', 'NightWind', 'TheStC', 'HyperONE']
+
+    Team 1:
+      P1: cheesemaniac          race=bw_terran        handle=1-S2-1-4354376
+      P2: LQDSKillous           race=sc2_protoss      handle=1-S2-1-6174761
+    Team 2:
+      P1: SHIN                  race=bw_zerg          handle=1-S2-1-3095658
+      P2: SZNightMare           race=sc2_protoss      handle=1-S2-1-5628502
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_terran', 'sc2_protoss']
+      played_races: ['bw_terran', 'sc2_protoss']
+    races_team_2: [PASS]
+      expected_races: ['bw_zerg', 'sc2_protoss']
+      played_races: ['bw_zerg', 'sc2_protoss']
+    mirror_match: False
+    map: [PASS]
+      expected_map: New Bed of Chaos LE
+      played_map: New Bed of Chaos LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['MANGRUSL', 'NightWind', 'TheStC', 'HyperONE']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_2_win
+
+--------------------------------------------------------------------------------
+FILE: replays\5. Finals\ByuN-Solar vs SHIN-NightMare\Game 1\Yellowjacket.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    b7dd7eb4ea597990
+    replay_time:    2026-02-28T17:14:38+00:00
+    map_name:       Yellowjacket
+    match_result:   team_1_win (int: 1)
+    duration:       419s
+    observers:      ['맨그러슬', 'TheStC', 'Steadfast', 'HyperONE']
+
+    Team 1:
+      P1: ByuN                  race=bw_terran        handle=3-S2-1-5866161
+      P2: Solar                 race=sc2_zerg         handle=3-S2-1-1431486
+    Team 2:
+      P1: SHIN                  race=bw_zerg          handle=3-S2-1-1176147
+      P2: SZNightMare           race=sc2_protoss      handle=3-S2-1-4405272
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_terran', 'sc2_zerg']
+      played_races: ['bw_terran', 'sc2_zerg']
+    races_team_2: [PASS]
+      expected_races: ['bw_zerg', 'sc2_protoss']
+      played_races: ['bw_zerg', 'sc2_protoss']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Yellowjacket
+      played_map: Yellowjacket
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['맨그러슬', 'TheStC', 'Steadfast', 'HyperONE']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_1_win
+
+--------------------------------------------------------------------------------
+FILE: replays\5. Finals\ByuN-Solar vs SHIN-NightMare\Game 2\Rohana.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    9ddcf816a05e730f
+    replay_time:    2026-02-28T17:23:38+00:00
+    map_name:       Rohana LE
+    match_result:   team_1_win (int: 1)
+    duration:       447s
+    observers:      ['Steadfast', 'TheStC', '맨그러슬', 'HyperONE']
+
+    Team 1:
+      P1: ByuN                  race=bw_terran        handle=3-S2-1-5866161
+      P2: Solar                 race=bw_zerg          handle=3-S2-1-1431486
+    Team 2:
+      P1: SZNightMare           race=sc2_protoss      handle=3-S2-1-4405272
+      P2: SHIN                  race=sc2_zerg         handle=3-S2-1-1176147
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_terran', 'bw_zerg']
+      played_races: ['bw_terran', 'bw_zerg']
+    races_team_2: [PASS]
+      expected_races: ['sc2_protoss', 'sc2_zerg']
+      played_races: ['sc2_protoss', 'sc2_zerg']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Rohana LE
+      played_map: Rohana LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['Steadfast', 'TheStC', '맨그러슬', 'HyperONE']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_1_win
+
+--------------------------------------------------------------------------------
+FILE: replays\5. Finals\ByuN-Solar vs SHIN-NightMare\Game 3\Undercurrent.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    0cdfce1c1fd76d2b
+    replay_time:    2026-02-28T17:40:24+00:00
+    map_name:       Undercurrent LE
+    match_result:   team_1_win (int: 1)
+    duration:       824s
+    observers:      ['맨그러슬', 'TheStC', 'Steadfast', 'HyperONE']
+
+    Team 1:
+      P1: ByuN                  race=bw_terran        handle=3-S2-1-5866161
+      P2: Solar                 race=bw_zerg          handle=3-S2-1-1431486
+    Team 2:
+      P1: SZNightMare           race=sc2_protoss      handle=3-S2-1-4405272
+      P2: SHIN                  race=sc2_zerg         handle=3-S2-1-1176147
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_terran', 'bw_zerg']
+      played_races: ['bw_terran', 'bw_zerg']
+    races_team_2: [PASS]
+      expected_races: ['sc2_protoss', 'sc2_zerg']
+      played_races: ['sc2_protoss', 'sc2_zerg']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Undercurrent LE
+      played_map: Undercurrent LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['맨그러슬', 'TheStC', 'Steadfast', 'HyperONE']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_1_win
+
+--------------------------------------------------------------------------------
+FILE: replays\5. Finals\ByuN-Solar vs SHIN-NightMare\Game 4\Reclamation.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    9ddcf816a05e730f
+    replay_time:    2026-02-28T17:23:38+00:00
+    map_name:       Rohana LE
+    match_result:   team_1_win (int: 1)
+    duration:       447s
+    observers:      ['Steadfast', 'TheStC', '맨그러슬', 'HyperONE']
+
+    Team 1:
+      P1: ByuN                  race=bw_terran        handle=3-S2-1-5866161
+      P2: Solar                 race=bw_zerg          handle=3-S2-1-1431486
+    Team 2:
+      P1: SZNightMare           race=sc2_protoss      handle=3-S2-1-4405272
+      P2: SHIN                  race=sc2_zerg         handle=3-S2-1-1176147
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_terran', 'bw_zerg']
+      played_races: ['bw_terran', 'bw_zerg']
+    races_team_2: [PASS]
+      expected_races: ['sc2_protoss', 'sc2_zerg']
+      played_races: ['sc2_protoss', 'sc2_zerg']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Rohana LE
+      played_map: Rohana LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['Steadfast', 'TheStC', '맨그러슬', 'HyperONE']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_1_win
+
+--------------------------------------------------------------------------------
+FILE: replays\5. Finals\ByuN-Solar vs SHIN-NightMare\Game 5\Rust Bucket.SC2Replay
+--------------------------------------------------------------------------------
+
+  [PARSED RESULT]
+    replay_hash:    0cdfce1c1fd76d2b
+    replay_time:    2026-02-28T17:40:24+00:00
+    map_name:       Undercurrent LE
+    match_result:   team_1_win (int: 1)
+    duration:       824s
+    observers:      ['맨그러슬', 'TheStC', 'Steadfast', 'HyperONE']
+
+    Team 1:
+      P1: ByuN                  race=bw_terran        handle=3-S2-1-5866161
+      P2: Solar                 race=bw_zerg          handle=3-S2-1-1431486
+    Team 2:
+      P1: SZNightMare           race=sc2_protoss      handle=3-S2-1-4405272
+      P2: SHIN                  race=sc2_zerg         handle=3-S2-1-1176147
+
+    game_privacy:          No Match History
+    game_speed:            Faster
+    game_duration_setting: Infinite
+    locked_alliances:      Yes
+    cache_handles:         16 handle(s)
+
+  [VERIFICATION RESULT]
+    races_team_1: [PASS]
+      expected_races: ['bw_terran', 'bw_zerg']
+      played_races: ['bw_terran', 'bw_zerg']
+    races_team_2: [PASS]
+      expected_races: ['sc2_protoss', 'sc2_zerg']
+      played_races: ['sc2_protoss', 'sc2_zerg']
+    mirror_match: False
+    map: [PASS]
+      expected_map: Undercurrent LE
+      played_map: Undercurrent LE
+    mod: [FAIL]
+      message: SC: Evo Complete mod data not found.
+    timestamp: [PASS]
+      time_difference_minutes: 0.0
+      error: None
+    observers: [FAIL]
+      observers_found: ['맨그러슬', 'TheStC', 'Steadfast', 'HyperONE']
+    ai_players: [PASS]
+      ai_detected: False
+      ai_player_names: []
+    game_privacy: [FAIL]
+      expected: Normal
+      found: No Match History
+    game_speed: [PASS]
+      expected: Faster
+      found: Faster
+    game_duration: [PASS]
+      expected: Infinite
+      found: Infinite
+    locked_alliances: [PASS]
+      expected: Yes
+      found: Yes
+
+  [AUTOREPORT SIMULATION]
+    WOULD AUTOREPORT: team_1_win
+
+================================================================================
+SUMMARY
+================================================================================
+  Total replays:   27
+  Parsed OK:       27
+  Parse errors:    0

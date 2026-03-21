@@ -18,24 +18,24 @@ from common.datetime_helpers import ensure_utc
 # ---------------------------------------------------------------------------
 
 
-def verify_replay(
+def verify_replay_1v1(
     parsed: dict[str, Any],
     match: dict[str, Any],
     mods: dict[str, Any],
     maps: dict[str, Any],
 ) -> dict[str, Any]:
     """
-    Verify a parsed replay against a match and return a VerificationResult dict.
+    Verify a parsed 1v1 replay against a match record.
 
     Args:
-        parsed: dict returned by ``parse_replay()``.
+        parsed: dict returned by ``parse_replay_1v1()``.
         match:  ``Matches1v1Row`` dict from the backend state.
         mods:   ``state_manager.mods`` dict (from mods.json).
         maps:   ``state_manager.maps`` dict (from maps.json, season-level).
 
     Returns:
-        dict with keys: races, map, mod, timestamp, observers, game_privacy,
-        game_speed, game_duration, locked_alliances.
+        dict with keys: races, map, mod, timestamp, observers, ai_players,
+        game_privacy, game_speed, game_duration, locked_alliances.
     """
     result: dict[str, Any] = {}
 
@@ -103,6 +103,128 @@ def verify_replay(
         }
 
     return result
+
+
+def verify_replay_2v2(
+    parsed: dict[str, Any],
+    match: dict[str, Any],
+    mods: dict[str, Any],
+    maps: dict[str, Any],
+) -> dict[str, Any]:
+    """
+    Verify a parsed 2v2 replay against a match record.
+
+    Args:
+        parsed: dict returned by ``parse_replay_2v2()``.
+        match:  ``Matches2v2Row`` dict from the backend state.
+        mods:   ``state_manager.mods`` dict (from mods.json).
+        maps:   ``state_manager.maps`` dict (from maps.json, season-level).
+
+    Returns:
+        dict with keys: races_team_1, races_team_2, mirror_match, map, mod,
+        timestamp, observers, ai_players, game_privacy, game_speed,
+        game_duration, locked_alliances.
+    """
+    result: dict[str, Any] = {}
+
+    # --- Races (set comparison per team) ---
+    expected_t1 = {match["team_1_player_1_race"], match["team_1_player_2_race"]}
+    played_t1 = {parsed["team_1_player_1_race"], parsed["team_1_player_2_race"]}
+    result["races_team_1"] = {
+        "success": expected_t1 == played_t1,
+        "expected_races": sorted(expected_t1),
+        "played_races": sorted(played_t1),
+    }
+
+    expected_t2 = {match["team_2_player_1_race"], match["team_2_player_2_race"]}
+    played_t2 = {parsed["team_2_player_1_race"], parsed["team_2_player_2_race"]}
+    result["races_team_2"] = {
+        "success": expected_t2 == played_t2,
+        "expected_races": sorted(expected_t2),
+        "played_races": sorted(played_t2),
+    }
+
+    # --- Mirror match detection ---
+    # If both teams have the same race composition, we cannot reliably
+    # determine which replay team corresponds to which match team.
+    # Autoreporting must be blocked in this case.
+    is_mirror = expected_t1 == expected_t2
+    result["mirror_match"] = is_mirror
+
+    # --- Map ---
+    short_name: str = match["map_name"]
+    map_entry = maps.get(short_name, {})
+    expected_map: str = map_entry.get("name", short_name)
+    played_map: str = parsed.get("map_name", "")
+    result["map"] = {
+        "success": expected_map == played_map,
+        "expected_map": expected_map,
+        "played_map": played_map,
+    }
+
+    # --- Mod ---
+    result["mod"] = _verify_mod(parsed.get("cache_handles", []), mods)
+
+    # --- Timestamp ---
+    result["timestamp"] = _verify_timestamp(
+        parsed.get("replay_time", ""), match.get("assigned_at")
+    )
+
+    # --- Observers ---
+    observers_found: list[str] = parsed.get("observers", [])
+    result["observers"] = {
+        "success": len(observers_found) == 0,
+        "observers_found": observers_found,
+    }
+
+    # --- AI Players ---
+    player_names = [
+        parsed.get("team_1_player_1_name", ""),
+        parsed.get("team_1_player_2_name", ""),
+        parsed.get("team_2_player_1_name", ""),
+        parsed.get("team_2_player_2_name", ""),
+    ]
+    ai_names = [n for n in player_names if _is_ai_player(n)]
+    ai_detected = len(ai_names) > 0
+    result["ai_players"] = {
+        "success": ALLOW_AI_PLAYERS or not ai_detected,
+        "ai_detected": ai_detected,
+        "ai_player_names": ai_names,
+    }
+
+    # --- Game settings ---
+    for key, config_key, result_key in (
+        ("game_privacy", "privacy", "game_privacy"),
+        ("game_speed", "speed", "game_speed"),
+        ("game_duration_setting", "duration", "game_duration"),
+        ("locked_alliances", "locked_alliances", "locked_alliances"),
+    ):
+        expected_val: str = EXPECTED_LOBBY_SETTINGS[config_key]
+        found_val: str = parsed.get(key, "")
+        result[result_key] = {
+            "success": found_val == expected_val,
+            "expected": expected_val,
+            "found": found_val,
+        }
+
+    return result
+
+
+def _resolve_mirror_match_names(
+    parsed: dict[str, Any],
+    match: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Attempt to resolve mirror match ambiguity via player display names.
+
+    Cross-references the four player names from the parsed replay against the
+    expected player names in the match record to determine which replay team
+    corresponds to which match team.
+
+    Returns a resolution dict if names unambiguously resolve, None otherwise.
+
+    # TODO: implement name-based mirror match resolution
+    """
+    return None
 
 
 # ---------------------------------------------------------------------------
