@@ -1109,5 +1109,131 @@ Concrete gaps in the current type definitions:
   Party invite staleness: the plan says invites don't expire, and the accept endpoint rejects stale ones.  
   That's fine for the happy path, but if a player receives an invite DM and then the bot restarts, the
   in-memory invite is gone but the DM's Accept button still exists. The button press hits a dead endpoint. 
-  Make sure the accept endpoint returns a clean "invite no longer valid" response rather than a 500, and 
+  Make sure the accept endpoint returns a clean "invite no longer valid" response rather than a 500, and
   the bot handles that gracefully.
+
+---
+
+## Replay Parser & Verifier
+
+### sc2reader 2v2 Structure (confirmed from sample replay)
+
+Key differences from 1v1:
+
+| Attribute | 1v1 | 2v2 |
+|---|---|---|
+| `replay.players` | 2 Player objects, one per player | 4 Player objects; each has a `.pid` attribute (1-indexed player number, i.e. 1–4) |
+| `replay.teams` | not used | list of 2 Team objects; `teams[0]` = Team 1, `teams[1]` = Team 2; each has a `.players` list of 2 Player objects |
+| `replay.winner` | Player object or None | **Team object** with `.number` (1 or 2), or None for a draw; no string-parsing needed |
+| `replay.game_type` | `"1v1"` | `"2v2"` |
+| Toon handles | 2, one per player | 4, one per player, in ascending player-number (pid) order: handles[0] = Player 1, handles[1] = Player 2, handles[2] = Player 3, handles[3] = Player 4 |
+
+**Critical:** Team composition is NOT always Players 1+2 vs Players 3+4. For example, Team 1 may consist of Players 1 and 4, and Team 2 of Players 2 and 3. Always use `replay.teams[N].players` to find team membership; never assume that player-number order maps to team order.
+
+All other fields are structurally identical to 1v1: `cache_handles`, `observers`, `game_length`, `game_events` (for `PlayerLeaveEvent` duration), `date`, `map_name`, and `attributes[16]` game settings.
+
+### Private Helper Reusability
+
+All three private helpers in `replay_parser.py` are reusable as-is:
+
+- `_fix_race()` — call once per player (4 times total)
+- `_find_toon_handles()` — returns 4 handles for 2v2; ordering is player-number (pid) order, not team order
+- `_extract_cache_handles()` — raw_data structure is identical
+
+### Changes Required
+
+#### `backend/algorithms/replay_parser.py`
+
+1. **Rename** `parse_replay` → `parse_replay_1v1`. Update its docstring to say "1v1 only". Update its player-count guard comment accordingly.
+
+2. **Add** `_RESULT_INT_TO_STR_2V2: dict[int, str] = {0: "draw", 1: "team_1_win", 2: "team_2_win"}`.
+
+3. **Add** `parse_replay_2v2(replay_bytes: bytes) -> dict[str, Any]`:
+
+   **Guards:**
+   - `replay.game_type != "2v2"` → return error
+   - `len(replay.players) != 4` → return error
+   - `len(replay.teams) != 2` → return error
+
+   **Team/player extraction:**
+   Use `replay.teams[0].players` and `replay.teams[1].players` exclusively — never index into `replay.players` directly by position for team assignment. Each player object exposes `.pid` (1-indexed), `.name`, and `.play_race`.
+
+   **Toon handle mapping:**
+   Because handles are in pid order but team composition is arbitrary, build a pid-to-handle mapping before assigning handles to team slots:
+   ```python
+   all_handles = _find_toon_handles(replay.raw_data)
+   # all_handles[i] belongs to the player with pid == i + 1
+   # Require exactly 4 handles
+   pid_to_handle = {p.pid: all_handles[p.pid - 1] for p in replay.players}
+   # Then look up by each team member's pid:
+   team_1_player_1_handle = pid_to_handle.get(team1_players[0].pid, "")
+   # etc.
+   ```
+
+   **Winner:**
+   - `replay.winner` is a Team object with `.number` (1 or 2) when a winner exists.
+   - If `replay.winner is None`: `result_int = 0` (draw).
+   - If `replay.winner.number == 1`: `result_int = 1`.
+   - If `replay.winner.number == 2`: `result_int = 2`.
+   - The 1v1 "was defeated!" message fallback does not apply to 2v2.
+   - **TODO:** Stub a `_infer_winner_2v2(replay)` function that mirrors `_infer_winner_from_defeat` logic adapted for teams, for the case where `replay.winner is None`. For now the stub returns `None` unconditionally and the result falls through to draw. Add a `# TODO: implement team-level defeat inference` comment.
+
+   **Duration:** Identical to 1v1 (first `PlayerLeaveEvent`, fallback to `game_length.seconds`).
+
+   **Return dict** — keys exactly match `replays_2v2` column names (team-namespaced):
+   ```python
+   {
+       "error": None,
+       "replay_hash": ...,
+       "replay_time": ...,
+       "team_1_player_1_name": ..., "team_1_player_1_race": ..., "team_1_player_1_handle": ...,
+       "team_1_player_2_name": ..., "team_1_player_2_race": ..., "team_1_player_2_handle": ...,
+       "team_2_player_1_name": ..., "team_2_player_1_race": ..., "team_2_player_1_handle": ...,
+       "team_2_player_2_name": ..., "team_2_player_2_race": ..., "team_2_player_2_handle": ...,
+       "result_int": ...,         # 0=draw, 1=team_1_win, 2=team_2_win
+       "match_result": ...,       # "draw" | "team_1_win" | "team_2_win"
+       "observers": [...],
+       "map_name": ...,
+       "game_duration_seconds": ...,
+       "game_privacy": ...,
+       "game_speed": ...,
+       "game_duration_setting": ...,
+       "locked_alliances": ...,
+       "cache_handles": [...],
+   }
+   ```
+
+#### `backend/algorithms/replay_verifier.py`
+
+Add `verify_replay_2v2(parsed, match, mods, maps) -> dict[str, Any]`:
+
+The `match` argument is a `Matches2v2Row` dict.
+
+**Races — set comparison, not ordered comparison:**
+Each team has two races assigned in the match row; the replay also provides two races per team. The check is whether the *set* of races matches, not whether any specific player on the team has any specific race. This means:
+- Team 1 check: `{match["team_1_player_1_race"], match["team_1_player_2_race"]}` == `{parsed["team_1_player_1_race"], parsed["team_1_player_2_race"]}`
+- Team 2 check: same pattern with `team_2_*` fields
+- These are two independent `"success": bool` entries in the result dict (`races_team_1`, `races_team_2`).
+
+**Mirror match detection:**
+A mirror match occurs when both teams have the *same* race composition (e.g. both teams are `{bw_terran, sc2_zerg}`). In this case, even if the race checks pass, it is ambiguous which team in the replay corresponds to which team in the match record — player display names are not fully reliable identifiers.
+
+When a mirror is detected, the verifier sets a top-level `"mirror_match": True` flag in the result dict. The autoreporting logic (in the endpoint / transition) must treat this as a failure condition and fall back to manual reporting rather than auto-resolving the match result. The parse result itself is still returned; only autoreporting is blocked.
+
+Add a stub helper `_resolve_mirror_match_names(parsed, match, players_df) -> dict[str, Any] | None` in `replay_verifier.py`:
+- Takes the four player names from `parsed` and cross-references them against the `player_name` column of the players DataFrame (passed in from state) to attempt to identify which in-game team corresponds to which match team.
+- Returns a resolution dict if the names unambiguously resolve, `None` otherwise.
+- For now the stub always returns `None` (i.e. always falls back to manual) with a `# TODO: implement name-based mirror match resolution` comment.
+- The mirror detection itself is cheap (set comparison of both teams' race sets) and always runs; the stub is only called when a mirror is detected.
+
+**Map, mod, timestamp, game settings:** Copy existing 1v1 logic unchanged.
+
+**AI players:** Check all 4 player name fields (`team_1_player_1_name`, `team_1_player_2_name`, `team_2_player_1_name`, `team_2_player_2_name`).
+
+**Observers:** Same as 1v1 (0 expected).
+
+#### `backend/api/endpoints.py`
+
+- Update import: `parse_replay` → `parse_replay_1v1`
+- Update the `run_in_executor` call to use `parse_replay_1v1`
+- (The 2v2 replay endpoint `POST /matches_2v2/{match_id}/replay` is a separate addition that mirrors the 1v1 endpoint, dispatching `parse_replay_2v2` via the same `ProcessPoolExecutor`.)
