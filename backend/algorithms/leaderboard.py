@@ -39,7 +39,7 @@ from backend.core.config import (
     EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER_RANK,
     LEADERBOARD_INACTIVITY_DAYS,
 )
-from backend.domain_types.ephemeral import LeaderboardEntry1v1
+from backend.domain_types.ephemeral import LeaderboardEntry1v1, LeaderboardEntry2v2
 
 # Rank percentages (must sum to 1.0).
 _RANK_PERCENTAGES: dict[str, float] = {
@@ -56,6 +56,154 @@ _RANK_ORDER: list[str] = ["S", "A", "B", "C", "D", "E", "F"]
 
 # Middle ranks get remainders first, then adaptive A/F/S.
 _MIDDLE_RANKS: list[str] = ["D", "C", "E", "B"]
+
+
+def build_leaderboard_2v2(
+    mmrs_2v2_df: pl.DataFrame,
+    players_df: pl.DataFrame,
+) -> list[LeaderboardEntry2v2]:
+    """Compute the 2v2 leaderboard from the current DataFrames.
+
+    Same ranking algorithm as 1v1 but keyed by player pair (not player-race).
+    The mmrs_2v2 rows are per unique player pair with normalized UID ordering
+    (smaller UID = player_1).
+    """
+    df = mmrs_2v2_df.filter(pl.col("games_played") > 0)
+
+    if df.is_empty():
+        return []
+
+    # Join player names from players_df (authoritative source) for both members.
+    name_map = players_df.select(
+        pl.col("discord_uid"),
+        pl.col("player_name").alias("_pname"),
+    )
+    df = (
+        df.drop("player_1_name", "player_2_name")
+        .join(
+            name_map.rename(
+                {"discord_uid": "player_1_discord_uid", "_pname": "player_1_name"}
+            ),
+            on="player_1_discord_uid",
+            how="left",
+        )
+        .join(
+            name_map.rename(
+                {"discord_uid": "player_2_discord_uid", "_pname": "player_2_name"}
+            ),
+            on="player_2_discord_uid",
+            how="left",
+        )
+    )
+
+    # Compute sort columns.
+    df = df.with_columns(
+        (pl.col("games_won") / pl.col("games_played")).alias("win_rate"),
+        ((pl.col("games_won") + pl.col("games_drawn")) / pl.col("games_played")).alias(
+            "nonlose_rate"
+        ),
+    )
+
+    # Sort by tiebreaker cascade — use player_1_name as the lexicographic tiebreaker.
+    df = df.sort(
+        [
+            "mmr",
+            "last_played_at",
+            "win_rate",
+            "nonlose_rate",
+            "games_played",
+            "player_1_name",
+        ],
+        descending=[True, True, True, True, True, False],
+        nulls_last=True,
+    )
+
+    rows = df.select(
+        "player_1_discord_uid",
+        "player_2_discord_uid",
+        "player_1_name",
+        "player_2_name",
+        "mmr",
+        "games_played",
+        "games_won",
+        "games_lost",
+        "games_drawn",
+        "last_played_at",
+    ).to_dicts()
+
+    # --- Ordinal rank (all entries) ---
+    ordinal_ranks: list[int] = []
+    prev_key: tuple | None = None
+    prev_rank = 0
+    for idx, row in enumerate(rows):
+        key = _rank_key_2v2(row)
+        if key != prev_key:
+            prev_rank = idx + 1
+            prev_key = key
+        ordinal_ranks.append(prev_rank)
+
+    # --- Active / inactive split ---
+    cutoff = datetime.now(timezone.utc) - timedelta(days=LEADERBOARD_INACTIVITY_DAYS)
+
+    active_indices: list[int] = []
+    inactive_indices: list[int] = []
+    for idx, row in enumerate(rows):
+        lp = row["last_played_at"]
+        if lp is not None and _ensure_utc(lp) >= cutoff:
+            active_indices.append(idx)
+        else:
+            inactive_indices.append(idx)
+
+    # --- Active ordinal rank ---
+    active_ordinal_map: dict[int, int] = {}
+    a_prev_key: tuple | None = None
+    a_prev_rank = 0
+    for pos, idx in enumerate(active_indices):
+        key = _rank_key_2v2(rows[idx])
+        if key != a_prev_key:
+            a_prev_rank = pos + 1
+            a_prev_key = key
+        active_ordinal_map[idx] = a_prev_rank
+
+    # --- Letter rank allocation (reuses the same allocation helpers) ---
+    if EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER_RANK:
+        rank_indices = active_indices
+    else:
+        rank_indices = list(range(len(rows)))
+
+    allocations = _calculate_allocations(len(rank_indices))
+
+    letter_rank_map: dict[int, str] = {}
+    pos = 0
+    for rank_letter in _RANK_ORDER:
+        count = allocations[rank_letter]
+        for _ in range(count):
+            if pos < len(rank_indices):
+                letter_rank_map[rank_indices[pos]] = rank_letter
+                pos += 1
+
+    # --- Build final list ---
+    entries: list[LeaderboardEntry2v2] = []
+    for idx, row in enumerate(rows):
+        entries.append(
+            LeaderboardEntry2v2(
+                player_1_discord_uid=row["player_1_discord_uid"],
+                player_2_discord_uid=row["player_2_discord_uid"],
+                player_1_name=row["player_1_name"],
+                player_2_name=row["player_2_name"],
+                ordinal_rank=ordinal_ranks[idx],
+                active_ordinal_rank=active_ordinal_map.get(idx, -1),
+                letter_rank=letter_rank_map.get(idx, "U"),
+                mmr=row["mmr"],
+                games_played=row["games_played"],
+                games_won=row["games_won"],
+                games_lost=row["games_lost"],
+                games_drawn=row["games_drawn"],
+                last_played_at=row["last_played_at"],
+            )
+        )
+
+    return entries
 
 
 def build_leaderboard_1v1(
@@ -114,7 +262,7 @@ def build_leaderboard_1v1(
     prev_key: tuple | None = None
     prev_rank = 0
     for idx, row in enumerate(rows):
-        key = _rank_key(row)
+        key = _rank_key_1v1(row)
         if key != prev_key:
             prev_rank = idx + 1
             prev_key = key
@@ -137,7 +285,7 @@ def build_leaderboard_1v1(
     a_prev_key: tuple | None = None
     a_prev_rank = 0
     for pos, idx in enumerate(active_indices):
-        key = _rank_key(rows[idx])
+        key = _rank_key_1v1(rows[idx])
         if key != a_prev_key:
             a_prev_rank = pos + 1
             a_prev_key = key
@@ -261,8 +409,8 @@ def _ensure_utc(dt: datetime) -> datetime:
 _MIN_DATETIME: datetime = datetime.min.replace(tzinfo=timezone.utc)
 
 
-def _rank_key(row: dict) -> tuple:
-    """Return the sort key tuple used for rank equality checks.
+def _rank_key_1v1(row: dict) -> tuple:
+    """Return the sort key tuple used for rank equality checks (1v1).
 
     Criteria: MMR desc, last_played_at desc, win_rate desc, nonlose_rate desc,
     games_played desc, player_name asc.  Two rows share a rank only when all
@@ -274,3 +422,16 @@ def _rank_key(row: dict) -> tuple:
     win_rate = row["games_won"] / gp
     nonlose_rate = (row["games_won"] + row["games_drawn"]) / gp
     return (row["mmr"], lp_dt, win_rate, nonlose_rate, gp, row["player_name"] or "")
+
+
+def _rank_key_2v2(row: dict) -> tuple:
+    """Return the sort key tuple used for rank equality checks (2v2).
+
+    Same criteria as 1v1 but uses player_1_name as the lexicographic tiebreaker.
+    """
+    lp = row["last_played_at"]
+    lp_dt = _ensure_utc(lp) if lp is not None else _MIN_DATETIME
+    gp: int = row["games_played"]
+    win_rate = row["games_won"] / gp
+    nonlose_rate = (row["games_won"] + row["games_drawn"]) / gp
+    return (row["mmr"], lp_dt, win_rate, nonlose_rate, gp, row["player_1_name"] or "")

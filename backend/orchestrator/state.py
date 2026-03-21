@@ -2,7 +2,14 @@ import polars as pl
 import structlog
 
 from backend.database.database import DatabaseReader
-from backend.domain_types.ephemeral import LeaderboardEntry1v1, QueueEntry1v1
+from backend.domain_types.ephemeral import (
+    LeaderboardEntry1v1,
+    LeaderboardEntry2v2,
+    PartyEntry2v2,
+    PendingPartyInvite2v2,
+    QueueEntry1v1,
+    QueueEntry2v2,
+)
 
 from common.json_types import (
     Country,
@@ -52,12 +59,16 @@ class StateManager:
 
         # Current application state
         self.leaderboard_1v1: list[LeaderboardEntry1v1] = []
-        # self.leaderboard_2v2: list[LeaderboardEntry2v2] = []
+        self.leaderboard_2v2: list[LeaderboardEntry2v2] = []
         # self.leaderboard_FFA: list[LeaderboardEntryFFA] = []
         self.queue_1v1: list[QueueEntry1v1] = []
-        # self.queue_2v2: list[QueueEntry2v2] = []
+        self.queue_2v2: list[QueueEntry2v2] = []
         # self.queue_FFA: list[QueueEntryFFA] = []
         # self.timed_out_players: list[int] = []
+        self.parties_2v2: dict[int, PartyEntry2v2] = {}  # keyed by leader_discord_uid
+        self.pending_party_invites_2v2: dict[
+            int, PendingPartyInvite2v2
+        ] = {}  # keyed by invitee_discord_uid
 
         self._populate_json_data()
         self._populate_postgres_data()
@@ -82,10 +93,16 @@ class StateManager:
             setattr(self, f"{table_name}_df", df)
 
     def _populate_leaderboard(self) -> None:
-        from backend.algorithms.leaderboard import build_leaderboard_1v1
+        from backend.algorithms.leaderboard import (
+            build_leaderboard_1v1,
+            build_leaderboard_2v2,
+        )
 
         logger = structlog.get_logger(__name__)
         self.leaderboard_1v1 = build_leaderboard_1v1(self.mmrs_1v1_df, self.players_df)
+        self.leaderboard_2v2 = build_leaderboard_2v2(self.mmrs_2v2_df, self.players_df)
         logger.info(
-            f"Leaderboard populated at startup: {len(self.leaderboard_1v1)} entries"
+            f"Leaderboard populated at startup: "
+            f"{len(self.leaderboard_1v1)} 1v1 entries, "
+            f"{len(self.leaderboard_2v2)} 2v2 entries"
         )
