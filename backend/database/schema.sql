@@ -34,8 +34,8 @@ CREATE TABLE IF NOT EXISTS players (
     completed_setup         BOOLEAN NOT NULL DEFAULT FALSE,
     completed_setup_at      TIMESTAMPTZ,
     player_status           TEXT NOT NULL DEFAULT 'idle'
-        CHECK (player_status IN 
-            ('idle', 'queueing', 'in_match', 'timed_out')
+        CHECK (player_status IN
+            ('idle', 'queueing', 'in_match', 'timed_out', 'in_party')
         ),
     current_match_mode      TEXT DEFAULT NULL
         CHECK (current_match_mode IN 
@@ -211,6 +211,160 @@ CREATE TABLE IF NOT EXISTS replays_1v1 (
         CHECK (upload_status IN 
             ('pending', 'completed', 'failed')
         )
+);
+
+CREATE TABLE IF NOT EXISTS matches_2v2 (
+    id                          BIGSERIAL PRIMARY KEY,
+
+    -- Team 1
+    team_1_player_1_discord_uid         BIGINT NOT NULL,
+    team_1_player_2_discord_uid         BIGINT NOT NULL,
+    team_1_player_1_name        TEXT NOT NULL,
+    team_1_player_2_name        TEXT NOT NULL,
+    team_1_player_1_race        TEXT NOT NULL
+        CHECK (team_1_player_1_race IN (
+            'bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss'
+        )),
+    team_1_player_2_race        TEXT NOT NULL
+        CHECK (team_1_player_2_race IN (
+            'bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss'
+        )),
+    team_1_mmr                  SMALLINT NOT NULL,
+
+    -- Team 2
+    team_2_player_1_discord_uid         BIGINT NOT NULL,
+    team_2_player_2_discord_uid         BIGINT NOT NULL,
+    team_2_player_1_name        TEXT NOT NULL,
+    team_2_player_2_name        TEXT NOT NULL,
+    team_2_player_1_race        TEXT NOT NULL
+        CHECK (team_2_player_1_race IN (
+            'bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss'
+        )),
+    team_2_player_2_race        TEXT NOT NULL
+        CHECK (team_2_player_2_race IN (
+            'bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss'
+        )),
+    team_2_mmr                  SMALLINT NOT NULL,
+
+    -- Reporting (one per team; either member may submit)
+    team_1_reporter_discord_uid         BIGINT,
+    team_1_report               TEXT
+        CHECK (team_1_report IN (
+            'team_1_win', 'team_2_win', 'draw',
+            'abort', 'abandoned', 'invalidated', 'no_report'
+        )),
+    team_2_reporter_discord_uid         BIGINT,
+    team_2_report               TEXT
+        CHECK (team_2_report IN (
+            'team_1_win', 'team_2_win', 'draw',
+            'abort', 'abandoned', 'invalidated', 'no_report'
+        )),
+
+    -- Resolution
+    match_result                TEXT
+        CHECK (match_result IN (
+            'team_1_win', 'team_2_win', 'draw', 'conflict',
+            'abort', 'abandoned', 'invalidated', 'no_report'
+        )),
+    team_1_mmr_change           SMALLINT,
+    team_2_mmr_change           SMALLINT,
+
+    -- Map / server
+    map_name                    TEXT NOT NULL,
+    server_name                 TEXT NOT NULL,
+
+    -- Timestamps
+    assigned_at                 TIMESTAMPTZ,
+    completed_at                TIMESTAMPTZ,
+
+    -- Admin
+    admin_intervened            BOOLEAN NOT NULL DEFAULT FALSE,
+    admin_discord_uid           BIGINT DEFAULT NULL,
+
+    -- Replays (one upload slot per team)
+    team_1_replay_path          TEXT,
+    team_1_replay_row_id        BIGINT,
+    team_1_uploaded_at          TIMESTAMPTZ,
+    team_2_replay_path          TEXT,
+    team_2_replay_row_id        BIGINT,
+    team_2_uploaded_at          TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS mmrs_2v2 (
+    id                      BIGSERIAL PRIMARY KEY,
+    player_1_discord_uid    BIGINT NOT NULL,   -- smaller of the two UIDs (normalized)
+    player_2_discord_uid    BIGINT NOT NULL,   -- larger of the two UIDs (normalized)
+    player_1_name           TEXT NOT NULL,
+    player_2_name           TEXT NOT NULL,
+    mmr                     SMALLINT NOT NULL,
+    games_played            INTEGER NOT NULL DEFAULT 0,
+    games_won               INTEGER NOT NULL DEFAULT 0,
+    games_lost              INTEGER NOT NULL DEFAULT 0,
+    games_drawn             INTEGER NOT NULL DEFAULT 0,
+    last_played_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (player_1_discord_uid, player_2_discord_uid)
+);
+
+CREATE TABLE IF NOT EXISTS preferences_2v2 (
+    id                  BIGSERIAL PRIMARY KEY,
+    discord_uid         BIGINT NOT NULL UNIQUE,
+    last_chosen_races   TEXT[],
+    last_chosen_vetoes  TEXT[]
+);
+
+CREATE TABLE IF NOT EXISTS replays_2v2 (
+    id                          BIGSERIAL PRIMARY KEY,
+    matches_2v2_id              BIGINT NOT NULL,
+    replay_path                 TEXT NOT NULL UNIQUE,
+    replay_hash                 TEXT NOT NULL,
+    replay_time                 TIMESTAMPTZ NOT NULL,
+    uploaded_at                 TIMESTAMPTZ NOT NULL,
+    -- Four players (team_1_p1, team_1_p2, team_2_p1, team_2_p2)
+    team_1_player_1_name        TEXT NOT NULL,
+    team_1_player_2_name        TEXT NOT NULL,
+    team_2_player_1_name        TEXT NOT NULL,
+    team_2_player_2_name        TEXT NOT NULL,
+    team_1_player_1_race        TEXT NOT NULL
+        CHECK (team_1_player_1_race IN (
+            'bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss'
+        )),
+    team_1_player_2_race        TEXT NOT NULL
+        CHECK (team_1_player_2_race IN (
+            'bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss'
+        )),
+    team_2_player_1_race        TEXT NOT NULL
+        CHECK (team_2_player_1_race IN (
+            'bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss'
+        )),
+    team_2_player_2_race        TEXT NOT NULL
+        CHECK (team_2_player_2_race IN (
+            'bw_terran', 'bw_zerg', 'bw_protoss',
+            'sc2_terran', 'sc2_zerg', 'sc2_protoss'
+        )),
+    match_result                TEXT NOT NULL
+        CHECK (match_result IN ('team_1_win', 'team_2_win', 'draw')),
+    -- sc2reader toon handles (all four players)
+    team_1_player_1_handle      TEXT NOT NULL,
+    team_1_player_2_handle      TEXT NOT NULL,
+    team_2_player_1_handle      TEXT NOT NULL,
+    team_2_player_2_handle      TEXT NOT NULL,
+    observers                   TEXT[] NOT NULL DEFAULT '{}',
+    map_name                    TEXT NOT NULL,
+    game_duration_seconds       INTEGER NOT NULL,
+    game_privacy                TEXT NOT NULL,
+    game_speed                  TEXT NOT NULL,
+    game_duration_setting       TEXT NOT NULL,
+    locked_alliances            TEXT NOT NULL,
+    cache_handles               TEXT[] NOT NULL,
+    upload_status               TEXT NOT NULL
+        CHECK (upload_status IN ('pending', 'completed', 'failed'))
 );
 
 /*

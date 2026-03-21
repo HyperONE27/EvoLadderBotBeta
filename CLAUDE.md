@@ -270,6 +270,13 @@ Both use Railpack builder with restart-on-failure (max 10 retries).
 
 Dev: `ruff`, `mypy`
 
+### Naming Conventions
+
+- **UIDs:** Never use bare `_uid`. Always use `_discord_uid` (e.g. `team_1_player_1_discord_uid`, not `team_1_player_1_uid`).
+- **Names:** Always specify `_player_name` or `_discord_username`, not bare `_name`. Exception: if the field already contains the word "player" (e.g. `player_1_name`), the distinction is unnecessary.
+
+These rules apply to all schema types: SQL tables, Polars schemas, TypedDicts, and ephemeral types.
+
 ### When Making Changes
 
 - Run `make quality` to run local CI (ruff + mypy) and make sure all your changes pass.

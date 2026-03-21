@@ -14,7 +14,6 @@ def register_greeting_command(tree: app_commands.CommandTree) -> None:
     @tree.command(name="greet", description="Greet a player")
     @app_commands.check(check_if_banned)
     async def greeting_command(interaction: discord.Interaction) -> None:
-
         await interaction.response.defer()
 
         async with get_session().get(

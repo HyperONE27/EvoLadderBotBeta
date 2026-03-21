@@ -45,6 +45,10 @@ class StateManager:
         self.mmrs_1v1_df: pl.DataFrame = pl.DataFrame()
         self.preferences_1v1_df: pl.DataFrame = pl.DataFrame()
         self.replays_1v1_df: pl.DataFrame = pl.DataFrame()
+        self.matches_2v2_df: pl.DataFrame = pl.DataFrame()
+        self.mmrs_2v2_df: pl.DataFrame = pl.DataFrame()
+        self.preferences_2v2_df: pl.DataFrame = pl.DataFrame()
+        self.replays_2v2_df: pl.DataFrame = pl.DataFrame()
 
         # Current application state
         self.leaderboard_1v1: list[LeaderboardEntry1v1] = []
