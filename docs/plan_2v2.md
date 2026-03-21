@@ -1052,3 +1052,62 @@ calculation (TBD at implementation time).
 - **Leaderboard for 2v2**: `leaderboard_2v2` is stubbed in `StateManager`.
   Defer, same as 1v1 was deferred initially.
 - **`/profile` 2v2 stats**: Could show pair-level MMR history. Defer.
+
+## 14. Final Notes
+
+Concrete gaps in the current type definitions:                                                           
+                                                                                                           
+  QueueEntry2v2 and MatchCandidate2v2 are both missing a location field for each player. The matchmaker is 
+  supposed to be a pure function, but match_params_2v2.py needs the four players' regions to call          
+  get_best_server_for_teams. In 1v1, the queue entry presumably carries location so the matchmaker can     
+  build MatchCandidate1v1 with the region pair. The 2v2 types need the same — either location on         
+  QueueEntry2v2 (one per player, pulled at queue join time) or both on QueueEntry2v2Team. Without this, the
+   pure-function design breaks or you have to pass the players DataFrame into match creation.
+
+  Related: QueueEntry2v2 doesn't have team_mmr. The plan says "looked up from mmrs_2v2" when forming teams 
+  during the wave, but that requires the matchmaker to either receive the DataFrame as an argument or call
+  a lookup function — both violate the pure-function design. Cleanest solution: look up (or create) the    
+  mmrs_2v2 row at /queue_2v2/join time and store team_mmr directly in QueueEntry2v2, same as 1v1 does.   
+
+  Still-unresolved design decisions:                                                                       
+  
+  Confirmation rule is still TBD ("one per team" vs "all four"). Pick one — it affects the WS handler, the 
+  match embed, and the timeout behavior. One-per-team is simpler and mirrors the 1v1 spirit.             
+                                                                                                           
+  The /queue command change (adding a game_mode parameter to the existing command) may cause a Discord     
+  slash command sync issue — Discord caches command trees and adding parameters to existing commands can be
+   finicky. Consider whether /queue with a game_mode param is actually cleaner than just /queue2v2 as a    
+  separate top-level command that requires party status.                                                 
+
+  Things that might surprise you in sc2reader:                                                             
+  
+  The verifier currently hard-checks len(replay.players) != 2. Before you explore, know that in SC: Evo    
+  2v2, sc2reader may list observers differently — some replays include referees or custom observers that 
+  inflate the player count. The 1v1 verifier probably handles this with the observers field, but for 2v2   
+  you'll want to confirm what replay.players actually contains vs replay.observers. Similarly, team_id on
+  players should give you 1 or 2, but confirm whether sc2reader assigns these correctly for custom lobbies
+  vs standard matchmaking.
+
+  The BW/SC2 mixed composition is worth probing specifically. In a mixed 2v2 where two players use BW races
+   and two use SC2 races, confirm that player.play_race gives you the specific race (e.g. "Terran" for BW
+  Terran) or whether it gives you a generic indicator. The verifier needs to map this back to your internal
+   bw_terran/sc2_terran distinction — how does sc2reader represent the race for a BW player in an SC: Evo
+  game? Is it by handle prefix? This is the core thing to answer before writing any verification logic.
+
+  Angles you might not have considered:
+
+  Default MMR seeding for new pairs. Right now a fresh pair starts at 1500 regardless of individual 1v1    
+  skill. An experienced 1v1 player teaming with another experienced player will get matched against
+  genuinely new players for their first few 2v2 games. Could seed new pair MMR as (p1_1v1_mmr + p2_1v1_mmr)
+   / 2 if both have played 1v1. Completely optional and deferrable, but costs almost nothing to implement
+  at queue join time since you're already looking up the MMR row.
+
+  The 1v1 map pool bug (_available_maps iterates all game modes) is a latent bomb. The moment you add real 
+  maps to maps["2v2"], 1v1 matches start pulling from the 2v2 pool silently. Fix it alongside this work,
+  not after.                                                                                               
+                                                                                                         
+  Party invite staleness: the plan says invites don't expire, and the accept endpoint rejects stale ones.  
+  That's fine for the happy path, but if a player receives an invite DM and then the bot restarts, the
+  in-memory invite is gone but the DM's Accept button still exists. The button press hits a dead endpoint. 
+  Make sure the accept endpoint returns a clean "invite no longer valid" response rather than a 500, and 
+  the bot handles that gracefully.
