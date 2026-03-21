@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS mmrs_2v2 (
     games_lost              INTEGER NOT NULL DEFAULT 0,
     games_drawn             INTEGER NOT NULL DEFAULT 0,
     last_played_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (player_1_uid, player_2_uid)
+    UNIQUE (player_1_discord_uid, player_2_discord_uid)
 );
 ```
 
@@ -674,9 +674,9 @@ This guarantees a map is always selected regardless of how many vetoes are
 submitted. Maps with 0 vetoes are always preferred; in the extreme case where
 every map is vetoed, the least-vetoed map(s) are used.
 
-Server resolution is unchanged (cross-table lookup; for 2v2, use the region
-of player 1 from team 1, or the "most central" region — simplest is to use
-team_1_p1's region, same as 1v1 p1's region).
+Server resolution uses `get_best_server_for_teams(team_1_regions, team_2_regions)`
+from `common/lookups/cross_table_lookups.py`, passing all four players'
+`location` fields as two lists. See §12b for the full algorithm.
 
 ---
 
@@ -901,92 +901,134 @@ not for enforcing match results.
 
 ### 12b. Server Selection for 4 Players
 
+**Status: data complete, algorithm decided, implementation pending.**
+
 The current 1v1 server selection is a symmetric lookup:
 `cross_table["mappings"][region_A][region_B] → server`. It encodes an
 implicit judgment about which server is "best" for each pair of geographic
-regions. This works cleanly for 2 players; it does not generalise to 4.
+regions, including institutional SC2 community knowledge about fairness. This
+works cleanly for 2 players; it does not generalise to 4 because the
+combinatorial space (16⁴ tuples) is infeasible to curate manually.
 
-**Why the 4-player case is hard:**
+**The ping table (complete):**
 
-With 4 players potentially spread across 4 different geographic regions, you
-need a server that is acceptable to all of them and ideally fair between the
-two teams. The cross_table gives you categorical decisions, not the underlying
-ping estimates that drove those decisions. Extending it to handle all
-(region, region, region, region) tuples is combinatorially infeasible (16⁴ =
-65536 combinations, many symmetric but still enormous).
-
-**What the data would need to look like:**
-
-A `ping_estimates.json` mapping each geographic region to a **ping range**
-`[min_ms, max_ms]` per game server, or `null` if the combination is so poor
-it should not be actively chosen. The system has 16 geographic regions and 9
-game servers (USW, USC, USE, BRZ, EUC, SNG, AUS, KOR, TWN), giving 144
-entries. Values do not need to be empirically precise — rough geographic
-approximations are sufficient.
-
-```json
-{
-  "NAW": {"USW": [20, 50], "USC": [40, 70], "USE": [65, 95], "EUC": [130, 160], "KOR": [160, 220], "SNG": null, "TWN": null, "AUS": null, "BRZ": [100, 160]},
-  "KRJ": {"USW": [160, 220], "KOR": [20, 45], "TWN": [35, 70], "SNG": [60, 110], "EUC": [260, 340], "AUS": [130, 200], "BRZ": null, ...}
-}
-```
-
-**Range vs single value:** Using a range `[min, max]` is more honest than a
-single number — it captures the variability introduced by ISP, routing, and
-geographic spread within a region. `null` means "treat as infinite" at
-algorithm time (not "hard exclude") — this ensures the scoring function always
-produces a result rather than needing special-case fallback logic when every
-server has at least one null for some player.
-
-**Scalar conversion at algorithm time:**
+Ping data lives as a top-level `"pings"` key inside the existing
+`data/core/cross_table.json` — not a separate file. The `CrossTableData`
+TypedDict (`common/json_types.py`) already includes:
 
 ```python
-_PING_INF = 9999
-
-def _to_scalar(val: list[int] | None) -> int:
-    return val[1] if val is not None else _PING_INF  # upper bound (pessimistic)
+class CrossTableData(TypedDict):
+    region_order: list[str]
+    mappings: dict[str, dict[str, str]]
+    pings: dict[str, dict[str, list[int] | None]]
 ```
 
-Using the upper bound (worst case) rather than midpoint is appropriate for
-competitive fairness — you want to guarantee the worst case is acceptable,
-not just that the average is acceptable.
+Each entry is `[min_ms, max_ms]` or `null`. Using a range rather than a single
+value captures the geographic spread within a region (e.g. NAW spans Hawaii to
+eastern Montana). `null` means "unreachable or so poor it should never be
+actively chosen" — it does not hard-exclude the server at algorithm time.
+Instead, `null` entries are converted to `PING_INF = 9999`, ensuring the
+algorithm always produces a result.
 
-**The scoring algorithm:**
+The scalar used for scoring is the **upper bound** (worst case, `val[1]`), not
+the midpoint. This is appropriate for competitive fairness: you want the
+worst-case latency to be acceptable, not just the average.
 
-Given a candidate server S and the four players' regions R1..R4 (R1,R2 on
-team 1; R3,R4 on team 2):
+Notable null entries reflecting real-world routing limitations:
+- All European regions (`EUW`, `EUE`): null for `KOR`, `TWN`, `SNG`, `AUS`
+- `KRJ`: null for `EUC` (Japan pulls the upper bound above the usable range;
+  a Korea-only split may revisit this)
+- `USB`, `FER`: null for `USC`, `USE` (240-260ms, effectively unusable)
+- `CHN`: null for `USC`, `USE`, `EUC`
+- `THM`, `OCE`, `SEA`: null for `EUC`
+
+All 16 geographic regions × 9 game servers are populated. The data is
+"good enough" — the SC2 population is heavily concentrated in eastern coastal
+China, Japan/Korea, and Europe/NA where routing is well understood.
+
+**Lookup functions (complete):**
+
+`common/lookups/cross_table_lookups.py` already provides:
+
+```python
+PING_INF: int = 9999
+
+def get_ping_range(region: str, server: str) -> list[int] | None: ...
+def get_ping_scalar(region: str, server: str) -> int:  # upper bound or PING_INF
+def get_best_server_for_regions(regions: list[str]) -> str:  # pure minimisation (N players same team)
+def get_best_server_for_teams(team_1_regions: list[str], team_2_regions: list[str]) -> str:
+```
+
+**The scoring algorithm (minimax):**
+
+`get_best_server_for_teams` uses the following objective:
 
 ```
-p(R, S)   = _to_scalar(ping_estimates[R][S])
-team1_avg = (p(R1,S) + p(R2,S)) / 2
-team2_avg = (p(R3,S) + p(R4,S)) / 2
-score(S)  = (team1_avg + team2_avg) / 2   +   |team1_avg - team2_avg|
+p(R, S)    = get_ping_scalar(R, S)   # upper bound, or PING_INF for null
+t1_avg(S)  = mean(p(R, S) for R in team_1_regions)
+t2_avg(S)  = mean(p(R, S) for R in team_2_regions)
+score(S)   = max(t1_avg(S), t2_avg(S))
+tiebreak   = t1_avg(S) + t2_avg(S)   # lower total wins ties
 ```
 
-The first term minimises overall ping; the second penalises team imbalance.
-The coefficient of 1.0 on the fairness term is a starting point and can be
-tuned. A server with any `null` entry will have score ≥ 9999/2 ≈ 4999 and
-will only be chosen if all alternatives are equally bad. Pick the server with
-the minimum score.
+Pick the server minimising `score`, breaking ties by `tiebreak`.
 
-This is a clean, interpretable algorithm. The only dependency is the ping
-table, which needs to be filled in as a data task before the algorithm can
-be used.
+**Why minimax over the earlier balanced formula:**
 
-**Short-term fallback:**
+An earlier candidate formula was `(t1_avg + t2_avg)/2 + |t1_avg - t2_avg|`,
+which penalises team imbalance with a 1:1 weight against average latency.
+That formula was rejected because it sometimes picks a server where one team
+plays at high latency in order to reduce the gap — e.g. routing NAW+NAW vs
+THM+THM to KOR (190ms worst team) rather than USW (160ms worst team), because
+USW has a 100ms gap and KOR only a 60ms gap. Minimax simply asks "what is the
+worst-team experience?" and picks the server that minimises it, breaking ties
+by total ping. This better matches competitive fairness intuition: nobody
+should be forced to high latency just to "equalise suffering."
 
-Until the ping table is populated, fall back to treating 2v2 server selection
-as two independent 1v1 lookups: use `cross_table[team_1_player_1_region][team_2_player_1_region]`.
-This ignores the second player on each team but produces a correct server
-most of the time and requires no new data. Document it as a known
-simplification.
+In practice the two formulas agree on ~88% of Tier 1+2 matchups. The 12%
+that differ are cases where minimax is clearly more intuitive.
 
-**Data task before implementation:**
+**Key structural findings from analysis:**
 
-Before implementing `server_selector_2v2.py` properly, fill in
-`data/core/ping_estimates.json` with approximate latencies for all 16 × 9
-combinations. This is a manual one-time task, not a code task, but it is
-a prerequisite for the algorithm.
+These findings informed the ping table and are useful context for understanding
+2v2 server selection behaviour. Player tier estimates (by population):
+- **Tier 1**: NAW, NAC, NAE, EUW, EUE, KRJ
+- **Tier 2**: CHN, THM, USB
+- **Tier 2.5**: FER, OCE
+- **Tier 3**: CAM, SAM, SEA
+- **Tier 4**: AFR, MEA (essentially no playerbase)
+
+Key findings:
+- **T1-only ceiling is 170ms** (EUW/EUE vs KRJ). The Korea-Europe divide is
+  unavoidable and exists in 1v1 too. The algorithm routes these to USW or EUC
+  depending on team composition, both equally bad.
+- **USB as a teammate is not the problem; USB as a team composition is.**
+  Pure USB+USB vs any T1 team routes to EUC or KOR at ~120ms — perfectly
+  acceptable. The problem is USB paired with a European player (EUE+USB,
+  EUW+USB), which has no viable server against Asian opponents (210-250ms).
+  These team compositions are geographically incoherent.
+- **KRJ is the best cross-Pacific ally.** Any team containing KRJ routes
+  Asian T2 opponents (CHN, THM) to KOR at 100-110ms. KRJ+NA teams are
+  especially effective. In a hypothetical where KRJ gains EUC access (~160ms
+  via routing improvements), 82 additional matchups improve, with
+  KRJ+EU vs USB opponents dropping from 250ms to 120ms.
+- **CHN+USB is the hardest T2 team** for European T1 players to face
+  (USW at 205ms). NA-heavy T1 teams can escape to KOR at 170-190ms instead.
+- **EUE is the worst European partner for Asian T2 players** because EUE has
+  null entries for KOR/TWN/SNG. CHN+EUE and THM+EUE are capped at USW:170ms
+  against any T1 opponent, regardless of the NA players' regions.
+- **The EUE→Asian server problem is confirmed geography, not a data gap.**
+  A Croatian contact confirmed 250+ms to KOR/TWN/SNG. European access to Asian
+  servers without specialized VPN infrastructure is not viable. The nulls
+  in the ping table for EUW/EUE→KOR/TWN/SNG are correct.
+
+**Implementation note:**
+
+`get_best_server_for_teams` takes region lists (strings), not player objects.
+The caller in `match_params_2v2.py` is responsible for extracting the four
+players' `location` fields and passing them as two lists. A player with no
+`location` set should fall back to a default region or be excluded from the
+calculation (TBD at implementation time).
 
 ---
 
@@ -1002,8 +1044,9 @@ a prerequisite for the algorithm.
   entries are empty stubs, but will silently corrupt the 1v1 map pool once
   2v2 maps are added. Fix `_available_maps` to scope to `maps["1v1"]` as part
   of this work.
-- **Server resolution for 2v2**: Use team_1_p1's region for now; could average
-  all four players' regions later.
+- **Server resolution for 2v2**: Implemented via `get_best_server_for_teams`
+  in `common/lookups/cross_table_lookups.py` using the minimax algorithm
+  described in §12b. No fallback needed — the ping table is complete.
 - **`/admin setmmr` for 2v2**: Would need to target a pair, not an individual.
   Defer until needed.
 - **Leaderboard for 2v2**: `leaderboard_2v2` is stubbed in `StateManager`.
