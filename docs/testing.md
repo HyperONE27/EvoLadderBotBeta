@@ -72,10 +72,15 @@ wrong).
 
 ```
 tests/
+    conftest.py              — dummy env vars so algorithm imports work without .env
     test_ratings.py          — ELO rating invariants
+    test_hungarian.py        — Hungarian algorithm correctness (brute-force verified, both copies)
     test_matchmaker_1v1.py   — 1v1 queue categorisation, equalisation, candidate building, full wave
     test_matchmaker_2v2.py   — 2v2 compatibility, cost matrix, composition resolution, full wave
-    test_hungarian.py        — Hungarian algorithm correctness (brute-force verified)
+    test_match_params.py     — map veto logic, server resolution (1v1 and 2v2 group)
+    test_game_stats.py       — game stat counting (1v1 and 2v2, position-independent)
+    test_datetime_helpers.py — ensure_utc polymorphic parsing
+    test_replay_verifier.py  — AI detection, mod verification, timestamp window
 ```
 
 Each file targets one module.  The Hungarian algorithm gets its own file because
