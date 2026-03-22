@@ -16,16 +16,52 @@ from common.json_types import CrossTableData, GameModeData
 MAPS: dict[str, GameModeData] = {
     "1v1": {
         "season_alpha": {
-            "Map A": {"short_name": "a", "name": "Map A", "author": "", "am_link": "", "eu_link": ""},
-            "Map B": {"short_name": "b", "name": "Map B", "author": "", "am_link": "", "eu_link": ""},
-            "Map C": {"short_name": "c", "name": "Map C", "author": "", "am_link": "", "eu_link": ""},
-            "Map D": {"short_name": "d", "name": "Map D", "author": "", "am_link": "", "eu_link": ""},
+            "Map A": {
+                "short_name": "a",
+                "name": "Map A",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+            },
+            "Map B": {
+                "short_name": "b",
+                "name": "Map B",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+            },
+            "Map C": {
+                "short_name": "c",
+                "name": "Map C",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+            },
+            "Map D": {
+                "short_name": "d",
+                "name": "Map D",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+            },
         },
     },
     "2v2": {
         "season_alpha": {
-            "Map X": {"short_name": "x", "name": "Map X", "author": "", "am_link": "", "eu_link": ""},
-            "Map Y": {"short_name": "y", "name": "Map Y", "author": "", "am_link": "", "eu_link": ""},
+            "Map X": {
+                "short_name": "x",
+                "name": "Map X",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+            },
+            "Map Y": {
+                "short_name": "y",
+                "name": "Map Y",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+            },
         },
     },
 }
@@ -61,7 +97,9 @@ class TestAvailableMaps:
 
     def test_veto_union(self) -> None:
         """Both players' vetoes are combined, not intersected."""
-        result = _available_maps(MAPS, "1v1", "season_alpha", ["Map A", "Map B"], ["Map C"])
+        result = _available_maps(
+            MAPS, "1v1", "season_alpha", ["Map A", "Map B"], ["Map C"]
+        )
         assert set(result) == {"Map D"}
 
     def test_overlapping_vetoes(self) -> None:
@@ -72,8 +110,11 @@ class TestAvailableMaps:
 
     def test_all_vetoed_returns_empty(self) -> None:
         result = _available_maps(
-            MAPS, "1v1", "season_alpha",
-            ["Map A", "Map B"], ["Map C", "Map D"],
+            MAPS,
+            "1v1",
+            "season_alpha",
+            ["Map A", "Map B"],
+            ["Map C", "Map D"],
         )
         assert result == []
 
@@ -110,7 +151,9 @@ class TestResolveServer:
         regions = CROSS_TABLE["region_order"]
         for r1 in regions:
             for r2 in regions:
-                assert _resolve_server(CROSS_TABLE, r1, r2) == _resolve_server(CROSS_TABLE, r2, r1)
+                assert _resolve_server(CROSS_TABLE, r1, r2) == _resolve_server(
+                    CROSS_TABLE, r2, r1
+                )
 
     def test_known_pairs(self) -> None:
         assert _resolve_server(CROSS_TABLE, "NA", "NA") == "US West"

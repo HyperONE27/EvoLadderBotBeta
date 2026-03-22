@@ -16,7 +16,6 @@ from backend.algorithms.matchmaker import (
     run_matchmaking_wave,
 )
 from backend.core.config import (
-    BALANCE_THRESHOLD_MMR,
     BASE_MMR_WINDOW,
     MMR_WINDOW_GROWTH_PER_CYCLE,
     WAIT_PRIORITY_COEFFICIENT,
@@ -65,7 +64,9 @@ def test_categorise_partition() -> None:
     entries = [
         _entry(1, bw_race="bw_terran", bw_mmr=1500),
         _entry(2, sc2_race="sc2_zerg", sc2_mmr=1400),
-        _entry(3, bw_race="bw_protoss", sc2_race="sc2_terran", bw_mmr=1600, sc2_mmr=1300),
+        _entry(
+            3, bw_race="bw_protoss", sc2_race="sc2_terran", bw_mmr=1600, sc2_mmr=1300
+        ),
         _entry(4, bw_race="bw_zerg", bw_mmr=1200),
     ]
     bw, sc2, both = _categorise(entries)
@@ -108,7 +109,9 @@ def test_equalise_conservation() -> None:
     bw_in = [_entry(1, bw_race="bw_terran", bw_mmr=1500)]
     sc2_in = [_entry(2, sc2_race="sc2_zerg", sc2_mmr=1400)]
     both_in = [
-        _entry(3, bw_race="bw_protoss", sc2_race="sc2_terran", bw_mmr=1600, sc2_mmr=1300),
+        _entry(
+            3, bw_race="bw_protoss", sc2_race="sc2_terran", bw_mmr=1600, sc2_mmr=1300
+        ),
         _entry(4, bw_race="bw_zerg", sc2_race="sc2_protoss", bw_mmr=1200, sc2_mmr=1700),
         _entry(5, bw_race="bw_terran", sc2_race="sc2_zerg", bw_mmr=1500, sc2_mmr=1500),
     ]
@@ -141,7 +144,9 @@ def test_equalise_population_balance(n_bw: int, n_sc2: int, n_both: int) -> None
     both_in = []
     for _ in range(n_both):
         both_in.append(
-            _entry(uid, bw_race="bw_terran", sc2_race="sc2_zerg", bw_mmr=1500, sc2_mmr=1500)
+            _entry(
+                uid, bw_race="bw_terran", sc2_race="sc2_zerg", bw_mmr=1500, sc2_mmr=1500
+            )
         )
         uid += 1
 
@@ -164,7 +169,9 @@ def test_equalise_phase3_no_worse_balance() -> None:
     bw_in = [_entry(i, bw_race="bw_terran", bw_mmr=1800) for i in range(1, 4)]
     sc2_in = [_entry(i, sc2_race="sc2_zerg", sc2_mmr=1200) for i in range(4, 7)]
     both_in = [
-        _entry(7, bw_race="bw_protoss", sc2_race="sc2_terran", bw_mmr=1500, sc2_mmr=1500),
+        _entry(
+            7, bw_race="bw_protoss", sc2_race="sc2_terran", bw_mmr=1500, sc2_mmr=1500
+        ),
     ]
     bw_out, sc2_out = _equalise(bw_in, sc2_in, both_in)
     assert abs(len(bw_out) - len(sc2_out)) <= 1
@@ -211,8 +218,12 @@ def test_build_candidates_window_disjunction() -> None:
     lead = [_entry(1, bw_race="bw_terran", bw_mmr=1500, wait_cycles=0)]
     follow = [
         _entry(2, sc2_race="sc2_zerg", sc2_mmr=1500, wait_cycles=0),
-        _entry(3, sc2_race="sc2_zerg", sc2_mmr=1700, wait_cycles=0),  # diff=200, window=100
-        _entry(4, sc2_race="sc2_zerg", sc2_mmr=1700, wait_cycles=3),  # diff=200, window=250
+        _entry(
+            3, sc2_race="sc2_zerg", sc2_mmr=1700, wait_cycles=0
+        ),  # diff=200, window=100
+        _entry(
+            4, sc2_race="sc2_zerg", sc2_mmr=1700, wait_cycles=3
+        ),  # diff=200, window=250
     ]
     candidates = _build_candidates(lead, follow, lead_is_bw=True)
     for _, le, fe, diff in candidates:
@@ -369,7 +380,9 @@ def test_wave_convergence_via_wait() -> None:
         _entry(2, sc2_race="sc2_zerg", sc2_mmr=1500 + mmr_gap),
     ]
     # Calculate how many cycles needed: ceil((gap - BASE_MMR_WINDOW) / GROWTH)
-    cycles_needed = (mmr_gap - BASE_MMR_WINDOW + MMR_WINDOW_GROWTH_PER_CYCLE - 1) // MMR_WINDOW_GROWTH_PER_CYCLE
+    cycles_needed = (
+        mmr_gap - BASE_MMR_WINDOW + MMR_WINDOW_GROWTH_PER_CYCLE - 1
+    ) // MMR_WINDOW_GROWTH_PER_CYCLE
 
     # Run waves until convergence.
     for _ in range(cycles_needed + 1):

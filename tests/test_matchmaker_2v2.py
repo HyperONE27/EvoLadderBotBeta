@@ -12,9 +12,6 @@ import pytest
 from backend.algorithms.matchmaker_2v2 import (
     _build_cost_matrix,
     _compatible,
-    _has_bw,
-    _has_mixed,
-    _has_sc2,
     _resolve_to_candidate,
     run_matchmaking_wave_2v2,
 )
@@ -96,9 +93,13 @@ class TestCompatible:
 
     def test_multi_comp_compatible(self) -> None:
         """Team with both BW and SC2 declared is compatible with either."""
-        a = _team(1, 2, pure_bw=("bw_terran", "bw_zerg"), pure_sc2=("sc2_terran", "sc2_zerg"))
+        a = _team(
+            1, 2, pure_bw=("bw_terran", "bw_zerg"), pure_sc2=("sc2_terran", "sc2_zerg")
+        )
         b = _team(3, 4, pure_bw=("bw_protoss", "bw_terran"))
-        assert _compatible(a, b) is True  # a.has_sc2 and b.has_bw? No. a.has_bw and b... wait
+        assert (
+            _compatible(a, b) is True
+        )  # a.has_sc2 and b.has_bw? No. a.has_bw and b... wait
         # a has both bw and sc2.  b has bw only.
         # _compatible: a.has_sc2(yes) and b.has_bw(yes) → True
         assert _compatible(b, a) is True
@@ -109,8 +110,14 @@ class TestCompatible:
             {"pure_bw": ("bw_terran", "bw_zerg")},
             {"pure_sc2": ("sc2_terran", "sc2_zerg")},
             {"mixed": ("bw_terran", "sc2_zerg")},
-            {"pure_bw": ("bw_terran", "bw_zerg"), "pure_sc2": ("sc2_terran", "sc2_zerg")},
-            {"pure_bw": ("bw_terran", "bw_zerg"), "mixed": ("bw_protoss", "sc2_terran")},
+            {
+                "pure_bw": ("bw_terran", "bw_zerg"),
+                "pure_sc2": ("sc2_terran", "sc2_zerg"),
+            },
+            {
+                "pure_bw": ("bw_terran", "bw_zerg"),
+                "mixed": ("bw_protoss", "sc2_terran"),
+            },
         ]
         uid = 1
         for i, comp_a in enumerate(comps):
@@ -171,8 +178,12 @@ class TestCostMatrix:
                 a, b = teams[i], teams[j]
                 compat = _compatible(a, b)
                 diff = abs(a["team_mmr"] - b["team_mmr"])
-                a_window = BASE_MMR_WINDOW + a["wait_cycles"] * MMR_WINDOW_GROWTH_PER_CYCLE
-                b_window = BASE_MMR_WINDOW + b["wait_cycles"] * MMR_WINDOW_GROWTH_PER_CYCLE
+                a_window = (
+                    BASE_MMR_WINDOW + a["wait_cycles"] * MMR_WINDOW_GROWTH_PER_CYCLE
+                )
+                b_window = (
+                    BASE_MMR_WINDOW + b["wait_cycles"] * MMR_WINDOW_GROWTH_PER_CYCLE
+                )
                 in_window = diff <= a_window or diff <= b_window
                 should_be_valid = compat and in_window
                 is_valid = cost[i][j] < _SENTINEL
@@ -361,9 +372,8 @@ class TestWave2v2:
             _team(3, 4, pure_sc2=("sc2_terran", "sc2_zerg"), mmr=1500 + mmr_gap),
         ]
         cycles_needed = (
-            (mmr_gap - BASE_MMR_WINDOW + MMR_WINDOW_GROWTH_PER_CYCLE - 1)
-            // MMR_WINDOW_GROWTH_PER_CYCLE
-        )
+            mmr_gap - BASE_MMR_WINDOW + MMR_WINDOW_GROWTH_PER_CYCLE - 1
+        ) // MMR_WINDOW_GROWTH_PER_CYCLE
         for _ in range(cycles_needed + 1):
             remaining, matches = run_matchmaking_wave_2v2(queue)
             if matches:

@@ -95,7 +95,9 @@ class TestVerifyTimestamp:
 
     def test_within_window_passes(self) -> None:
         replay_time = self._assigned_at() + timedelta(minutes=10)
-        result = _verify_timestamp(replay_time.isoformat(), self._assigned_at().isoformat())
+        result = _verify_timestamp(
+            replay_time.isoformat(), self._assigned_at().isoformat()
+        )
         assert result["success"] is True
 
     def test_at_zero_passes(self) -> None:
@@ -107,13 +109,17 @@ class TestVerifyTimestamp:
 
     def test_before_assignment_fails(self) -> None:
         replay_time = self._assigned_at() - timedelta(minutes=5)
-        result = _verify_timestamp(replay_time.isoformat(), self._assigned_at().isoformat())
+        result = _verify_timestamp(
+            replay_time.isoformat(), self._assigned_at().isoformat()
+        )
         assert result["success"] is False
 
     def test_after_window_fails(self) -> None:
         # REPLAY_TIMESTAMP_WINDOW_MINUTES is 60.
         replay_time = self._assigned_at() + timedelta(minutes=61)
-        result = _verify_timestamp(replay_time.isoformat(), self._assigned_at().isoformat())
+        result = _verify_timestamp(
+            replay_time.isoformat(), self._assigned_at().isoformat()
+        )
         assert result["success"] is False
 
     def test_no_replay_time_fails(self) -> None:
