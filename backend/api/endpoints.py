@@ -610,8 +610,12 @@ async def queue_2v2_join(
     success, message = app.orchestrator.join_queue_2v2(
         request.discord_uid,
         request.discord_username,
-        request.bw_race,
-        request.sc2_race,
+        request.pure_bw_leader_race,
+        request.pure_bw_member_race,
+        request.mixed_leader_race,
+        request.mixed_member_race,
+        request.pure_sc2_leader_race,
+        request.pure_sc2_member_race,
         request.map_vetoes,
     )
     if not success:
@@ -624,8 +628,12 @@ async def queue_2v2_join(
             "action": "queue_join",
             "game_mode": "2v2",
             "event_data": {
-                "bw_race": request.bw_race,
-                "sc2_race": request.sc2_race,
+                "pure_bw_leader_race": request.pure_bw_leader_race,
+                "pure_bw_member_race": request.pure_bw_member_race,
+                "mixed_leader_race": request.mixed_leader_race,
+                "mixed_member_race": request.mixed_member_race,
+                "pure_sc2_leader_race": request.pure_sc2_leader_race,
+                "pure_sc2_member_race": request.pure_sc2_member_race,
                 "map_vetoes": request.map_vetoes,
             },
         }

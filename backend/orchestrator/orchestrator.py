@@ -268,21 +268,29 @@ class Orchestrator:
         self,
         discord_uid: int,
         discord_username: str,
-        bw_race: str | None,
-        sc2_race: str | None,
+        pure_bw_leader_race: str | None,
+        pure_bw_member_race: str | None,
+        mixed_leader_race: str | None,
+        mixed_member_race: str | None,
+        pure_sc2_leader_race: str | None,
+        pure_sc2_member_race: str | None,
         map_vetoes: list[str],
     ) -> tuple[bool, str | None]:
-        """Add a player to the 2v2 queue."""
+        """Add a party to the 2v2 queue.  Caller must be the party leader."""
         return self._transition_manager.join_queue_2v2(
             discord_uid,
             discord_username,
-            bw_race,
-            sc2_race,
+            pure_bw_leader_race,
+            pure_bw_member_race,
+            mixed_leader_race,
+            mixed_member_race,
+            pure_sc2_leader_race,
+            pure_sc2_member_race,
             map_vetoes,
         )
 
     def leave_queue_2v2(self, discord_uid: int) -> tuple[bool, str | None]:
-        """Remove a player from the 2v2 queue."""
+        """Remove a party from the 2v2 queue.  Caller must be the party leader."""
         return self._transition_manager.leave_queue_2v2(discord_uid)
 
     # ------------------------------------------------------------------

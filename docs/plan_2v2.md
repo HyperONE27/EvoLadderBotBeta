@@ -1237,3 +1237,383 @@ Add a stub helper `_resolve_mirror_match_names(parsed, match, players_df) -> dic
 - Update import: `parse_replay` → `parse_replay_1v1`
 - Update the `run_in_executor` call to use `parse_replay_1v1`
 - (The 2v2 replay endpoint `POST /matches_2v2/{match_id}/replay` is a separate addition that mirrors the 1v1 endpoint, dispatching `parse_replay_2v2` via the same `ProcessPoolExecutor`.)
+
+---
+
+## 15. Leader-Picks-All Queue Model
+
+**Decision (2026-03-21):** The 2v2 queue uses a **leader-picks-all** design. Only the
+party leader runs `/queue 2v2`. The leader selects all race preferences for the full
+team at queue time. The non-leader member's status changes to `queueing` automatically
+when the leader queues, and back to `in_party` when the leader leaves the queue or is
+removed from it. The member cannot independently queue or leave the queue.
+
+### 15a. Why Leader-Picks-All
+
+Allowing each player to queue individually (the prior design) fails to express the
+rich intra-team race coordination that 2v2 requires. In particular:
+
+- Valid match types are **only** BW+BW vs SC2+SC2, or Mixed vs Mixed. This is a
+  team-level constraint that cannot be cleanly expressed by two independent per-player
+  `bw_race / sc2_race` choices without a coordination protocol.
+- In mixed compositions, teams care strongly about *which player* is BW and *which* is
+  SC2 (BW Terran + SC2 Protoss is a very different comp from BW Protoss + SC2 Terran).
+  Individual menus do not allow teams to express this preference reliably.
+- Double same-race teams are legitimate (e.g. BW Terran + BW Terran). The UI must
+  support this explicitly.
+
+Leader-picks-all solves all three problems in a single interaction with a clear author
+of the choice.
+
+### 15b. Queue Setup UI (`QueueSetupEmbed2v2` / `QueueSetupView2v2`)
+
+**Three optional team compositions** — leader may leave any blank, must fill at least one:
+
+| Menu | Leader race | Member race |
+|---|---|---|
+| **Pure BW** | BW race for leader (bw_T, bw_Z, bw_P, or same as member) | BW race for member |
+| **Mixed** | BW or SC2 race for leader | Opposite era race for member |
+| **Pure SC2** | SC2 race for leader (sc2_T, sc2_Z, sc2_P, or same as member) | SC2 race for member |
+
+Each comp is two linked `discord.ui.Select` menus (one per player). Dropdowns are
+**order-aware**: they clearly label which choice is for the leader and which is for the
+partner, showing both player names.
+
+**Double same-race is valid.** The Pure BW and Pure SC2 menus must therefore include
+all possible pairings including (bw_Terran, bw_Terran), (sc2_Zerg, sc2_Zerg), etc.
+Since these are two selects per comp (one per player), this is naturally supported —
+both selects include all three races in their era independently.
+
+**Mixed validation** (enforced by the backend at join time, not the UI):
+- The combined pair must cover different eras: one BW race + one SC2 race.
+- The leader's and member's mixed choices must not both be BW or both be SC2.
+
+### 15c. `QueueEntry2v2` Redesigned Shape
+
+One entry per **party** (keyed by leader's discord_uid), not per player.
+
+```python
+class QueueEntry2v2(TypedDict):
+    discord_uid: int                 # leader's discord_uid
+    player_name: str                 # leader's display name
+    party_member_discord_uid: int    # member's discord_uid
+    party_member_name: str           # member's display name
+    # Optional team compositions (at least one must be non-None)
+    pure_bw_leader_race: str | None  # leader's BW race (e.g. "bw_terran")
+    pure_bw_member_race: str | None  # member's BW race
+    mixed_leader_race: str | None    # leader's race in mixed comp (BW or SC2)
+    mixed_member_race: str | None    # member's race in mixed comp (opposite era)
+    pure_sc2_leader_race: str | None # leader's SC2 race
+    pure_sc2_member_race: str | None # member's SC2 race
+    nationality: str                 # leader's ISO country code
+    location: str | None             # leader's geographic region
+    member_nationality: str          # member's ISO country code
+    member_location: str | None      # member's geographic region
+    team_mmr: int                    # from mmrs_2v2, looked up at join time
+    team_letter_rank: str            # from leaderboard_2v2; "U" if unranked
+    map_vetoes: list[str]            # leader's vetoes (member has no separate veto)
+    joined_at: datetime
+    wait_cycles: int
+```
+
+`QueueEntry2v2Team` is **no longer needed** — the entry already represents the full
+team. The matchmaker operates on `list[QueueEntry2v2]` directly, where each entry is
+already a complete team.
+
+### 15d. `join_queue_2v2` Transition Changes
+
+```
+Input: leader discord_uid, discord_username, 6 optional race fields, map_vetoes
+Guards:
+  - leader must have player_status == "in_party"
+  - leader must be the party leader (not the member) — check parties_2v2[leader_uid]
+  - at least one comp must be non-None
+  - if mixed comp is set: mixed_leader_race and mixed_member_race must cover different eras
+On success:
+  - Look up or create mmrs_2v2 row for (leader, member) pair
+  - Look up member's nationality + location from players_df
+  - Append one QueueEntry2v2 to state_manager.queue_2v2
+  - Set leader player_status = "queueing"
+  - Set member player_status = "queueing"  ← NEW (both players change status)
+```
+
+### 15e. `leave_queue_2v2` Transition Changes
+
+```
+Input: discord_uid (must be the leader)
+Guards: leader must be in queue_2v2
+On success:
+  - Remove the QueueEntry2v2 from queue_2v2
+  - Set leader player_status = "in_party"
+  - Set member player_status = "in_party"  ← both revert
+```
+
+If a member tries to call leave_queue_2v2, it is rejected ("Only the party leader can
+leave the 2v2 queue.").
+
+### 15f. Match Confirmation (Leader-on-behalf-of-team)
+
+The party leader confirms the match for their entire team. A non-leader `in_match`
+player cannot confirm. After both teams confirm:
+- All four players receive `MatchInfoEmbed2v2` via DM.
+- Leader and member both become `in_match` at match creation (not at confirmation).
+
+The WS `match_found` event payload includes all four player discord_uids so the bot can
+DM each player's confirmation request to the **leaders** only, and the info embed to
+**all four** after `both_confirmed`.
+
+### 15g. `/queue_2v2/join` Request Model
+
+```python
+class Queue2v2JoinRequest(BaseModel):
+    discord_uid: int            # leader only
+    discord_username: str
+    pure_bw_leader_race: str | None = None
+    pure_bw_member_race: str | None = None
+    mixed_leader_race: str | None = None
+    mixed_member_race: str | None = None
+    pure_sc2_leader_race: str | None = None
+    pure_sc2_member_race: str | None = None
+    map_vetoes: list[str] = []
+```
+
+---
+
+## 16. Bot Component Renames (1v1-Specific Suffixes)
+
+The following bot components are currently named generically but will need 2v2
+equivalents. To avoid ambiguity, they must be renamed with a `1v1` suffix before 2v2
+versions are added.
+
+### Components to Rename
+
+| Current name | New name | File |
+|---|---|---|
+| `MatchInfoEmbed` | `MatchInfoEmbed1v1` | `bot/components/embeds.py:413` |
+| `QueueSetupEmbed` | `QueueSetupEmbed1v1` | `bot/components/embeds.py:210` |
+| `QueueSetupView` | `QueueSetupView1v1` | `bot/components/views.py:1736` |
+| `MatchFoundView` | `MatchFoundView1v1` | `bot/components/views.py:1976` |
+| `MatchReportView` | `MatchReportView1v1` | `bot/components/views.py:2007` |
+
+### Files That Reference These Components
+
+**`MatchInfoEmbed`** (→ `MatchInfoEmbed1v1`):
+- `bot/core/ws_listener.py`
+- `bot/helpers/replay_handler.py`
+- `bot/components/views.py` (internal reference from `MatchFoundView`)
+- `bot/core/bootstrap.py`
+- `bot/core/message_queue.py`
+
+**`QueueSetupEmbed`** (→ `QueueSetupEmbed1v1`):
+- `bot/components/views.py` (internal reference from `QueueSetupView`)
+- `bot/commands/user/queue_command.py`
+
+**`QueueSetupView`** (→ `QueueSetupView1v1`):
+- `bot/components/views.py` (self-reference / internal)
+- `bot/commands/user/queue_command.py`
+
+**`MatchFoundView`** (→ `MatchFoundView1v1`):
+- `bot/core/ws_listener.py`
+- `bot/commands/user/queue_command.py`
+
+**`MatchReportView`** (→ `MatchReportView1v1`):
+- `bot/core/ws_listener.py`
+- `bot/helpers/replay_handler.py`
+- `bot/components/views.py` (internal reference)
+- `bot/commands/user/queue_command.py`
+
+### New 2v2 Components to Add
+
+After renaming, create parallel 2v2 versions:
+
+| New component | File |
+|---|---|
+| `MatchInfoEmbed2v2` | `bot/components/embeds.py` |
+| `QueueSetupEmbed2v2` | `bot/components/embeds.py` |
+| `QueueSetupView2v2` | `bot/components/views.py` |
+| `MatchFoundView2v2` | `bot/components/views.py` |
+| `MatchReportView2v2` | `bot/components/views.py` |
+
+---
+
+## 17. Compatibility Audit: Everything Implemented vs. Leader-Picks-All
+
+Scope: everything implemented or designed so far, assessed against the leader-picks-all
+queue model decided in §15.
+
+### ✅ Fully Compatible — No Changes Required
+
+**`PendingPartyInvite2v2` (ephemeral type)**
+Nothing race-specific. The invite only carries player identity. Compatible.
+
+**`PartyEntry2v2` (ephemeral type)**
+Distinguishes `leader_discord_uid` from `member_discord_uid` — exactly the field
+leader-picks-all needs to enforce who can queue. Compatible.
+
+**`_party.py` transitions (`create_party_invite`, `respond_to_party_invite`,
+`leave_party`, `get_party`, `purge_party_membership`)**
+Party lifecycle has no interaction with race selection. `leave_party` already resets
+both players' statuses, which is the right behavior when the party is disbanded while
+the leader is queueing (leave_party → purge from queue → both back to idle).
+Compatible.
+
+**Party backend endpoints and bot `party_command.py`**
+No race information flows through the party system. Compatible.
+
+**`_handle_missing_mmr_2v2` in `_queue.py`**
+Looks up or creates the pair MMR row at queue join time. Unaffected by UI model.
+Compatible.
+
+**`add_mmr_2v2` in `database.py`**
+Unaffected. Compatible.
+
+**`MatchCandidate2v2` (ephemeral type)**
+The final shape — four players with explicitly assigned races — is correct for
+leader-picks-all. The matchmaker produces this from the team compositions declared by
+each party's leader. No change to the type definition needed.
+
+**`MatchParams2v2` (ephemeral type)**
+Map + server + channel. Unaffected. Compatible.
+
+**Schema tables (`matches_2v2`, `mmrs_2v2`, `replays_2v2`)**
+None of these store queue-time race preferences. They store the races *as played* (set
+at match creation from the chosen comp). Compatible.
+
+**`admin statusreset` calling `_purge_party_membership`**
+The admin helper purges the player from the party dict and resets the partner. Under
+leader-picks-all, this also needs to purge the leader's queue entry (removing both
+players from the queue). `_purge_party_membership` already calls `_remove_from_queue_2v2`
+which removes all entries where the uid matches — but under the new model there is only
+one entry per party (the leader's), keyed by the leader's uid. If the admin is resetting
+the **member** (not the leader), `_remove_from_queue_2v2` currently filters on
+`discord_uid` which is the leader's uid in the entry. A member reset would not find
+and remove that entry. **This is a latent bug once the new model is implemented.**
+Fix: `_remove_from_queue_2v2` should also check `party_member_discord_uid`.
+
+**`replay_parser.py` 2v2 implementation (`_infer_winner_2v2`, `indeterminate`)**
+Operates on sc2reader structures, not queue race data. Fully compatible.
+
+**`replay_verifier.py` (`verify_replay_2v2`, `indeterminate` flag)**
+Verifies races, map, settings. Race verification compares sets — compatible with any
+race assignment strategy used by the matchmaker. Compatible.
+
+**Schema `replays_2v2.match_result` CHECK with `'indeterminate'`**
+Unaffected. Compatible.
+
+---
+
+### ❌ Incompatible — Must Be Changed
+
+**`QueueEntry2v2` (ephemeral type)**
+Currently has `bw_race: str | None` and `sc2_race: str | None` — one per player, one
+entry per player. Needs complete redesign to the shape in §15c: one entry per party,
+six optional race fields, member identity fields, member location/nationality.
+
+**`QueueEntry2v2Team` (ephemeral type)**
+No longer needed. Under leader-picks-all, each `QueueEntry2v2` already represents the
+full team — the matchmaker does not need to pair two separate entries. Remove or
+replace with a note that `QueueEntry2v2` IS the team unit.
+
+**`join_queue_2v2` transition in `_queue.py`**
+Currently takes `bw_race` + `sc2_race` for a single player and sets only that player
+to `queueing`. Needs to:
+- Accept the 6 race fields from §15c instead.
+- Enforce that the caller is the party leader (not just any `in_party` player).
+- Look up member's nationality + location from `players_df`.
+- Set **both** leader and member to `queueing`.
+- Validate the mixed comp covers both eras.
+
+**`leave_queue_2v2` transition in `_queue.py`**
+Currently removes an entry by matching `discord_uid` on the entry's `discord_uid`
+field (which will now always be the leader's uid). A member calling this endpoint would
+find nothing and return "Player is not in the 2v2 queue." That is the correct behavior,
+but the error message should be changed to "Only the party leader can leave the 2v2
+queue." Additionally, `leave_queue_2v2` must set **both** leader and member back to
+`in_party`, not just the caller.
+
+**`Queue2v2JoinRequest` model in `models.py`**
+Currently:
+```python
+class Queue2v2JoinRequest(BaseModel):
+    discord_uid: int
+    discord_username: str
+    bw_race: str | None = None
+    sc2_race: str | None = None
+    map_vetoes: list[str] = []
+```
+Replace with the shape in §15g (6 race fields).
+
+**`POST /queue_2v2/join` endpoint in `endpoints.py`**
+Must pass the new 6-field race structure to the transition.
+
+**Plan §5a (party lifecycle flow)**
+The step "Each player independently runs `/queue 2v2`" is wrong. Replace with:
+"Party leader runs `/queue 2v2` → both players set to `queueing`."
+
+**Plan §6 (Queue System section)**
+The entire §6 queue description (§6a–§6d) was written for the individual-queue model.
+The redesign in §15 supersedes §6c–§6d. §6a's `game_mode` parameter question about
+`/queue` vs `/queue2v2` as a separate command is still open.
+
+**Plan §4 (`QueueEntry2v2` and `QueueEntry2v2Team` in the ephemeral types spec)**
+Still describes old per-player shape. §15c supersedes.
+
+**Plan §7 (Matchmaking Algorithm)**
+§7a "Form Teams" step described pairing two separate queue entries into a
+`QueueEntry2v2Team`. This step is eliminated — each `QueueEntry2v2` is already a team.
+The matchmaker operates directly on the queue list, with each entry representing a
+paired team ready to be matched against other teams. §7b pool categorization logic
+changes: instead of looking at `player_1.bw_race` and `player_2.sc2_race` separately,
+inspect the three optional comp fields on each entry:
+- Entry is eligible for `pure_bw` pool if `pure_bw_leader_race is not None`.
+- Entry is eligible for `pure_sc2` pool if `pure_sc2_leader_race is not None`.
+- Entry is eligible for `mixed` pool if `mixed_leader_race is not None`.
+An entry must declare at least one comp to be in the queue; the matchmaker distributes
+multi-pool-eligible entries using the same equalization logic as 1v1.
+
+§7c race assignment: the specific race is no longer resolved by the matchmaker from
+ambiguous individual choices. It is directly read from the chosen comp:
+- If assigned to `pure_bw` pool: `team_player_1_race = pure_bw_leader_race`,
+  `team_player_2_race = pure_bw_member_race`.
+- If assigned to `pure_sc2` pool: similarly from `pure_sc2_*` fields.
+- If assigned to `mixed` pool: from `mixed_leader_race` / `mixed_member_race`.
+
+---
+
+### ⚠️ Not Yet Implemented — Design Has Drifted
+
+**`preferences_2v2` schema (plan §1d)**
+Planned as identical shape to `preferences_1v1` (per-player `last_chosen_races` text
+array). Under leader-picks-all, the preferences are the 6 comp race fields + vetoes,
+stored per leader. The schema should be redesigned as:
+
+```sql
+CREATE TABLE IF NOT EXISTS preferences_2v2 (
+    id                       BIGSERIAL PRIMARY KEY,
+    discord_uid              BIGINT NOT NULL UNIQUE,  -- leader's uid
+    last_pure_bw_leader_race TEXT,
+    last_pure_bw_member_race TEXT,
+    last_mixed_leader_race   TEXT,
+    last_mixed_member_race   TEXT,
+    last_pure_sc2_leader_race TEXT,
+    last_pure_sc2_member_race TEXT,
+    last_chosen_vetoes       TEXT[]
+);
+```
+
+This is a **schema change** — the `preferences_2v2` table has not been created in
+production yet (it was defined in plan §1d but not yet migrated), so this is not a
+breaking change.
+
+**`QueueSetupEmbed` / `QueueSetupView` (bot UI)**
+These currently implement the 1v1 queue UI. They need 2v2 variants with 3 optional
+comp sections (pure BW, mixed, pure SC2), each section showing two selects (leader
+race, member race). Both player names must be visible in the embed so the leader knows
+which select controls which player.
+
+The 1v1 versions must be renamed (§16) before 2v2 variants are added.
+
+**`MatchFoundView` / `MatchReportView` (bot UI)**
+These will need 2v2 variants that are delivered to **all four** players but where the
+confirm/report actions are constrained: confirm only available to leaders, report
+available to any team member (one per team). The 1v1 versions must be renamed first.

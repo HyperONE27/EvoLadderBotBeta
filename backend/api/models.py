@@ -238,10 +238,20 @@ class QueueLeaveResponse(BaseModel):
 
 
 class Queue2v2JoinRequest(BaseModel):
-    discord_uid: int
+    """Queue join request — submitted by the party leader on behalf of the team.
+
+    At least one composition must be fully declared (both race fields non-None).
+    The mixed comp, if declared, must cover different eras (one bw_*, one sc2_*).
+    """
+
+    discord_uid: int  # leader only
     discord_username: str
-    bw_race: str | None = None
-    sc2_race: str | None = None
+    pure_bw_leader_race: str | None = None
+    pure_bw_member_race: str | None = None
+    mixed_leader_race: str | None = None
+    mixed_member_race: str | None = None
+    pure_sc2_leader_race: str | None = None
+    pure_sc2_member_race: str | None = None
     map_vetoes: list[str] = []
 
 

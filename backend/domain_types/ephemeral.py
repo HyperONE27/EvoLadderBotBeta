@@ -87,46 +87,55 @@ class PartyEntry2v2(TypedDict):
 
 
 class QueueEntry2v2(TypedDict):
-    discord_uid: int
-    player_name: str
-    party_partner_discord_uid: int
-    bw_race: str | None
-    sc2_race: str | None
-    nationality: str  # ISO country code; guaranteed set by /setup gate
-    location: str | None  # geographic region code for server selection
+    """One entry per party, created by the party leader.
+
+    Each entry represents a complete team of two.  The leader (discord_uid /
+    player_name) is always player_1; the member (party_member_*) is always
+    player_2.  This convention is preserved through MatchCandidate2v2 and into
+    the matches_2v2 row.
+
+    Race preferences are expressed as three optional team compositions.  A
+    composition is "declared" when both of its race fields are non-None.  The
+    application enforces that each declared comp has both fields set, and that
+    at least one comp is declared.  The mixed comp additionally requires that
+    the two races come from different eras (one bw_*, one sc2_*).
+
+    Only the leader queues; the member's player_status is set to 'queueing' by
+    the join transition and back to 'in_party' by the leave transition.
+    """
+
+    discord_uid: int  # leader
+    player_name: str  # leader
+    party_member_discord_uid: int
+    party_member_name: str
+    # Optional team compositions — at least one must be declared (both fields non-None)
+    pure_bw_leader_race: str | None
+    pure_bw_member_race: str | None
+    mixed_leader_race: str | None
+    mixed_member_race: str | None
+    pure_sc2_leader_race: str | None
+    pure_sc2_member_race: str | None
+    # Both players' geo data for server selection
+    nationality: str  # leader's ISO country code
+    location: str | None  # leader's geographic region code
+    member_nationality: str
+    member_location: str | None
     team_mmr: int  # pair MMR from mmrs_2v2, looked up at queue-join time
     team_letter_rank: str  # from 2v2 leaderboard; "U" if unranked
-    map_vetoes: list[str]
+    map_vetoes: list[str]  # leader's vetoes only; member has no separate input
     joined_at: datetime
     wait_cycles: int
 
 
-class QueueEntry2v2Team(TypedDict):
-    """Formed by the matchmaker from two paired QueueEntry2v2 objects.
+class MatchCandidate2v2(TypedDict):
+    """Output of the 2v2 matchmaker.
 
-    Internal to the matchmaker; never stored in StateManager.
+    player_1 on each team is the party leader (maps from QueueEntry2v2.discord_uid);
+    player_2 is the party member (maps from QueueEntry2v2.party_member_discord_uid).
+    Races are the specific values drawn from whichever team composition was chosen
+    during pool assignment — not preferences, but the resolved race for this match.
     """
 
-    player_1_discord_uid: int
-    player_2_discord_uid: int
-    player_1_name: str
-    player_2_name: str
-    player_1_bw_race: str | None
-    player_1_sc2_race: str | None
-    player_2_bw_race: str | None
-    player_2_sc2_race: str | None
-    player_1_nationality: str
-    player_2_nationality: str
-    player_1_location: str | None
-    player_2_location: str | None
-    team_mmr: int
-    team_letter_rank: str
-    map_vetoes: list[str]  # union of both players' vetoes
-    joined_at: datetime  # earlier of the two join timestamps
-    wait_cycles: int  # max of the two wait_cycles values
-
-
-class MatchCandidate2v2(TypedDict):
     team_1_player_1_discord_uid: int
     team_1_player_2_discord_uid: int
     team_1_player_1_name: str
