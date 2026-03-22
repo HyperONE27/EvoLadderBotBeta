@@ -22,6 +22,7 @@ from bot.commands.user.activity_command import register_activity_command
 from bot.commands.user.greeting_command import register_greeting_command
 from bot.commands.user.leaderboard_command import register_leaderboard_command
 from bot.commands.user.notifyme_command import register_notifyme_command
+from bot.commands.user.party_command import register_party_command
 from bot.commands.user.profile_command import register_profile_command
 from bot.commands.user.queue_command import register_queue_command
 from bot.commands.user.setcountry_command import register_setcountry_command
@@ -64,6 +65,7 @@ def _register_commands(client: discord.Client) -> None:
     # register_help_command(tree)
     register_leaderboard_command(tree)
     register_notifyme_command(tree)
+    register_party_command(tree)
     register_profile_command(tree)
     # register_prune_command(tree)
     register_queue_command(tree)
