@@ -237,6 +237,28 @@ class QueueLeaveResponse(BaseModel):
     message: str | None
 
 
+class Queue2v2JoinRequest(BaseModel):
+    discord_uid: int
+    discord_username: str
+    bw_race: str | None = None
+    sc2_race: str | None = None
+    map_vetoes: list[str] = []
+
+
+class Queue2v2JoinResponse(BaseModel):
+    success: bool
+    message: str | None
+
+
+class Queue2v2LeaveRequest(BaseModel):
+    discord_uid: int
+
+
+class Queue2v2LeaveResponse(BaseModel):
+    success: bool
+    message: str | None
+
+
 # --- /matches_1v1 actions ---
 
 

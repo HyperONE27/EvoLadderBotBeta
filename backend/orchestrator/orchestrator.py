@@ -261,6 +261,31 @@ class Orchestrator:
         return self._transition_manager.leave_queue_1v1(discord_uid)
 
     # ------------------------------------------------------------------
+    # Queue 2v2
+    # ------------------------------------------------------------------
+
+    def join_queue_2v2(
+        self,
+        discord_uid: int,
+        discord_username: str,
+        bw_race: str | None,
+        sc2_race: str | None,
+        map_vetoes: list[str],
+    ) -> tuple[bool, str | None]:
+        """Add a player to the 2v2 queue."""
+        return self._transition_manager.join_queue_2v2(
+            discord_uid,
+            discord_username,
+            bw_race,
+            sc2_race,
+            map_vetoes,
+        )
+
+    def leave_queue_2v2(self, discord_uid: int) -> tuple[bool, str | None]:
+        """Remove a player from the 2v2 queue."""
+        return self._transition_manager.leave_queue_2v2(discord_uid)
+
+    # ------------------------------------------------------------------
     # Matchmaking
     # ------------------------------------------------------------------
 

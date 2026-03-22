@@ -56,6 +56,10 @@ from backend.api.models import (
     PreferencesUpsertResponse,
     ProfileMmrEntry,
     ProfileResponse,
+    Queue2v2JoinRequest,
+    Queue2v2JoinResponse,
+    Queue2v2LeaveRequest,
+    Queue2v2LeaveResponse,
     QueueJoinAnalyticsBucket,
     QueueJoinAnalyticsResponse,
     QueueJoinRequest,
@@ -592,6 +596,62 @@ async def queue_stats(
 ) -> QueueStatsResponse:
     stats = app.orchestrator.get_queue_stats()
     return QueueStatsResponse(**stats)
+
+
+# --- /queue_2v2 ---
+
+
+@router.post("/queue_2v2/join", response_model=Queue2v2JoinResponse)
+async def queue_2v2_join(
+    request: Queue2v2JoinRequest,
+    app: Backend = Depends(get_backend),
+    ws: ConnectionManager = Depends(get_ws_manager),
+) -> Queue2v2JoinResponse:
+    success, message = app.orchestrator.join_queue_2v2(
+        request.discord_uid,
+        request.discord_username,
+        request.bw_race,
+        request.sc2_race,
+        request.map_vetoes,
+    )
+    if not success:
+        code = 400 if message and "race" in message.lower() else 409
+        raise HTTPException(status_code=code, detail=message)
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.discord_uid,
+            "event_type": "player_command",
+            "action": "queue_join",
+            "game_mode": "2v2",
+            "event_data": {
+                "bw_race": request.bw_race,
+                "sc2_race": request.sc2_race,
+                "map_vetoes": request.map_vetoes,
+            },
+        }
+    )
+    await app.broadcast_queue_join_activity_if_needed(ws, request.discord_uid, "2v2")
+    return Queue2v2JoinResponse(success=True, message=None)
+
+
+@router.delete("/queue_2v2/leave", response_model=Queue2v2LeaveResponse)
+async def queue_2v2_leave(
+    request: Queue2v2LeaveRequest,
+    app: Backend = Depends(get_backend),
+) -> Queue2v2LeaveResponse:
+    success, message = app.orchestrator.leave_queue_2v2(request.discord_uid)
+    if not success:
+        raise HTTPException(status_code=409, detail=message)
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.discord_uid,
+            "event_type": "player_command",
+            "action": "queue_leave",
+            "game_mode": "2v2",
+            "event_data": {},
+        }
+    )
+    return Queue2v2LeaveResponse(success=True, message=None)
 
 
 # --- /preferences_1v1 ---

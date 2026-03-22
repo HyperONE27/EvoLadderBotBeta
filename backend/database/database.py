@@ -679,3 +679,29 @@ class DatabaseWriter:
         self.client.table("mmrs_1v1").upsert(
             serialised, on_conflict="discord_uid,race"
         ).execute()
+
+    def add_mmr_2v2(
+        self,
+        player_1_discord_uid: int,
+        player_2_discord_uid: int,
+        player_1_name: str,
+        player_2_name: str,
+        mmr: int,
+    ) -> dict:
+        """Insert a new 2v2 MMR row with default stats and return the created row.
+
+        UIDs must already be in normalized order (smaller first).
+        """
+        data: dict[str, Any] = {
+            "player_1_discord_uid": player_1_discord_uid,
+            "player_2_discord_uid": player_2_discord_uid,
+            "player_1_name": player_1_name,
+            "player_2_name": player_2_name,
+            "mmr": mmr,
+            "games_played": 0,
+            "games_won": 0,
+            "games_lost": 0,
+            "games_drawn": 0,
+        }
+        response = self.client.table("mmrs_2v2").insert(data).execute()
+        return cast(dict[str, Any], response.data[0])
