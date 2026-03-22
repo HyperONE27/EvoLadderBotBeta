@@ -93,6 +93,10 @@ class TransitionManager:
     update_replay_status = _replay.update_replay_status
     update_match_replay_refs = _replay.update_match_replay_refs
     replay_auto_resolve_match = _replay.replay_auto_resolve_match
+    insert_replay_2v2_pending = _replay.insert_replay_2v2_pending
+    update_replay_2v2_status = _replay.update_replay_2v2_status
+    update_match_2v2_replay_refs = _replay.update_match_2v2_replay_refs
+    replay_auto_resolve_match_2v2 = _replay.replay_auto_resolve_match_2v2
 
     # -- leaderboard (_leaderboard.py) ---------------------------------------
     rebuild_leaderboard = _leaderboard.rebuild_leaderboard

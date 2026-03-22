@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import polars as pl
 import structlog
 
-from backend.domain_types.dataframes import Matches1v1Row
+from backend.domain_types.dataframes import Matches1v1Row, Matches2v2Row
 from common.datetime_helpers import utc_now
 
 if TYPE_CHECKING:
@@ -212,5 +212,203 @@ def replay_auto_resolve_match(
         f"{uploader_discord_uid}: {replay_result} "
         f"(p1 {match['player_1_mmr']}→{new_p1_mmr}, "
         f"p2 {match['player_2_mmr']}→{new_p2_mmr})"
+    )
+    return updated
+
+
+# ------------------------------------------------------------------
+# 2v2 replay operations
+# ------------------------------------------------------------------
+
+
+def insert_replay_2v2_pending(
+    self: TransitionManager,
+    match_id: int,
+    discord_uid: int,
+    parsed: dict,
+    initial_path: str,
+    uploaded_at: datetime,
+) -> dict:
+    """Insert a 2v2 replay row with ``upload_status='pending'``.
+
+    Write-through: DB first, then in-memory cache.
+    """
+    data = {
+        "matches_2v2_id": match_id,
+        "replay_path": initial_path,
+        "replay_hash": parsed["replay_hash"],
+        "replay_time": parsed["replay_time"],
+        "uploaded_at": uploaded_at.isoformat(),
+        "team_1_player_1_name": parsed["team_1_player_1_name"],
+        "team_1_player_2_name": parsed["team_1_player_2_name"],
+        "team_2_player_1_name": parsed["team_2_player_1_name"],
+        "team_2_player_2_name": parsed["team_2_player_2_name"],
+        "team_1_player_1_race": parsed["team_1_player_1_race"],
+        "team_1_player_2_race": parsed["team_1_player_2_race"],
+        "team_2_player_1_race": parsed["team_2_player_1_race"],
+        "team_2_player_2_race": parsed["team_2_player_2_race"],
+        "match_result": parsed["match_result"],
+        "team_1_player_1_handle": parsed["team_1_player_1_handle"],
+        "team_1_player_2_handle": parsed["team_1_player_2_handle"],
+        "team_2_player_1_handle": parsed["team_2_player_1_handle"],
+        "team_2_player_2_handle": parsed["team_2_player_2_handle"],
+        "observers": parsed["observers"],
+        "map_name": parsed["map_name"],
+        "game_duration_seconds": parsed["game_duration_seconds"],
+        "game_privacy": parsed["game_privacy"],
+        "game_speed": parsed["game_speed"],
+        "game_duration_setting": parsed["game_duration_setting"],
+        "locked_alliances": parsed["locked_alliances"],
+        "cache_handles": parsed["cache_handles"],
+        "upload_status": "pending",
+    }
+
+    created = self._db_writer.add_replay_2v2(data)
+
+    df = self._state_manager.replays_2v2_df
+    self._state_manager.replays_2v2_df = df.vstack(
+        pl.DataFrame([created]).cast(df.schema)
+    )
+    return created
+
+
+def update_replay_2v2_status(
+    self: TransitionManager,
+    replay_id: int,
+    status: str,
+    final_path: str | None = None,
+) -> None:
+    """Update ``upload_status`` for a 2v2 replay row.
+
+    Write-through: DB first, then in-memory cache.
+    """
+    self._db_writer.update_replay_2v2_status(replay_id, status, final_path)
+
+    df = self._state_manager.replays_2v2_df
+    rows = df.filter(pl.col("id") == replay_id)
+    if rows.is_empty():
+        return
+
+    row = rows.row(0, named=True)
+    row["upload_status"] = status
+    if final_path is not None:
+        row["replay_path"] = final_path
+
+    self._state_manager.replays_2v2_df = df.filter(pl.col("id") != replay_id).vstack(
+        pl.DataFrame([row]).cast(df.schema)
+    )
+
+
+def update_match_2v2_replay_refs(
+    self: TransitionManager,
+    match_id: int,
+    team_num: int,
+    replay_path: str,
+    replay_row_id: int,
+    uploaded_at: datetime,
+) -> None:
+    """Update a 2v2 match row with the latest replay path, row ID, and timestamp.
+
+    Write-through: DB first, then in-memory cache.
+    """
+    from backend.orchestrator.transitions._match_2v2 import _update_match_2v2_cache
+
+    self._db_writer.update_match_2v2_replay(
+        match_id, team_num, replay_path, replay_row_id, uploaded_at
+    )
+
+    _update_match_2v2_cache(
+        self,
+        match_id,
+        **{
+            f"team_{team_num}_replay_path": replay_path,
+            f"team_{team_num}_replay_row_id": replay_row_id,
+            f"team_{team_num}_uploaded_at": uploaded_at,
+        },
+    )
+
+
+def replay_auto_resolve_match_2v2(
+    self: TransitionManager,
+    match_id: int,
+    uploader_discord_uid: int,
+    replay_result: str,
+) -> Matches2v2Row:
+    """Auto-resolve a 2v2 match based on a validated replay.
+
+    ``replay_result`` must already be in match-team terms
+    (``team_1_win``, ``team_2_win``, or ``draw``).
+    """
+    from backend.orchestrator.transitions._match_2v2 import (
+        _apply_match_2v2_resolution,
+        _calculate_mmr_changes_2v2,
+        _get_match_2v2_row,
+    )
+
+    match = _get_match_2v2_row(self, match_id)
+    if match is None:
+        raise ValueError(f"2v2 match #{match_id} not found for auto-resolve")
+
+    # Determine which team the uploader is on.
+    t1_uids = {
+        match["team_1_player_1_discord_uid"],
+        match["team_1_player_2_discord_uid"],
+    }
+    if uploader_discord_uid in t1_uids:
+        t1_report: str | None = replay_result
+        t1_reporter: int | None = uploader_discord_uid
+        t2_report: str | None = "no_report" if match["team_2_report"] is None else None
+        t2_reporter: int | None = None
+    else:
+        t2_report = replay_result
+        t2_reporter = uploader_discord_uid
+        t1_report = "no_report" if match["team_1_report"] is None else None
+        t1_reporter = None
+
+    now = utc_now()
+    new_t1, new_t2, t1_change, t2_change = _calculate_mmr_changes_2v2(
+        match, replay_result
+    )
+
+    updated = _apply_match_2v2_resolution(
+        self,
+        match_id,
+        match,
+        replay_result,
+        t1_change,
+        t2_change,
+        new_t1,
+        new_t2,
+        now,
+        team_1_report=t1_report,
+        team_1_reporter_discord_uid=t1_reporter,
+        team_2_report=t2_report,
+        team_2_reporter_discord_uid=t2_reporter,
+    )
+
+    self._db_writer.insert_event(
+        {
+            "discord_uid": 1,
+            "event_type": "match_event",
+            "action": "match_completed",
+            "game_mode": "2v2",
+            "match_id": match_id,
+            "event_data": {
+                "game_mode": "2v2",
+                "match_id": match_id,
+                "result": replay_result,
+                "t1_mmr_change": t1_change,
+                "t2_mmr_change": t2_change,
+                "via": "replay_auto_resolve",
+                "uploader_discord_uid": uploader_discord_uid,
+            },
+        }
+    )
+
+    logger.info(
+        f"2v2 match #{match_id} auto-resolved via replay upload by "
+        f"{uploader_discord_uid}: {replay_result} "
+        f"(t1 {match['team_1_mmr']}→{new_t1}, "
+        f"t2 {match['team_2_mmr']}→{new_t2})"
     )
     return updated

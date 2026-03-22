@@ -180,6 +180,26 @@ class LeaderboardResponse(BaseModel):
     leaderboard: list[LeaderboardEntry]
 
 
+class LeaderboardEntry2v2Model(BaseModel):
+    player_1_discord_uid: int
+    player_2_discord_uid: int
+    player_1_name: str
+    player_2_name: str
+    ordinal_rank: int
+    active_ordinal_rank: int
+    letter_rank: str
+    mmr: int
+    games_played: int
+    games_won: int
+    games_lost: int
+    games_drawn: int
+    last_played_at: str | None
+
+
+class LeaderboardResponse2v2(BaseModel):
+    leaderboard: list[LeaderboardEntry2v2Model]
+
+
 # --- /profile ---
 
 

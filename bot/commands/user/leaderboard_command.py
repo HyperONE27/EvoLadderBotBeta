@@ -67,6 +67,25 @@ async def _ensure_leaderboard(caller_uid: int) -> list[dict]:
         return []
 
 
+async def _ensure_leaderboard_2v2(caller_uid: int) -> list[dict]:
+    """Return the cached 2v2 leaderboard, fetching from the backend if empty."""
+    cache = get_cache()
+    if cache.leaderboard_2v2:
+        return cache.leaderboard_2v2
+
+    try:
+        async with get_session().get(
+            f"{BACKEND_URL}/leaderboard_2v2", params={"caller_uid": caller_uid}
+        ) as resp:
+            data = await resp.json()
+        entries: list[dict] = data.get("leaderboard", [])
+        cache.leaderboard_2v2 = entries
+        return entries
+    except Exception:
+        logger.exception("Failed to fetch 2v2 leaderboard from backend")
+        return []
+
+
 def _apply_filters(
     entries: list[dict],
     *,
@@ -223,6 +242,97 @@ class LeaderboardEmbed(discord.Embed):
                 page=str(page),
                 total_pages=str(total_pages),
                 total_players=str(total_players),
+            )
+        )
+        apply_default_embed_footer(self, locale=locale)
+
+
+class Leaderboard2v2Embed(discord.Embed):
+    """Leaderboard embed for 2v2 — shows team pairs, no race column."""
+
+    def __init__(
+        self,
+        entries: list[dict],
+        page: int,
+        total_pages: int,
+        total_teams: int,
+        *,
+        rank_filter: str | None = None,
+        locale: str = "enUS",
+    ) -> None:
+        super().__init__(
+            title=t("leaderboard_embed.title.2", locale),
+            color=discord.Color.gold(),
+        )
+
+        all_label = t("leaderboard_embed.label_all.1", locale)
+        if rank_filter is None:
+            rank_label = all_label
+        elif rank_filter == _RANKED_ONLY:
+            rank_label = t("leaderboard_embed.label_ranked_only.1", locale)
+        else:
+            rank_label = rank_filter
+        self.add_field(
+            name="",
+            value=t("leaderboard_embed.filter_rank.1", locale, rank_label=rank_label),
+            inline=False,
+        )
+
+        start = (page - 1) * _PAGE_SIZE
+        page_entries = entries[start : start + _PAGE_SIZE]
+
+        if not page_entries:
+            self.add_field(
+                name=t("leaderboard_embed.field_name_empty.1", locale),
+                value=t("leaderboard_embed.no_players.1", locale),
+                inline=False,
+            )
+        else:
+            chunks: list[str] = []
+            for i in range(0, len(page_entries), _PLAYERS_PER_FIELD):
+                chunk = page_entries[i : i + _PLAYERS_PER_FIELD]
+                lines: list[str] = []
+                for entry in chunk:
+                    rank_emote = get_rank_emote(entry["letter_rank"])
+                    if EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER_RANK:
+                        active_rank = entry.get("active_ordinal_rank", -1)
+                        ordinal = f"{active_rank:>4d}" if active_rank > 0 else "   -"
+                    else:
+                        ordinal = f"{entry['ordinal_rank']:>4d}"
+                    p1 = entry.get("player_1_name", "?")[:10]
+                    p2 = entry.get("player_2_name", "?")[:10]
+                    mmr = entry["mmr"]
+                    lines.append(
+                        f"`{ordinal}.` {rank_emote} `{p1:<10}` + `{p2:<10}` `{mmr}`"
+                    )
+                chunks.append("\n".join(lines))
+
+            for i in range(0, len(chunks), 2):
+                pair_idx = i // 2
+                pair_start = start + pair_idx * 10 + 1
+                pair_end = pair_start + 9
+                self.add_field(
+                    name=t(
+                        "leaderboard_embed.field_name.1",
+                        locale,
+                        start=str(pair_start),
+                        end=str(pair_end),
+                    ),
+                    value=chunks[i],
+                    inline=True,
+                )
+                if i + 1 < len(chunks):
+                    self.add_field(name="\u200b", value=chunks[i + 1], inline=True)
+                if i + 2 < len(chunks):
+                    self.add_field(name=" ", value=" ", inline=False)
+
+        self.set_footer(
+            text=t(
+                "leaderboard_embed.footer.1",
+                locale,
+                page=str(page),
+                total_pages=str(total_pages),
+                total_players=str(total_teams),
             )
         )
         apply_default_embed_footer(self, locale=locale)
@@ -541,6 +651,74 @@ class LeaderboardView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
 
 
+class Leaderboard2v2View(discord.ui.View):
+    """2v2 leaderboard view — rank filter + nationality + pagination (no race filter)."""
+
+    def __init__(self, entries: list[dict], locale: str = "enUS") -> None:
+        super().__init__(timeout=300)
+        self._all_entries = entries
+        self.locale: str = locale
+        self.current_page: int = 1
+        self.country_page1_selection: list[str] = []
+        self.country_page2_selection: list[str] = []
+        self.rank_filter: str | None = None
+        self._rebuild_components()
+
+    @property
+    def nationality_filter(self) -> list[str] | None:
+        combined = self.country_page1_selection + self.country_page2_selection
+        return combined or None
+
+    def _filtered(self) -> list[dict]:
+        result = self._all_entries
+        if self.rank_filter == _RANKED_ONLY:
+            result = [e for e in result if e["letter_rank"] != "U"]
+        elif self.rank_filter:
+            result = [e for e in result if e["letter_rank"] == self.rank_filter]
+        return result
+
+    def _total_pages(self, total: int) -> int:
+        pages = max(1, (total + _PAGE_SIZE - 1) // _PAGE_SIZE)
+        return min(pages, 25)
+
+    def _rebuild_components(self) -> None:
+        self.clear_items()
+        filtered = self._filtered()
+        total_pages = self._total_pages(len(filtered))
+        loc = self.locale
+
+        self.add_item(PreviousPageButton(disabled=self.current_page <= 1, locale=loc))
+        self.add_item(
+            NextPageButton(disabled=self.current_page >= total_pages, locale=loc)
+        )
+        self.add_item(RankFilterButton(self.rank_filter, locale=loc))
+        self.add_item(ClearFiltersButton(locale=loc))
+        self.add_item(
+            CountryFilterPage1Select(self.country_page1_selection, locale=loc)
+        )
+        self.add_item(
+            CountryFilterPage2Select(self.country_page2_selection, locale=loc)
+        )
+        self.add_item(PageNavigationSelect(total_pages, self.current_page, locale=loc))
+
+    def build_embed(self) -> Leaderboard2v2Embed:
+        filtered = self._filtered()
+        total_pages = self._total_pages(len(filtered))
+        return Leaderboard2v2Embed(
+            filtered,
+            self.current_page,
+            total_pages,
+            len(filtered),
+            rank_filter=self.rank_filter,
+            locale=self.locale,
+        )
+
+    async def refresh(self, interaction: discord.Interaction) -> None:
+        self._rebuild_components()
+        embed = self.build_embed()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+
 # ---------------------------------------------------------------------------
 # Command registration
 # ---------------------------------------------------------------------------
@@ -560,7 +738,7 @@ def register_leaderboard_command(tree: app_commands.CommandTree) -> None:
     ) -> None:
         locale = get_player_locale(interaction.user.id)
 
-        if game_mode != "1v1":
+        if game_mode not in ("1v1", "2v2"):
             await interaction.response.send_message(
                 t(
                     "unsupported_game_mode_embed.description.1",
@@ -573,7 +751,15 @@ def register_leaderboard_command(tree: app_commands.CommandTree) -> None:
 
         await interaction.response.defer()
 
-        entries = await _ensure_leaderboard(interaction.user.id)
-        view = LeaderboardView(entries, locale=locale)
-        embed = view.build_embed()
-        await interaction.followup.send(embed=embed, view=view)
+        if game_mode == "2v2":
+            entries_2v2 = await _ensure_leaderboard_2v2(interaction.user.id)
+            view_2v2 = Leaderboard2v2View(entries_2v2, locale=locale)
+            await interaction.followup.send(
+                embed=view_2v2.build_embed(), view=view_2v2
+            )
+        else:
+            entries_1v1 = await _ensure_leaderboard(interaction.user.id)
+            view_1v1 = LeaderboardView(entries_1v1, locale=locale)
+            await interaction.followup.send(
+                embed=view_1v1.build_embed(), view=view_1v1
+            )

@@ -13,6 +13,7 @@ from backend.domain_types.dataframes import (
 )
 from backend.domain_types.ephemeral import (
     LeaderboardEntry1v1,
+    LeaderboardEntry2v2,
     QueueEntry1v1,
     QueueEntry2v2,
 )
@@ -117,6 +118,10 @@ class StateReader:
     def get_leaderboard_1v1(self) -> list[LeaderboardEntry1v1]:
         """Return the current 1v1 leaderboard."""
         return self._state_manager.leaderboard_1v1
+
+    def get_leaderboard_2v2(self) -> list[LeaderboardEntry2v2]:
+        """Return the current 2v2 leaderboard."""
+        return self._state_manager.leaderboard_2v2
 
     def get_letter_rank_1v1(self, discord_uid: int | None, race: str | None) -> str:
         """Letter rank from the in-memory leaderboard, or ``\"U\"`` if unknown."""

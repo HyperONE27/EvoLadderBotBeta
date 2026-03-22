@@ -514,9 +514,13 @@ async def _on_match_conflict_2v2(client: discord.Client, match_data: dict) -> No
 def _on_leaderboard_updated(data: dict) -> None:
     """Replace the cached leaderboard with the new data from the backend."""
     cache = get_cache()
-    entries = data.get("leaderboard", [])
-    cache.leaderboard_1v1 = entries
-    logger.info(f"[WS] Leaderboard cache updated: {len(entries)} entries")
+    entries_1v1 = data.get("leaderboard", [])
+    entries_2v2 = data.get("leaderboard_2v2", [])
+    cache.leaderboard_1v1 = entries_1v1
+    cache.leaderboard_2v2 = entries_2v2
+    logger.info(
+        f"[WS] Leaderboard cache updated: {len(entries_1v1)} 1v1, {len(entries_2v2)} 2v2 entries"
+    )
 
 
 # ---------------------------------------------------------------------------

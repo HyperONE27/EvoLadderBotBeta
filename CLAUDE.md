@@ -9,7 +9,7 @@ EvoLadderBotBeta is a Discord-based ladder (ranked matchmaking) system for the S
 1. **Backend** — a FastAPI service holding all game state in-memory (Polars DataFrames) backed by Supabase (PostgreSQL). Exposed at `BACKEND_URL`.
 2. **Bot** — a discord.py client that handles all Discord interactions and forwards state-changing actions to the backend via HTTP calls (using `aiohttp`). Receives real-time events from the backend via WebSocket.
 
-1v1 mode is fully implemented. 2v2 mode is partially implemented (matchmaker, party system, queue/match lifecycle, bot UI, and preferences are live; replay upload and leaderboard are not yet wired). 3v3 and FFA are planned but not yet in the codebase.
+1v1 mode is fully implemented. 2v2 mode is partially implemented (matchmaker, party system, queue/match lifecycle, bot UI, and preferences are live; replay upload, leaderboard display, and admin tools are not yet wired). 3v3 and FFA are planned but not yet in the codebase.
 
 ## Running the Project
 
@@ -75,12 +75,12 @@ Discord Users
 
 ### Backend Internals
 
-- **`Backend`** (`backend/core/bootstrap.py`) — top-level singleton created at FastAPI startup. Holds `StateManager`, `Orchestrator`, `DatabaseWriter`, `StorageWriter`, and a `ProcessPoolExecutor` for replay parsing.
+- **`Backend`** (`backend/core/bootstrap.py`) — top-level singleton created at FastAPI startup. Holds `StateManager`, `Orchestrator`, `DatabaseWriter`, `StorageWriter`, and a `ProcessPoolExecutor` for replay parsing. `ensure_pool_healthy()` submits a no-op to the pool before each replay parse and detects dead workers (C extension segfaults in `sc2reader` permanently break Python's stdlib executor); if the pool is broken it is replaced automatically.
 - **`StateManager`** (`backend/orchestrator/state.py`) — holds all in-memory state: Polars DataFrames for each DB table (admins, players, notifications, events, matches_1v1, mmrs_1v1, preferences_1v1, replays_1v1, matches_2v2, mmrs_2v2, preferences_2v2, replays_2v2), static JSON data (countries, maps, mods, races, regions, etc.), live queue lists (`queue_1v1`, `queue_2v2`), leaderboard lists, and the `parties_2v2` dict (keyed by leader UID). Populated at startup via `DatabaseReader.load_all_tables()` and `JSONLoader`.
 - **`Orchestrator`** (`backend/orchestrator/orchestrator.py`) — the public API surface of the backend. Delegates reads to `StateReader` and writes to `TransitionManager`.
 - **`StateReader`** (`backend/orchestrator/reader.py`) — all read operations delegated to lookup modules.
-- **`TransitionManager`** (`backend/orchestrator/transitions.py`) — performs all mutations on `StateManager` DataFrames, then queues async writes back to Supabase via `DatabaseWriter`.
-- **Lookups** (`backend/lookups/`) — one module per domain (players, matches, mmr, replays, admin, preferences_1v1, preferences_2v2). Each `init_*` function registers a global `_state_manager` at startup and exposes lookup functions. `notification_lookups.py` and `event_lookups.py` exist as stubs but are not yet wired up.
+- **`TransitionManager`** (`backend/orchestrator/transitions/`) — performs all mutations on `StateManager` DataFrames, then queues async writes back to Supabase via `DatabaseWriter`. Split into submodules: `_base`, `_admin`, `_leaderboard`, `_match`, `_match_2v2`, `_mmr`, `_notifications`, `_party`, `_player`, `_queue`, `_replay`.
+- **Lookups** (`backend/lookups/`) — one module per domain (players, matches, mmr, replays, admin, preferences_1v1, preferences_2v2, notifications). Each `init_*` function registers a global `_state_manager` at startup and exposes lookup functions.
 - **`DatabaseReader`** / **`DatabaseWriter`** (`backend/database/database.py`) — thin wrappers around the Supabase Python client. `DatabaseReader.load_all_tables()` is called once at startup; writes happen via `DatabaseWriter`. Reads use anon key, writes use service_role_key.
 - **`StorageWriter`** (`backend/database/storage.py`) — handles replay file uploads to Supabase Storage bucket. Path format: `replays/{match_id}/{discord_uid}/{timestamp}_{hash}.SC2Replay`.
 - **Table schemas** are defined as Polars `DataType` dicts in `backend/domain_types/dataframes.py` (`TABLE_SCHEMAS` registry) and used for strict validation on load. TypedDict row types (`AdminsRow`, `PlayersRow`, `Matches1v1Row`, etc.) are in the same file.
@@ -137,11 +137,19 @@ Discord Users
 **Replay:**
 - `POST /matches_1v1/{match_id}/replay` — 7-step flow: validate, parse (in ProcessPoolExecutor), insert pending row, upload to storage, update status, update match refs, run verifier
 
+**Leaderboard & Analytics:**
+- `GET /leaderboard_1v1` — current 1v1 leaderboard with letter ranks
+- `GET /analytics/queue_joins` — bucketed queue join counts for `/activity` chart
+
+**Notifications:**
+- `GET /notifications/{discord_uid}` — notification preferences for a player
+- `PUT /notifications` — upsert notification preferences (e.g. `/notifyme` opt-in)
+
 ### WebSocket Events
 
 The backend broadcasts events via `ConnectionManager` (`backend/api/websocket.py`) at `/ws`. The bot listens via `bot/core/ws_listener.py` (auto-reconnects on disconnect with 5s backoff).
 
-Six event types (same for both 1v1 and 2v2):
+Eight event types:
 | Event | Meaning |
 |---|---|
 | `match_found` | Matchmaker paired two players / two teams |
@@ -150,6 +158,10 @@ Six event types (same for both 1v1 and 2v2):
 | `match_abandoned` | Confirmation window expired (60s timeout) |
 | `match_completed` | Both sides agreed on match result |
 | `match_conflict` | Sides reported conflicting results |
+| `leaderboard_updated` | Leaderboard rebuilt after a match resolution |
+| `queue_join_activity` | Anonymous notification to opted-in subscribers that someone queued |
+
+The first six are match lifecycle events (same for both 1v1 and 2v2). The last two are system-level broadcasts.
 
 **Game-mode routing:** 2v2 broadcasts include `"game_mode": "2v2"` in the payload. 1v1 broadcasts omit the field. The bot's `_handle_message` reads `data.get("game_mode", "1v1")` to dispatch to the correct 1v1 or 2v2 handler set. This means 1v1 broadcasts require no changes to support 2v2.
 
@@ -174,6 +186,8 @@ Commands are organized under `bot/commands/{user,admin,owner}/`. Each command fi
 - `/profile` — view player data + MMR breakdowns
 - `/greeting` — greeting/welcome command
 - `/notifyme` — opt-in to DM notifications when someone joins the queue
+- `/activity` — line chart of queue join attempts over time (DM-only, uses `/analytics/queue_joins`)
+- `/leaderboard` — 1v1 leaderboard with letter ranks and MMR
 - `/party invite {user}` — invite a player to form a 2v2 party
 - `/party leave` — leave current party
 - `/party status` — show current party state
@@ -197,7 +211,7 @@ All checks hit the backend API to verify permissions:
 - `check_if_admin()` — GET /admins/{uid}, role != "inactive" (async)
 - `check_if_owner()` — GET /admins/{uid}, role == "owner" (async)
 
-Custom exceptions: `NotInDMError`, `BannedError`, `NotAdminError`, `NotOwnerError`.
+Custom exceptions: `NotInDMError`, `BannedError`, `NotAdminError`, `NotOwnerError`, `NotAcceptedTosError`, `NotCompletedSetupError`, `AlreadyQueueingError`, `NameNotUniqueError`.
 
 ### Bot UI Components (`bot/components/`)
 
@@ -263,7 +277,7 @@ Algorithm:
 
 MMR for 2v2 is per **unique player pair** (stored in `mmrs_2v2` with the smaller UID first), not per individual player or race.
 
-**Match Parameters** (`backend/algorithms/match_params.py`): Random map from non-vetoed pool, server from `cross_table[region_1][region_2]`, in-game channel: `SCEvoLadder`.
+**Match Parameters** — `backend/algorithms/match_params.py` (1v1) and `backend/algorithms/match_params_2v2.py` (2v2). Random map from non-vetoed pool, in-game channel `SCEvoLadder`. 1v1 resolves server from `cross_table[region_1][region_2]`. 2v2 resolves server by majority vote across four player regions (deduplicates, then falls back to pair lookup or most common region).
 
 ### Replay System
 
@@ -299,7 +313,7 @@ Both use Railpack builder with restart-on-failure (max 10 retries).
 
 `discord.py`, `fastapi`, `polars`, `supabase`, `sc2reader`, `xxhash`, `uvicorn`, `python-dotenv`, `python-multipart`, `structlog`
 
-Dev: `ruff`, `mypy`
+Dev: `ruff`, `mypy`, `pytest`
 
 ### Naming Conventions
 
@@ -319,14 +333,22 @@ These rules apply to all schema types: SQL tables, Polars schemas, TypedDicts, a
 - The `common/` package is shared between backend and bot — changes here affect both processes.
 - Admin roles are seeded from the `ADMINS` env var (no longer required — admins table is loaded from Supabase). The `ADMINS` env var reference in older docs is outdated.
 
+### Testing
+
+Invariant-based test suite in `tests/`. Tests check structural properties (zero-sum, conservation, optimality, symmetry) rather than encoding specific numerical outcomes, so they survive tuning changes. See `docs/testing.md` for philosophy and organisation.
+
+```bash
+python -m pytest tests/ -v
+```
+
+`tests/conftest.py` sets dummy env vars so algorithm imports work without `.env`.
+
 ### Not Yet Implemented
 
 These items appear in planning docs or have stub code but are not functional:
-- Leaderboard (types exist in ephemeral.py, lists in StateManager for both 1v1 and 2v2, but never populated; `/leaderboard` command is commented out)
-- i18n/localization (locale files exist, framework in place, not wired to commands)
-- Event tracking (`events` table and `event_lookups.py` exist but are unused)
-- Notification system (`notifications` table exists but is unused beyond read_quick_start_guide flag)
-- 2v2 replay upload (`replay_parser_2v2.py` and `replay_verifier_2v2.py` exist but the upload endpoint and bot handler are not yet wired)
+- 2v2 leaderboard (built at startup and rebuilt after matches, but no display endpoint or command)
+- 2v2 replay upload (no parser, verifier, upload endpoint, or bot handler)
 - 2v2 admin tools (no `/admin snapshot_2v2` or 2v2 match admin endpoints)
+- i18n/localization (locale files exist, framework in place, not wired to commands)
 - 3v3, FFA modes
-- `/help` and `/prune` commands (commented out)
+- `/help` and `/prune` commands (empty stub files)

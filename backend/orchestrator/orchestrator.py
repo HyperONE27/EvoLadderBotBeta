@@ -22,6 +22,7 @@ from backend.domain_types.dataframes import (
 )
 from backend.domain_types.ephemeral import (
     LeaderboardEntry1v1,
+    LeaderboardEntry2v2,
     PartyEntry2v2,
     PendingPartyInvite2v2,
     QueueEntry1v1,
@@ -454,6 +455,56 @@ class Orchestrator:
         )
 
     # ------------------------------------------------------------------
+    # Replay 2v2
+    # ------------------------------------------------------------------
+
+    def replay_auto_resolve_match_2v2(
+        self,
+        match_id: int,
+        uploader_discord_uid: int,
+        replay_result: str,
+    ) -> Matches2v2Row:
+        """Auto-resolve a 2v2 match from a validated replay."""
+        return self._transition_manager.replay_auto_resolve_match_2v2(
+            match_id, uploader_discord_uid, replay_result
+        )
+
+    def insert_replay_2v2_pending(
+        self,
+        match_id: int,
+        discord_uid: int,
+        parsed: dict,
+        initial_path: str,
+        uploaded_at: datetime,
+    ) -> dict:
+        """Insert a 2v2 replay row with upload_status='pending'."""
+        return self._transition_manager.insert_replay_2v2_pending(
+            match_id, discord_uid, parsed, initial_path, uploaded_at
+        )
+
+    def update_replay_2v2_status(
+        self,
+        replay_id: int,
+        status: str,
+        final_path: str | None = None,
+    ) -> None:
+        """Update upload_status for a 2v2 replay row."""
+        self._transition_manager.update_replay_2v2_status(replay_id, status, final_path)
+
+    def update_match_2v2_replay_refs(
+        self,
+        match_id: int,
+        team_num: int,
+        replay_path: str,
+        replay_row_id: int,
+        uploaded_at: datetime,
+    ) -> None:
+        """Update 2v2 match row with latest replay path, row ID, and upload timestamp."""
+        self._transition_manager.update_match_2v2_replay_refs(
+            match_id, team_num, replay_path, replay_row_id, uploaded_at
+        )
+
+    # ------------------------------------------------------------------
     # Admin operations
     # ------------------------------------------------------------------
 
@@ -508,6 +559,10 @@ class Orchestrator:
     def get_leaderboard_1v1(self) -> list[LeaderboardEntry1v1]:
         """Return the current 1v1 leaderboard."""
         return list(self._state_reader.get_leaderboard_1v1())
+
+    def get_leaderboard_2v2(self) -> list[LeaderboardEntry2v2]:
+        """Return the current 2v2 leaderboard."""
+        return list(self._state_reader.get_leaderboard_2v2())
 
     def enrich_match_with_ranks(self, match_dict: dict) -> dict:
         """Return a copy of match_dict with player letter ranks from the leaderboard."""

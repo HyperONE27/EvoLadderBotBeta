@@ -15,11 +15,12 @@ What remains?
 - ⏰ Make sure visibility is solid
     - Maybe some more admin/owner commands
         - Directly reading DataFrame rows
-- ⏰ Add some kind of health check and automatic resurrection for:
-    - replay parsing process pool
-    - DataFrames
+- ✅ Add some kind of health check and automatic resurrection for:
+    - ✅ replay parsing process pool
+    - ❌ DataFrames
         - write-through guarantees writes hit the DB
         - but not that DFs might not silently corrupt...(?)
+        - ❌ skipped
 - ✅ Add unit tests
     - They briefly test invariants, not numerical outcomes
 - ✅ /notifyme needs to send an embed, not just a message, it's fugly right now
@@ -141,3 +142,15 @@ This section captures decisions for **`/activity`** and **`/notifyme`** so imple
 
 - **Weekly digest** of activity — owner will decide separately.
 - **Dwell time** reports from join→(leave | match | statusreset) pairing — after event coverage is complete.
+
+---
+
+# `/snapshot 2v2` (design note)
+
+The 1v1 snapshot sends three embeds: system stats (DataFrame sizes), queue entries, and active matches. The 2v2 snapshot should follow the same structure but insert a **parties** embed between system stats and queue, giving four embeds total: system stats → active parties → queue → active matches.
+
+The parties embed shows every entry in `parties_2v2` (the in-memory dict keyed by leader UID). Each row should display the leader and member names, their status (`in_party` vs `queueing`), and how long the party has existed. This is the only state in the system with zero external visibility — it's never persisted to Supabase and has no other endpoint. Without it, debugging "we're in a party but can't queue" is impossible.
+
+The queue embed mirrors the 1v1 version but displays party pairs instead of individual players. Each entry shows the leader and member side by side, their composition slots (BW/SC2/mixed), team MMR, and wait time. The active matches embed is analogous to 1v1 but shows all four players per match (two per team), the resolved composition (which team is BW, which is SC2), map, server, and elapsed time.
+
+The main open question is display layout. 1v1 queue entries and match rows fit in monospace backtick strings because each row has two players. 2v2 doubles the player count per row, which will overflow Discord's embed width in monospace. Options: (a) stack team rows vertically (two lines per match instead of one), (b) abbreviate more aggressively (drop nationality, shorten names), or (c) use embed fields instead of monospace blocks. This needs to be prototyped with real data to see what actually fits before committing to a format.

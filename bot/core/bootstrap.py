@@ -92,6 +92,7 @@ class Cache:
         # Leaderboard data pushed from the backend via WS. Each entry is a dict
         # matching the LeaderboardEntry1v1 TypedDict shape.
         self.leaderboard_1v1: list[dict] = []
+        self.leaderboard_2v2: list[dict] = []
 
         # Per-player locale preference (discord_uid → locale code, e.g. "enUS").
         # Populated when a player completes /setup or when their profile is loaded.

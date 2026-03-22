@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 from backend.api.dependencies import get_backend, get_ws_manager
 from backend.api.websocket import ConnectionManager
 from backend.core.config import CURRENT_SEASON
-from backend.algorithms.replay_parser import parse_replay_1v1
-from backend.algorithms.replay_verifier import verify_replay_1v1
+from backend.algorithms.replay_parser import parse_replay_1v1, parse_replay_2v2
+from backend.algorithms.replay_verifier import verify_replay_1v1, verify_replay_2v2
 from backend.lookups.admin_lookups import get_admin_by_discord_uid
 from backend.lookups.replay_1v1_lookups import get_replays_1v1_by_match_id
 from common.config import ACTIVITY_ANALYTICS_MAX_RANGE_DAYS
@@ -25,7 +25,9 @@ from backend.api.models import (
     AdminSnapshotResponse,
     AdminsResponse,
     LeaderboardEntry,
+    LeaderboardEntry2v2Model,
     LeaderboardResponse,
+    LeaderboardResponse2v2,
     GreetingResponse,
     Match2v2AbortRequest,
     Match2v2AbortResponse,
@@ -85,7 +87,7 @@ from backend.api.models import (
     TermsOfServiceConfirmResponse,
 )
 from backend.core.bootstrap import Backend
-from backend.domain_types.ephemeral import LeaderboardEntry1v1
+from backend.domain_types.ephemeral import LeaderboardEntry1v1, LeaderboardEntry2v2
 
 logger = structlog.get_logger(__name__)
 
@@ -121,14 +123,39 @@ def _entry_to_model(e: LeaderboardEntry1v1) -> LeaderboardEntry:
     )
 
 
+def _entry_to_model_2v2(e: LeaderboardEntry2v2) -> LeaderboardEntry2v2Model:
+    return LeaderboardEntry2v2Model(
+        player_1_discord_uid=e["player_1_discord_uid"],
+        player_2_discord_uid=e["player_2_discord_uid"],
+        player_1_name=e["player_1_name"],
+        player_2_name=e["player_2_name"],
+        ordinal_rank=e["ordinal_rank"],
+        active_ordinal_rank=e["active_ordinal_rank"],
+        letter_rank=e["letter_rank"],
+        mmr=e["mmr"],
+        games_played=e["games_played"],
+        games_won=e["games_won"],
+        games_lost=e["games_lost"],
+        games_drawn=e["games_drawn"],
+        last_played_at=(
+            e["last_played_at"].isoformat() if e["last_played_at"] else None
+        ),
+    )
+
+
 async def _broadcast_leaderboard_if_dirty(app: Backend, ws: ConnectionManager) -> None:
-    """If the leaderboard was rebuilt since the last check, broadcast it."""
+    """If the leaderboard was rebuilt since the last check, broadcast both."""
     if app.orchestrator.consume_leaderboard_dirty():
-        entries = app.orchestrator.get_leaderboard_1v1()
-        models = [_entry_to_model(e) for e in entries]
+        entries_1v1 = app.orchestrator.get_leaderboard_1v1()
+        entries_2v2 = app.orchestrator.get_leaderboard_2v2()
         await ws.broadcast(
             "leaderboard_updated",
-            {"leaderboard": [m.model_dump() for m in models]},
+            {
+                "leaderboard": [_entry_to_model(e).model_dump() for e in entries_1v1],
+                "leaderboard_2v2": [
+                    _entry_to_model_2v2(e).model_dump() for e in entries_2v2
+                ],
+            },
         )
 
 
@@ -431,6 +458,23 @@ async def leaderboard_1v1(
         }
     )
     return LeaderboardResponse(leaderboard=[_entry_to_model(e) for e in entries])
+
+
+@router.get("/leaderboard_2v2", response_model=LeaderboardResponse2v2)
+async def leaderboard_2v2(
+    caller_uid: int = Query(...),
+    app: Backend = Depends(get_backend),
+) -> LeaderboardResponse2v2:
+    entries = app.orchestrator.get_leaderboard_2v2()
+    app.orchestrator.log_event(
+        {
+            "discord_uid": caller_uid,
+            "event_type": "player_command",
+            "action": "leaderboard",
+            "event_data": {"game_mode": "2v2"},
+        }
+    )
+    return LeaderboardResponse2v2(leaderboard=[_entry_to_model_2v2(e) for e in entries])
 
 
 # --- /profile ---
@@ -1303,6 +1347,180 @@ def _map_replay_result_to_match(
     else:
         # Race not found in match — should not happen if races check passed.
         return None
+
+
+# --- /matches_2v2/{match_id}/replay ---
+
+
+@router.post(
+    "/matches_2v2/{match_id}/replay",
+    response_model=ReplayUploadResponse,
+)
+async def upload_replay_2v2(
+    match_id: int,
+    discord_uid: int = Form(...),
+    replay_file: UploadFile = File(...),
+    app: Backend = Depends(get_backend),
+    ws: ConnectionManager = Depends(get_ws_manager),
+) -> ReplayUploadResponse:
+    """
+    Accept a .SC2Replay upload from a 2v2 match participant.
+
+    Same 8-step flow as 1v1 but:
+      - Validates against all 4 participants and determines team_num.
+      - Uses ``parse_replay_2v2`` / ``verify_replay_2v2``.
+      - Auto-resolve maps replay result to team_1_win / team_2_win.
+    """
+    # --- 1. Validate ---
+    match = app.orchestrator.get_match_2v2(match_id)
+    if match is None:
+        raise HTTPException(status_code=404, detail="Match not found.")
+
+    team_1_uids = (
+        match["team_1_player_1_discord_uid"],
+        match["team_1_player_2_discord_uid"],
+    )
+    team_2_uids = (
+        match["team_2_player_1_discord_uid"],
+        match["team_2_player_2_discord_uid"],
+    )
+
+    if discord_uid in team_1_uids:
+        team_num = 1
+    elif discord_uid in team_2_uids:
+        team_num = 2
+    else:
+        raise HTTPException(
+            status_code=403, detail="You are not a participant in this match."
+        )
+
+    # --- 2. Parse in process pool ---
+    await app.ensure_pool_healthy()
+    replay_bytes = await replay_file.read()
+    loop = asyncio.get_running_loop()
+    try:
+        parsed: dict = await loop.run_in_executor(
+            app.process_pool, parse_replay_2v2, replay_bytes
+        )
+    except Exception as exc:
+        logger.exception("2v2 replay parse executor failed", match_id=match_id)
+        raise HTTPException(
+            status_code=500, detail=f"Replay parse executor failed: {exc}"
+        )
+    asyncio.create_task(_delayed_pool_check(app, delay=10.0))
+
+    if parsed.get("error"):
+        raise HTTPException(status_code=422, detail=parsed["error"])
+
+    # --- 3. Build paths and insert pending row ---
+    uploaded_at = utc_now()
+    replay_hash = parsed["replay_hash"]
+    filename = f"{uploaded_at.strftime('%Y-%m-%d_%H-%M-%S-%f')}_{replay_hash}.SC2Replay"
+    storage_path = f"replays/{match_id}/{discord_uid}/{filename}"
+
+    created = app.orchestrator.insert_replay_2v2_pending(
+        match_id=match_id,
+        discord_uid=discord_uid,
+        parsed=parsed,
+        initial_path=storage_path,
+        uploaded_at=uploaded_at,
+    )
+    replay_id: int = created["id"]
+
+    # --- 4. Upload to Supabase Storage (up to 3 attempts) ---
+    public_url: str | None = None
+    upload_status = "failed"
+
+    for attempt in range(3):
+        public_url = await loop.run_in_executor(
+            None, app.storage_writer.upload_replay, replay_bytes, storage_path
+        )
+        if public_url:
+            upload_status = "completed"
+            break
+        logger.warning(
+            "Supabase Storage upload attempt %d/3 failed",
+            attempt + 1,
+            match_id=match_id,
+            replay_id=replay_id,
+        )
+
+    # --- 5. Update upload_status (and final path if upload succeeded) ---
+    final_path: str = public_url if public_url is not None else storage_path
+    app.orchestrator.update_replay_2v2_status(replay_id, upload_status, final_path)
+
+    # --- 6. Update the match row ---
+    app.orchestrator.update_match_2v2_replay_refs(
+        match_id, team_num, final_path, replay_id, uploaded_at
+    )
+
+    # --- 7. Verify ---
+    season_maps = app.state_manager.maps.get("2v2", {}).get(CURRENT_SEASON, {})
+    verification = verify_replay_2v2(
+        parsed, dict(match), app.state_manager.mods, season_maps
+    )
+
+    # --- 8. Attempt auto-resolution if verification passes ---
+    auto_resolved = False
+    resolved_match = None
+
+    # Re-fetch in case the match was resolved while we were uploading.
+    current_match = app.orchestrator.get_match_2v2(match_id)
+    can_auto_resolve = (
+        current_match is not None
+        and current_match["match_result"] is None
+        and verification.get("races", {}).get("success", False)
+        and verification.get("map", {}).get("success", False)
+        and verification.get("timestamp", {}).get("success", False)
+        and verification.get("ai_players", {}).get("success", True)
+        and parsed.get("match_result") in ("team_1_win", "team_2_win", "draw")
+    )
+
+    if can_auto_resolve and current_match is not None:
+        match_result: str = parsed["match_result"]
+        resolved_match_row = app.orchestrator.replay_auto_resolve_match_2v2(
+            match_id, discord_uid, match_result
+        )
+        resolved_match = dict(resolved_match_row)
+        auto_resolved = True
+
+        # Broadcast match_completed + leaderboard via WebSocket.
+        resolved_match["game_mode"] = "2v2"
+        await ws.broadcast("match_completed", resolved_match)
+        await _broadcast_leaderboard_if_dirty(app, ws)
+
+        logger.info(
+            "2v2 replay auto-resolved match",
+            match_id=match_id,
+            result=match_result,
+            uploader=discord_uid,
+        )
+
+    app.orchestrator.log_event(
+        {
+            "discord_uid": discord_uid,
+            "event_type": "player_command",
+            "action": "replay_upload",
+            "game_mode": "2v2",
+            "match_id": match_id,
+            "event_data": {
+                "game_mode": "2v2",
+                "match_id": match_id,
+                "upload_status": upload_status,
+                "auto_resolved": auto_resolved,
+                "replay_id": replay_id,
+            },
+        }
+    )
+    return ReplayUploadResponse(
+        success=True,
+        parsed=parsed,
+        verification=verification,
+        replay_id=replay_id,
+        upload_status=upload_status,
+        auto_resolved=auto_resolved,
+        match=resolved_match,
+    )
 
 
 # ---------------------------------------------------------------------------

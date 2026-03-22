@@ -430,6 +430,7 @@
     "leaderboard_embed.label_ranked_only.1": "Только рейтинговые",
     "leaderboard_embed.no_players.1": "Игроки не найдены.",
     "leaderboard_embed.title.1": "Таблица лидеров",
+    "leaderboard_embed.title.2": "Таблица лидеров 2v2",
     "match_abandoned_embed.field_value.1": "• {p1_name}: `+0 ({p1_mmr})`\n• {p2_name}: `+0 ({p2_mmr})`",
     "match_abandoned_embed.field_value.2": "The match was automatically abandoned because **{abandoner}** did not confirm in time.",
     "match_abandoned_embed.title.1": "🛑 Матч №{match_id} заброшен",

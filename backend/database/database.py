@@ -559,6 +559,43 @@ class DatabaseWriter:
         self.client.table("matches_1v1").update(updates).eq("id", match_id).execute()
 
     # ------------------------------------------------------------------
+    # Replays 2v2
+    # ------------------------------------------------------------------
+
+    def add_replay_2v2(self, data: dict[str, Any]) -> dict:
+        """Insert a new 2v2 replay row and return the created row (with DB-assigned id)."""
+        response = self.client.table("replays_2v2").insert(data).execute()
+        return cast(dict[str, Any], response.data[0])
+
+    def update_replay_2v2_status(
+        self,
+        replay_id: int,
+        status: str,
+        replay_path: str | None = None,
+    ) -> None:
+        """Update upload_status and optionally replay_path for a 2v2 replay row."""
+        updates: dict[str, Any] = {"upload_status": status}
+        if replay_path is not None:
+            updates["replay_path"] = replay_path
+        self.client.table("replays_2v2").update(updates).eq("id", replay_id).execute()
+
+    def update_match_2v2_replay(
+        self,
+        match_id: int,
+        team_num: int,
+        replay_path: str,
+        replay_row_id: int,
+        uploaded_at: datetime,
+    ) -> None:
+        """Update a 2v2 match row with the latest replay path, row ID, and timestamp."""
+        updates: dict[str, Any] = {
+            f"team_{team_num}_replay_path": replay_path,
+            f"team_{team_num}_replay_row_id": replay_row_id,
+            f"team_{team_num}_uploaded_at": uploaded_at.isoformat(),
+        }
+        self.client.table("matches_2v2").update(updates).eq("id", match_id).execute()
+
+    # ------------------------------------------------------------------
     # Players (admin operations)
     # ------------------------------------------------------------------
 

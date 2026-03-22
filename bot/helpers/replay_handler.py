@@ -11,10 +11,11 @@ import discord
 
 from bot.components.embeds import (
     MatchInfoEmbed1v1,
+    MatchInfoEmbed2v2,
     ReplayErrorEmbed,
     ReplaySuccessEmbed,
 )
-from bot.components.views import MatchReportView1v1
+from bot.components.views import MatchReportView1v1, MatchReportView2v2
 from bot.core.config import BACKEND_URL, ENABLE_REPLAY_VALIDATION
 from bot.core.dependencies import get_cache, get_player_locale
 from bot.core.http import get_session
@@ -60,9 +61,8 @@ async def handle_replay_upload(
         return
 
     match_data: dict = match_info["match_data"]
-    p1_info: dict | None = match_info["p1_info"]
-    p2_info: dict | None = match_info["p2_info"]
     match_id: int = match_data["id"]
+    game_mode: str = match_data.get("game_mode", "1v1")
 
     processing_msg: discord.Message | None = None
 
@@ -84,8 +84,9 @@ async def handle_replay_upload(
             content_type="application/octet-stream",
         )
 
+        mode_segment = "matches_2v2" if game_mode == "2v2" else "matches_1v1"
         async with get_session().post(
-            f"{BACKEND_URL}/matches_1v1/{match_id}/replay",
+            f"{BACKEND_URL}/{mode_segment}/{match_id}/replay",
             data=form,
         ) as resp:
             data = await resp.json()
@@ -132,22 +133,32 @@ async def handle_replay_upload(
         if match_msg is not None:
             should_unlock = (not ENABLE_REPLAY_VALIDATION) or _races_pass(verification)
 
-            p1_name = match_data.get("player_1_name", "Player 1")
-            p2_name = match_data.get("player_2_name", "Player 2")
-
-            new_embed = MatchInfoEmbed1v1(
-                match_data, p1_info, p2_info, replay_uploaded=True, locale=locale
-            )
-            new_view = MatchReportView1v1(
-                match_id,
-                p1_name,
-                p2_name,
-                match_data=match_data,
-                p1_info=p1_info,
-                p2_info=p2_info,
-                report_locked=not should_unlock,
-                locale=locale,
-            )
+            new_embed: discord.Embed
+            new_view: discord.ui.View
+            if game_mode == "2v2":
+                player_infos: dict = match_info.get("player_infos", {})
+                new_embed = MatchInfoEmbed2v2(match_data, player_infos, locale=locale)
+                new_view = MatchReportView2v2(
+                    match_id, match_data, player_infos, locale=locale
+                )
+            else:
+                p1_info: dict | None = match_info.get("p1_info")
+                p2_info: dict | None = match_info.get("p2_info")
+                p1_name = match_data.get("player_1_name", "Player 1")
+                p2_name = match_data.get("player_2_name", "Player 2")
+                new_embed = MatchInfoEmbed1v1(
+                    match_data, p1_info, p2_info, replay_uploaded=True, locale=locale
+                )
+                new_view = MatchReportView1v1(
+                    match_id,
+                    p1_name,
+                    p2_name,
+                    match_data=match_data,
+                    p1_info=p1_info,
+                    p2_info=p2_info,
+                    report_locked=not should_unlock,
+                    locale=locale,
+                )
             try:
                 await queue_message_edit_high(match_msg, embed=new_embed, view=new_view)
             except Exception:
