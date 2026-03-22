@@ -13,22 +13,27 @@ No global state, no singletons, no I/O, no mutation of the input list.
 
 Algorithm
 ---------
-Unlike the 1v1 matchmaker there is no pre-assignment pool equalization step.
-Compatibility is checked per-pair instead:
+For each ordered pair of teams (i, j) with i < j, check compatibility:
 
     compatible(A, B) if any of:
       A declared pure_bw  AND B declared pure_sc2  →  BW+BW vs SC2+SC2, A=BW
       A declared pure_sc2 AND B declared pure_bw   →  BW+BW vs SC2+SC2, A=SC2
       A declared mixed    AND B declared mixed      →  mixed vs mixed
 
-Incompatible pairs carry infinite cost and are excluded from the Hungarian
-algorithm.  When a pair is valid under multiple match types (e.g. A has
-pure_bw + mixed, B has pure_sc2 + mixed), one type is chosen randomly so
-the cost function stays pure.
+Incompatible pairs are silently skipped.  Compatible pairs within either
+team's MMR window are scored::
 
-Teams are sorted by ``team_mmr`` and split into two interleaved sides
-(even / odd rank), making adjacent-MMR teams natural bipartite opponents.
-The same Hungarian algorithm as 1v1 handles optimal pairing.
+    wait_factor = max(a.wait_cycles, b.wait_cycles)
+    score       = mmr_diff² − 2^wait_factor × WAIT_PRIORITY_COEFFICIENT
+
+All valid (score, a, b, match_type) candidates are sorted ascending by score
+and selected greedily: the best-scoring unmatched pair is taken, both teams
+are marked matched, and the process repeats.  This is O(n² log n) and
+optimal in practice for the small queue sizes this system targets.
+
+When a pair is valid under multiple match types (e.g. A has pure_bw + mixed,
+B has pure_sc2 + mixed), one type is chosen randomly so that the score
+remains independent of match-type selection.
 """
 
 from __future__ import annotations
@@ -50,9 +55,6 @@ from backend.domain_types.ephemeral import MatchCandidate2v2, QueueEntry2v2
 _BW_SC2 = "bw_sc2"  # team A plays pure BW, team B plays pure SC2
 _SC2_BW = "sc2_bw"  # team A plays pure SC2, team B plays pure BW
 _MIXED = "mixed"  # both teams play their mixed comp
-
-# Sentinel cost for incompatible / padding cells.
-_SENTINEL: float = 1e18
 
 
 # ---------------------------------------------------------------------------
@@ -97,35 +99,27 @@ def _compatible_match_types(a: QueueEntry2v2, b: QueueEntry2v2) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Build candidate pairs
+# Build and select candidates
 # ---------------------------------------------------------------------------
 
 
 def _build_candidates(
-    side_a: list[QueueEntry2v2],
-    side_b: list[QueueEntry2v2],
+    teams: list[QueueEntry2v2],
 ) -> list[tuple[float, QueueEntry2v2, QueueEntry2v2, str]]:
     """Return ``(score, a, b, match_type)`` for every compatible pair within
-    either team's MMR window.
+    either team's MMR window, considering all (i < j) combinations.
 
-    The score formula mirrors 1v1::
-
-        wait_factor = max(a.wait_cycles, b.wait_cycles)
-        score       = mmr_diff² − 2^wait_factor × WAIT_PRIORITY_COEFFICIENT
-
-    Incompatible pairs are silently skipped; they will never appear in the
-    cost matrix and therefore cannot be selected by the Hungarian algorithm.
-    When a pair is valid under multiple match types, one is chosen randomly
-    so that the caller receives a single deterministic cost entry per pair.
+    Incompatible pairs are silently skipped.  When a pair is valid under
+    multiple match types, one is chosen randomly.
     """
     candidates: list[tuple[float, QueueEntry2v2, QueueEntry2v2, str]] = []
+    n = len(teams)
 
-    for a in side_a:
+    for i in range(n):
+        a = teams[i]
         a_window = _max_mmr_diff(a["wait_cycles"])
-        for b in side_b:
-            if a["discord_uid"] == b["discord_uid"]:
-                continue
-
+        for j in range(i + 1, n):
+            b = teams[j]
             diff = abs(a["team_mmr"] - b["team_mmr"])
             b_window = _max_mmr_diff(b["wait_cycles"])
             if diff > a_window and diff > b_window:
@@ -143,130 +137,24 @@ def _build_candidates(
     return candidates
 
 
-# ---------------------------------------------------------------------------
-# O(n³) Hungarian algorithm (Kuhn–Munkres) — identical to 1v1
-# ---------------------------------------------------------------------------
-
-
-def _hungarian_minimize(cost: list[list[float]], n: int) -> list[int]:
-    """Minimum-cost assignment for an *n × n* cost matrix.
-
-    Returns a list *assignment* of length *n* where ``assignment[i]`` is the
-    column assigned to row *i*.  Uses the shortest-augmenting-path variant
-    which runs in O(n³) time.
-    """
-    INF = float("inf")
-    u = [0.0] * (n + 1)
-    v = [0.0] * (n + 1)
-    p = [0] * (n + 1)
-    way = [0] * (n + 1)
-
-    for i in range(1, n + 1):
-        p[0] = i
-        j0 = 0
-        min_to = [INF] * (n + 1)
-        used = [False] * (n + 1)
-
-        while True:
-            used[j0] = True
-            i0 = p[j0]
-            delta = INF
-            j1 = -1
-
-            for j in range(1, n + 1):
-                if used[j]:
-                    continue
-                reduced = cost[i0 - 1][j - 1] - u[i0] - v[j]
-                if reduced < min_to[j]:
-                    min_to[j] = reduced
-                    way[j] = j0
-                if min_to[j] < delta:
-                    delta = min_to[j]
-                    j1 = j
-
-            for j in range(n + 1):
-                if used[j]:
-                    u[p[j]] += delta
-                    v[j] -= delta
-                else:
-                    min_to[j] -= delta
-
-            j0 = j1
-            if p[j0] == 0:
-                break
-
-        while j0:
-            p[j0] = p[way[j0]]
-            j0 = way[j0]
-
-    result = [-1] * n
-    for j in range(1, n + 1):
-        if p[j] != 0:
-            result[p[j] - 1] = j - 1
-    return result
-
-
-# ---------------------------------------------------------------------------
-# Optimal pair selection via Hungarian algorithm
-# ---------------------------------------------------------------------------
-
-
-def _select_optimal(
+def _select_greedy(
     candidates: list[tuple[float, QueueEntry2v2, QueueEntry2v2, str]],
 ) -> list[tuple[QueueEntry2v2, QueueEntry2v2, str]]:
-    """Find the minimum-weight maximum-cardinality bipartite matching.
+    """Greedily select matches from best score to worst.
 
-    Returns a list of ``(team_a, team_b, match_type)`` tuples.
+    Sorts all candidates ascending by score, then iterates: if neither team
+    in a pair has been matched yet, take the pair and mark both as matched.
     """
-    if not candidates:
-        return []
-
-    a_by_uid: dict[int, QueueEntry2v2] = {}
-    b_by_uid: dict[int, QueueEntry2v2] = {}
-    # For each (a_uid, b_uid) pair, track the best (lowest) score and its type.
-    best_score: dict[tuple[int, int], float] = {}
-    best_type: dict[tuple[int, int], str] = {}
-
-    for score, a, b, match_type in candidates:
-        a_by_uid[a["discord_uid"]] = a
-        b_by_uid[b["discord_uid"]] = b
-        key = (a["discord_uid"], b["discord_uid"])
-        if key not in best_score or score < best_score[key]:
-            best_score[key] = score
-            best_type[key] = match_type
-
-    a_uids = sorted(a_by_uid)
-    b_uids = sorted(b_by_uid)
-    n_a = len(a_uids)
-    n_b = len(b_uids)
-
-    if n_a == 0 or n_b == 0:
-        return []
-
-    a_idx = {uid: i for i, uid in enumerate(a_uids)}
-    b_idx = {uid: i for i, uid in enumerate(b_uids)}
-
-    n = max(n_a, n_b)
-    cost: list[list[float]] = [[_SENTINEL] * n for _ in range(n)]
-
-    for (a_uid, b_uid), score in best_score.items():
-        i = a_idx[a_uid]
-        j = b_idx[b_uid]
-        if score < cost[i][j]:
-            cost[i][j] = score
-
-    col_for_row = _hungarian_minimize(cost, n)
-
+    candidates_sorted = sorted(candidates, key=lambda c: c[0])
+    matched_uids: set[int] = set()
     matches: list[tuple[QueueEntry2v2, QueueEntry2v2, str]] = []
-    for i, j in enumerate(col_for_row):
-        if i >= n_a or j < 0 or j >= n_b:
+
+    for _score, a, b, match_type in candidates_sorted:
+        if a["discord_uid"] in matched_uids or b["discord_uid"] in matched_uids:
             continue
-        if cost[i][j] >= _SENTINEL:
-            continue
-        a_uid = a_uids[i]
-        b_uid = b_uids[j]
-        match_type = best_type[(a_uid, b_uid)]
-        matches.append((a_by_uid[a_uid], b_by_uid[b_uid], match_type))
+        matches.append((a, b, match_type))
+        matched_uids.add(a["discord_uid"])
+        matched_uids.add(b["discord_uid"])
 
     return matches
 
@@ -380,21 +268,13 @@ def run_matchmaking_wave_2v2(
     for e in entries:
         e["wait_cycles"] = e["wait_cycles"] + 1
 
-    # Sort by team_mmr and split into two interleaved sides so that
-    # adjacent-MMR teams are natural bipartite opponents.
-    entries.sort(key=lambda e: e["team_mmr"])
-    side_a = entries[0::2]  # even-ranked (lower MMR)
-    side_b = entries[1::2]  # odd-ranked (higher MMR)
-
-    candidates = _build_candidates(side_a, side_b)
-    matched_pairs = _select_optimal(candidates)
+    candidates = _build_candidates(entries)
+    matched_pairs = _select_greedy(candidates)
 
     matched_uids: set[int] = set()
     match_candidates: list[MatchCandidate2v2] = []
 
     for team_a, team_b, match_type in matched_pairs:
-        if team_a["discord_uid"] == team_b["discord_uid"]:
-            continue
         match_candidates.append(_to_match_candidate(team_a, team_b, match_type))
         matched_uids.add(team_a["discord_uid"])
         matched_uids.add(team_b["discord_uid"])
