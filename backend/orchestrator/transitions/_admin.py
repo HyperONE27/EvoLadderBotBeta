@@ -42,6 +42,9 @@ def reset_player_status(
 
     self._set_player_status(discord_uid, "idle", match_mode=None, match_id=None)
 
+    # If the player was in a party, remove them and reset their partner.
+    self._purge_party_membership(discord_uid)
+
     logger.info(f"Admin reset player {discord_uid} status from {old_status!r} to idle")
     return True, None, old_status
 

@@ -415,3 +415,51 @@ class ReplayUploadResponse(BaseModel):
     upload_status: str | None = None
     auto_resolved: bool = False
     match: dict | None = None
+
+
+# --- /party_2v2 ---
+
+
+class PartyInviteRequest(BaseModel):
+    inviter_discord_uid: int
+    inviter_player_name: str
+    invitee_discord_uid: int
+    invitee_player_name: str
+
+
+class PartyInviteResponse(BaseModel):
+    success: bool
+    error: str | None = None
+
+
+class PartyRespondRequest(BaseModel):
+    invitee_discord_uid: int
+    accepted: bool
+
+
+class PartyRespondResponse(BaseModel):
+    success: bool
+    error: str | None = None
+    inviter_discord_uid: int | None = None
+    inviter_player_name: str | None = None
+    invitee_discord_uid: int | None = None
+    invitee_player_name: str | None = None
+
+
+class PartyLeaveRequest(BaseModel):
+    discord_uid: int
+
+
+class PartyLeaveResponse(BaseModel):
+    success: bool
+    error: str | None = None
+    partner_discord_uid: int | None = None
+
+
+class PartyInfoResponse(BaseModel):
+    in_party: bool
+    leader_discord_uid: int | None = None
+    leader_player_name: str | None = None
+    member_discord_uid: int | None = None
+    member_player_name: str | None = None
+    created_at: datetime | None = None

@@ -18,7 +18,12 @@ from backend.domain_types.dataframes import (
     PlayersRow,
     Preferences1v1Row,
 )
-from backend.domain_types.ephemeral import LeaderboardEntry1v1, QueueEntry1v1
+from backend.domain_types.ephemeral import (
+    LeaderboardEntry1v1,
+    PartyEntry2v2,
+    PendingPartyInvite2v2,
+    QueueEntry1v1,
+)
 from backend.orchestrator.queue_notify import compute_queue_activity_targets
 from backend.orchestrator.reader import StateReader
 from backend.orchestrator.state import StateManager
@@ -188,6 +193,43 @@ class Orchestrator:
             location_code,
             language_code,
         )
+
+    # ------------------------------------------------------------------
+    # Party 2v2
+    # ------------------------------------------------------------------
+
+    def create_party_invite(
+        self,
+        inviter_discord_uid: int,
+        inviter_player_name: str,
+        invitee_discord_uid: int,
+        invitee_player_name: str,
+    ) -> tuple[bool, str | None]:
+        """Create a pending party invite."""
+        return self._transition_manager.create_party_invite(
+            inviter_discord_uid,
+            inviter_player_name,
+            invitee_discord_uid,
+            invitee_player_name,
+        )
+
+    def respond_to_party_invite(
+        self,
+        invitee_discord_uid: int,
+        accepted: bool,
+    ) -> tuple[bool, str | None, PendingPartyInvite2v2 | None]:
+        """Accept or decline a party invite."""
+        return self._transition_manager.respond_to_party_invite(
+            invitee_discord_uid, accepted
+        )
+
+    def leave_party(self, discord_uid: int) -> tuple[bool, str | None, int | None]:
+        """Leave the current party. Returns (success, error, partner_uid)."""
+        return self._transition_manager.leave_party(discord_uid)
+
+    def get_party(self, discord_uid: int) -> PartyEntry2v2 | None:
+        """Return the party this player belongs to, or None."""
+        return self._transition_manager.get_party(discord_uid)
 
     # ------------------------------------------------------------------
     # Queue 1v1

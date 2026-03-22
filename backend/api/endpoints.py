@@ -42,6 +42,13 @@ from backend.api.models import (
     OwnerSetMMRResponse,
     OwnerToggleAdminRequest,
     OwnerToggleAdminResponse,
+    PartyInfoResponse,
+    PartyInviteRequest,
+    PartyInviteResponse,
+    PartyLeaveRequest,
+    PartyLeaveResponse,
+    PartyRespondRequest,
+    PartyRespondResponse,
     PlayerNameAvailabilityResponse,
     PlayersResponse,
     Preferences1v1Response,
@@ -1064,3 +1071,73 @@ def _map_replay_result_to_match(
     else:
         # Race not found in match — should not happen if races check passed.
         return None
+
+
+# ---------------------------------------------------------------------------
+# Party 2v2
+# ---------------------------------------------------------------------------
+
+
+@router.put("/party_2v2/invite", response_model=PartyInviteResponse)
+async def party_invite(
+    request: PartyInviteRequest,
+    app: Backend = Depends(get_backend),
+) -> PartyInviteResponse:
+    success, error = app.orchestrator.create_party_invite(
+        request.inviter_discord_uid,
+        request.inviter_player_name,
+        request.invitee_discord_uid,
+        request.invitee_player_name,
+    )
+    if not success:
+        raise HTTPException(status_code=409, detail=error)
+    return PartyInviteResponse(success=True)
+
+
+@router.put("/party_2v2/respond", response_model=PartyRespondResponse)
+async def party_respond(
+    request: PartyRespondRequest,
+    app: Backend = Depends(get_backend),
+) -> PartyRespondResponse:
+    success, error, invite = app.orchestrator.respond_to_party_invite(
+        request.invitee_discord_uid,
+        request.accepted,
+    )
+    if not success:
+        raise HTTPException(status_code=409, detail=error)
+    return PartyRespondResponse(
+        success=True,
+        inviter_discord_uid=invite["inviter_discord_uid"] if invite else None,
+        inviter_player_name=invite["inviter_player_name"] if invite else None,
+        invitee_discord_uid=invite["invitee_discord_uid"] if invite else None,
+        invitee_player_name=invite["invitee_player_name"] if invite else None,
+    )
+
+
+@router.delete("/party_2v2/leave", response_model=PartyLeaveResponse)
+async def party_leave(
+    request: PartyLeaveRequest,
+    app: Backend = Depends(get_backend),
+) -> PartyLeaveResponse:
+    success, error, partner_uid = app.orchestrator.leave_party(request.discord_uid)
+    if not success:
+        raise HTTPException(status_code=409, detail=error)
+    return PartyLeaveResponse(success=True, partner_discord_uid=partner_uid)
+
+
+@router.get("/party_2v2/{discord_uid}", response_model=PartyInfoResponse)
+async def party_info(
+    discord_uid: int,
+    app: Backend = Depends(get_backend),
+) -> PartyInfoResponse:
+    party = app.orchestrator.get_party(discord_uid)
+    if party is None:
+        return PartyInfoResponse(in_party=False)
+    return PartyInfoResponse(
+        in_party=True,
+        leader_discord_uid=party["leader_discord_uid"],
+        leader_player_name=party["leader_player_name"],
+        member_discord_uid=party["member_discord_uid"],
+        member_player_name=party["member_player_name"],
+        created_at=party["created_at"],
+    )

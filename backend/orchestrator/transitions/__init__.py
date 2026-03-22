@@ -17,6 +17,7 @@ from backend.orchestrator.transitions import (
     _match,
     _mmr,
     _notifications,
+    _party,
     _player,
     _queue,
     _replay,
@@ -84,6 +85,13 @@ class TransitionManager:
     # -- leaderboard (_leaderboard.py) ---------------------------------------
     rebuild_leaderboard = _leaderboard.rebuild_leaderboard
     consume_leaderboard_dirty = _leaderboard.consume_leaderboard_dirty
+
+    # -- party transitions (_party.py) ----------------------------------------
+    create_party_invite = _party.create_party_invite
+    respond_to_party_invite = _party.respond_to_party_invite
+    leave_party = _party.leave_party
+    get_party = _party.get_party
+    _purge_party_membership = _party.purge_party_membership
 
     # -- admin / owner (_admin.py) -------------------------------------------
     reset_player_status = _admin.reset_player_status
