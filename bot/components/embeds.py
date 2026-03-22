@@ -372,6 +372,44 @@ class QueueJoinActivityNotifyEmbed(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
+class NotifyMeSuccessEmbed(discord.Embed):
+    """Shown after /notifyme succeeds."""
+
+    def __init__(
+        self,
+        enabled: bool,
+        cooldown_minutes: int | None = None,
+        locale: str = "enUS",
+    ) -> None:
+        state = t(
+            "notifyme_command.state.on.1"
+            if enabled
+            else "notifyme_command.state.off.1",
+            locale,
+        )
+        cooldown_line = (
+            t(
+                "notifyme_command.cooldown_line.1",
+                locale,
+                minutes=str(cooldown_minutes),
+            )
+            if cooldown_minutes is not None
+            else ""
+        )
+        description = t(
+            "notifyme_command.success.1",
+            locale,
+            state=state,
+            cooldown_line=cooldown_line,
+        )
+        super().__init__(
+            title=t("notifyme_success_embed.title.1", locale),
+            description=description,
+            color=discord.Color.green() if enabled else discord.Color.light_grey(),
+        )
+        apply_default_embed_footer(self, locale=locale)
+
+
 class MatchFoundEmbed(discord.Embed):
     def __init__(self, match_data: dict, locale: str = "enUS") -> None:
         match_id = match_data.get("id", "?")
@@ -836,6 +874,277 @@ class MatchConflictEmbed(discord.Embed):
             inline=False,
         )
 
+        apply_default_embed_footer(self, locale=locale)
+
+
+# =========================================================================
+# Queue / Match lifecycle  (2v2)
+# =========================================================================
+
+
+def _team_header_2v2(match_data: dict, team: str, locale: str = "enUS") -> str:
+    """Return 'P1Name & P2Name (TeamMMR)' for a 2v2 team."""
+    p1_name = match_data.get(f"{team}_player_1_name", "Player 1")
+    p2_name = match_data.get(f"{team}_player_2_name", "Player 2")
+    p1_race = match_data.get(f"{team}_player_1_race", "")
+    p2_race = match_data.get(f"{team}_player_2_race", "")
+    mmr = match_data.get(f"{team}_mmr", "?")
+    p1_race_emote = get_race_emote(p1_race) if p1_race else ""
+    p2_race_emote = get_race_emote(p2_race) if p2_race else ""
+    return f"{p1_race_emote} **{p1_name}** & {p2_race_emote} **{p2_name}** ({mmr})"
+
+
+class QueueSetupEmbed2v2(discord.Embed):
+    """Queue setup for 2v2: shows leader + partner race selections."""
+
+    def __init__(
+        self,
+        leader_race: str | None,
+        member_race: str | None,
+        map_vetoes: list[str],
+        locale: str = "enUS",
+    ) -> None:
+        super().__init__(
+            title="2v2 Queue Setup",
+            color=discord.Color.blurple(),
+        )
+
+        leader_race_name = _race_display(leader_race, locale) if leader_race else "—"
+        member_race_name = _race_display(member_race, locale) if member_race else "—"
+
+        # Derive composition label
+        bw_codes = ["bw_terran", "bw_zerg", "bw_protoss"]
+        if leader_race and member_race:
+            if leader_race in bw_codes and member_race in bw_codes:
+                comp = "Pure BW"
+            elif leader_race not in bw_codes and member_race not in bw_codes:
+                comp = "Pure SC2"
+            else:
+                comp = "Mixed (BW + SC2)"
+        else:
+            comp = "—"
+
+        self.add_field(
+            name="Your race",
+            value=leader_race_name,
+            inline=True,
+        )
+        self.add_field(
+            name="Partner's race",
+            value=member_race_name,
+            inline=True,
+        )
+        self.add_field(
+            name="Composition",
+            value=comp,
+            inline=True,
+        )
+
+        if map_vetoes:
+            self.add_field(
+                name=f"Map vetoes ({len(map_vetoes)})",
+                value=", ".join(map_vetoes),
+                inline=False,
+            )
+        else:
+            self.add_field(name="Map vetoes", value="None", inline=False)
+
+        apply_default_embed_footer(self, locale=locale)
+
+
+class MatchInfoEmbed2v2(discord.Embed):
+    """Full match details for a 2v2 match."""
+
+    def __init__(
+        self,
+        match_data: dict,
+        player_infos: dict[int, dict | None] | None = None,
+        pending_report: str | None = None,
+        locale: str = "enUS",
+    ) -> None:
+        from typing import Any
+
+        player_infos = player_infos or {}
+        match_id = match_data.get("id", "?")
+        map_name = match_data.get("map_name", "Unknown")
+        server_code = match_data.get("server_name", "Unknown")
+
+        t1_hdr = _team_header_2v2(match_data, "team_1", locale)
+        t2_hdr = _team_header_2v2(match_data, "team_2", locale)
+
+        title = f"Match #{match_id} — 2v2\n{t1_hdr} vs {t2_hdr}"
+        super().__init__(title=title, description="", color=discord.Color.teal())
+
+        # Team 1 player details
+        t1_p1_uid = match_data.get("team_1_player_1_discord_uid")
+        t1_p2_uid = match_data.get("team_1_player_2_discord_uid")
+        t2_p1_uid = match_data.get("team_2_player_1_discord_uid")
+        t2_p2_uid = match_data.get("team_2_player_2_discord_uid")
+
+        def _player_line(uid: int | None, name: str, race: str) -> str:
+            info: dict[str, Any] | None = player_infos.get(uid) if uid else None
+            race_emote = get_race_emote(race) if race else ""
+            tag = info.get("battletag") or "" if info else ""
+            disc = info.get("discord_username", "?") if info else "?"
+            line = f"- {race_emote} **{name}** ({disc})"
+            if tag:
+                line += f" `{tag}`"
+            return line
+
+        t1_lines = (
+            _player_line(
+                t1_p1_uid,
+                match_data.get("team_1_player_1_name", "?"),
+                match_data.get("team_1_player_1_race", ""),
+            )
+            + "\n"
+            + _player_line(
+                t1_p2_uid,
+                match_data.get("team_1_player_2_name", "?"),
+                match_data.get("team_1_player_2_race", ""),
+            )
+        )
+        t2_lines = (
+            _player_line(
+                t2_p1_uid,
+                match_data.get("team_2_player_1_name", "?"),
+                match_data.get("team_2_player_1_race", ""),
+            )
+            + "\n"
+            + _player_line(
+                t2_p2_uid,
+                match_data.get("team_2_player_2_name", "?"),
+                match_data.get("team_2_player_2_race", ""),
+            )
+        )
+
+        self.add_field(name="Team 1", value=t1_lines, inline=True)
+        self.add_field(name="Team 2", value=t2_lines, inline=True)
+        self.add_field(name="", value="", inline=False)
+
+        map_info = get_map_by_short_name(map_name)
+        map_link = _get_map_link(map_name, server_code)
+        mod = get_mod_by_code("multi")
+        mod_name = mod["name"] if mod else "SC: Evo Complete"
+        mod_link = _get_mod_link(server_code)
+        server_full = _server_display(server_code, locale)
+
+        self.add_field(
+            name="Map / Mod",
+            value=(
+                f"- Map: [{map_info['name'] if map_info else map_name}]({map_link})\n"
+                f"- Mod: [{mod_name}]({mod_link})"
+            ),
+            inline=True,
+        )
+        self.add_field(name="Server", value=server_full, inline=True)
+        self.add_field(name="", value="", inline=False)
+
+        if pending_report is not None:
+            result_value = f"Reported: `{_report_display(pending_report, locale)}`"
+        else:
+            result_value = "Not yet reported"
+        self.add_field(name="Your report", value=result_value, inline=False)
+
+        apply_default_embed_footer(self, locale=locale)
+
+
+class MatchAbortedEmbed2v2(discord.Embed):
+    def __init__(self, match_data: dict, locale: str = "enUS") -> None:
+        match_id = match_data.get("id", "?")
+        t1_hdr = _team_header_2v2(match_data, "team_1", locale)
+        t2_hdr = _team_header_2v2(match_data, "team_2", locale)
+        super().__init__(
+            title=f"Match #{match_id} Aborted — 2v2",
+            description=f"{t1_hdr} vs {t2_hdr}",
+            color=discord.Color.red(),
+        )
+        self.add_field(name="Reason", value="A player aborted the match.", inline=False)
+        apply_default_embed_footer(self, locale=locale)
+
+
+class MatchAbandonedEmbed2v2(discord.Embed):
+    def __init__(self, match_data: dict, locale: str = "enUS") -> None:
+        match_id = match_data.get("id", "?")
+        t1_hdr = _team_header_2v2(match_data, "team_1", locale)
+        t2_hdr = _team_header_2v2(match_data, "team_2", locale)
+        super().__init__(
+            title=f"Match #{match_id} Abandoned — 2v2",
+            description=f"{t1_hdr} vs {t2_hdr}",
+            color=discord.Color.red(),
+        )
+        self.add_field(
+            name="Reason",
+            value="The confirmation window expired before all players confirmed.",
+            inline=False,
+        )
+        apply_default_embed_footer(self, locale=locale)
+
+
+class MatchFinalizedEmbed2v2(discord.Embed):
+    def __init__(self, match_data: dict, locale: str = "enUS") -> None:
+        match_id = match_data.get("id", "?")
+        result = match_data.get("match_result", "unknown")
+        t1_mmr = match_data.get("team_1_mmr", 0)
+        t2_mmr = match_data.get("team_2_mmr", 0)
+        t1_change = match_data.get("team_1_mmr_change") or 0
+        t2_change = match_data.get("team_2_mmr_change") or 0
+        t1_hdr = _team_header_2v2(match_data, "team_1", locale)
+        t2_hdr = _team_header_2v2(match_data, "team_2", locale)
+
+        super().__init__(
+            title=f"Match #{match_id} Completed — 2v2",
+            description=f"{t1_hdr} vs {t2_hdr}",
+            color=discord.Color.gold(),
+        )
+
+        if result == "draw":
+            result_value = "Draw"
+        elif result == "team_1_win":
+            result_value = "🏆 Team 1 wins!"
+        else:
+            result_value = "🏆 Team 2 wins!"
+
+        t1_sign = "+" if t1_change >= 0 else ""
+        t2_sign = "+" if t2_change >= 0 else ""
+
+        self.add_field(name="Result", value=result_value, inline=True)
+        self.add_field(
+            name="MMR Changes",
+            value=(
+                f"- Team 1: `{t1_sign}{t1_change} ({t1_mmr} → {t1_mmr + t1_change})`\n"
+                f"- Team 2: `{t2_sign}{t2_change} ({t2_mmr} → {t2_mmr + t2_change})`"
+            ),
+            inline=True,
+        )
+        apply_default_embed_footer(self, locale=locale)
+
+
+class MatchConflictEmbed2v2(discord.Embed):
+    def __init__(self, match_data: dict, locale: str = "enUS") -> None:
+        match_id = match_data.get("id", "?")
+        t1_hdr = _team_header_2v2(match_data, "team_1", locale)
+        t2_hdr = _team_header_2v2(match_data, "team_2", locale)
+        t1_report = match_data.get("team_1_report", "?")
+        t2_report = match_data.get("team_2_report", "?")
+        super().__init__(
+            title=f"Match #{match_id} Conflict — 2v2",
+            description=f"{t1_hdr} vs {t2_hdr}",
+            color=discord.Color.orange(),
+        )
+        self.add_field(
+            name="Reports",
+            value=(
+                f"- Team 1: `{_report_display(t1_report, locale)}`\n"
+                f"- Team 2: `{_report_display(t2_report, locale)}`"
+            ),
+            inline=False,
+        )
+        self.add_field(
+            name="Action required",
+            value="An admin will review and resolve this match.",
+            inline=False,
+        )
         apply_default_embed_footer(self, locale=locale)
 
 

@@ -498,6 +498,7 @@
     "notifyme_command.state.off.1": "Off",
     "notifyme_command.state.on.1": "On",
     "notifyme_command.success.1": "1v1 queue notifications: **{state}**{cooldown_line}",
+    "notifyme_success_embed.title.1": "🔔 Notifications Updated",
     "player_status.idle": "Idle",
     "player_status.in_match": "In Match",
     "player_status.queueing": "Queueing",

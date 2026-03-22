@@ -17,17 +17,24 @@ import structlog
 
 from bot.components.views import (
     MatchFoundView1v1,
+    MatchFoundView2v2,
     MatchReportView1v1,
+    MatchReportView2v2,
     _fetch_player_info,
 )
 from bot.components.embeds import (
     QueueJoinActivityNotifyEmbed,
     MatchAbortedEmbed,
+    MatchAbortedEmbed2v2,
     MatchAbandonedEmbed,
+    MatchAbandonedEmbed2v2,
     MatchConflictEmbed,
+    MatchConflictEmbed2v2,
     MatchFinalizedEmbed,
+    MatchFinalizedEmbed2v2,
     MatchFoundEmbed,
     MatchInfoEmbed1v1,
+    MatchInfoEmbed2v2,
     QueueSearchingEmbed,
 )
 from bot.core.config import (
@@ -82,21 +89,42 @@ async def _handle_message(client: discord.Client, raw: str) -> None:
 
     event = payload.get("event")
     data = payload.get("data", {})
+    game_mode = data.get("game_mode", "1v1")
 
-    logger.debug(f"[WS] Received event: {event}", match_id=data.get("id"))
+    logger.debug(
+        f"[WS] Received event: {event}", match_id=data.get("id"), game_mode=game_mode
+    )
 
     if event == "match_found":
-        await _on_match_found(client, data)
+        if game_mode == "2v2":
+            await _on_match_found_2v2(client, data)
+        else:
+            await _on_match_found(client, data)
     elif event == "both_confirmed":
-        await _on_both_confirmed(client, data)
+        if game_mode == "2v2":
+            await _on_all_confirmed_2v2(client, data)
+        else:
+            await _on_both_confirmed(client, data)
     elif event == "match_aborted":
-        await _on_match_aborted(client, data)
+        if game_mode == "2v2":
+            await _on_match_aborted_2v2(client, data)
+        else:
+            await _on_match_aborted(client, data)
     elif event == "match_abandoned":
-        await _on_match_abandoned(client, data)
+        if game_mode == "2v2":
+            await _on_match_abandoned_2v2(client, data)
+        else:
+            await _on_match_abandoned(client, data)
     elif event == "match_completed":
-        await _on_match_completed(client, data)
+        if game_mode == "2v2":
+            await _on_match_completed_2v2(client, data)
+        else:
+            await _on_match_completed(client, data)
     elif event == "match_conflict":
-        await _on_match_conflict(client, data)
+        if game_mode == "2v2":
+            await _on_match_conflict_2v2(client, data)
+        else:
+            await _on_match_conflict(client, data)
     elif event == "leaderboard_updated":
         _on_leaderboard_updated(data)
     elif event == "queue_join_activity":
@@ -352,6 +380,137 @@ async def _on_match_conflict(client: discord.Client, match_data: dict) -> None:
     )
 
 
+async def _on_match_found_2v2(client: discord.Client, match_data: dict) -> None:
+    """Send match found DMs to all 4 players and update their searching embeds."""
+    match_id: int = match_data["id"]
+    all_uids = _get_2v2_uids(match_data)
+    cache = get_cache()
+
+    dm_coros = []
+    dm_uids: list[int] = []
+    for uid in all_uids:
+        try:
+            user = await client.fetch_user(uid)
+            locale = get_player_locale(uid)
+            dm_coros.append(
+                queue_user_send_high(
+                    user,
+                    embed=MatchFoundEmbed(match_data, locale=locale),
+                    view=MatchFoundView2v2(match_id, locale=locale),
+                )
+            )
+            dm_uids.append(uid)
+        except Exception:
+            logger.exception(f"[WS] Failed to fetch user {uid} for 2v2 match_found")
+
+    if dm_coros:
+        results = await asyncio.gather(*dm_coros, return_exceptions=True)
+        for uid, result in zip(dm_uids, results):
+            if isinstance(result, Exception):
+                logger.exception(
+                    f"[WS] Failed to DM user {uid} for 2v2 match_found", exc_info=result
+                )
+            elif isinstance(result, discord.Message):
+                cache.active_match_found_messages[uid] = result
+
+    for uid in all_uids:
+        searching_view = cache.active_searching_views.pop(uid, None)
+        if searching_view is not None and hasattr(searching_view, "stop_heartbeat"):
+            searching_view.stop_heartbeat()
+        searching_msg = cache.active_searching_messages.pop(uid, None)
+        if searching_msg is not None:
+            asyncio.create_task(_edit_searching_embed_low(searching_msg, uid))
+
+
+async def _on_all_confirmed_2v2(client: discord.Client, match_data: dict) -> None:
+    """Send match info DMs to all 4 players with the report dropdown."""
+    match_id: int = match_data["id"]
+    all_uids = _get_2v2_uids(match_data)
+    cache = get_cache()
+
+    # Fetch player infos for all 4 players concurrently.
+    info_results = await asyncio.gather(
+        *(_fetch_player_info(uid) for uid in all_uids), return_exceptions=True
+    )
+    infos: dict[int, dict | None] = {}
+    for uid, result in zip(all_uids, info_results):
+        infos[uid] = result if isinstance(result, dict) else None
+
+    dm_coros = []
+    dm_uids: list[int] = []
+    for uid in all_uids:
+        cache.active_match_info[uid] = {"match_data": match_data, "player_infos": infos}
+        try:
+            user = await client.fetch_user(uid)
+            locale = get_player_locale(uid)
+            dm_coros.append(
+                queue_user_send_high(
+                    user,
+                    embed=MatchInfoEmbed2v2(match_data, infos, locale=locale),
+                    view=MatchReportView2v2(match_id, match_data, infos, locale=locale),
+                )
+            )
+            dm_uids.append(uid)
+        except Exception:
+            logger.exception(f"[WS] Failed to fetch user {uid} for 2v2 all_confirmed")
+
+    if dm_coros:
+        dm_results = await asyncio.gather(*dm_coros, return_exceptions=True)
+        for uid, dm_result in zip(dm_uids, dm_results):
+            if isinstance(dm_result, Exception):
+                logger.exception(
+                    f"[WS] Failed to DM user {uid} for 2v2 all_confirmed",
+                    exc_info=dm_result,
+                )
+            elif isinstance(dm_result, discord.Message):
+                cache.active_match_messages[uid] = dm_result
+
+    for uid in all_uids:
+        cache.active_match_found_messages.pop(uid, None)
+
+
+async def _on_match_aborted_2v2(client: discord.Client, match_data: dict) -> None:
+    all_uids = _get_2v2_uids(match_data)
+    await _send_to_all_2v2_localized(client, all_uids, MatchAbortedEmbed2v2, match_data)
+    await _clear_match_state_all_2v2(all_uids)
+    await _post_to_match_log_low(
+        client, MatchAbortedEmbed2v2(match_data, locale="enUS")
+    )
+
+
+async def _on_match_abandoned_2v2(client: discord.Client, match_data: dict) -> None:
+    all_uids = _get_2v2_uids(match_data)
+    await _send_to_all_2v2_localized(
+        client, all_uids, MatchAbandonedEmbed2v2, match_data
+    )
+    await _clear_match_state_all_2v2(all_uids)
+    await _post_to_match_log_low(
+        client, MatchAbandonedEmbed2v2(match_data, locale="enUS")
+    )
+
+
+async def _on_match_completed_2v2(client: discord.Client, match_data: dict) -> None:
+    all_uids = _get_2v2_uids(match_data)
+    await _send_to_all_2v2_localized(
+        client, all_uids, MatchFinalizedEmbed2v2, match_data
+    )
+    await _clear_match_state_all_2v2(all_uids)
+    await _post_to_match_log_low(
+        client, MatchFinalizedEmbed2v2(match_data, locale="enUS")
+    )
+
+
+async def _on_match_conflict_2v2(client: discord.Client, match_data: dict) -> None:
+    all_uids = _get_2v2_uids(match_data)
+    await _send_to_all_2v2_localized(
+        client, all_uids, MatchConflictEmbed2v2, match_data
+    )
+    await _clear_match_state_all_2v2(all_uids)
+    await _post_to_match_log_low(
+        client, MatchConflictEmbed2v2(match_data, locale="enUS")
+    )
+
+
 def _on_leaderboard_updated(data: dict) -> None:
     """Replace the cached leaderboard with the new data from the backend."""
     cache = get_cache()
@@ -439,3 +598,57 @@ async def _post_to_match_log_low(
         await queue_channel_send_low(channel, embed=embed)
     except Exception:
         logger.exception("[WS] Failed to post to match log channel")
+
+
+def _get_2v2_uids(match_data: dict) -> list[int]:
+    """Return all 4 player UIDs from a 2v2 match data dict (non-None only)."""
+    uids: list[int] = []
+    for key in (
+        "team_1_player_1_discord_uid",
+        "team_1_player_2_discord_uid",
+        "team_2_player_1_discord_uid",
+        "team_2_player_2_discord_uid",
+    ):
+        uid = match_data.get(key)
+        if uid is not None:
+            uids.append(int(uid))
+    return uids
+
+
+async def _send_to_all_2v2_localized(
+    client: discord.Client,
+    uids: list[int],
+    embed_cls: type,
+    match_data: dict,
+) -> None:
+    """DM all players with per-locale embeds."""
+    for uid in uids:
+        try:
+            locale = get_player_locale(uid)
+            user = await client.fetch_user(uid)
+            await queue_user_send_low(user, embed=embed_cls(match_data, locale=locale))
+        except Exception:
+            logger.exception(f"[WS] Failed to DM 2v2 user {uid}")
+
+
+async def _clear_match_state_all_2v2(uids: list[int]) -> None:
+    """Clear all match state for a 2v2 match: remove found-message buttons and disable report views."""
+    cache = get_cache()
+    for uid in uids:
+        found_msg = cache.active_match_found_messages.pop(uid, None)
+        if found_msg is not None:
+            try:
+                await queue_message_edit_low(found_msg, view=None)
+            except Exception:
+                logger.exception(
+                    f"[WS] Failed to remove buttons from 2v2 match_found message for user {uid}"
+                )
+        match_msg = cache.active_match_messages.pop(uid, None)
+        if match_msg is not None:
+            try:
+                await queue_message_edit_low(match_msg, view=None)
+            except Exception:
+                logger.exception(
+                    f"[WS] Failed to disable 2v2 MatchReportView for user {uid}"
+                )
+        cache.active_match_info.pop(uid, None)

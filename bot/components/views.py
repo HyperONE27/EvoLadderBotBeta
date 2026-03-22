@@ -23,8 +23,10 @@ from bot.components.embeds import (
     MatchAbortAckEmbed,
     MatchConfirmedEmbed,
     MatchInfoEmbed1v1,
+    MatchInfoEmbed2v2,
     QueueErrorEmbed,
     QueueSetupEmbed1v1,
+    QueueSetupEmbed2v2,
     QueueSearchingEmbed,
     SetCountryConfirmEmbed,
     SetMMRSuccessEmbed,
@@ -2295,6 +2297,599 @@ async def _abort_match(interaction: discord.Interaction, match_id: int) -> None:
 
     except Exception:
         logger.exception("Failed to abort match")
+        _locale = get_player_locale(interaction.user.id)
+        await interaction.followup.send(
+            embed=QueueErrorEmbed(t("error.unexpected_error", _locale), locale=_locale),
+            ephemeral=True,
+        )
+
+
+# =========================================================================
+# 2v2 Queue: selects
+# =========================================================================
+
+
+class AllRaceSelect(discord.ui.Select):
+    """Select for all BW + SC2 races (used by the 2v2 setup view)."""
+
+    def __init__(
+        self,
+        role: str,
+        selected: str | None = None,
+        locale: str = "enUS",
+        row: int = 1,
+    ) -> None:
+        self._role = role  # "leader" or "member"
+        races = get_races()
+        options: list[discord.SelectOption] = []
+        for code in get_bw_race_codes() + get_sc2_race_codes():
+            if code in races:
+                options.append(
+                    discord.SelectOption(
+                        label=t(f"race.{code}.name", locale),
+                        value=code,
+                        emoji=get_race_emote(code),
+                        default=(code == selected),
+                    )
+                )
+        placeholder = "Your race" if role == "leader" else "Partner's race"
+        super().__init__(
+            placeholder=placeholder,
+            min_values=0,
+            max_values=1,
+            options=options,
+            row=row,
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view: QueueSetupView2v2 = self.view  # type: ignore[assignment]
+        if self._role == "leader":
+            view.leader_race = self.values[0] if self.values else None
+        else:
+            view.member_race = self.values[0] if self.values else None
+        await view.persist_and_refresh(interaction)
+
+
+class MapVetoSelect2v2(discord.ui.Select):
+    def __init__(self, selected: list[str] | None = None, locale: str = "enUS") -> None:
+        maps = get_maps(game_mode="2v2", season=CURRENT_SEASON) or {}
+        options = [
+            discord.SelectOption(
+                label=map_data["short_name"],
+                value=map_name,
+                emoji=get_game_emote(map_data.get("game", "sc2")),
+                default=(map_name in (selected or [])),
+            )
+            for map_name, map_data in sorted(maps.items())
+        ]
+        if not options:
+            options = [
+                discord.SelectOption(
+                    label=t("queue_select.no_maps_available", locale), value="none"
+                )
+            ]
+        super().__init__(
+            placeholder=t(
+                "queue_select.placeholder.map_veto",
+                locale,
+                max_vetoes=str(MAX_MAP_VETOES),
+            ),
+            min_values=0,
+            max_values=min(MAX_MAP_VETOES, len(options)),
+            options=options,
+            row=3,
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view: QueueSetupView2v2 = self.view  # type: ignore[assignment]
+        view.map_vetoes = [v for v in self.values if v != "none"]
+        await view.persist_and_refresh(interaction)
+
+
+class MatchReportSelect2v2(discord.ui.Select):
+    def __init__(self, match_id: int, locale: str = "enUS") -> None:
+        self.match_id = match_id
+        options = [
+            discord.SelectOption(label="Team 1 wins", value="team_1_win"),
+            discord.SelectOption(label="Team 2 wins", value="team_2_win"),
+            discord.SelectOption(label="Draw", value="draw"),
+        ]
+        super().__init__(
+            placeholder="Report result...",
+            min_values=1,
+            max_values=1,
+            options=options,
+            row=0,
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view: MatchReportView2v2 = self.view  # type: ignore[assignment]
+        await view.submit_report(interaction, self.values[0])
+
+
+# =========================================================================
+# 2v2 Queue: views
+# =========================================================================
+
+
+class QueueSetupView2v2(discord.ui.View):
+    def __init__(
+        self,
+        discord_user_id: int,
+        leader_race: str | None = None,
+        member_race: str | None = None,
+        map_vetoes: list[str] | None = None,
+    ) -> None:
+        super().__init__(timeout=300)
+        self.discord_user_id = discord_user_id
+        self.leader_race = leader_race
+        self.member_race = member_race
+        self.map_vetoes = map_vetoes or []
+        self._build()
+
+    def _build(self) -> None:
+        self.clear_items()
+        _locale = get_player_locale(self.discord_user_id)
+
+        # Row 0: action buttons
+        async def on_join(interaction: discord.Interaction) -> None:
+            await _join_queue_2v2(
+                interaction,
+                self.discord_user_id,
+                self.leader_race,
+                self.member_race,
+                self.map_vetoes,
+            )
+
+        join_btn: discord.ui.Button[QueueSetupView2v2] = discord.ui.Button(
+            label="Join 2v2 Queue",
+            emoji="🚀",
+            style=discord.ButtonStyle.secondary,
+            row=0,
+        )
+        join_btn.callback = on_join  # type: ignore[method-assign]
+        self.add_item(join_btn)
+
+        async def on_clear(interaction: discord.Interaction) -> None:
+            self.leader_race = None
+            self.member_race = None
+            self.map_vetoes = []
+            await self.persist_and_refresh(interaction)
+
+        clear_btn: discord.ui.Button[QueueSetupView2v2] = discord.ui.Button(
+            label=t("button.clear_selections", _locale),
+            emoji="🗑️",
+            style=discord.ButtonStyle.danger,
+            row=0,
+        )
+        clear_btn.callback = on_clear  # type: ignore[method-assign]
+        self.add_item(clear_btn)
+
+        async def on_cancel(interaction: discord.Interaction) -> None:
+            if interaction.message is not None:
+                await interaction.message.delete()
+
+        cancel_btn: discord.ui.Button[QueueSetupView2v2] = discord.ui.Button(
+            label=t("button.cancel", _locale),
+            emoji="✖️",
+            style=discord.ButtonStyle.danger,
+            row=0,
+        )
+        cancel_btn.callback = on_cancel  # type: ignore[method-assign]
+        self.add_item(cancel_btn)
+
+        self.add_item(AllRaceSelect("leader", self.leader_race, locale=_locale, row=1))
+        self.add_item(AllRaceSelect("member", self.member_race, locale=_locale, row=2))
+        self.add_item(MapVetoSelect2v2(self.map_vetoes, locale=_locale))
+
+    async def persist_and_refresh(self, interaction: discord.Interaction) -> None:
+        """Save preferences to backend and refresh the embed."""
+        try:
+            bw_codes = get_bw_race_codes()
+            leader = self.leader_race
+            member = self.member_race
+            # Derive which composition fields to store
+            pure_bw_leader = (
+                leader
+                if (leader and leader in bw_codes and member and member in bw_codes)
+                else None
+            )
+            pure_bw_member = member if pure_bw_leader else None
+            sc2_codes = get_sc2_race_codes()
+            pure_sc2_leader = (
+                leader
+                if (leader and leader in sc2_codes and member and member in sc2_codes)
+                else None
+            )
+            pure_sc2_member = member if pure_sc2_leader else None
+            mixed_leader = (
+                leader
+                if (
+                    leader
+                    and member
+                    and pure_bw_leader is None
+                    and pure_sc2_leader is None
+                )
+                else None
+            )
+            mixed_member = member if mixed_leader else None
+
+            async with get_session().put(
+                f"{BACKEND_URL}/preferences_2v2",
+                json={
+                    "discord_uid": self.discord_user_id,
+                    "last_pure_bw_leader_race": pure_bw_leader,
+                    "last_pure_bw_member_race": pure_bw_member,
+                    "last_mixed_leader_race": mixed_leader,
+                    "last_mixed_member_race": mixed_member,
+                    "last_pure_sc2_leader_race": pure_sc2_leader,
+                    "last_pure_sc2_member_race": pure_sc2_member,
+                    "last_chosen_vetoes": sorted(self.map_vetoes),
+                },
+            ) as resp:
+                await resp.json()
+        except Exception:
+            logger.warning("Failed to persist 2v2 preferences", exc_info=True)
+
+        new_view = QueueSetupView2v2(
+            self.discord_user_id, self.leader_race, self.member_race, self.map_vetoes
+        )
+        locale = get_player_locale(self.discord_user_id)
+        embed = QueueSetupEmbed2v2(
+            self.leader_race, self.member_race, self.map_vetoes, locale=locale
+        )
+        await interaction.response.edit_message(embed=embed, view=new_view)
+
+
+class MatchFoundView2v2(discord.ui.View):
+    def __init__(self, match_id: int, locale: str = "enUS") -> None:
+        super().__init__(timeout=CONFIRMATION_TIMEOUT)
+        self.match_id = match_id
+
+        async def on_confirm(interaction: discord.Interaction) -> None:
+            await _confirm_match_2v2(interaction, match_id)
+
+        confirm_btn: discord.ui.Button[MatchFoundView2v2] = discord.ui.Button(
+            label=t("button.confirm_match", locale),
+            emoji="✅",
+            style=discord.ButtonStyle.green,
+            row=0,
+        )
+        confirm_btn.callback = on_confirm  # type: ignore[method-assign]
+        self.add_item(confirm_btn)
+
+        async def on_abort(interaction: discord.Interaction) -> None:
+            await _abort_match_2v2(interaction, match_id)
+
+        abort_btn: discord.ui.Button[MatchFoundView2v2] = discord.ui.Button(
+            label=t("button.abort_match", locale),
+            emoji="🛑",
+            style=discord.ButtonStyle.secondary,
+            row=0,
+        )
+        abort_btn.callback = on_abort  # type: ignore[method-assign]
+        self.add_item(abort_btn)
+
+
+class MatchReportView2v2(discord.ui.View):
+    def __init__(
+        self,
+        match_id: int,
+        match_data: dict | None = None,
+        player_infos: dict | None = None,
+        *,
+        locale: str = "enUS",
+    ) -> None:
+        super().__init__(timeout=None)
+        self.match_id = match_id
+        self._match_data = match_data or {}
+        self._player_infos = player_infos or {}
+        self._locale = locale
+        self.report_select = MatchReportSelect2v2(match_id, locale=locale)
+        self.add_item(self.report_select)
+
+    async def submit_report(
+        self, interaction: discord.Interaction, report: str
+    ) -> None:
+        await interaction.response.defer()
+        try:
+            async with get_session().put(
+                f"{BACKEND_URL}/matches_2v2/{self.match_id}/report",
+                json={
+                    "discord_uid": interaction.user.id,
+                    "report": report,
+                },
+            ) as resp:
+                data = await resp.json()
+
+            if resp.status >= 400:
+                _locale = get_player_locale(interaction.user.id)
+                await interaction.followup.send(
+                    embed=QueueErrorEmbed(
+                        data.get("detail") or t("error.failed_submit_report", _locale),
+                        locale=_locale,
+                    ),
+                    ephemeral=True,
+                )
+                return
+
+            for option in self.report_select.options:
+                option.default = option.value == report
+            self.report_select.disabled = True
+            locale = get_player_locale(interaction.user.id)
+            new_embed = MatchInfoEmbed2v2(
+                self._match_data,
+                self._player_infos,
+                pending_report=report,
+                locale=locale,
+            )
+            await interaction.edit_original_response(embed=new_embed, view=self)
+
+        except Exception:
+            logger.exception("Failed to submit 2v2 match report")
+            _locale = get_player_locale(interaction.user.id)
+            await interaction.followup.send(
+                embed=QueueErrorEmbed(
+                    t("error.unexpected_error", _locale), locale=_locale
+                ),
+                ephemeral=True,
+            )
+
+
+# =========================================================================
+# 2v2 Queue: searching view + cancel button
+# =========================================================================
+
+
+class _CancelQueueButton2v2(discord.ui.Button["QueueSearchingView2v2"]):
+    def __init__(self, discord_user_id: int) -> None:
+        super().__init__(
+            label=t("button.cancel_queue", get_player_locale(discord_user_id)),
+            emoji="✖️",
+            style=discord.ButtonStyle.danger,
+            row=0,
+        )
+        self.discord_user_id = discord_user_id
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        await _leave_queue_2v2(interaction, self.discord_user_id)
+
+
+class QueueSearchingView2v2(discord.ui.View):
+    """Searching view for 2v2 queue — provides a cancel button.
+
+    Unlike the 1v1 ``QueueSearchingView`` there is no heartbeat because the 2v2
+    queue does not have a stats endpoint yet.
+    """
+
+    def __init__(self, discord_user_id: int) -> None:
+        super().__init__(timeout=None)
+        self.add_item(_CancelQueueButton2v2(discord_user_id))
+
+
+# =========================================================================
+# 2v2 Queue: HTTP action helpers
+# =========================================================================
+
+
+async def _fetch_mmr_2v2(leader_uid: int, member_uid: int) -> int:
+    """Fetch the pair MMR from the backend. Returns 1500 if not found."""
+    try:
+        async with get_session().get(
+            f"{BACKEND_URL}/mmrs_2v2/{leader_uid}/{member_uid}"
+        ) as resp:
+            data = await resp.json()
+            mmr_row = data.get("mmr")
+            if mmr_row:
+                return int(mmr_row.get("mmr", 1500))
+    except Exception:
+        logger.warning("Failed to fetch 2v2 MMR", exc_info=True)
+    return 1500
+
+
+async def _join_queue_2v2(
+    interaction: discord.Interaction,
+    discord_user_id: int,
+    leader_race: str | None,
+    member_race: str | None,
+    map_vetoes: list[str],
+) -> None:
+    if leader_race is None or member_race is None:
+        _locale = get_player_locale(discord_user_id)
+        await interaction.response.send_message(
+            embed=QueueErrorEmbed(
+                "Select both your race and your partner's race before joining.",
+                locale=_locale,
+            ),
+            ephemeral=True,
+        )
+        return
+
+    await interaction.response.defer()
+
+    bw_codes = get_bw_race_codes()
+    sc2_codes = get_sc2_race_codes()
+
+    pure_bw_leader = (
+        leader_race if (leader_race in bw_codes and member_race in bw_codes) else None
+    )
+    pure_bw_member = member_race if pure_bw_leader else None
+    pure_sc2_leader = (
+        leader_race if (leader_race in sc2_codes and member_race in sc2_codes) else None
+    )
+    pure_sc2_member = member_race if pure_sc2_leader else None
+    mixed_leader = (
+        leader_race if (pure_bw_leader is None and pure_sc2_leader is None) else None
+    )
+    mixed_member = member_race if mixed_leader else None
+
+    try:
+        async with get_session().post(
+            f"{BACKEND_URL}/queue_2v2/join",
+            json={
+                "discord_uid": discord_user_id,
+                "discord_username": interaction.user.name,
+                "pure_bw_leader_race": pure_bw_leader,
+                "pure_bw_member_race": pure_bw_member,
+                "mixed_leader_race": mixed_leader,
+                "mixed_member_race": mixed_member,
+                "pure_sc2_leader_race": pure_sc2_leader,
+                "pure_sc2_member_race": pure_sc2_member,
+                "map_vetoes": map_vetoes,
+            },
+        ) as resp:
+            data = await resp.json()
+
+        if resp.status >= 400:
+            _locale = get_player_locale(discord_user_id)
+            await interaction.edit_original_response(
+                embed=QueueErrorEmbed(
+                    data.get("detail") or t("error.failed_join_queue", _locale),
+                    locale=_locale,
+                ),
+                view=None,
+            )
+            return
+
+        locale = get_player_locale(discord_user_id)
+        searching_view = QueueSearchingView2v2(discord_user_id)
+        await interaction.edit_original_response(
+            embed=QueueSearchingEmbed(locale=locale),
+            view=searching_view,
+        )
+        try:
+            msg = await interaction.original_response()
+            cache = get_cache()
+            cache.active_searching_messages[discord_user_id] = msg
+            cache.active_searching_views[discord_user_id] = searching_view
+        except Exception:
+            logger.warning(
+                "Could not cache 2v2 searching message reference",
+                discord_user_id=discord_user_id,
+            )
+
+    except Exception:
+        logger.exception("Failed to join 2v2 queue")
+        _locale = get_player_locale(discord_user_id)
+        await interaction.edit_original_response(
+            embed=QueueErrorEmbed(t("error.unexpected_error", _locale), locale=_locale),
+            view=None,
+        )
+
+
+async def _leave_queue_2v2(
+    interaction: discord.Interaction,
+    discord_user_id: int,
+) -> None:
+    await interaction.response.defer()
+    try:
+        async with get_session().delete(
+            f"{BACKEND_URL}/queue_2v2/leave",
+            json={"discord_uid": discord_user_id},
+        ) as resp:
+            data = await resp.json()
+
+        if resp.status >= 400:
+            _locale = get_player_locale(discord_user_id)
+            await interaction.followup.send(
+                embed=QueueErrorEmbed(
+                    data.get("detail") or t("error.failed_leave_queue", _locale),
+                    locale=_locale,
+                ),
+                ephemeral=True,
+            )
+            return
+
+        _locale = get_player_locale(discord_user_id)
+        await interaction.edit_original_response(
+            embed=QueueErrorEmbed(t("queue_left_2v2", _locale), locale=_locale),
+            view=None,
+        )
+
+        try:
+            cache = get_cache()
+            cache.active_searching_messages.pop(discord_user_id, None)
+            cache.active_searching_views.pop(discord_user_id, None)
+        except Exception:
+            pass
+
+    except Exception:
+        logger.exception("Failed to leave 2v2 queue")
+        _locale = get_player_locale(discord_user_id)
+        await interaction.followup.send(
+            embed=QueueErrorEmbed(t("error.unexpected_error", _locale), locale=_locale),
+            ephemeral=True,
+        )
+
+
+async def _confirm_match_2v2(interaction: discord.Interaction, match_id: int) -> None:
+    await interaction.response.defer()
+    try:
+        async with get_session().put(
+            f"{BACKEND_URL}/matches_2v2/{match_id}/confirm",
+            json={"discord_uid": interaction.user.id},
+        ) as resp:
+            await resp.json()
+
+        locale = get_player_locale(interaction.user.id)
+        if resp.status >= 400:
+            await interaction.followup.send(
+                embed=QueueErrorEmbed(
+                    t("error.failed_confirm_match", locale), locale=locale
+                ),
+                ephemeral=True,
+            )
+            return
+
+        msg = interaction.message
+        if msg and msg.embeds:
+            embed = msg.embeds[0]
+            embed.add_field(
+                name=t("match_found_embed.field_name.confirmed", locale),
+                value=t("match_found_embed.field_value.confirmed", locale),
+                inline=False,
+            )
+        else:
+            embed = MatchConfirmedEmbed(match_id, locale=locale)
+        await interaction.edit_original_response(embed=embed, view=None)
+
+    except Exception:
+        logger.exception("Failed to confirm 2v2 match")
+        _locale = get_player_locale(interaction.user.id)
+        await interaction.followup.send(
+            embed=QueueErrorEmbed(t("error.unexpected_error", _locale), locale=_locale),
+            ephemeral=True,
+        )
+
+
+async def _abort_match_2v2(interaction: discord.Interaction, match_id: int) -> None:
+    await interaction.response.defer()
+    try:
+        async with get_session().put(
+            f"{BACKEND_URL}/matches_2v2/{match_id}/abort",
+            json={"discord_uid": interaction.user.id},
+        ) as resp:
+            data = await resp.json()
+
+        if resp.status >= 400:
+            _locale = get_player_locale(interaction.user.id)
+            await interaction.followup.send(
+                embed=QueueErrorEmbed(
+                    data.get("detail") or t("error.failed_abort_match", _locale),
+                    locale=_locale,
+                ),
+                ephemeral=True,
+            )
+            return
+
+        locale = get_player_locale(interaction.user.id)
+        await interaction.edit_original_response(
+            embed=MatchAbortAckEmbed(locale=locale),
+            view=None,
+        )
+
+    except Exception:
+        logger.exception("Failed to abort 2v2 match")
         _locale = get_player_locale(interaction.user.id)
         await interaction.followup.send(
             embed=QueueErrorEmbed(t("error.unexpected_error", _locale), locale=_locale),

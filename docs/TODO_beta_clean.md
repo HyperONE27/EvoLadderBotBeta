@@ -21,7 +21,7 @@ What remains?
         - write-through guarantees writes hit the DB
         - but not that DFs might not silently corrupt...(?)
 - ⏰ Add unit tests
-- ⏰ /notifyme needs to send an embed, not just a message, it's fugly right now
+- ✅ /notifyme needs to send an embed, not just a message, it's fugly right now
 - ✅ Need some dashboard to help people see when peak hours are
     - ✅ Need to keep track of queue join attempts
     - ✅ the events table {event_type = player_command, action=queue_join, game_mode=1v1, performed_at=timestamp}
@@ -69,12 +69,13 @@ What remains?
 
 # FINISH DURING PRE-BETA
 
-- Need some way for players to see who is online
-    - Activity notifier when someone queues
-    - Analytics charts showing when are peak hours
-- Fill out localization strings
-    - Localizers will do this slowly
-- Add 2v2 and FFA gamemodes
+- ✅ Need some way for players to see who is online
+    - ✅ Activity notifier when someone queues
+    - ✅ Analytics charts showing when are peak hours
+- ✅ Fill out localization strings
+    - ⏰ Localizers will do this slowly
+- ⏰ Add 2v2 and FFA gamemodes
+    - ✅ Added 2v2
 
 # FINISH BY FULL BETA
 

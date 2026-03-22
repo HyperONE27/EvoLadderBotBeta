@@ -25,6 +25,7 @@ from bot.commands.user.notifyme_command import register_notifyme_command
 from bot.commands.user.party_command import register_party_command
 from bot.commands.user.profile_command import register_profile_command
 from bot.commands.user.queue_command import register_queue_command
+from bot.commands.user.queue_2v2_command import register_queue_2v2_command
 from bot.commands.user.setcountry_command import register_setcountry_command
 from bot.commands.user.setup_command import register_setup_command
 from bot.commands.user.termsofservice_command import register_termsofservice_command
@@ -69,6 +70,7 @@ def _register_commands(client: discord.Client) -> None:
     register_profile_command(tree)
     # register_prune_command(tree)
     register_queue_command(tree)
+    register_queue_2v2_command(tree)
     register_setcountry_command(tree)
     register_setup_command(tree)
     register_termsofservice_command(tree)

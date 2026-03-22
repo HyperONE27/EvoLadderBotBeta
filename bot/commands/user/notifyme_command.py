@@ -16,7 +16,11 @@ from bot.helpers.checks import (
     check_if_completed_setup,
     check_if_dm,
 )
-from bot.helpers.embed_branding import apply_default_embed_footer
+from bot.components.embeds import (
+    ErrorEmbed,
+    NotifyMeSuccessEmbed,
+    UnsupportedGameModeEmbed,
+)
 from common.i18n import t
 
 logger = structlog.get_logger(__name__)
@@ -51,18 +55,8 @@ def register_notifyme_command(tree: app_commands.CommandTree) -> None:
     ) -> None:
         locale = get_player_locale(interaction.user.id)
         if game_mode != "1v1":
-            uembed = discord.Embed(
-                title=t("unsupported_game_mode_embed.title.1", locale),
-                description=t(
-                    "unsupported_game_mode_embed.description.1",
-                    locale,
-                    game_mode=game_mode,
-                ),
-                color=discord.Color.orange(),
-            )
-            apply_default_embed_footer(uembed, locale=locale)
             await interaction.response.send_message(
-                embed=uembed,
+                embed=UnsupportedGameModeEmbed(game_mode, locale=locale),
                 ephemeral=True,
             )
             return
@@ -70,7 +64,11 @@ def register_notifyme_command(tree: app_commands.CommandTree) -> None:
             cooldown_minutes < 5 or cooldown_minutes > 1440
         ):
             await interaction.response.send_message(
-                t("notifyme_command.error.cooldown_range.1", locale),
+                embed=ErrorEmbed(
+                    title=t("error_embed.title.unauthorized_command", locale),
+                    description=t("notifyme_command.error.cooldown_range.1", locale),
+                    locale=locale,
+                ),
                 ephemeral=True,
             )
             return
@@ -96,33 +94,26 @@ def register_notifyme_command(tree: app_commands.CommandTree) -> None:
                         body=text,
                     )
                     await interaction.followup.send(
-                        t("notifyme_command.error.save_failed.1", locale),
+                        embed=ErrorEmbed(
+                            title=t("error_embed.title.unexpected_error", locale),
+                            description=t(
+                                "notifyme_command.error.save_failed.1", locale
+                            ),
+                            locale=locale,
+                        ),
+                        ephemeral=True,
                     )
                     return
-            state = t(
-                "notifyme_command.state.on.1"
-                if enabled
-                else "notifyme_command.state.off.1",
-                locale,
+            await interaction.followup.send(
+                embed=NotifyMeSuccessEmbed(enabled, cooldown_minutes, locale=locale),
             )
-            cooldown_line = (
-                t(
-                    "notifyme_command.cooldown_line.1",
-                    locale,
-                    minutes=str(cooldown_minutes),
-                )
-                if cooldown_minutes is not None
-                else ""
-            )
-            msg = t(
-                "notifyme_command.success.1",
-                locale,
-                state=state,
-                cooldown_line=cooldown_line,
-            )
-            await interaction.followup.send(msg)
         except Exception:
             logger.exception("notifyme_command failed")
             await interaction.followup.send(
-                t("notifyme_command.error.save_failed.1", locale),
+                embed=ErrorEmbed(
+                    title=t("error_embed.title.unexpected_error", locale),
+                    description=t("notifyme_command.error.save_failed.1", locale),
+                    locale=locale,
+                ),
+                ephemeral=True,
             )

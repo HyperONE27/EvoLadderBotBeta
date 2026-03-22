@@ -9,7 +9,7 @@ EvoLadderBotBeta is a Discord-based ladder (ranked matchmaking) system for the S
 1. **Backend** — a FastAPI service holding all game state in-memory (Polars DataFrames) backed by Supabase (PostgreSQL). Exposed at `BACKEND_URL`.
 2. **Bot** — a discord.py client that handles all Discord interactions and forwards state-changing actions to the backend via HTTP calls (using `aiohttp`). Receives real-time events from the backend via WebSocket.
 
-Only 1v1 mode is currently implemented. 2v2, 3v3, and FFA are planned but not yet in the codebase.
+1v1 mode is fully implemented. 2v2 mode is partially implemented (matchmaker, party system, queue/match lifecycle, bot UI, and preferences are live; replay upload and leaderboard are not yet wired). 3v3 and FFA are planned but not yet in the codebase.
 
 ## Running the Project
 
@@ -76,15 +76,15 @@ Discord Users
 ### Backend Internals
 
 - **`Backend`** (`backend/core/bootstrap.py`) — top-level singleton created at FastAPI startup. Holds `StateManager`, `Orchestrator`, `DatabaseWriter`, `StorageWriter`, and a `ProcessPoolExecutor` for replay parsing.
-- **`StateManager`** (`backend/orchestrator/state.py`) — holds all in-memory state: Polars DataFrames for each DB table (admins, players, notifications, events, matches_1v1, mmrs_1v1, preferences_1v1, replays_1v1), static JSON data (countries, maps, mods, races, regions, etc.), and the live queue list + leaderboard list. Populated at startup via `DatabaseReader.load_all_tables()` and `JSONLoader`.
+- **`StateManager`** (`backend/orchestrator/state.py`) — holds all in-memory state: Polars DataFrames for each DB table (admins, players, notifications, events, matches_1v1, mmrs_1v1, preferences_1v1, replays_1v1, matches_2v2, mmrs_2v2, preferences_2v2, replays_2v2), static JSON data (countries, maps, mods, races, regions, etc.), live queue lists (`queue_1v1`, `queue_2v2`), leaderboard lists, and the `parties_2v2` dict (keyed by leader UID). Populated at startup via `DatabaseReader.load_all_tables()` and `JSONLoader`.
 - **`Orchestrator`** (`backend/orchestrator/orchestrator.py`) — the public API surface of the backend. Delegates reads to `StateReader` and writes to `TransitionManager`.
 - **`StateReader`** (`backend/orchestrator/reader.py`) — all read operations delegated to lookup modules.
 - **`TransitionManager`** (`backend/orchestrator/transitions.py`) — performs all mutations on `StateManager` DataFrames, then queues async writes back to Supabase via `DatabaseWriter`.
-- **Lookups** (`backend/lookups/`) — one module per domain (players, matches, mmr, replays, admin, preferences). Each `init_*` function registers a global `_state_manager` at startup and exposes lookup functions. `notification_lookups.py` and `event_lookups.py` exist as stubs but are not yet wired up.
+- **Lookups** (`backend/lookups/`) — one module per domain (players, matches, mmr, replays, admin, preferences_1v1, preferences_2v2). Each `init_*` function registers a global `_state_manager` at startup and exposes lookup functions. `notification_lookups.py` and `event_lookups.py` exist as stubs but are not yet wired up.
 - **`DatabaseReader`** / **`DatabaseWriter`** (`backend/database/database.py`) — thin wrappers around the Supabase Python client. `DatabaseReader.load_all_tables()` is called once at startup; writes happen via `DatabaseWriter`. Reads use anon key, writes use service_role_key.
 - **`StorageWriter`** (`backend/database/storage.py`) — handles replay file uploads to Supabase Storage bucket. Path format: `replays/{match_id}/{discord_uid}/{timestamp}_{hash}.SC2Replay`.
 - **Table schemas** are defined as Polars `DataType` dicts in `backend/domain_types/dataframes.py` (`TABLE_SCHEMAS` registry) and used for strict validation on load. TypedDict row types (`AdminsRow`, `PlayersRow`, `Matches1v1Row`, etc.) are in the same file.
-- **Ephemeral types** (`backend/domain_types/ephemeral.py`) — `QueueEntry1v1`, `MatchCandidate1v1`, `MatchParams1v1`, `LeaderboardEntry1v1`. These are in-memory only, not persisted.
+- **Ephemeral types** (`backend/domain_types/ephemeral.py`) — 1v1: `QueueEntry1v1`, `MatchCandidate1v1`, `MatchParams1v1`, `LeaderboardEntry1v1`. 2v2: `PendingPartyInvite2v2`, `PartyEntry2v2`, `QueueEntry2v2`, `MatchCandidate2v2`, `MatchParams2v2`, `LeaderboardEntry2v2`. All in-memory only, not persisted.
 - **Authorization** (`backend/orchestrator/authorization.py`) — exists but is currently empty; authorization checks happen on the bot side via `bot/helpers/checks.py`.
 
 ### Backend API Endpoints (`backend/api/endpoints.py`)
@@ -106,14 +106,28 @@ Discord Users
 - `GET /admins/{discord_uid}` — admin row (used by bot for permission checks)
 - `GET /mmrs_1v1/{discord_uid}` and `GET /mmrs_1v1/{discord_uid}/{race}` — MMR lookups
 - `GET /preferences_1v1/{discord_uid}` and `PUT /preferences_1v1` — saved race & veto choices
+- `GET /preferences_2v2/{discord_uid}` and `PUT /preferences_2v2` — saved 2v2 composition & veto choices
 
-**Queue & Match Lifecycle:**
+**Queue & Match Lifecycle (1v1):**
 - `POST /queue_1v1/join` — join queue with races/MMRs/map vetoes
 - `DELETE /queue_1v1/leave` — leave queue
 - `GET /queue_1v1/stats` — population breakdown (bw_only, sc2_only, both)
 - `PUT /matches_1v1/{match_id}/confirm` — player confirms match
 - `PUT /matches_1v1/{match_id}/abort` — player aborts before confirmation
 - `PUT /matches_1v1/{match_id}/report` — report match result
+
+**Queue & Match Lifecycle (2v2):**
+- `POST /queue_2v2/join` — party leader submits composition choices; both players enter queue
+- `DELETE /queue_2v2/leave` — leader triggers; both removed from queue
+- `PUT /matches_2v2/{match_id}/confirm` — player confirms; broadcasts `both_confirmed` when all 4 confirm
+- `PUT /matches_2v2/{match_id}/abort` — player aborts; broadcasts `match_aborted`
+- `PUT /matches_2v2/{match_id}/report` — team reports result; broadcasts `match_completed` or `match_conflict`
+
+**Party (2v2):**
+- `PUT /party_2v2/invite` — create a pending party invite
+- `PUT /party_2v2/respond` — accept or decline an invite; accept sets both players to `in_party`
+- `DELETE /party_2v2/leave` — disband party, both players return to `idle`
+- `GET /party_2v2/{discord_uid}` — current party state for a player
 
 **Setup:**
 - `PUT /commands/setup` — upsert player profile (name, alts, battletag, nationality, location, language)
@@ -127,15 +141,17 @@ Discord Users
 
 The backend broadcasts events via `ConnectionManager` (`backend/api/websocket.py`) at `/ws`. The bot listens via `bot/core/ws_listener.py` (auto-reconnects on disconnect with 5s backoff).
 
-Six event types:
+Six event types (same for both 1v1 and 2v2):
 | Event | Meaning |
 |---|---|
-| `match_found` | Matchmaker paired two players |
-| `both_confirmed` | Both players confirmed the match |
+| `match_found` | Matchmaker paired two players / two teams |
+| `both_confirmed` | Both players (1v1) or all four players (2v2) confirmed |
 | `match_aborted` | A player explicitly pressed "Abort Match" |
 | `match_abandoned` | Confirmation window expired (60s timeout) |
-| `match_completed` | Both players agreed on match result |
-| `match_conflict` | Players reported conflicting results |
+| `match_completed` | Both sides agreed on match result |
+| `match_conflict` | Sides reported conflicting results |
+
+**Game-mode routing:** 2v2 broadcasts include `"game_mode": "2v2"` in the payload. 1v1 broadcasts omit the field. The bot's `_handle_message` reads `data.get("game_mode", "1v1")` to dispatch to the correct 1v1 or 2v2 handler set. This means 1v1 broadcasts require no changes to support 2v2.
 
 ### Bot Internals
 
@@ -152,10 +168,15 @@ Commands are organized under `bot/commands/{user,admin,owner}/`. Each command fi
 **User Commands:**
 - `/setup` — modal for player_name, alt_player_names, battletag, nationality, location, language
 - `/setcountry` — set/update country
-- `/queue` — choose races (BW, SC2, or both) + up to 4 map vetoes, then enter queue
+- `/queue` — choose races (BW, SC2, or both) + up to 4 map vetoes, then enter 1v1 queue
+- `/queue2v2` — choose composition (leader + member races) + map vetoes, then enter 2v2 queue (requires active party)
 - `/termsofservice` — accept/reject ToS
 - `/profile` — view player data + MMR breakdowns
 - `/greeting` — greeting/welcome command
+- `/notifyme` — opt-in to DM notifications when someone joins the queue
+- `/party invite {user}` — invite a player to form a 2v2 party
+- `/party leave` — leave current party
+- `/party status` — show current party state
 
 **Admin Commands (`/admin <subcommand>`):**
 - `ban` — toggle ban status
@@ -218,19 +239,29 @@ ELO-like system configured in `backend/core/config.py`:
 
 `backend/algorithms/ratings_1v1.py`: `get_new_ratings(p1_mmr, p2_mmr, match_result)` computes new MMRs. Result codes: 0=draw, 1=player_1_win, 2=player_2_win.
 
-### Matchmaking (`backend/algorithms/matchmaker.py`)
+### Matchmaking
 
-Stateless, pure-function design. Single entry point: `run_matchmaking_wave(queue)` returns `(remaining, matches)`.
+Both matchmakers are stateless pure functions and run at the top of every minute (60-second waves) in `backend/api/app.py`. After match creation a 60-second confirmation timeout is started.
 
-**Timing:** Runs at the top of every minute (60-second waves), scheduled in `backend/api/app.py`. After match creation, a 60-second confirmation timeout is started.
+**1v1 Matchmaker** (`backend/algorithms/matchmaker.py`) — `run_matchmaking_wave(queue)` returns `(remaining, matches)`.
 
-**Algorithm:**
+Algorithm:
 1. Categorize queue into bw_only, sc2_only, and both-race pools
 2. Equalize pools: assign "both" players to balance BW/SC2 by population and skill (3-phase: hard population balance, alternating distribution, soft skill rebalance with 50 MMR threshold)
 3. Smaller pool leads, larger follows. Build candidate pairs within each player's MMR window
 4. **MMR window:** `BASE_MMR_WINDOW (100) + wait_cycles * MMR_WINDOW_GROWTH_PER_CYCLE (50)`
 5. **Scoring:** `score = mmr_diff^2 - (2^wait_factor * 20.0)` — lower is better. Exponential wait bonus guarantees long-waiters eventually match regardless of MMR gap
-6. **Optimal pairing via Hungarian algorithm** (Kuhn-Munkres, O(n^3)) — minimum-weight maximum-cardinality bipartite matching
+6. **Optimal pairing via Hungarian algorithm** (Kuhn-Munkres, O(n^3))
+
+**2v2 Matchmaker** (`backend/algorithms/matchmaker_2v2.py`) — `run_matchmaking_wave_2v2(queue)` returns `(remaining, matches)`. Queue entries are per party (not per player); each entry carries all three composition slots (pure BW, pure SC2, mixed).
+
+Algorithm:
+1. **Compatibility check:** two parties are compatible if one can play BW while the other plays SC2 (either order), or if both declared mixed compositions
+2. **Cost matrix:** same scoring formula as 1v1 (`mmr_diff^2 - wait_bonus`); incompatible pairs get sentinel cost
+3. **Optimal pairing** via Hungarian algorithm (O(n^3)), same as 1v1
+4. **Composition resolution:** after pairing, determine which team plays BW and which plays SC2; if both can swap, randomise
+
+MMR for 2v2 is per **unique player pair** (stored in `mmrs_2v2` with the smaller UID first), not per individual player or race.
 
 **Match Parameters** (`backend/algorithms/match_params.py`): Random map from non-vetoed pool, server from `cross_table[region_1][region_2]`, in-game channel: `SCEvoLadder`.
 
@@ -246,11 +277,11 @@ Stateless, pure-function design. Single entry point: `run_matchmaking_wave(queue
 
 ### Database Schema (`backend/database/schema.sql`)
 
-8 tables: `admins`, `players`, `notifications`, `events`, `matches_1v1`, `mmrs_1v1`, `preferences_1v1`, `replays_1v1`.
+12 tables: `admins`, `players`, `notifications`, `events`, `matches_1v1`, `mmrs_1v1`, `preferences_1v1`, `replays_1v1`, `matches_2v2`, `mmrs_2v2`, `preferences_2v2`, `replays_2v2`.
 
 Key constraints:
 - Admin roles: `owner`, `admin`, `inactive`
-- Player statuses: `idle`, `queueing`, `in_match`, `timed_out`
+- Player statuses: `idle`, `queueing`, `in_match`, `timed_out`, `in_party`
 - Match modes: `1v1`, `2v2`, `FFA`
 - Races: `bw_terran`, `bw_zerg`, `bw_protoss`, `sc2_terran`, `sc2_zerg`, `sc2_protoss`
 - Match results: `player_1_win`, `player_2_win`, `draw`, `conflict`, `abort`, `abandoned`, `invalidated`, `no_report`
@@ -281,7 +312,7 @@ These rules apply to all schema types: SQL tables, Polars schemas, TypedDicts, a
 
 - Run `make quality` to run local CI (ruff + mypy) and make sure all your changes pass.
 - Write a descriptive commit title (imperative mood, e.g. "fix queue heartbeat race condition") and a short body explaining *why* when the change isn't obvious. No bare `"."` commits.
-- The matchmaker is stateless and pure — it can be unit-tested with synthetic `QueueEntry1v1` lists without any I/O.
+- Both matchmakers are stateless and pure — they can be unit-tested with synthetic `QueueEntry1v1` / `QueueEntry2v2` lists without any I/O.
 - Replay parsing runs in a subprocess pool — avoid adding async or event-loop-dependent code to `replay_parser.py`.
 - All DataFrame mutations go through `TransitionManager` — never modify `StateManager` DataFrames directly.
 - WebSocket events are the only way the bot learns about match lifecycle changes — if adding a new match state transition, add a corresponding WS broadcast.
@@ -291,9 +322,11 @@ These rules apply to all schema types: SQL tables, Polars schemas, TypedDicts, a
 ### Not Yet Implemented
 
 These items appear in planning docs or have stub code but are not functional:
-- Leaderboard (type exists in ephemeral.py, list in StateManager, but never populated; `/leaderboard` command is commented out)
+- Leaderboard (types exist in ephemeral.py, lists in StateManager for both 1v1 and 2v2, but never populated; `/leaderboard` command is commented out)
 - i18n/localization (locale files exist, framework in place, not wired to commands)
 - Event tracking (`events` table and `event_lookups.py` exist but are unused)
 - Notification system (`notifications` table exists but is unused beyond read_quick_start_guide flag)
-- 2v2, 3v3, FFA modes
+- 2v2 replay upload (`replay_parser_2v2.py` and `replay_verifier_2v2.py` exist but the upload endpoint and bot handler are not yet wired)
+- 2v2 admin tools (no `/admin snapshot_2v2` or 2v2 match admin endpoints)
+- 3v3, FFA modes
 - `/help` and `/prune` commands (commented out)
