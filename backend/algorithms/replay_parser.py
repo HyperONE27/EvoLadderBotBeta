@@ -26,6 +26,7 @@ _RESULT_INT_TO_STR_1V1: dict[int, str] = {
 }
 
 _RESULT_INT_TO_STR_2V2: dict[int, str] = {
+    -1: "indeterminate",
     0: "draw",
     1: "team_1_win",
     2: "team_2_win",
@@ -237,12 +238,61 @@ def parse_replay_1v1(replay_bytes: bytes) -> dict[str, Any]:
         devnull.close()
 
 
+_EARLY_LEAVE_SENTINEL = "early_leave"
+
+
 def _infer_winner_2v2(replay: Any) -> Any:
     """Attempt to infer the winning team when replay.winner is None.
 
-    # TODO: implement team-level defeat inference (e.g. tracking
-    # "was defeated!" messages per team and deducing the survivor).
+    Scans chat messages for "was defeated!" to determine which team lost.
+    If both players from one team were defeated, the other team wins.
+
+    If only one non-observer PlayerLeaveEvent exists and no defeat messages
+    are found, the replay was likely recorded by a player who left early.
+    Returns ``_EARLY_LEAVE_SENTINEL`` so the caller can set result_int = -1.
     """
+    # Build name → team mapping.
+    team_by_name: dict[str, Any] = {}
+    for team in replay.teams:
+        for player in team.players:
+            team_by_name[player.name] = team
+
+    # Collect defeated player names from chat messages.
+    defeated_names: set[str] = set()
+    for msg in replay.messages:
+        if msg.text.endswith("was defeated!"):
+            name = msg.text.replace(" was defeated!", "")
+            defeated_names.add(name)
+
+    # Check if both players from one team were defeated.
+    defeated_by_team: dict[int, int] = {}
+    for name in defeated_names:
+        team = team_by_name.get(name)
+        if team is not None:
+            team_num = getattr(team, "number", None)
+            if team_num is not None:
+                defeated_by_team[team_num] = defeated_by_team.get(team_num, 0) + 1
+
+    for team_num, count in defeated_by_team.items():
+        if count >= 2:
+            # Both players on this team were defeated — the other team wins.
+            winning_team_num = 1 if team_num == 2 else 2
+            for team in replay.teams:
+                if getattr(team, "number", None) == winning_team_num:
+                    return team
+
+    # No full-team defeat found.  Check if this is an early-leaver replay:
+    # only 1 non-observer PlayerLeaveEvent and no defeat messages.
+    if not defeated_names:
+        leave_count = 0
+        if hasattr(replay, "game_events"):
+            for event in replay.game_events:
+                if event.name == "PlayerLeaveEvent":
+                    if event.player and not event.player.is_observer:
+                        leave_count += 1
+        if leave_count <= 1:
+            return _EARLY_LEAVE_SENTINEL
+
     return None
 
 
@@ -317,7 +367,14 @@ def parse_replay_2v2(replay_bytes: bytes) -> dict[str, Any]:
             winner = _infer_winner_2v2(replay)
 
         if winner is None:
-            result_int = 0
+            return {
+                "error": (
+                    "Could not determine the winner of this game. "
+                    "This is unexpected — please report this replay."
+                )
+            }
+        elif winner == _EARLY_LEAVE_SENTINEL:
+            result_int = -1
         else:
             team_number = getattr(winner, "number", None)
             if team_number == 1:
@@ -325,7 +382,12 @@ def parse_replay_2v2(replay_bytes: bytes) -> dict[str, Any]:
             elif team_number == 2:
                 result_int = 2
             else:
-                result_int = 0
+                return {
+                    "error": (
+                        "Could not determine the winner of this game. "
+                        "This is unexpected — please report this replay."
+                    )
+                }
 
         # --- Toon handles ---
         # Handles are in pid order (handles[0] = pid 1, handles[1] = pid 2, etc.)

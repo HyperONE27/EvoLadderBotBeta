@@ -25,9 +25,15 @@ sys.modules["backend.core.config"] = _fake_config
 
 from backend.algorithms.replay_parser import parse_replay_2v2  # noqa: E402
 from backend.algorithms.replay_verifier import verify_replay_2v2  # noqa: E402
+from common.loader import JSONLoader  # noqa: E402
 
 REPLAYS_DIR = os.path.join(os.path.dirname(__file__), "replays")
 OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "debug_2v2_parsing.txt")
+
+# Load real mods data so mod verification produces meaningful results.
+_CORE_DATA = JSONLoader().load_core_data()
+_MODS = _CORE_DATA["mods"]
+_MAPS = _CORE_DATA["maps"]
 
 # Fake match row for verification simulation — uses the parsed replay's own
 # values so we can see what verification looks like in the "happy path" case.
@@ -150,10 +156,7 @@ def main() -> None:
         # what the verification result structure looks like.
         fake_match = _build_fake_match(parsed)
 
-        # We don't have real mods/maps data, so pass empty dicts.
-        # Mod and map checks will fail, but that's expected — the point is
-        # to see race checks, mirror detection, settings, observers, and AI.
-        verification = verify_replay_2v2(parsed, fake_match, {}, {})
+        verification = verify_replay_2v2(parsed, fake_match, _MODS, _MAPS)
 
         lines.append("")
         lines.append("  [VERIFICATION RESULT]")
@@ -177,10 +180,16 @@ def main() -> None:
         lines.append("")
         lines.append("  [AUTOREPORT SIMULATION]")
         mirror = verification.get("mirror_match", False)
+        indeterminate = verification.get("indeterminate", False)
         races_t1_ok = verification.get("races_team_1", {}).get("success", False)
         races_t2_ok = verification.get("races_team_2", {}).get("success", False)
 
-        if mirror:
+        if indeterminate:
+            lines.append(
+                "    BLOCKED: Indeterminate result — replay recorded by early leaver."
+            )
+            lines.append("    Fallback: manual reporting required.")
+        elif mirror:
             lines.append(
                 "    BLOCKED: Mirror match detected — cannot determine team mapping."
             )

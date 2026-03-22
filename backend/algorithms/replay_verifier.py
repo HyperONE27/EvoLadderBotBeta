@@ -151,6 +151,12 @@ def verify_replay_2v2(
     is_mirror = expected_t1 == expected_t2
     result["mirror_match"] = is_mirror
 
+    # --- Indeterminate result ---
+    # The replay was recorded by a player who left early; the winner cannot
+    # be determined from this replay file.  Autoreporting must be blocked,
+    # but the replay is still accepted to unlock manual reporting.
+    result["indeterminate"] = parsed.get("match_result") == "indeterminate"
+
     # --- Map ---
     short_name: str = match["map_name"]
     map_entry = maps.get(short_name, {})

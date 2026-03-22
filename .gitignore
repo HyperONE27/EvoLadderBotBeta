@@ -228,3 +228,9 @@ pics/*
 
 # CSVs
 *.csv
+
+# Replays (test data, not committed)
+replays/
+
+# Claude Code
+.claude/

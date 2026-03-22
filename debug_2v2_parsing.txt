@@ -35,11 +35,12 @@ FILE: replays\3. Ro8\Lambo-Harstem vs ZaRDieNT-DefMars\Game 1\Reclamation.SC2Rep
       expected_races: ['bw_terran', 'sc2_protoss']
       played_races: ['bw_terran', 'sc2_protoss']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: Reclamation LE
       played_map: Reclamation LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -72,7 +73,7 @@ FILE: replays\3. Ro8\Lambo-Harstem vs ZaRDieNT-DefMars\Game 2\Undercurrent.SC2Re
     replay_hash:    37576ffc61c728ec
     replay_time:    2026-02-28T15:56:39+00:00
     map_name:       Undercurrent LE
-    match_result:   draw (int: 0)
+    match_result:   indeterminate (int: -1)
     duration:       541s
     observers:      ['Steadfast']
 
@@ -97,11 +98,12 @@ FILE: replays\3. Ro8\Lambo-Harstem vs ZaRDieNT-DefMars\Game 2\Undercurrent.SC2Re
       expected_races: ['bw_protoss', 'bw_terran']
       played_races: ['bw_protoss', 'bw_terran']
     mirror_match: False
+    indeterminate: True
     map: [PASS]
       expected_map: Undercurrent LE
       played_map: Undercurrent LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -124,7 +126,8 @@ FILE: replays\3. Ro8\Lambo-Harstem vs ZaRDieNT-DefMars\Game 2\Undercurrent.SC2Re
       found: Yes
 
   [AUTOREPORT SIMULATION]
-    WOULD AUTOREPORT: draw
+    BLOCKED: Indeterminate result — replay recorded by early leaver.
+    Fallback: manual reporting required.
 
 --------------------------------------------------------------------------------
 FILE: replays\3. Ro8\Lambo-Harstem vs ZaRDieNT-DefMars\Game 3\New Bed of Chaos.SC2Replay
@@ -134,7 +137,7 @@ FILE: replays\3. Ro8\Lambo-Harstem vs ZaRDieNT-DefMars\Game 3\New Bed of Chaos.S
     replay_hash:    f42491e514b247e7
     replay_time:    2026-02-28T16:06:41+00:00
     map_name:       New Bed of Chaos LE
-    match_result:   draw (int: 0)
+    match_result:   indeterminate (int: -1)
     duration:       317s
     observers:      ['Steadfast']
 
@@ -159,11 +162,12 @@ FILE: replays\3. Ro8\Lambo-Harstem vs ZaRDieNT-DefMars\Game 3\New Bed of Chaos.S
       expected_races: ['bw_terran', 'sc2_protoss']
       played_races: ['bw_terran', 'sc2_protoss']
     mirror_match: False
+    indeterminate: True
     map: [PASS]
       expected_map: New Bed of Chaos LE
       played_map: New Bed of Chaos LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -186,7 +190,8 @@ FILE: replays\3. Ro8\Lambo-Harstem vs ZaRDieNT-DefMars\Game 3\New Bed of Chaos.S
       found: Yes
 
   [AUTOREPORT SIMULATION]
-    WOULD AUTOREPORT: draw
+    BLOCKED: Indeterminate result — replay recorded by early leaver.
+    Fallback: manual reporting required.
 
 --------------------------------------------------------------------------------
 FILE: replays\3. Ro8\SHIN-NightMare vs HonMonO-threepoint\Game 1\Undercurrent.SC2Replay
@@ -196,7 +201,7 @@ FILE: replays\3. Ro8\SHIN-NightMare vs HonMonO-threepoint\Game 1\Undercurrent.SC
     replay_hash:    8131b12845da4e39
     replay_time:    2026-02-28T14:40:50+00:00
     map_name:       Undercurrent LE
-    match_result:   draw (int: 0)
+    match_result:   indeterminate (int: -1)
     duration:       202s
     observers:      ['맨그러슬', 'TheStC']
 
@@ -221,11 +226,12 @@ FILE: replays\3. Ro8\SHIN-NightMare vs HonMonO-threepoint\Game 1\Undercurrent.SC
       expected_races: ['bw_zerg', 'sc2_terran']
       played_races: ['bw_zerg', 'sc2_terran']
     mirror_match: False
+    indeterminate: True
     map: [PASS]
       expected_map: Undercurrent LE
       played_map: Undercurrent LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -248,7 +254,8 @@ FILE: replays\3. Ro8\SHIN-NightMare vs HonMonO-threepoint\Game 1\Undercurrent.SC
       found: Yes
 
   [AUTOREPORT SIMULATION]
-    WOULD AUTOREPORT: draw
+    BLOCKED: Indeterminate result — replay recorded by early leaver.
+    Fallback: manual reporting required.
 
 --------------------------------------------------------------------------------
 FILE: replays\3. Ro8\SHIN-NightMare vs HonMonO-threepoint\Game 2\Rohana.SC2Replay
@@ -283,11 +290,12 @@ FILE: replays\3. Ro8\SHIN-NightMare vs HonMonO-threepoint\Game 2\Rohana.SC2Repla
       expected_races: ['bw_terran', 'bw_zerg']
       played_races: ['bw_terran', 'bw_zerg']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: Rohana LE
       played_map: Rohana LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -320,7 +328,7 @@ FILE: replays\3. Ro8\SHIN-NightMare vs HonMonO-threepoint\Game 3\Reclamation.SC2
     replay_hash:    8131b12845da4e39
     replay_time:    2026-02-28T14:40:50+00:00
     map_name:       Undercurrent LE
-    match_result:   draw (int: 0)
+    match_result:   indeterminate (int: -1)
     duration:       202s
     observers:      ['맨그러슬', 'TheStC']
 
@@ -345,11 +353,12 @@ FILE: replays\3. Ro8\SHIN-NightMare vs HonMonO-threepoint\Game 3\Reclamation.SC2
       expected_races: ['bw_zerg', 'sc2_terran']
       played_races: ['bw_zerg', 'sc2_terran']
     mirror_match: False
+    indeterminate: True
     map: [PASS]
       expected_map: Undercurrent LE
       played_map: Undercurrent LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -372,7 +381,8 @@ FILE: replays\3. Ro8\SHIN-NightMare vs HonMonO-threepoint\Game 3\Reclamation.SC2
       found: Yes
 
   [AUTOREPORT SIMULATION]
-    WOULD AUTOREPORT: draw
+    BLOCKED: Indeterminate result — replay recorded by early leaver.
+    Fallback: manual reporting required.
 
 --------------------------------------------------------------------------------
 FILE: replays\3. Ro8\Solar-ByuN vs goblin-Blask\Game 1\Undercurrent.SC2Replay
@@ -407,11 +417,12 @@ FILE: replays\3. Ro8\Solar-ByuN vs goblin-Blask\Game 1\Undercurrent.SC2Replay
       expected_races: ['bw_protoss', 'sc2_terran']
       played_races: ['bw_protoss', 'sc2_terran']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: Undercurrent LE
       played_map: Undercurrent LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -469,11 +480,12 @@ FILE: replays\3. Ro8\Solar-ByuN vs goblin-Blask\Game 2\New Bed of Chaos.SC2Repla
       expected_races: ['sc2_protoss', 'sc2_terran']
       played_races: ['sc2_protoss', 'sc2_terran']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: New Bed of Chaos LE
       played_map: New Bed of Chaos LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -531,11 +543,12 @@ FILE: replays\3. Ro8\Solar-ByuN vs goblin-Blask\Game 3\Rohana.SC2Replay
       expected_races: ['bw_protoss', 'sc2_terran']
       played_races: ['bw_protoss', 'sc2_terran']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: Undercurrent LE
       played_map: Undercurrent LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -593,11 +606,12 @@ FILE: replays\3. Ro8\uThermal-SKillous vs ART-iosup\Game 1\Team Biodome.SC2Repla
       expected_races: ['bw_zerg', 'sc2_protoss']
       played_races: ['bw_zerg', 'sc2_protoss']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: [SO] Team Biodome
       played_map: [SO] Team Biodome
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -655,11 +669,12 @@ FILE: replays\3. Ro8\uThermal-SKillous vs ART-iosup\Game 2\Memecatcher.SC2Replay
       expected_races: ['bw_zerg', 'sc2_protoss']
       played_races: ['bw_zerg', 'sc2_protoss']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: Memecatcher SEL
       played_map: Memecatcher SEL
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -717,11 +732,12 @@ FILE: replays\3. Ro8\uThermal-SKillous vs ART-iosup\Game 3\Jacob's Summit.SC2Rep
       expected_races: ['bw_zerg', 'sc2_protoss']
       played_races: ['bw_zerg', 'sc2_protoss']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: [SO] Team Biodome
       played_map: [SO] Team Biodome
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -754,7 +770,7 @@ FILE: replays\4. Ro4\ByuN-Solar vs Lambo-Harstem\Game 1\Rust Bucket.SC2Replay
     replay_hash:    e6e3977d04bbfc3c
     replay_time:    2026-02-28T16:19:46+00:00
     map_name:       Rust Bucket LE
-    match_result:   draw (int: 0)
+    match_result:   indeterminate (int: -1)
     duration:       342s
     observers:      ['Steadfast']
 
@@ -779,11 +795,12 @@ FILE: replays\4. Ro4\ByuN-Solar vs Lambo-Harstem\Game 1\Rust Bucket.SC2Replay
       expected_races: ['bw_zerg', 'sc2_terran']
       played_races: ['bw_zerg', 'sc2_terran']
     mirror_match: False
+    indeterminate: True
     map: [PASS]
       expected_map: Rust Bucket LE
       played_map: Rust Bucket LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -806,7 +823,8 @@ FILE: replays\4. Ro4\ByuN-Solar vs Lambo-Harstem\Game 1\Rust Bucket.SC2Replay
       found: Yes
 
   [AUTOREPORT SIMULATION]
-    WOULD AUTOREPORT: draw
+    BLOCKED: Indeterminate result — replay recorded by early leaver.
+    Fallback: manual reporting required.
 
 --------------------------------------------------------------------------------
 FILE: replays\4. Ro4\ByuN-Solar vs Lambo-Harstem\Game 2\New Bed of Chaos.SC2Replay
@@ -841,11 +859,12 @@ FILE: replays\4. Ro4\ByuN-Solar vs Lambo-Harstem\Game 2\New Bed of Chaos.SC2Repl
       expected_races: ['bw_terran', 'sc2_zerg']
       played_races: ['bw_terran', 'sc2_zerg']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: New Bed of Chaos LE
       played_map: New Bed of Chaos LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -903,11 +922,12 @@ FILE: replays\4. Ro4\ByuN-Solar vs Lambo-Harstem\Game 3\Yellowjacket.SC2Replay
       expected_races: ['bw_terran', 'bw_zerg']
       played_races: ['bw_terran', 'bw_zerg']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: Yellowjacket
       played_map: Yellowjacket
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -965,11 +985,12 @@ FILE: replays\4. Ro4\ByuN-Solar vs Lambo-Harstem\Game 4\Undercurrent.SC2Replay
       expected_races: ['bw_terran', 'sc2_zerg']
       played_races: ['bw_terran', 'sc2_zerg']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: Undercurrent LE
       played_map: Undercurrent LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -1027,11 +1048,12 @@ FILE: replays\4. Ro4\ByuN-Solar vs Lambo-Harstem\Game 5\Rohana.SC2Replay
       expected_races: ['bw_terran', 'bw_zerg']
       played_races: ['bw_terran', 'bw_zerg']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: Rohana LE
       played_map: Rohana LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -1089,11 +1111,12 @@ FILE: replays\4. Ro4\uThermal-SKillous vs SHIN-NightMare\Game 1\Rohana.SC2Replay
       expected_races: ['bw_zerg', 'sc2_protoss']
       played_races: ['bw_zerg', 'sc2_protoss']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: Rohana LE
       played_map: Rohana LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -1151,11 +1174,12 @@ FILE: replays\4. Ro4\uThermal-SKillous vs SHIN-NightMare\Game 2\Team Biodome.SC2
       expected_races: ['sc2_protoss', 'sc2_zerg']
       played_races: ['sc2_protoss', 'sc2_zerg']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: [SO] Team Biodome
       played_map: [SO] Team Biodome
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -1213,11 +1237,12 @@ FILE: replays\4. Ro4\uThermal-SKillous vs SHIN-NightMare\Game 3\Yellowjacket.SC2
       expected_races: ['bw_protoss', 'bw_zerg']
       played_races: ['bw_protoss', 'bw_zerg']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: Yellowjacket
       played_map: Yellowjacket
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -1275,11 +1300,12 @@ FILE: replays\4. Ro4\uThermal-SKillous vs SHIN-NightMare\Game 4\Rust Bucket.SC2R
       expected_races: ['sc2_protoss', 'sc2_zerg']
       played_races: ['sc2_protoss', 'sc2_zerg']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: Rust Bucket LE
       played_map: Rust Bucket LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -1337,11 +1363,12 @@ FILE: replays\4. Ro4\uThermal-SKillous vs SHIN-NightMare\Game 5\New Bed of Chaos
       expected_races: ['bw_zerg', 'sc2_protoss']
       played_races: ['bw_zerg', 'sc2_protoss']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: New Bed of Chaos LE
       played_map: New Bed of Chaos LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -1399,11 +1426,12 @@ FILE: replays\5. Finals\ByuN-Solar vs SHIN-NightMare\Game 1\Yellowjacket.SC2Repl
       expected_races: ['bw_zerg', 'sc2_protoss']
       played_races: ['bw_zerg', 'sc2_protoss']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: Yellowjacket
       played_map: Yellowjacket
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -1461,11 +1489,12 @@ FILE: replays\5. Finals\ByuN-Solar vs SHIN-NightMare\Game 2\Rohana.SC2Replay
       expected_races: ['sc2_protoss', 'sc2_zerg']
       played_races: ['sc2_protoss', 'sc2_zerg']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: Rohana LE
       played_map: Rohana LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -1523,11 +1552,12 @@ FILE: replays\5. Finals\ByuN-Solar vs SHIN-NightMare\Game 3\Undercurrent.SC2Repl
       expected_races: ['sc2_protoss', 'sc2_zerg']
       played_races: ['sc2_protoss', 'sc2_zerg']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: Undercurrent LE
       played_map: Undercurrent LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -1585,11 +1615,12 @@ FILE: replays\5. Finals\ByuN-Solar vs SHIN-NightMare\Game 4\Reclamation.SC2Repla
       expected_races: ['sc2_protoss', 'sc2_zerg']
       played_races: ['sc2_protoss', 'sc2_zerg']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: Rohana LE
       played_map: Rohana LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None
@@ -1647,11 +1678,12 @@ FILE: replays\5. Finals\ByuN-Solar vs SHIN-NightMare\Game 5\Rust Bucket.SC2Repla
       expected_races: ['sc2_protoss', 'sc2_zerg']
       played_races: ['sc2_protoss', 'sc2_zerg']
     mirror_match: False
+    indeterminate: False
     map: [PASS]
       expected_map: Undercurrent LE
       played_map: Undercurrent LE
-    mod: [FAIL]
-      message: SC: Evo Complete mod data not found.
+    mod: [PASS]
+      message: SC: Evo Complete mod detected (9 matching handle(s)).
     timestamp: [PASS]
       time_difference_minutes: 0.0
       error: None

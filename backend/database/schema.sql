@@ -349,7 +349,7 @@ CREATE TABLE IF NOT EXISTS replays_2v2 (
             'sc2_terran', 'sc2_zerg', 'sc2_protoss'
         )),
     match_result                TEXT NOT NULL
-        CHECK (match_result IN ('team_1_win', 'team_2_win', 'draw')),
+        CHECK (match_result IN ('team_1_win', 'team_2_win', 'draw', 'indeterminate')),
     -- sc2reader toon handles (all four players)
     team_1_player_1_handle      TEXT NOT NULL,
     team_1_player_2_handle      TEXT NOT NULL,
