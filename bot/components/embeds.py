@@ -207,7 +207,7 @@ def _player_header(
     return f"{rank_emote} {flag_emote} {race_emote} **{name} {mmr_part}**"
 
 
-class QueueSetupEmbed(discord.Embed):
+class QueueSetupEmbed1v1(discord.Embed):
     """Queue setup configuration display."""
 
     def __init__(
@@ -410,7 +410,7 @@ class MatchWaitingConfirmEmbed(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
-class MatchInfoEmbed(discord.Embed):
+class MatchInfoEmbed1v1(discord.Embed):
     """Full match details embed matching the alpha UI layout."""
 
     def __init__(

@@ -9,8 +9,12 @@ import aiohttp
 import structlog
 import discord
 
-from bot.components.embeds import MatchInfoEmbed, ReplayErrorEmbed, ReplaySuccessEmbed
-from bot.components.views import MatchReportView
+from bot.components.embeds import (
+    MatchInfoEmbed1v1,
+    ReplayErrorEmbed,
+    ReplaySuccessEmbed,
+)
+from bot.components.views import MatchReportView1v1
 from bot.core.config import BACKEND_URL, ENABLE_REPLAY_VALIDATION
 from bot.core.dependencies import get_cache, get_player_locale
 from bot.core.http import get_session
@@ -131,10 +135,10 @@ async def handle_replay_upload(
             p1_name = match_data.get("player_1_name", "Player 1")
             p2_name = match_data.get("player_2_name", "Player 2")
 
-            new_embed = MatchInfoEmbed(
+            new_embed = MatchInfoEmbed1v1(
                 match_data, p1_info, p2_info, replay_uploaded=True, locale=locale
             )
-            new_view = MatchReportView(
+            new_view = MatchReportView1v1(
                 match_id,
                 p1_name,
                 p2_name,

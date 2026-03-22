@@ -22,10 +22,10 @@ from bot.components.embeds import (
     ErrorEmbed,
     MatchAbortAckEmbed,
     MatchConfirmedEmbed,
-    MatchInfoEmbed,
+    MatchInfoEmbed1v1,
     QueueErrorEmbed,
+    QueueSetupEmbed1v1,
     QueueSearchingEmbed,
-    QueueSetupEmbed,
     SetCountryConfirmEmbed,
     SetMMRSuccessEmbed,
     SetupIntroEmbed,
@@ -1531,7 +1531,7 @@ class BwRaceSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
-        view: QueueSetupView = self.view  # type: ignore[assignment]
+        view: QueueSetupView1v1 = self.view  # type: ignore[assignment]
         view.bw_race = self.values[0] if self.values else None
         await view.persist_and_refresh(interaction)
 
@@ -1558,7 +1558,7 @@ class Sc2RaceSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
-        view: QueueSetupView = self.view  # type: ignore[assignment]
+        view: QueueSetupView1v1 = self.view  # type: ignore[assignment]
         view.sc2_race = self.values[0] if self.values else None
         await view.persist_and_refresh(interaction)
 
@@ -1595,7 +1595,7 @@ class MapVetoSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
-        view: QueueSetupView = self.view  # type: ignore[assignment]
+        view: QueueSetupView1v1 = self.view  # type: ignore[assignment]
         view.map_vetoes = [v for v in self.values if v != "none"]
         await view.persist_and_refresh(interaction)
 
@@ -1627,7 +1627,7 @@ class MatchReportSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
-        view: MatchReportView = self.view  # type: ignore[assignment]
+        view: MatchReportView1v1 = self.view  # type: ignore[assignment]
         report = self.values[0]
         await view.submit_report(interaction, report)
 
@@ -1733,7 +1733,7 @@ class ActivityRangeSelect(discord.ui.Select):
             )
 
 
-class QueueSetupView(discord.ui.View):
+class QueueSetupView1v1(discord.ui.View):
     def __init__(
         self,
         discord_user_id: int,
@@ -1776,7 +1776,7 @@ class QueueSetupView(discord.ui.View):
                 self.map_vetoes,
             )
 
-        join_btn: discord.ui.Button[QueueSetupView] = discord.ui.Button(
+        join_btn: discord.ui.Button[QueueSetupView1v1] = discord.ui.Button(
             label=t("button.join_queue", _locale),
             emoji="🚀",
             style=discord.ButtonStyle.secondary,
@@ -1791,7 +1791,7 @@ class QueueSetupView(discord.ui.View):
             self.map_vetoes = []
             await self.persist_and_refresh(interaction)
 
-        clear_btn: discord.ui.Button[QueueSetupView] = discord.ui.Button(
+        clear_btn: discord.ui.Button[QueueSetupView1v1] = discord.ui.Button(
             label=t("button.clear_selections", _locale),
             emoji="🗑️",
             style=discord.ButtonStyle.danger,
@@ -1804,7 +1804,7 @@ class QueueSetupView(discord.ui.View):
             if interaction.message is not None:
                 await interaction.message.delete()
 
-        cancel_btn: discord.ui.Button[QueueSetupView] = discord.ui.Button(
+        cancel_btn: discord.ui.Button[QueueSetupView1v1] = discord.ui.Button(
             label=t("button.cancel", _locale),
             emoji="✖️",
             style=discord.ButtonStyle.danger,
@@ -1838,11 +1838,11 @@ class QueueSetupView(discord.ui.View):
         except Exception:
             logger.warning("Failed to persist preferences", exc_info=True)
 
-        new_view = QueueSetupView(
+        new_view = QueueSetupView1v1(
             self.discord_user_id, self.bw_race, self.sc2_race, self.map_vetoes
         )
         locale = get_player_locale(self.discord_user_id)
-        embed = QueueSetupEmbed(
+        embed = QueueSetupEmbed1v1(
             self.bw_race, self.sc2_race, self.map_vetoes, locale=locale
         )
         await interaction.response.edit_message(embed=embed, view=new_view)
@@ -1973,7 +1973,7 @@ class QueueSearchingView(discord.ui.View):
             self._heartbeat_task.cancel()
 
 
-class MatchFoundView(discord.ui.View):
+class MatchFoundView1v1(discord.ui.View):
     def __init__(self, match_id: int, match_data: dict, locale: str = "enUS") -> None:
         super().__init__(timeout=CONFIRMATION_TIMEOUT)
         self.match_id = match_id
@@ -1982,7 +1982,7 @@ class MatchFoundView(discord.ui.View):
         async def on_confirm(interaction: discord.Interaction) -> None:
             await _confirm_match(interaction, match_id)
 
-        confirm_btn: discord.ui.Button[MatchFoundView] = discord.ui.Button(
+        confirm_btn: discord.ui.Button[MatchFoundView1v1] = discord.ui.Button(
             label=t("button.confirm_match", locale),
             emoji="✅",
             style=discord.ButtonStyle.green,
@@ -1994,7 +1994,7 @@ class MatchFoundView(discord.ui.View):
         async def on_abort(interaction: discord.Interaction) -> None:
             await _abort_match(interaction, match_id)
 
-        abort_btn: discord.ui.Button[MatchFoundView] = discord.ui.Button(
+        abort_btn: discord.ui.Button[MatchFoundView1v1] = discord.ui.Button(
             label=t("button.abort_match", locale),
             emoji="🛑",
             style=discord.ButtonStyle.secondary,
@@ -2004,7 +2004,7 @@ class MatchFoundView(discord.ui.View):
         self.add_item(abort_btn)
 
 
-class MatchReportView(discord.ui.View):
+class MatchReportView1v1(discord.ui.View):
     def __init__(
         self,
         match_id: int,
@@ -2058,7 +2058,7 @@ class MatchReportView(discord.ui.View):
                 option.default = option.value == report
             self.report_select.disabled = True
             locale = get_player_locale(interaction.user.id)
-            new_embed = MatchInfoEmbed(
+            new_embed = MatchInfoEmbed1v1(
                 self._match_data,
                 self._p1_info,
                 self._p2_info,
@@ -2204,9 +2204,9 @@ async def _leave_queue(
             )
             return
 
-        setup_view = QueueSetupView(discord_user_id, bw_race, sc2_race, map_vetoes)
+        setup_view = QueueSetupView1v1(discord_user_id, bw_race, sc2_race, map_vetoes)
         locale = get_player_locale(discord_user_id)
-        embed = QueueSetupEmbed(bw_race, sc2_race, map_vetoes, locale=locale)
+        embed = QueueSetupEmbed1v1(bw_race, sc2_race, map_vetoes, locale=locale)
         await interaction.edit_original_response(embed=embed, view=setup_view)
 
         try:

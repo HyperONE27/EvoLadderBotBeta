@@ -2,11 +2,11 @@ import structlog
 import discord
 from discord import app_commands
 
-from bot.components.embeds import QueueSetupEmbed
+from bot.components.embeds import QueueSetupEmbed1v1
 from bot.components.views import (
-    MatchFoundView,
-    MatchReportView,
-    QueueSetupView,
+    MatchFoundView1v1,
+    MatchReportView1v1,
+    QueueSetupView1v1,
 )
 from bot.core.config import BACKEND_URL
 from bot.core.dependencies import get_player_locale
@@ -22,7 +22,7 @@ from bot.helpers.checks import (
 logger = structlog.get_logger(__name__)
 
 # Re-export for ws_listener and replay_handler imports.
-__all__ = ["MatchFoundView", "MatchReportView", "register_queue_command"]
+__all__ = ["MatchFoundView1v1", "MatchReportView1v1", "register_queue_command"]
 
 
 # --------------------
@@ -64,8 +64,8 @@ def register_queue_command(tree: app_commands.CommandTree) -> None:
             logger.warning("Failed to load preferences", exc_info=True)
 
         locale = get_player_locale(interaction.user.id)
-        embed = QueueSetupEmbed(bw_race, sc2_race, map_vetoes, locale=locale)
-        view = QueueSetupView(
+        embed = QueueSetupEmbed1v1(bw_race, sc2_race, map_vetoes, locale=locale)
+        view = QueueSetupView1v1(
             discord_user_id=interaction.user.id,
             bw_race=bw_race,
             sc2_race=sc2_race,

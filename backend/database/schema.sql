@@ -310,10 +310,15 @@ CREATE TABLE IF NOT EXISTS mmrs_2v2 (
 );
 
 CREATE TABLE IF NOT EXISTS preferences_2v2 (
-    id                  BIGSERIAL PRIMARY KEY,
-    discord_uid         BIGINT NOT NULL UNIQUE,
-    last_chosen_races   TEXT[],
-    last_chosen_vetoes  TEXT[]
+    id                        BIGSERIAL PRIMARY KEY,
+    discord_uid               BIGINT NOT NULL UNIQUE,
+    last_pure_bw_leader_race  TEXT,
+    last_pure_bw_member_race  TEXT,
+    last_mixed_leader_race    TEXT,
+    last_mixed_member_race    TEXT,
+    last_pure_sc2_leader_race TEXT,
+    last_pure_sc2_member_race TEXT,
+    last_chosen_vetoes        TEXT[]
 );
 
 CREATE TABLE IF NOT EXISTS replays_2v2 (

@@ -309,9 +309,18 @@ def purge_party_membership(
 
 
 def _remove_from_queue_2v2(self: TransitionManager, discord_uid: int) -> None:
-    """Remove a player from the 2v2 queue if present."""
+    """Remove the 2v2 queue entry for the party containing this player.
+
+    Under the leader-picks-all model each entry is keyed by the leader's
+    discord_uid.  This helper removes any entry where the player appears as
+    either the leader or the member, so admin resets work correctly regardless
+    of which role the target player holds.
+    """
     self._state_manager.queue_2v2 = [
-        e for e in self._state_manager.queue_2v2 if e["discord_uid"] != discord_uid
+        e
+        for e in self._state_manager.queue_2v2
+        if e["discord_uid"] != discord_uid
+        and e["party_member_discord_uid"] != discord_uid
     ]
 
 

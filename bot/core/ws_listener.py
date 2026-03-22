@@ -16,8 +16,8 @@ import discord
 import structlog
 
 from bot.components.views import (
-    MatchFoundView,
-    MatchReportView,
+    MatchFoundView1v1,
+    MatchReportView1v1,
     _fetch_player_info,
 )
 from bot.components.embeds import (
@@ -27,7 +27,7 @@ from bot.components.embeds import (
     MatchConflictEmbed,
     MatchFinalizedEmbed,
     MatchFoundEmbed,
-    MatchInfoEmbed,
+    MatchInfoEmbed1v1,
     QueueSearchingEmbed,
 )
 from bot.core.config import (
@@ -160,7 +160,7 @@ async def _on_match_found(client: discord.Client, match_data: dict) -> None:
                 queue_user_send_high(
                     user,
                     embed=MatchFoundEmbed(match_data, locale=locale),
-                    view=MatchFoundView(match_id, match_data, locale=locale),
+                    view=MatchFoundView1v1(match_id, match_data, locale=locale),
                 )
             )
             dm_uids.append(uid)
@@ -246,8 +246,10 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
             dm_coros.append(
                 queue_user_send_high(
                     user,
-                    embed=MatchInfoEmbed(match_data, p1_info, p2_info, locale=locale),
-                    view=MatchReportView(
+                    embed=MatchInfoEmbed1v1(
+                        match_data, p1_info, p2_info, locale=locale
+                    ),
+                    view=MatchReportView1v1(
                         match_id,
                         p1_name,
                         p2_name,

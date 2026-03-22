@@ -210,7 +210,12 @@ MMRS_2V2_SCHEMA: dict[str, pl.DataType] = {
 PREFERENCES_2V2_SCHEMA: dict[str, pl.DataType] = {
     "id": pl.Int64,
     "discord_uid": pl.Int64,
-    "last_chosen_races": pl.List(pl.String),
+    "last_pure_bw_leader_race": pl.String,
+    "last_pure_bw_member_race": pl.String,
+    "last_mixed_leader_race": pl.String,
+    "last_mixed_member_race": pl.String,
+    "last_pure_sc2_leader_race": pl.String,
+    "last_pure_sc2_member_race": pl.String,
     "last_chosen_vetoes": pl.List(pl.String),
 }
 
@@ -454,7 +459,12 @@ class MMRs2v2Row(TypedDict):
 class Preferences2v2Row(TypedDict):
     id: int
     discord_uid: int
-    last_chosen_races: list[str] | None
+    last_pure_bw_leader_race: str | None
+    last_pure_bw_member_race: str | None
+    last_mixed_leader_race: str | None
+    last_mixed_member_race: str | None
+    last_pure_sc2_leader_race: str | None
+    last_pure_sc2_member_race: str | None
     last_chosen_vetoes: list[str] | None
 
 
