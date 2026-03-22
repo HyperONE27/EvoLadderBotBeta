@@ -92,6 +92,15 @@ logger = structlog.get_logger(__name__)
 router = APIRouter()
 
 
+async def _delayed_pool_check(app: Backend, delay: float) -> None:
+    """Fire-and-forget: wait *delay* seconds, then verify the process pool."""
+    await asyncio.sleep(delay)
+    try:
+        await app.ensure_pool_healthy()
+    except Exception:
+        logger.exception("Delayed pool health check failed")
+
+
 def _entry_to_model(e: LeaderboardEntry1v1) -> LeaderboardEntry:
     return LeaderboardEntry(
         discord_uid=e["discord_uid"],
@@ -1127,6 +1136,7 @@ async def upload_replay(
     player_num = 1 if discord_uid == p1_uid else 2
 
     # --- 2. Parse in process pool ---
+    await app.ensure_pool_healthy()
     replay_bytes = await replay_file.read()
     loop = asyncio.get_running_loop()
     try:
@@ -1138,6 +1148,7 @@ async def upload_replay(
         raise HTTPException(
             status_code=500, detail=f"Replay parse executor failed: {exc}"
         )
+    asyncio.create_task(_delayed_pool_check(app, delay=10.0))
 
     if parsed.get("error"):
         raise HTTPException(status_code=422, detail=parsed["error"])

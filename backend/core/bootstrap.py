@@ -2,6 +2,8 @@ import asyncio
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 
+import structlog
+
 from backend.core.config import REPLAY_WORKER_PROCESSES
 from backend.api.websocket import ConnectionManager
 from backend.database.database import DatabaseWriter
@@ -27,6 +29,16 @@ from common.lookups.mod_lookups import init_mod_lookups
 from common.lookups.race_lookups import init_race_lookups
 from common.lookups.region_lookups import init_region_lookups
 
+logger = structlog.get_logger(__name__)
+
+
+def _noop() -> None:
+    """No-op function submitted to the process pool for health checks.
+
+    Must be a module-level function (not a lambda or closure) so it can
+    be pickled and sent to the worker subprocess.
+    """
+
 
 class Backend:
     def __init__(self) -> None:
@@ -35,6 +47,28 @@ class Backend:
         self._queue_notify_last_sent: dict[int, datetime] = {}
         self._initialize_orchestrator()
         self._initialize_lookups()
+
+    async def ensure_pool_healthy(self) -> None:
+        """Submit a no-op to the process pool and verify it completes.
+
+        If the pool is broken (dead workers from a segfault in sc2reader,
+        BrokenProcessPool, or timeout), replace it with a fresh one.
+        """
+        loop = asyncio.get_running_loop()
+        try:
+            await asyncio.wait_for(
+                loop.run_in_executor(self.process_pool, _noop),
+                timeout=5.0,
+            )
+        except Exception:
+            logger.critical(
+                "ProcessPoolExecutor is broken — replacing with a fresh pool"
+            )
+            try:
+                self.process_pool.shutdown(wait=False)
+            except Exception:
+                pass
+            self.process_pool = ProcessPoolExecutor(max_workers=REPLAY_WORKER_PROCESSES)
 
     async def broadcast_queue_join_activity_if_needed(
         self,
