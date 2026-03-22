@@ -20,7 +20,8 @@ What remains?
     - DataFrames
         - write-through guarantees writes hit the DB
         - but not that DFs might not silently corrupt...(?)
-- ⏰ Add unit tests
+- ✅ Add unit tests
+    - They briefly test invariants, not numerical outcomes
 - ✅ /notifyme needs to send an embed, not just a message, it's fugly right now
 - ✅ Need some dashboard to help people see when peak hours are
     - ✅ Need to keep track of queue join attempts
