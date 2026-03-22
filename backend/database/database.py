@@ -429,6 +429,35 @@ class DatabaseWriter:
         )
         return cast(dict[str, Any], response.data[0])
 
+    def upsert_preferences_2v2(
+        self,
+        discord_uid: int,
+        last_pure_bw_leader_race: str | None,
+        last_pure_bw_member_race: str | None,
+        last_mixed_leader_race: str | None,
+        last_mixed_member_race: str | None,
+        last_pure_sc2_leader_race: str | None,
+        last_pure_sc2_member_race: str | None,
+        last_chosen_vetoes: list[str],
+    ) -> dict:
+        """Upsert a player's 2v2 queue preferences."""
+        data: dict[str, Any] = {
+            "discord_uid": discord_uid,
+            "last_pure_bw_leader_race": last_pure_bw_leader_race,
+            "last_pure_bw_member_race": last_pure_bw_member_race,
+            "last_mixed_leader_race": last_mixed_leader_race,
+            "last_mixed_member_race": last_mixed_member_race,
+            "last_pure_sc2_leader_race": last_pure_sc2_leader_race,
+            "last_pure_sc2_member_race": last_pure_sc2_member_race,
+            "last_chosen_vetoes": last_chosen_vetoes,
+        }
+        response = (
+            self.client.table("preferences_2v2")
+            .upsert(data, on_conflict="discord_uid")
+            .execute()
+        )
+        return cast(dict[str, Any], response.data[0])
+
     # ------------------------------------------------------------------
     # Player status (bulk)
     # ------------------------------------------------------------------
@@ -680,6 +709,77 @@ class DatabaseWriter:
             serialised, on_conflict="discord_uid,race"
         ).execute()
 
+    def update_match_2v2_report(
+        self,
+        match_id: int,
+        *,
+        team_1_report: str | None = None,
+        team_1_reporter_discord_uid: int | None = None,
+        team_2_report: str | None = None,
+        team_2_reporter_discord_uid: int | None = None,
+    ) -> None:
+        """Set one team's report columns on a matches_2v2 row."""
+        updates: dict[str, Any] = {}
+        if team_1_report is not None:
+            updates["team_1_report"] = team_1_report
+        if team_1_reporter_discord_uid is not None:
+            updates["team_1_reporter_discord_uid"] = team_1_reporter_discord_uid
+        if team_2_report is not None:
+            updates["team_2_report"] = team_2_report
+        if team_2_reporter_discord_uid is not None:
+            updates["team_2_reporter_discord_uid"] = team_2_reporter_discord_uid
+        if updates:
+            self.client.table("matches_2v2").update(updates).eq(
+                "id", match_id
+            ).execute()
+
+    def finalise_match_2v2(
+        self,
+        match_id: int,
+        *,
+        match_result: str,
+        team_1_report: str | None = None,
+        team_1_reporter_discord_uid: int | None = None,
+        team_2_report: str | None = None,
+        team_2_reporter_discord_uid: int | None = None,
+        team_1_mmr_change: int | None = None,
+        team_2_mmr_change: int | None = None,
+        completed_at: datetime,
+    ) -> None:
+        """Write all terminal match fields for a 2v2 match in a single UPDATE."""
+        updates: dict[str, Any] = {
+            "match_result": match_result,
+            "completed_at": completed_at.isoformat(),
+        }
+        if team_1_report is not None:
+            updates["team_1_report"] = team_1_report
+        if team_1_reporter_discord_uid is not None:
+            updates["team_1_reporter_discord_uid"] = team_1_reporter_discord_uid
+        if team_2_report is not None:
+            updates["team_2_report"] = team_2_report
+        if team_2_reporter_discord_uid is not None:
+            updates["team_2_reporter_discord_uid"] = team_2_reporter_discord_uid
+        if team_1_mmr_change is not None:
+            updates["team_1_mmr_change"] = team_1_mmr_change
+        if team_2_mmr_change is not None:
+            updates["team_2_mmr_change"] = team_2_mmr_change
+        self.client.table("matches_2v2").update(updates).eq("id", match_id).execute()
+
+    def batch_update_mmrs_2v2(self, rows: list[dict[str, Any]]) -> None:
+        """Upsert multiple mmrs_2v2 rows in a single round-trip.
+
+        Each dict must include ``player_1_discord_uid``, ``player_2_discord_uid``
+        (normalized — smaller UID first), and all other non-null columns.
+        ``last_played_at`` may be a ``datetime`` — it is serialised here.
+        """
+        serialised = [
+            {**row, "last_played_at": row["last_played_at"].isoformat()} for row in rows
+        ]
+        self.client.table("mmrs_2v2").upsert(
+            serialised,
+            on_conflict="player_1_discord_uid,player_2_discord_uid",
+        ).execute()
+
     def add_mmr_2v2(
         self,
         player_1_discord_uid: int,
@@ -704,4 +804,47 @@ class DatabaseWriter:
             "games_drawn": 0,
         }
         response = self.client.table("mmrs_2v2").insert(data).execute()
+        return cast(dict[str, Any], response.data[0])
+
+    def add_match_2v2(
+        self,
+        team_1_player_1_discord_uid: int,
+        team_1_player_2_discord_uid: int,
+        team_1_player_1_name: str,
+        team_1_player_2_name: str,
+        team_1_player_1_race: str,
+        team_1_player_2_race: str,
+        team_1_mmr: int,
+        team_2_player_1_discord_uid: int,
+        team_2_player_2_discord_uid: int,
+        team_2_player_1_name: str,
+        team_2_player_2_name: str,
+        team_2_player_1_race: str,
+        team_2_player_2_race: str,
+        team_2_mmr: int,
+        map_name: str,
+        server_name: str,
+        assigned_at: datetime,
+    ) -> dict:
+        """Insert a new 2v2 match row and return the created row."""
+        data: dict[str, Any] = {
+            "team_1_player_1_discord_uid": team_1_player_1_discord_uid,
+            "team_1_player_2_discord_uid": team_1_player_2_discord_uid,
+            "team_1_player_1_name": team_1_player_1_name,
+            "team_1_player_2_name": team_1_player_2_name,
+            "team_1_player_1_race": team_1_player_1_race,
+            "team_1_player_2_race": team_1_player_2_race,
+            "team_1_mmr": team_1_mmr,
+            "team_2_player_1_discord_uid": team_2_player_1_discord_uid,
+            "team_2_player_2_discord_uid": team_2_player_2_discord_uid,
+            "team_2_player_1_name": team_2_player_1_name,
+            "team_2_player_2_name": team_2_player_2_name,
+            "team_2_player_1_race": team_2_player_1_race,
+            "team_2_player_2_race": team_2_player_2_race,
+            "team_2_mmr": team_2_mmr,
+            "map_name": map_name,
+            "server_name": server_name,
+            "assigned_at": assigned_at.isoformat(),
+        }
+        response = self.client.table("matches_2v2").insert(data).execute()
         return cast(dict[str, Any], response.data[0])

@@ -15,6 +15,7 @@ from backend.orchestrator.transitions import (
     _base,
     _leaderboard,
     _match,
+    _match_2v2,
     _mmr,
     _notifications,
     _party,
@@ -48,6 +49,7 @@ class TransitionManager:
     set_tos_for_player = _player.set_tos_for_player
     reset_all_player_statuses = _player.reset_all_player_statuses
     upsert_preferences_1v1 = _player.upsert_preferences_1v1
+    upsert_preferences_2v2 = _player.upsert_preferences_2v2
 
     # -- queue transitions (_queue.py) ---------------------------------------
     join_queue_1v1 = _queue.join_queue_1v1
@@ -77,6 +79,14 @@ class TransitionManager:
     report_match_result = _match.report_match_result
     _calculate_mmr_changes = _match._calculate_mmr_changes
     _apply_match_resolution = _match._apply_match_resolution
+
+    # -- 2v2 match lifecycle (_match_2v2.py) ----------------------------------
+    run_matchmaking_wave_2v2 = _match_2v2.run_matchmaking_wave_2v2_method
+    confirm_match_2v2 = _match_2v2.confirm_match_2v2
+    is_match_2v2_confirmed = _match_2v2.is_match_2v2_confirmed
+    abort_match_2v2 = _match_2v2.abort_match_2v2
+    handle_confirmation_timeout_2v2 = _match_2v2.handle_confirmation_timeout_2v2
+    report_match_result_2v2 = _match_2v2.report_match_result_2v2
 
     # -- replay transitions (_replay.py) -------------------------------------
     insert_replay_1v1_pending = _replay.insert_replay_1v1_pending

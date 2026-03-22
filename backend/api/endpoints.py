@@ -27,6 +27,12 @@ from backend.api.models import (
     LeaderboardEntry,
     LeaderboardResponse,
     GreetingResponse,
+    Match2v2AbortRequest,
+    Match2v2AbortResponse,
+    Match2v2ConfirmRequest,
+    Match2v2ConfirmResponse,
+    Match2v2ReportRequest,
+    Match2v2ReportResponse,
     MatchAbortRequest,
     MatchAbortResponse,
     MatchConfirmRequest,
@@ -52,6 +58,9 @@ from backend.api.models import (
     PlayerNameAvailabilityResponse,
     PlayersResponse,
     Preferences1v1Response,
+    Preferences2v2Response,
+    Preferences2v2UpsertRequest,
+    Preferences2v2UpsertResponse,
     PreferencesUpsertRequest,
     PreferencesUpsertResponse,
     ProfileMmrEntry,
@@ -687,6 +696,36 @@ async def upsert_preferences(
     return PreferencesUpsertResponse(success=True)
 
 
+# --- /preferences_2v2 ---
+
+
+@router.get("/preferences_2v2/{discord_uid}", response_model=Preferences2v2Response)
+async def get_preferences_2v2(
+    discord_uid: int,
+    app: Backend = Depends(get_backend),
+) -> Preferences2v2Response:
+    prefs = app.orchestrator.get_preferences_2v2(discord_uid)
+    return Preferences2v2Response(preferences=prefs)
+
+
+@router.put("/preferences_2v2", response_model=Preferences2v2UpsertResponse)
+async def upsert_preferences_2v2(
+    request: Preferences2v2UpsertRequest,
+    app: Backend = Depends(get_backend),
+) -> Preferences2v2UpsertResponse:
+    app.orchestrator.upsert_preferences_2v2(
+        request.discord_uid,
+        request.last_pure_bw_leader_race,
+        request.last_pure_bw_member_race,
+        request.last_mixed_leader_race,
+        request.last_mixed_member_race,
+        request.last_pure_sc2_leader_race,
+        request.last_pure_sc2_member_race,
+        request.last_chosen_vetoes,
+    )
+    return Preferences2v2UpsertResponse(success=True)
+
+
 # --- /matches_1v1 actions ---
 
 
@@ -794,6 +833,120 @@ async def match_report(
         }
     )
     return MatchReportResponse(success=True, message=message, match=match)
+
+
+# --- /matches_2v2 ---
+
+
+@router.put("/matches_2v2/{match_id}/confirm", response_model=Match2v2ConfirmResponse)
+async def match_2v2_confirm(
+    match_id: int,
+    request: Match2v2ConfirmRequest,
+    app: Backend = Depends(get_backend),
+    ws: ConnectionManager = Depends(get_ws_manager),
+) -> Match2v2ConfirmResponse:
+    success, all_confirmed = app.orchestrator.confirm_match_2v2(
+        match_id, request.discord_uid
+    )
+    if not success:
+        match = app.orchestrator.get_match_2v2(match_id)
+        if match is None:
+            raise HTTPException(status_code=404, detail="Match not found.")
+        raise HTTPException(status_code=403, detail="Player is not part of this match.")
+    if all_confirmed:
+        match = app.orchestrator.get_match_2v2(match_id)
+        if match is not None:
+            enriched = app.orchestrator.enrich_match_2v2_with_ranks(dict(match))
+            await ws.broadcast("both_confirmed", {"game_mode": "2v2", **enriched})
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.discord_uid,
+            "event_type": "player_command",
+            "action": "match_confirm",
+            "game_mode": "2v2",
+            "match_id": match_id,
+            "event_data": {"game_mode": "2v2", "match_id": match_id},
+        }
+    )
+    return Match2v2ConfirmResponse(success=True, all_confirmed=all_confirmed)
+
+
+@router.put("/matches_2v2/{match_id}/abort", response_model=Match2v2AbortResponse)
+async def match_2v2_abort(
+    match_id: int,
+    request: Match2v2AbortRequest,
+    app: Backend = Depends(get_backend),
+    ws: ConnectionManager = Depends(get_ws_manager),
+) -> Match2v2AbortResponse:
+    success, message = app.orchestrator.abort_match_2v2(match_id, request.discord_uid)
+    if not success:
+        if "not found" in (message or "").lower():
+            code = 404
+        elif "not part" in (message or "").lower():
+            code = 403
+        else:
+            code = 409
+        raise HTTPException(status_code=code, detail=message)
+    match = app.orchestrator.get_match_2v2(match_id)
+    if match is not None:
+        enriched = app.orchestrator.enrich_match_2v2_with_ranks(dict(match))
+        await ws.broadcast("match_aborted", {"game_mode": "2v2", **enriched})
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.discord_uid,
+            "event_type": "player_command",
+            "action": "match_abort",
+            "game_mode": "2v2",
+            "match_id": match_id,
+            "event_data": {"game_mode": "2v2", "match_id": match_id},
+        }
+    )
+    return Match2v2AbortResponse(success=True, message=None)
+
+
+@router.put("/matches_2v2/{match_id}/report", response_model=Match2v2ReportResponse)
+async def match_2v2_report(
+    match_id: int,
+    request: Match2v2ReportRequest,
+    app: Backend = Depends(get_backend),
+    ws: ConnectionManager = Depends(get_ws_manager),
+) -> Match2v2ReportResponse:
+    success, message, match = app.orchestrator.report_match_result_2v2(
+        match_id, request.discord_uid, request.report
+    )
+    if not success:
+        if "Invalid report" in (message or ""):
+            code = 400
+        elif "not found" in (message or "").lower():
+            code = 404
+        elif "not part" in (message or "").lower():
+            code = 403
+        else:
+            code = 409
+        raise HTTPException(status_code=code, detail=message)
+    if match is not None:
+        result = match.get("match_result")
+        enriched = app.orchestrator.enrich_match_2v2_with_ranks(dict(match))
+        if result == "conflict":
+            await ws.broadcast("match_conflict", {"game_mode": "2v2", **enriched})
+        elif result is not None:
+            await ws.broadcast("match_completed", {"game_mode": "2v2", **enriched})
+        await _broadcast_leaderboard_if_dirty(app, ws)
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.discord_uid,
+            "event_type": "player_command",
+            "action": "match_report",
+            "game_mode": "2v2",
+            "match_id": match_id,
+            "event_data": {
+                "game_mode": "2v2",
+                "match_id": match_id,
+                "report": request.report,
+            },
+        }
+    )
+    return Match2v2ReportResponse(success=True, message=message, match=match)
 
 
 # --- /setcountry ---

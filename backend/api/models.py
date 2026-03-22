@@ -5,9 +5,11 @@ from pydantic import BaseModel, Field
 from backend.domain_types.dataframes import (
     AdminsRow,
     Matches1v1Row,
+    Matches2v2Row,
     MMRs1v1Row,
     PlayersRow,
     Preferences1v1Row,
+    Preferences2v2Row,
     Replays1v1Row,
 )
 from backend.domain_types.ephemeral import QueueEntry1v1
@@ -301,6 +303,38 @@ class MatchReportResponse(BaseModel):
     match: Matches1v1Row | None = None
 
 
+# --- /matches_2v2 actions ---
+
+
+class Match2v2ConfirmRequest(BaseModel):
+    discord_uid: int
+
+
+class Match2v2ConfirmResponse(BaseModel):
+    success: bool
+    all_confirmed: bool
+
+
+class Match2v2AbortRequest(BaseModel):
+    discord_uid: int
+
+
+class Match2v2AbortResponse(BaseModel):
+    success: bool
+    message: str | None
+
+
+class Match2v2ReportRequest(BaseModel):
+    discord_uid: int
+    report: str  # "team_1_win" | "team_2_win" | "draw"
+
+
+class Match2v2ReportResponse(BaseModel):
+    success: bool
+    message: str | None
+    match: Matches2v2Row | None = None
+
+
 # --- /preferences_1v1 ---
 
 
@@ -315,6 +349,28 @@ class PreferencesUpsertRequest(BaseModel):
 
 
 class PreferencesUpsertResponse(BaseModel):
+    success: bool
+
+
+# --- /preferences_2v2 ---
+
+
+class Preferences2v2Response(BaseModel):
+    preferences: Preferences2v2Row | None
+
+
+class Preferences2v2UpsertRequest(BaseModel):
+    discord_uid: int
+    last_pure_bw_leader_race: str | None = None
+    last_pure_bw_member_race: str | None = None
+    last_mixed_leader_race: str | None = None
+    last_mixed_member_race: str | None = None
+    last_pure_sc2_leader_race: str | None = None
+    last_pure_sc2_member_race: str | None = None
+    last_chosen_vetoes: list[str] = []
+
+
+class Preferences2v2UpsertResponse(BaseModel):
     success: bool
 
 

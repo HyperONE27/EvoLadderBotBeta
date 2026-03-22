@@ -9,8 +9,13 @@ from backend.domain_types.dataframes import (
     NotificationsRow,
     PlayersRow,
     Preferences1v1Row,
+    Preferences2v2Row,
 )
-from backend.domain_types.ephemeral import LeaderboardEntry1v1, QueueEntry1v1
+from backend.domain_types.ephemeral import (
+    LeaderboardEntry1v1,
+    QueueEntry1v1,
+    QueueEntry2v2,
+)
 from backend.lookups.admin_lookups import get_admin_by_discord_uid
 from backend.lookups.match_1v1_lookups import get_match_1v1_by_id
 from backend.lookups.mmr_1v1_lookups import (
@@ -23,6 +28,7 @@ from backend.lookups.player_lookups import (
     is_player_name_taken,
 )
 from backend.lookups.preferences_1v1_lookups import get_preferences_1v1_by_discord_uid
+from backend.lookups.preferences_2v2_lookups import get_preferences_2v2_by_discord_uid
 from backend.orchestrator.state import StateManager
 from common.datetime_helpers import utc_now
 
@@ -81,6 +87,10 @@ class StateReader:
         """Return the current 1v1 queue (shallow copy)."""
         return list(self._state_manager.queue_1v1)
 
+    def get_queue_2v2(self) -> list[QueueEntry2v2]:
+        """Return the current 2v2 queue (shallow copy)."""
+        return list(self._state_manager.queue_2v2)
+
     def get_queue_entry_1v1(self, discord_uid: int) -> QueueEntry1v1 | None:
         """Find a specific player's queue entry, or None."""
         for entry in self._state_manager.queue_1v1:
@@ -95,6 +105,10 @@ class StateReader:
     def get_preferences_1v1(self, discord_uid: int) -> Preferences1v1Row | None:
         """Get a player's 1v1 queue preferences."""
         return get_preferences_1v1_by_discord_uid(discord_uid)
+
+    def get_preferences_2v2(self, discord_uid: int) -> Preferences2v2Row | None:
+        """Get a player's 2v2 queue preferences."""
+        return get_preferences_2v2_by_discord_uid(discord_uid)
 
     # ------------------------------------------------------------------
     # Leaderboard
@@ -123,6 +137,32 @@ class StateReader:
         p2_race: str | None = match_dict.get("player_2_race")
         enriched["player_1_letter_rank"] = self.get_letter_rank_1v1(p1_uid, p1_race)
         enriched["player_2_letter_rank"] = self.get_letter_rank_1v1(p2_uid, p2_race)
+        return enriched
+
+    def get_letter_rank_2v2(self, uid_a: int | None, uid_b: int | None) -> str:
+        """Team letter rank from the 2v2 leaderboard, or ``"U"`` if unknown."""
+        if uid_a is None or uid_b is None:
+            return "U"
+        uid_lo, uid_hi = min(uid_a, uid_b), max(uid_a, uid_b)
+        for entry in self._state_manager.leaderboard_2v2:
+            if (
+                entry["player_1_discord_uid"] == uid_lo
+                and entry["player_2_discord_uid"] == uid_hi
+            ):
+                return entry["letter_rank"]
+        return "U"
+
+    def enrich_match_2v2_with_ranks(self, match_dict: dict) -> dict:
+        """Return a copy of match_dict with team letter ranks from the 2v2 leaderboard."""
+        enriched = dict(match_dict)
+        enriched["team_1_letter_rank"] = self.get_letter_rank_2v2(
+            match_dict.get("team_1_player_1_discord_uid"),
+            match_dict.get("team_1_player_2_discord_uid"),
+        )
+        enriched["team_2_letter_rank"] = self.get_letter_rank_2v2(
+            match_dict.get("team_2_player_1_discord_uid"),
+            match_dict.get("team_2_player_2_discord_uid"),
+        )
         return enriched
 
     def enrich_match_for_snapshot(self, match: Matches1v1Row | dict[str, Any]) -> dict:

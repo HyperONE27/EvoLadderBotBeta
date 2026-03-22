@@ -205,3 +205,34 @@ def upsert_preferences_1v1(
     ).vstack(pl.DataFrame([created]).cast(df.schema))
 
     logger.info(f"Upserted preferences for player {discord_uid}")
+
+
+def upsert_preferences_2v2(
+    self: TransitionManager,
+    discord_uid: int,
+    last_pure_bw_leader_race: str | None,
+    last_pure_bw_member_race: str | None,
+    last_mixed_leader_race: str | None,
+    last_mixed_member_race: str | None,
+    last_pure_sc2_leader_race: str | None,
+    last_pure_sc2_member_race: str | None,
+    last_chosen_vetoes: list[str],
+) -> None:
+    """Create or update a player's 2v2 queue preferences."""
+    created = self._db_writer.upsert_preferences_2v2(
+        discord_uid,
+        last_pure_bw_leader_race,
+        last_pure_bw_member_race,
+        last_mixed_leader_race,
+        last_mixed_member_race,
+        last_pure_sc2_leader_race,
+        last_pure_sc2_member_race,
+        last_chosen_vetoes,
+    )
+
+    df = self._state_manager.preferences_2v2_df
+    self._state_manager.preferences_2v2_df = df.filter(
+        pl.col("discord_uid") != discord_uid
+    ).vstack(pl.DataFrame([created]).cast(df.schema))
+
+    logger.info(f"Upserted 2v2 preferences for player {discord_uid}")

@@ -13,6 +13,7 @@ from backend.lookups.mmr_1v1_lookups import init_mmr_1v1_lookups
 from backend.lookups.notification_lookups import init_notification_lookups
 from backend.lookups.player_lookups import init_player_lookups
 from backend.lookups.preferences_1v1_lookups import init_preferences_1v1_lookups
+from backend.lookups.preferences_2v2_lookups import init_preferences_2v2_lookups
 from backend.lookups.replay_1v1_lookups import init_replay_1v1_lookups
 from backend.orchestrator.orchestrator import Orchestrator
 from backend.orchestrator.state import StateManager
@@ -74,6 +75,7 @@ class Backend:
             init_notification_lookups,
             init_player_lookups,
             init_preferences_1v1_lookups,
+            init_preferences_2v2_lookups,
             init_race_lookups,
             init_region_lookups,
             init_replay_1v1_lookups,

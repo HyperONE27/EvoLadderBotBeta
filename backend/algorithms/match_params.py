@@ -24,26 +24,28 @@ from common.json_types import CrossTableData, GameModeData
 
 def _available_maps(
     maps: dict[str, GameModeData],
+    game_mode: str,
     season: str,
     p1_vetoes: list[str],
     p2_vetoes: list[str],
 ) -> list[str]:
     """Return full map names that neither player has vetoed.
 
-    Searches all game modes within the given *season*.
+    Raises
+    ------
+    KeyError
+        If *game_mode* is not present in *maps* (data error).
     """
+    if game_mode not in maps:
+        raise KeyError(
+            f"Game mode {game_mode!r} not found in maps data. "
+            f"Known game modes: {list(maps.keys())}"
+        )
+    season_data = maps[game_mode].get(season)
+    if season_data is None:
+        raise KeyError(f"Season {season!r} not found under game mode {game_mode!r}.")
     vetoed = set(p1_vetoes) | set(p2_vetoes)
-    pool: list[str] = []
-
-    for game_mode_data in maps.values():
-        season_data = game_mode_data.get(season)
-        if season_data is None:
-            continue
-        for map_name in season_data:
-            if map_name.strip() and map_name not in vetoed:
-                pool.append(map_name)
-
-    return pool
+    return [m for m in season_data if m.strip() and m not in vetoed]
 
 
 def _resolve_server(
@@ -103,6 +105,7 @@ def resolve_match_params(
     """
     pool = _available_maps(
         maps,
+        "1v1",
         season,
         candidate["player_1_map_vetoes"],
         candidate["player_2_map_vetoes"],

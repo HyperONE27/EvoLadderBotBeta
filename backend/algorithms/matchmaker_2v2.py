@@ -34,11 +34,11 @@ pairs carry _SENTINEL cost so they are never selected unless no valid pair
 exists.
 
 Step 3 — Extract unique matched pairs from the assignment (deduplicating
-the symmetric result) and resolve each pair's composition:
+the symmetric result) and resolve each pair's composition directly:
     - BW+BW vs SC2+SC2: the BW team is always team_1, SC2 team is team_2.
       If both teams could play either role, the assignment is randomised.
     - mixed vs mixed: both teams use their declared mixed comp.
-    When a pair is valid under both match types, one is chosen randomly.
+    When a pair is valid under both compositions, one is chosen randomly.
 """
 
 from __future__ import annotations
@@ -52,17 +52,6 @@ from backend.core.config import (
     WAIT_PRIORITY_COEFFICIENT,
 )
 from backend.domain_types.ephemeral import MatchCandidate2v2, QueueEntry2v2
-
-# ---------------------------------------------------------------------------
-# Match type tokens
-# ---------------------------------------------------------------------------
-
-# Cross-era match: team_1 plays pure BW, team_2 plays pure SC2.
-# This convention is enforced at resolve time — the token never means SC2 vs BW.
-_BW_SC2 = "bw_sc2"
-
-# Same-era mixed match: both teams play their declared mixed comp.
-_MIXED = "mixed"
 
 # Sentinel cost for incompatible / out-of-window / diagonal cells.
 _SENTINEL: float = 1e18
@@ -195,72 +184,85 @@ def _hungarian_minimize(cost: list[list[float]], n: int) -> list[int]:
 
 
 # ---------------------------------------------------------------------------
-# Composition resolution
+# Composition resolution → MatchCandidate2v2
 # ---------------------------------------------------------------------------
 
+# Each option tuple: (team_1, team_2, t1_p1_race, t1_p2_race, t2_p1_race, t2_p2_race)
+# For BW-SC2 matches team_1 is always the BW team (player_1=leader, player_2=member).
+_ResolvedOption = tuple[QueueEntry2v2, QueueEntry2v2, str, str, str, str]
 
-def _resolve_match(
+
+def _resolve_to_candidate(
     a: QueueEntry2v2,
     b: QueueEntry2v2,
-) -> tuple[str, QueueEntry2v2, QueueEntry2v2]:
-    """Choose a match type and assign roles for a compatible pair.
-
-    Returns ``(match_type, team_1, team_2)`` where:
-    - For ``_BW_SC2``: team_1 plays BW, team_2 plays SC2 (always).
-    - For ``_MIXED``:  team_1 and team_2 both play their mixed comp; the
-      caller order (a, b) is preserved.
-
-    When multiple match types or role assignments are valid, one is chosen
-    randomly so no composition is systematically favoured.
-    """
-    options: list[tuple[str, QueueEntry2v2, QueueEntry2v2]] = []
-    if _has_bw(a) and _has_sc2(b):
-        options.append((_BW_SC2, a, b))  # a = BW team, b = SC2 team
-    if _has_sc2(a) and _has_bw(b):
-        options.append((_BW_SC2, b, a))  # b = BW team, a = SC2 team
-    if _has_mixed(a) and _has_mixed(b):
-        options.append((_MIXED, a, b))
-    return random.choice(options)
-
-
-# ---------------------------------------------------------------------------
-# Convert resolved pair to MatchCandidate2v2
-# ---------------------------------------------------------------------------
-
-
-def _to_match_candidate(
-    team_1: QueueEntry2v2,
-    team_2: QueueEntry2v2,
-    match_type: str,
 ) -> MatchCandidate2v2:
-    """Build a ``MatchCandidate2v2`` from a resolved pair.
+    """Choose a composition for a compatible pair and build the ``MatchCandidate2v2``.
 
-    ``team_1`` and ``team_2`` are already role-assigned by ``_resolve_match``:
-    - ``_BW_SC2``: team_1 plays pure BW comp, team_2 plays pure SC2 comp.
-    - ``_MIXED``:  both teams play their mixed comp.
+    Races are resolved directly — no intermediate token.  When multiple
+    compositions or role assignments are valid, one is chosen randomly so no
+    comp is systematically favoured.
 
     Within each team, the leader (``discord_uid`` / ``player_name``) is
     player_1 and the member (``party_member_*``) is player_2.
     """
-    if match_type == _BW_SC2:
-        t1_p1_race = team_1["pure_bw_leader_race"]
-        t1_p2_race = team_1["pure_bw_member_race"]
-        t2_p1_race = team_2["pure_sc2_leader_race"]
-        t2_p2_race = team_2["pure_sc2_member_race"]
-    else:  # _MIXED
-        t1_p1_race = team_1["mixed_leader_race"]
-        t1_p2_race = team_1["mixed_member_race"]
-        t2_p1_race = team_2["mixed_leader_race"]
-        t2_p2_race = team_2["mixed_member_race"]
+    options: list[_ResolvedOption] = []
 
-    if t1_p1_race is None or t1_p2_race is None:
-        raise ValueError(
-            f"Team {team_1['discord_uid']} has no races for match_type={match_type}"
+    # BW-SC2: a is BW team, b is SC2 team.
+    if _has_bw(a) and _has_sc2(b):
+        if a["pure_bw_leader_race"] is None or a["pure_bw_member_race"] is None:
+            raise ValueError(f"Team {a['discord_uid']} declared BW but has None races")
+        if b["pure_sc2_leader_race"] is None or b["pure_sc2_member_race"] is None:
+            raise ValueError(f"Team {b['discord_uid']} declared SC2 but has None races")
+        options.append(
+            (
+                a,
+                b,
+                a["pure_bw_leader_race"],
+                a["pure_bw_member_race"],
+                b["pure_sc2_leader_race"],
+                b["pure_sc2_member_race"],
+            )
         )
-    if t2_p1_race is None or t2_p2_race is None:
-        raise ValueError(
-            f"Team {team_2['discord_uid']} has no races for match_type={match_type}"
+    # BW-SC2: b is BW team, a is SC2 team.
+    if _has_sc2(a) and _has_bw(b):
+        if b["pure_bw_leader_race"] is None or b["pure_bw_member_race"] is None:
+            raise ValueError(f"Team {b['discord_uid']} declared BW but has None races")
+        if a["pure_sc2_leader_race"] is None or a["pure_sc2_member_race"] is None:
+            raise ValueError(f"Team {a['discord_uid']} declared SC2 but has None races")
+        options.append(
+            (
+                b,
+                a,
+                b["pure_bw_leader_race"],
+                b["pure_bw_member_race"],
+                a["pure_sc2_leader_race"],
+                a["pure_sc2_member_race"],
+            )
         )
+    # Mixed vs mixed: caller order preserved.
+    if _has_mixed(a) and _has_mixed(b):
+        if a["mixed_leader_race"] is None or a["mixed_member_race"] is None:
+            raise ValueError(
+                f"Team {a['discord_uid']} declared mixed but has None races"
+            )
+        if b["mixed_leader_race"] is None or b["mixed_member_race"] is None:
+            raise ValueError(
+                f"Team {b['discord_uid']} declared mixed but has None races"
+            )
+        options.append(
+            (
+                a,
+                b,
+                a["mixed_leader_race"],
+                a["mixed_member_race"],
+                b["mixed_leader_race"],
+                b["mixed_member_race"],
+            )
+        )
+
+    team_1, team_2, t1_p1_race, t1_p2_race, t2_p1_race, t2_p2_race = random.choice(
+        options
+    )
 
     return MatchCandidate2v2(
         team_1_player_1_discord_uid=team_1["discord_uid"],
@@ -348,8 +350,7 @@ def run_matchmaking_wave_2v2(
 
         team_a = entries[i]
         team_b = entries[j]
-        match_type, team_1, team_2 = _resolve_match(team_a, team_b)
-        match_candidates.append(_to_match_candidate(team_1, team_2, match_type))
+        match_candidates.append(_resolve_to_candidate(team_a, team_b))
         matched_uids.add(team_a["discord_uid"])
         matched_uids.add(team_b["discord_uid"])
 

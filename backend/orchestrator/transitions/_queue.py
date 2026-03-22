@@ -113,18 +113,21 @@ def leave_queue_1v1(
 
 def _handle_missing_mmr_2v2(
     self: TransitionManager,
-    uid_1: int,
-    uid_2: int,
-    name_1: str,
-    name_2: str,
+    discord_uid_1: int,
+    discord_uid_2: int,
+    player_name_1: str,
+    player_name_2: str,
 ) -> dict:
     """Return the 2v2 MMR row for a pair, creating it with default MMR if needed.
 
     UIDs are normalized internally (smaller first).
     """
-    p1_uid, p2_uid = min(uid_1, uid_2), max(uid_1, uid_2)
-    p1_name = name_1 if uid_1 == p1_uid else name_2
-    p2_name = name_2 if uid_2 == p2_uid else name_1
+    p1_uid, p2_uid = (
+        min(discord_uid_1, discord_uid_2),
+        max(discord_uid_1, discord_uid_2),
+    )
+    p1_name = player_name_1 if discord_uid_1 == p1_uid else player_name_2
+    p2_name = player_name_2 if discord_uid_2 == p2_uid else player_name_1
 
     df = self._state_manager.mmrs_2v2_df
     rows = df.filter(

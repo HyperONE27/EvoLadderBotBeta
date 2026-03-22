@@ -50,6 +50,54 @@ async def _matchmaker_loop() -> None:
             logger.exception("Matchmaker wave failed")
 
 
+async def _matchmaker_loop_2v2() -> None:
+    """Run 2v2 matchmaking waves at the top of every minute."""
+    ws = get_ws_manager()
+    while True:
+        now = time.time()
+        next_top = (now // 60 + 1) * 60
+        await asyncio.sleep(next_top - now)
+        try:
+            backend = get_backend()
+            created_matches = backend.orchestrator.run_matchmaking_wave_2v2()
+
+            for match in created_matches:
+                match_id = match["id"]
+
+                enriched = backend.orchestrator.enrich_match_2v2_with_ranks(dict(match))
+                await ws.broadcast("match_found", {"game_mode": "2v2", **enriched})
+
+                asyncio.create_task(
+                    _confirmation_timeout_2v2(match_id, CONFIRMATION_TIMEOUT)
+                )
+
+        except Exception:
+            logger.exception("2v2 matchmaker wave failed")
+
+
+async def _confirmation_timeout_2v2(match_id: int, timeout: int) -> None:
+    """Wait for the confirmation window, then handle timeout if not yet confirmed."""
+    await asyncio.sleep(timeout)
+    try:
+        backend = get_backend()
+        ws = get_ws_manager()
+
+        if backend.orchestrator.is_match_2v2_confirmed(match_id):
+            return
+
+        success, _ = backend.orchestrator.handle_confirmation_timeout_2v2(match_id)
+        if success:
+            match = backend.orchestrator.get_match_2v2(match_id)
+            if match is not None:
+                enriched = backend.orchestrator.enrich_match_2v2_with_ranks(dict(match))
+                await ws.broadcast("match_abandoned", {"game_mode": "2v2", **enriched})
+
+    except Exception:
+        logger.exception(
+            f"2v2 confirmation timeout handling failed for match #{match_id}"
+        )
+
+
 async def _confirmation_timeout(match_id: int, timeout: int) -> None:
     """Wait for the confirmation window, then handle timeout if not yet confirmed."""
     await asyncio.sleep(timeout)
@@ -90,10 +138,12 @@ async def lifespan(app: FastAPI):
     logger.info("[Backend] Backend initialized.")
 
     matchmaker_task = asyncio.create_task(_matchmaker_loop())
+    matchmaker_task_2v2 = asyncio.create_task(_matchmaker_loop_2v2())
 
     yield
 
     matchmaker_task.cancel()
+    matchmaker_task_2v2.cancel()
     backend.process_pool.shutdown(wait=False)
     logger.info("[Backend] Backend shutting down...")
 

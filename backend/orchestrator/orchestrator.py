@@ -11,12 +11,14 @@ from backend.core.config import (
 )
 from backend.database.database import DatabaseReader, DatabaseWriter
 from backend.domain_types.dataframes import (
+    Matches2v2Row,
     AdminsRow,
     Matches1v1Row,
     MMRs1v1Row,
     NotificationsRow,
     PlayersRow,
     Preferences1v1Row,
+    Preferences2v2Row,
 )
 from backend.domain_types.ephemeral import (
     LeaderboardEntry1v1,
@@ -52,6 +54,12 @@ class Orchestrator:
         """Get a 1v1 match by its ID."""
         return self._state_reader.get_match_1v1(match_id)
 
+    def get_match_2v2(self, match_id: int) -> Matches2v2Row | None:
+        """Get a 2v2 match by its ID."""
+        from backend.orchestrator.transitions._match_2v2 import _get_match_2v2_row
+
+        return _get_match_2v2_row(self._transition_manager, match_id)
+
     def get_mmr_1v1(self, discord_uid: int, race: str) -> MMRs1v1Row | None:
         """Get a 1v1 MMR for a player by their Discord UID and race."""
         return self._state_reader.get_mmr_1v1(discord_uid, race)
@@ -75,6 +83,10 @@ class Orchestrator:
     def get_preferences_1v1(self, discord_uid: int) -> Preferences1v1Row | None:
         """Get a player's 1v1 preferences by their Discord UID."""
         return self._state_reader.get_preferences_1v1(discord_uid)
+
+    def get_preferences_2v2(self, discord_uid: int) -> Preferences2v2Row | None:
+        """Get a player's 2v2 preferences by their Discord UID."""
+        return self._state_reader.get_preferences_2v2(discord_uid)
 
     def get_profile(
         self, discord_uid: int
@@ -112,6 +124,29 @@ class Orchestrator:
         """Create or update a player's 1v1 queue preferences."""
         self._transition_manager.upsert_preferences_1v1(
             discord_uid, last_chosen_races, last_chosen_vetoes
+        )
+
+    def upsert_preferences_2v2(
+        self,
+        discord_uid: int,
+        last_pure_bw_leader_race: str | None,
+        last_pure_bw_member_race: str | None,
+        last_mixed_leader_race: str | None,
+        last_mixed_member_race: str | None,
+        last_pure_sc2_leader_race: str | None,
+        last_pure_sc2_member_race: str | None,
+        last_chosen_vetoes: list[str],
+    ) -> None:
+        """Create or update a player's 2v2 queue preferences."""
+        self._transition_manager.upsert_preferences_2v2(
+            discord_uid,
+            last_pure_bw_leader_race,
+            last_pure_bw_member_race,
+            last_mixed_leader_race,
+            last_mixed_member_race,
+            last_pure_sc2_leader_race,
+            last_pure_sc2_member_race,
+            last_chosen_vetoes,
         )
 
     # ------------------------------------------------------------------
@@ -302,6 +337,34 @@ class Orchestrator:
         queue_snapshot = self._state_reader.get_queue_1v1()
         return self._transition_manager.run_matchmaking_wave(queue_snapshot)
 
+    def run_matchmaking_wave_2v2(self) -> list[Matches2v2Row]:
+        """Run one 2v2 matchmaking wave using the current queue snapshot."""
+        queue_snapshot = self._state_reader.get_queue_2v2()
+        return self._transition_manager.run_matchmaking_wave_2v2(queue_snapshot)
+
+    def confirm_match_2v2(self, match_id: int, discord_uid: int) -> tuple[bool, bool]:
+        """Record that a player confirmed a 2v2 match. Returns (success, all_confirmed)."""
+        return self._transition_manager.confirm_match_2v2(match_id, discord_uid)
+
+    def is_match_2v2_confirmed(self, match_id: int) -> bool:
+        """Check whether all four players have confirmed a 2v2 match."""
+        return self._transition_manager.is_match_2v2_confirmed(match_id)
+
+    def abort_match_2v2(
+        self, match_id: int, discord_uid: int
+    ) -> tuple[bool, str | None]:
+        return self._transition_manager.abort_match_2v2(match_id, discord_uid)
+
+    def handle_confirmation_timeout_2v2(self, match_id: int) -> tuple[bool, str | None]:
+        return self._transition_manager.handle_confirmation_timeout_2v2(match_id)
+
+    def report_match_result_2v2(
+        self, match_id: int, discord_uid: int, report: str
+    ) -> tuple[bool, str | None, Matches2v2Row | None]:
+        return self._transition_manager.report_match_result_2v2(
+            match_id, discord_uid, report
+        )
+
     # ------------------------------------------------------------------
     # Match confirmation / abort / reporting
     # ------------------------------------------------------------------
@@ -449,6 +512,10 @@ class Orchestrator:
     def enrich_match_with_ranks(self, match_dict: dict) -> dict:
         """Return a copy of match_dict with player letter ranks from the leaderboard."""
         return self._state_reader.enrich_match_with_ranks(match_dict)
+
+    def enrich_match_2v2_with_ranks(self, match_dict: dict) -> dict:
+        """Return a copy of match_dict with team letter ranks from the 2v2 leaderboard."""
+        return self._state_reader.enrich_match_2v2_with_ranks(match_dict)
 
     def consume_leaderboard_dirty(self) -> bool:
         """Return True if the leaderboard was rebuilt since the last check."""
