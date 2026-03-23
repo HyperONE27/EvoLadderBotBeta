@@ -499,6 +499,7 @@
     "notifyme_command.state.off.1": "끔",
     "notifyme_command.state.on.1": "켬",
     "notifyme_command.success.1": "1v1 대기열 알림: **{state}**{cooldown_line}",
+    "notifyme_success_embed.title.1": "🔔 알림 설정 변경됨",
     "player_status.idle": "활동 없음",
     "player_status.in_match": "경기 중",
     "player_status.queueing": "대기열 참가 중",
