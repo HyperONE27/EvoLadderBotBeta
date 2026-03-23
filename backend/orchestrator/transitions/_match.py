@@ -477,15 +477,7 @@ def _apply_match_resolution(
     p1_race = match["player_1_race"]
     p2_race = match["player_2_race"]
 
-    # Compute new MMR rows before any writes.
-    p1_mmr_update = self._compute_mmr_update(
-        p1_uid, p1_race, new_p1_mmr, result, is_player_1=True, now=now
-    )
-    p2_mmr_update = self._compute_mmr_update(
-        p2_uid, p2_race, new_p2_mmr, result, is_player_1=False, now=now
-    )
-
-    # Write match result to DB.
+    # Build match-row updates first.
     cache_kwargs: dict[str, object] = {
         "match_result": result,
         "player_1_mmr_change": p1_change,
@@ -501,6 +493,21 @@ def _apply_match_resolution(
     if admin_intervened:
         cache_kwargs["admin_intervened"] = True
         cache_kwargs["admin_discord_uid"] = admin_discord_uid
+
+    # Update the in-memory match row BEFORE computing game stats so that
+    # count_game_stats sees the current match's result.
+    self._update_match_cache(match_id, **cache_kwargs)
+
+    # Now compute MMR updates (game stats will include the current match).
+    p1_mmr_update = self._compute_mmr_update(
+        p1_uid, p1_race, new_p1_mmr, result, is_player_1=True, now=now
+    )
+    p2_mmr_update = self._compute_mmr_update(
+        p2_uid, p2_race, new_p2_mmr, result, is_player_1=False, now=now
+    )
+
+    # Persist to DB.
+    if admin_intervened:
         self._db_writer.admin_resolve_match_1v1(
             match_id,
             match_result=result,
@@ -525,8 +532,7 @@ def _apply_match_resolution(
     if mmr_updates:
         self._db_writer.batch_update_mmrs_1v1(mmr_updates)
 
-    # Update caches.
-    self._update_match_cache(match_id, **cache_kwargs)
+    # Update MMR caches.
     if p1_mmr_update is not None:
         self._apply_mmr_cache_update(p1_uid, p1_race, p1_mmr_update)
     if p2_mmr_update is not None:

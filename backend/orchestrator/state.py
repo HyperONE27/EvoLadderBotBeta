@@ -99,6 +99,11 @@ class StateManager:
         )
 
         logger = structlog.get_logger(__name__)
+
+        # Recount game stats from matches ground truth to heal any desynced
+        # games_played values (e.g. from the cache-ordering bug).
+        self._recount_mmr_game_stats()
+
         self.leaderboard_1v1 = build_leaderboard_1v1(self.mmrs_1v1_df, self.players_df)
         self.leaderboard_2v2 = build_leaderboard_2v2(self.mmrs_2v2_df, self.players_df)
         logger.info(
@@ -106,3 +111,46 @@ class StateManager:
             f"{len(self.leaderboard_1v1)} 1v1 entries, "
             f"{len(self.leaderboard_2v2)} 2v2 entries"
         )
+
+    def _recount_mmr_game_stats(self) -> None:
+        """Recount games_played/won/lost/drawn from matches DataFrames.
+
+        This heals any desynced counters on mmr rows without touching the DB
+        (the corrected values will be persisted on the next match resolution).
+        """
+        import polars as pl
+
+        from backend.algorithms.game_stats import (
+            count_game_stats,
+            count_game_stats_2v2,
+        )
+
+        # --- 1v1 ---
+        if not self.mmrs_1v1_df.is_empty() and not self.matches_1v1_df.is_empty():
+            rows = self.mmrs_1v1_df.to_dicts()
+            updated = False
+            for row in rows:
+                stats = count_game_stats(
+                    self.matches_1v1_df, row["discord_uid"], row["race"]
+                )
+                if row["games_played"] != stats["games_played"]:
+                    row.update(stats)
+                    updated = True
+            if updated:
+                self.mmrs_1v1_df = pl.DataFrame(rows).cast(self.mmrs_1v1_df.schema)
+
+        # --- 2v2 ---
+        if not self.mmrs_2v2_df.is_empty() and not self.matches_2v2_df.is_empty():
+            rows = self.mmrs_2v2_df.to_dicts()
+            updated = False
+            for row in rows:
+                stats = count_game_stats_2v2(
+                    self.matches_2v2_df,
+                    row["player_1_discord_uid"],
+                    row["player_2_discord_uid"],
+                )
+                if row["games_played"] != stats["games_played"]:
+                    row.update(stats)
+                    updated = True
+            if updated:
+                self.mmrs_2v2_df = pl.DataFrame(rows).cast(self.mmrs_2v2_df.schema)

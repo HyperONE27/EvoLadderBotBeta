@@ -322,6 +322,10 @@ Dev: `ruff`, `mypy`, `pytest`
 
 These rules apply to all schema types: SQL tables, Polars schemas, TypedDicts, and ephemeral types.
 
+### Localization
+
+Locale strings live in `data/locales/`. When adding or updating keys in any locale file (e.g. `enUS.json`), **all other locale files** (`base.json`, `koKR.json`, `ruRU.json`, `esMX.json`, `zhCN.json`) must be updated with the same keys and appropriate translations. Keys in all locale files must be sorted in lexicographic order.
+
 ### When Making Changes
 
 - Run `make quality` to run local CI (ruff + mypy) and make sure all your changes pass.
@@ -346,7 +350,5 @@ python -m pytest tests/ -v
 ### Not Yet Implemented
 
 These items appear in planning docs or have stub code but are not functional:
-- 2v2 admin tools (no `/admin snapshot_2v2` or 2v2 match admin endpoints)
-- i18n/localization (locale files exist, framework in place, not wired to commands)
 - 3v3, FFA modes
 - `/help` and `/prune` commands (empty stub files)

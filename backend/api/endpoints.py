@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 
 from backend.api.dependencies import get_backend, get_ws_manager
 from backend.api.websocket import ConnectionManager
-from backend.core.config import CURRENT_SEASON
+from backend.core.config import COERCE_INDETERMINATE_AS_LOSS, CURRENT_SEASON
 from backend.algorithms.replay_parser import parse_replay_1v1, parse_replay_2v2
 from backend.algorithms.replay_verifier import verify_replay_1v1, verify_replay_2v2
 from backend.lookups.admin_lookups import get_admin_by_discord_uid
@@ -1389,6 +1389,14 @@ async def upload_replay(
 
     # Re-fetch the match in case it was resolved while we were uploading.
     current_match = app.orchestrator.get_match_1v1(match_id)
+    replay_result_1v1: str | None = parsed.get("match_result")
+    is_determinate_1v1 = replay_result_1v1 in (
+        "player_1_win",
+        "player_2_win",
+        "draw",
+    )
+    is_indeterminate_1v1 = not is_determinate_1v1 and COERCE_INDETERMINATE_AS_LOSS
+
     can_auto_resolve = (
         current_match is not None
         and current_match["match_result"] is None
@@ -1396,16 +1404,23 @@ async def upload_replay(
         and verification.get("map", {}).get("success", False)
         and verification.get("timestamp", {}).get("success", False)
         and verification.get("ai_players", {}).get("success", True)
-        and parsed.get("match_result") in ("player_1_win", "player_2_win", "draw")
+        and (is_determinate_1v1 or is_indeterminate_1v1)
     )
 
     if can_auto_resolve and current_match is not None:
-        # Map the replay result (in replay player order) to match player order
-        # using the winning race.
-        replay_result: str = parsed["match_result"]
-        match_result = _map_replay_result_to_match(
-            replay_result, parsed, dict(current_match)
-        )
+        if is_indeterminate_1v1:
+            # Coerce indeterminate as a loss for the uploading player.
+            if discord_uid == current_match["player_1_discord_uid"]:
+                match_result: str | None = "player_2_win"
+            else:
+                match_result = "player_1_win"
+        else:
+            # Map the replay result (in replay player order) to match player order
+            # using the winning race.
+            replay_result_val: str = parsed["match_result"]
+            match_result = _map_replay_result_to_match(
+                replay_result_val, parsed, dict(current_match)
+            )
 
         if match_result is not None:
             resolved_match_row = app.orchestrator.replay_auto_resolve_match(
@@ -1604,6 +1619,11 @@ async def upload_replay_2v2(
 
     # Re-fetch in case the match was resolved while we were uploading.
     current_match = app.orchestrator.get_match_2v2(match_id)
+
+    replay_result_2v2: str | None = parsed.get("match_result")
+    is_determinate_2v2 = replay_result_2v2 in ("team_1_win", "team_2_win", "draw")
+    is_indeterminate_2v2 = not is_determinate_2v2 and COERCE_INDETERMINATE_AS_LOSS
+
     can_auto_resolve = (
         current_match is not None
         and current_match["match_result"] is None
@@ -1611,13 +1631,17 @@ async def upload_replay_2v2(
         and verification.get("map", {}).get("success", False)
         and verification.get("timestamp", {}).get("success", False)
         and verification.get("ai_players", {}).get("success", True)
-        and parsed.get("match_result") in ("team_1_win", "team_2_win", "draw")
+        and (is_determinate_2v2 or is_indeterminate_2v2)
     )
 
     if can_auto_resolve and current_match is not None:
-        match_result: str = parsed["match_result"]
+        if is_indeterminate_2v2:
+            # Coerce indeterminate as a loss for the uploading player's team.
+            match_result_2v2: str = "team_2_win" if team_num == 1 else "team_1_win"
+        else:
+            match_result_2v2 = parsed["match_result"]
         resolved_match_row = app.orchestrator.replay_auto_resolve_match_2v2(
-            match_id, discord_uid, match_result
+            match_id, discord_uid, match_result_2v2
         )
         resolved_match = dict(resolved_match_row)
         auto_resolved = True
@@ -1630,7 +1654,7 @@ async def upload_replay_2v2(
         logger.info(
             "2v2 replay auto-resolved match",
             match_id=match_id,
-            result=match_result,
+            result=match_result_2v2,
             uploader=discord_uid,
         )
 

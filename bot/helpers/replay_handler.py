@@ -14,6 +14,7 @@ from bot.components.embeds import (
     MatchInfoEmbed2v2,
     ReplayErrorEmbed,
     ReplaySuccessEmbed,
+    ReplaySuccessEmbed2v2,
 )
 from bot.components.views import MatchReportView1v1, MatchReportView2v2
 from bot.core.config import BACKEND_URL, ENABLE_REPLAY_VALIDATION
@@ -110,16 +111,24 @@ async def handle_replay_upload(
         auto_resolved: bool = data.get("auto_resolved", False)
 
         # Send the replay details as a new message (high priority).
-        await queue_message_reply_high(
-            message,
-            embed=ReplaySuccessEmbed(
+        replay_embed: discord.Embed
+        if game_mode == "2v2":
+            replay_embed = ReplaySuccessEmbed2v2(
                 parsed,
                 verification_results=verification,
                 enforcement_enabled=ENABLE_REPLAY_VALIDATION,
                 auto_resolved=auto_resolved,
                 locale=locale,
-            ),
-        )
+            )
+        else:
+            replay_embed = ReplaySuccessEmbed(
+                parsed,
+                verification_results=verification,
+                enforcement_enabled=ENABLE_REPLAY_VALIDATION,
+                auto_resolved=auto_resolved,
+                locale=locale,
+            )
+        await queue_message_reply_high(message, embed=replay_embed)
 
         # If auto-resolved, the WS match_completed event will handle
         # sending the finalized embed and disabling the dropdown.
@@ -137,7 +146,9 @@ async def handle_replay_upload(
             new_view: discord.ui.View
             if game_mode == "2v2":
                 player_infos: dict = match_info.get("player_infos", {})
-                new_embed = MatchInfoEmbed2v2(match_data, player_infos, locale=locale)
+                new_embed = MatchInfoEmbed2v2(
+                    match_data, player_infos, replay_uploaded=True, locale=locale
+                )
                 new_view = MatchReportView2v2(
                     match_id, match_data, player_infos, locale=locale
                 )

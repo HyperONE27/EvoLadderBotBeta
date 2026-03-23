@@ -7,6 +7,12 @@ What remains?
 - ⏰ Write pre-beta feature announcement
 - ⏰ Re-write Terms of Service
 - ⏰ Store canonical copies of migrated old database so I can easily launch the pre-beta
+- ⏰ Rectify inconsistencies between 1v1 and 2v2
+- ⏰ Update untranslated keys
+- ⏰ Make sure 2v2-related functionality uses the keys
+- ⏰ Finish 2v2 implementation
+- ⏰ Quality check 2v2 implementation
+    - Especially replay uploads
 - ✅ Player names should be unique
 - ✅ Player names cannot contain symbols
     - Letters only...
@@ -165,9 +171,6 @@ The pre-beta phase of the
 
 
 Features you can look forward to:
-- New gamemodes: 
-
-
-What is not currently in scope:
-- **Lobby automation:** This is a big one. While the problem can be solved, 
+- New gamemodes: 2v2 will be joining 1v1 as an available game . I also plan to include certain seasonal gamemodes, 
 - 
+

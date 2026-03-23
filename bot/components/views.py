@@ -2686,10 +2686,12 @@ class QueueSetupView2v2(discord.ui.View):
                 self.pure_sc2_leader_race,
                 self.pure_sc2_member_race,
                 self.map_vetoes,
+                self.leader_player_name,
+                self.member_player_name,
             )
 
         join_btn: discord.ui.Button[QueueSetupView2v2] = discord.ui.Button(
-            label="Join 2v2 Queue",
+            label=t("button.join_queue_2v2", _locale),
             emoji="🚀",
             style=discord.ButtonStyle.secondary,
             row=0,
@@ -2917,7 +2919,19 @@ class MatchReportView2v2(discord.ui.View):
 
 
 class _CancelQueueButton2v2(discord.ui.Button["QueueSearchingView2v2"]):
-    def __init__(self, discord_user_id: int) -> None:
+    def __init__(
+        self,
+        discord_user_id: int,
+        pure_bw_leader_race: str | None,
+        pure_bw_member_race: str | None,
+        mixed_leader_race: str | None,
+        mixed_member_race: str | None,
+        pure_sc2_leader_race: str | None,
+        pure_sc2_member_race: str | None,
+        map_vetoes: list[str],
+        leader_player_name: str,
+        member_player_name: str,
+    ) -> None:
         super().__init__(
             label=t("button.cancel_queue", get_player_locale(discord_user_id)),
             emoji="✖️",
@@ -2925,9 +2939,30 @@ class _CancelQueueButton2v2(discord.ui.Button["QueueSearchingView2v2"]):
             row=0,
         )
         self.discord_user_id = discord_user_id
+        self.pure_bw_leader_race = pure_bw_leader_race
+        self.pure_bw_member_race = pure_bw_member_race
+        self.mixed_leader_race = mixed_leader_race
+        self.mixed_member_race = mixed_member_race
+        self.pure_sc2_leader_race = pure_sc2_leader_race
+        self.pure_sc2_member_race = pure_sc2_member_race
+        self.map_vetoes = map_vetoes
+        self.leader_player_name = leader_player_name
+        self.member_player_name = member_player_name
 
     async def callback(self, interaction: discord.Interaction) -> None:
-        await _leave_queue_2v2(interaction, self.discord_user_id)
+        await _leave_queue_2v2(
+            interaction,
+            self.discord_user_id,
+            self.pure_bw_leader_race,
+            self.pure_bw_member_race,
+            self.mixed_leader_race,
+            self.mixed_member_race,
+            self.pure_sc2_leader_race,
+            self.pure_sc2_member_race,
+            self.map_vetoes,
+            self.leader_player_name,
+            self.member_player_name,
+        )
 
 
 class QueueSearchingView2v2(discord.ui.View):
@@ -2937,13 +2972,35 @@ class QueueSearchingView2v2(discord.ui.View):
         self,
         interaction: discord.Interaction,
         discord_user_id: int,
+        pure_bw_leader_race: str | None,
+        pure_bw_member_race: str | None,
+        mixed_leader_race: str | None,
+        mixed_member_race: str | None,
+        pure_sc2_leader_race: str | None,
+        pure_sc2_member_race: str | None,
+        map_vetoes: list[str],
+        leader_player_name: str,
+        member_player_name: str,
     ) -> None:
         super().__init__(timeout=None)
         self._interaction = interaction
         self._message: discord.Message | None = None
         self._token_expired: bool = False
         self._heartbeat_task: asyncio.Task[None] | None = None
-        self.add_item(_CancelQueueButton2v2(discord_user_id))
+        self.add_item(
+            _CancelQueueButton2v2(
+                discord_user_id,
+                pure_bw_leader_race,
+                pure_bw_member_race,
+                mixed_leader_race,
+                mixed_member_race,
+                pure_sc2_leader_race,
+                pure_sc2_member_race,
+                map_vetoes,
+                leader_player_name,
+                member_player_name,
+            )
+        )
 
     async def start_heartbeat(self) -> None:
         self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
@@ -3050,6 +3107,8 @@ async def _join_queue_2v2(
     pure_sc2_leader_race: str | None,
     pure_sc2_member_race: str | None,
     map_vetoes: list[str],
+    leader_player_name: str = "Leader",
+    member_player_name: str = "Member",
 ) -> None:
     # At least one comp must have both leader and member selected.
     has_full_comp = (
@@ -3061,8 +3120,7 @@ async def _join_queue_2v2(
         _locale = get_player_locale(discord_user_id)
         await interaction.response.send_message(
             embed=QueueErrorEmbed(
-                "Select both your race and your partner's race "
-                "for at least one composition before joining.",
+                t("error.queue_2v2_no_comp", _locale),
                 locale=_locale,
             ),
             ephemeral=True,
@@ -3107,7 +3165,19 @@ async def _join_queue_2v2(
             pass
 
         locale = get_player_locale(discord_user_id)
-        searching_view = QueueSearchingView2v2(interaction, discord_user_id)
+        searching_view = QueueSearchingView2v2(
+            interaction,
+            discord_user_id,
+            pure_bw_leader_race,
+            pure_bw_member_race,
+            mixed_leader_race,
+            mixed_member_race,
+            pure_sc2_leader_race,
+            pure_sc2_member_race,
+            map_vetoes,
+            leader_player_name,
+            member_player_name,
+        )
         await interaction.edit_original_response(
             embed=QueueSearchingEmbed2v2(stats, locale=locale),
             view=searching_view,
@@ -3138,6 +3208,15 @@ async def _join_queue_2v2(
 async def _leave_queue_2v2(
     interaction: discord.Interaction,
     discord_user_id: int,
+    pure_bw_leader_race: str | None,
+    pure_bw_member_race: str | None,
+    mixed_leader_race: str | None,
+    mixed_member_race: str | None,
+    pure_sc2_leader_race: str | None,
+    pure_sc2_member_race: str | None,
+    map_vetoes: list[str],
+    leader_player_name: str = "Leader",
+    member_player_name: str = "Member",
 ) -> None:
     await interaction.response.defer()
     try:
@@ -3159,10 +3238,31 @@ async def _leave_queue_2v2(
             return
 
         _locale = get_player_locale(discord_user_id)
-        await interaction.edit_original_response(
-            embed=QueueErrorEmbed(t("queue_left_2v2", _locale), locale=_locale),
-            view=None,
+        setup_embed = QueueSetupEmbed2v2(
+            pure_bw_leader_race,
+            pure_bw_member_race,
+            mixed_leader_race,
+            mixed_member_race,
+            pure_sc2_leader_race,
+            pure_sc2_member_race,
+            map_vetoes,
+            leader_player_name=leader_player_name,
+            member_player_name=member_player_name,
+            locale=_locale,
         )
+        setup_view = QueueSetupView2v2(
+            discord_user_id=discord_user_id,
+            pure_bw_leader_race=pure_bw_leader_race,
+            pure_bw_member_race=pure_bw_member_race,
+            mixed_leader_race=mixed_leader_race,
+            mixed_member_race=mixed_member_race,
+            pure_sc2_leader_race=pure_sc2_leader_race,
+            pure_sc2_member_race=pure_sc2_member_race,
+            map_vetoes=map_vetoes,
+            leader_player_name=leader_player_name,
+            member_player_name=member_player_name,
+        )
+        await interaction.edit_original_response(embed=setup_embed, view=setup_view)
 
         try:
             cache = get_cache()

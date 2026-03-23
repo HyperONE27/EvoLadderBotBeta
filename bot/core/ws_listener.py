@@ -381,14 +381,15 @@ async def _on_match_conflict(client: discord.Client, match_data: dict) -> None:
 
 
 async def _on_match_found_2v2(client: discord.Client, match_data: dict) -> None:
-    """Send match found DMs to all 4 players and update their searching embeds."""
+    """Send match found DMs to team leaders only and update searching embeds for all 4."""
     match_id: int = match_data["id"]
     all_uids = _get_2v2_uids(match_data)
+    leader_uids = _get_2v2_leader_uids(match_data)
     cache = get_cache()
 
     dm_coros = []
     dm_uids: list[int] = []
-    for uid in all_uids:
+    for uid in leader_uids:
         try:
             user = await client.fetch_user(uid)
             locale = get_player_locale(uid)
@@ -471,43 +472,53 @@ async def _on_all_confirmed_2v2(client: discord.Client, match_data: dict) -> Non
 
 async def _on_match_aborted_2v2(client: discord.Client, match_data: dict) -> None:
     all_uids = _get_2v2_uids(match_data)
-    await _send_to_all_2v2_localized(client, all_uids, MatchAbortedEmbed2v2, match_data)
+    player_infos = _get_cached_player_infos_2v2(all_uids)
+    await _send_to_all_2v2_localized(
+        client, all_uids, MatchAbortedEmbed2v2, match_data, player_infos
+    )
     await _clear_match_state_all_2v2(all_uids)
     await _post_to_match_log_low(
-        client, MatchAbortedEmbed2v2(match_data, locale="enUS")
+        client,
+        MatchAbortedEmbed2v2(match_data, player_infos=player_infos, locale="enUS"),
     )
 
 
 async def _on_match_abandoned_2v2(client: discord.Client, match_data: dict) -> None:
     all_uids = _get_2v2_uids(match_data)
+    player_infos = _get_cached_player_infos_2v2(all_uids)
     await _send_to_all_2v2_localized(
-        client, all_uids, MatchAbandonedEmbed2v2, match_data
+        client, all_uids, MatchAbandonedEmbed2v2, match_data, player_infos
     )
     await _clear_match_state_all_2v2(all_uids)
     await _post_to_match_log_low(
-        client, MatchAbandonedEmbed2v2(match_data, locale="enUS")
+        client,
+        MatchAbandonedEmbed2v2(match_data, player_infos=player_infos, locale="enUS"),
     )
 
 
 async def _on_match_completed_2v2(client: discord.Client, match_data: dict) -> None:
     all_uids = _get_2v2_uids(match_data)
+    player_infos = _get_cached_player_infos_2v2(all_uids)
     await _send_to_all_2v2_localized(
-        client, all_uids, MatchFinalizedEmbed2v2, match_data
+        client, all_uids, MatchFinalizedEmbed2v2, match_data, player_infos
     )
     await _clear_match_state_all_2v2(all_uids)
     await _post_to_match_log_low(
-        client, MatchFinalizedEmbed2v2(match_data, locale="enUS")
+        client,
+        MatchFinalizedEmbed2v2(match_data, player_infos=player_infos, locale="enUS"),
     )
 
 
 async def _on_match_conflict_2v2(client: discord.Client, match_data: dict) -> None:
     all_uids = _get_2v2_uids(match_data)
+    player_infos = _get_cached_player_infos_2v2(all_uids)
     await _send_to_all_2v2_localized(
-        client, all_uids, MatchConflictEmbed2v2, match_data
+        client, all_uids, MatchConflictEmbed2v2, match_data, player_infos
     )
     await _clear_match_state_all_2v2(all_uids)
     await _post_to_match_log_low(
-        client, MatchConflictEmbed2v2(match_data, locale="enUS")
+        client,
+        MatchConflictEmbed2v2(match_data, player_infos=player_infos, locale="enUS"),
     )
 
 
@@ -619,18 +630,47 @@ def _get_2v2_uids(match_data: dict) -> list[int]:
     return uids
 
 
+def _get_2v2_leader_uids(match_data: dict) -> list[int]:
+    """Return the 2 team leader UIDs (player_1 of each team)."""
+    uids: list[int] = []
+    for key in ("team_1_player_1_discord_uid", "team_2_player_1_discord_uid"):
+        uid = match_data.get(key)
+        if uid is not None:
+            uids.append(int(uid))
+    return uids
+
+
+def _get_cached_player_infos_2v2(
+    uids: list[int],
+) -> dict[int, dict[str, object] | None]:
+    """Retrieve player_infos from the active_match_info cache (set during both_confirmed)."""
+    cache = get_cache()
+    for uid in uids:
+        match_info = cache.active_match_info.get(uid)
+        if match_info is not None:
+            infos: dict[int, dict[str, object] | None] = match_info.get(
+                "player_infos", {}
+            )
+            return infos
+    return {}
+
+
 async def _send_to_all_2v2_localized(
     client: discord.Client,
     uids: list[int],
     embed_cls: type,
     match_data: dict,
+    player_infos: dict[int, dict | None] | None = None,
 ) -> None:
     """DM all players with per-locale embeds."""
     for uid in uids:
         try:
             locale = get_player_locale(uid)
             user = await client.fetch_user(uid)
-            await queue_user_send_low(user, embed=embed_cls(match_data, locale=locale))
+            await queue_user_send_low(
+                user,
+                embed=embed_cls(match_data, player_infos=player_infos, locale=locale),
+            )
         except Exception:
             logger.exception(f"[WS] Failed to DM 2v2 user {uid}")
 

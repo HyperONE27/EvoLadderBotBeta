@@ -147,8 +147,34 @@ New 2v2 embeds:
 
 ---
 
+## 10. Admin Tools (2v2)
+
+**What:** Full admin support for 2v2 matches:
+- `GET /admin/matches_2v2/{match_id}` — fetch match + 4 player rows + admin info
+- `PUT /admin/matches_2v2/{match_id}/resolve` — admin resolve 2v2 match conflicts
+- `GET /admin/snapshot_2v2` — queue, active matches, parties, DataFrame stats
+- `/admin match {match_id}` — auto-detects 1v1 vs 2v2 and shows appropriate embed
+- `/admin resolve {match_id} {result}` — supports 2v2 result codes (`team_1_win`, `team_2_win`, `draw`, `invalidated`)
+
+Bot embeds: `AdminMatchEmbed2v2`, `AdminResolution2v2Embed`, `QueueSnapshotEmbed2v2`, `MatchesEmbed2v2`, `PartiesEmbed`.
+
+**Why:** Admins need visibility into 2v2 match state and the ability to resolve conflicts, same as 1v1.
+
+---
+
+## 11. Localization
+
+**What:** All 2v2 UI strings (party commands, queue setup, admin embeds, error messages) are localized via the `t()` function with keys in `data/locales/`. All six locale files (`enUS`, `base`, `koKR`, `ruRU`, `esMX`, `zhCN`) are kept in sync.
+
+---
+
 ## What Is Not Yet Implemented
 
 - **Party WS events** — party invite/accept/leave are synchronous (request/response); there are no WS broadcasts for party state changes. The bot handles party feedback in the command response and sends a manual DM to the other player.
-- **`/admin snapshot_2v2`** — no admin snapshot for 2v2 queue/match state yet
+- **Party invite stale button handling** — if the bot restarts, old invite DM buttons hit a dead invite with no graceful "invite no longer valid" message.
+- **`/profile` 2v2 stats** — profile only shows 1v1 MMR; no `mmrs_2v2` display yet.
+- **`/owner mmr` for 2v2** — no admin setter for pair MMR (would need to target a pair, not an individual).
+- **`/activity` 2v2** — command shows "2v2 (soon)" but rejects with unsupported game mode.
+- **`/notifyme` 2v2** — only wired for `notify_queue_1v1`; 2v2 queue activity notifications not yet supported.
+- **2v2 MMR seeding from 1v1** — new pairs start at default 1500; plan suggested optional seeding from avg individual 1v1 MMR.
 - **3v3, FFA** — no planned work yet

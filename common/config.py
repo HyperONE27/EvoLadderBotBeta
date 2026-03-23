@@ -53,6 +53,8 @@ EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER_RANK: bool = True
 
 ALLOW_AI_PLAYERS: bool = True
 
+COERCE_INDETERMINATE_AS_LOSS: bool = True
+
 # ---------------------------------------------------------------------------
 # Queue activity charts (/activity)
 # ---------------------------------------------------------------------------

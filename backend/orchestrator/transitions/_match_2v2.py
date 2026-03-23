@@ -23,7 +23,8 @@ if TYPE_CHECKING:
 logger = structlog.get_logger(__name__)
 
 # Number of confirmations required before a 2v2 match is considered confirmed.
-_REQUIRED_CONFIRMATIONS = 4
+# Only team leaders (player_1 of each team) confirm, so this is 2, not 4.
+_REQUIRED_CONFIRMATIONS = 2
 
 
 # ==================================================================
@@ -527,11 +528,7 @@ def _apply_match_2v2_resolution(
     t2_p1 = match["team_2_player_1_discord_uid"]
     t2_p2 = match["team_2_player_2_discord_uid"]
 
-    # Compute MMR updates before any writes.
-    t1_mmr_update = _compute_mmr_update_2v2(self, t1_p1, t1_p2, new_t1_mmr, now)
-    t2_mmr_update = _compute_mmr_update_2v2(self, t2_p1, t2_p2, new_t2_mmr, now)
-
-    # Write the match row.
+    # Build the match-row updates first.
     cache_kwargs: dict = dict(
         match_result=result,
         team_1_mmr_change=t1_change if t1_change != 0 else None,
@@ -551,6 +548,18 @@ def _apply_match_2v2_resolution(
     if admin_intervened:
         cache_kwargs["admin_intervened"] = True
         cache_kwargs["admin_discord_uid"] = admin_discord_uid
+
+    # Update the in-memory match row BEFORE computing game stats so that
+    # count_game_stats_2v2 sees the current match's result.
+    non_none_kwargs: dict = {k: v for k, v in cache_kwargs.items() if v is not None}
+    _update_match_2v2_cache(self, match_id, **non_none_kwargs)
+
+    # Now compute MMR updates (game stats will include the current match).
+    t1_mmr_update = _compute_mmr_update_2v2(self, t1_p1, t1_p2, new_t1_mmr, now)
+    t2_mmr_update = _compute_mmr_update_2v2(self, t2_p1, t2_p2, new_t2_mmr, now)
+
+    # Persist to DB.
+    if admin_intervened:
         self._db_writer.admin_resolve_match_2v2(
             match_id,
             match_result=result,
@@ -572,14 +581,12 @@ def _apply_match_2v2_resolution(
             completed_at=now,
         )
 
-    # Update MMR rows.
+    # Write MMR rows to DB.
     mmr_updates = [u for u in (t1_mmr_update, t2_mmr_update) if u is not None]
     if mmr_updates:
         self._db_writer.batch_update_mmrs_2v2(mmr_updates)
 
-    # Update in-memory cache.
-    non_none_kwargs: dict = {k: v for k, v in cache_kwargs.items() if v is not None}
-    _update_match_2v2_cache(self, match_id, **non_none_kwargs)
+    # Update MMR in-memory cache.
     for u in mmr_updates:
         _apply_mmr_2v2_cache_update(
             self, u["player_1_discord_uid"], u["player_2_discord_uid"], u
