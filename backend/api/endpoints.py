@@ -1107,6 +1107,17 @@ async def player_name_availability(
     return PlayerNameAvailabilityResponse(available=available)
 
 
+@router.get("/players/by_name/{name}", response_model=PlayersResponse)
+async def players_by_name(
+    name: str,
+    app: Backend = Depends(get_backend),
+) -> PlayersResponse:
+    player = app.orchestrator.get_player_by_string(name)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Player not found.")
+    return PlayersResponse(player=player)
+
+
 @router.get("/players/{discord_uid}", response_model=PlayersResponse)
 async def players(
     discord_uid: int,

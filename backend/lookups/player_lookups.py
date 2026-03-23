@@ -81,6 +81,24 @@ def is_player_name_taken(
     return df.filter(cond).height > 0
 
 
+def get_player_by_string(s: str) -> PlayersRow | None:
+    """Resolve an arbitrary string to a player row.
+
+    Resolution order:
+    1. If *s* is all digits, interpret as a Discord UID and look up by discord_uid.
+    2. Otherwise try player_name (case-insensitive), then discord_username (case-insensitive).
+
+    Returns ``None`` if no match is found.
+    """
+    if s.isdigit():
+        return get_player_by_discord_uid(int(s))
+
+    result = get_player_by_player_name(s)
+    if result is not None:
+        return result
+    return get_player_by_discord_username(s)
+
+
 def get_player_by_battletag(battletag: str) -> PlayersRow | None:
     """Get a player by their battletag."""
     df = _get_players()

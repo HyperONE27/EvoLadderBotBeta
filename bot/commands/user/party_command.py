@@ -32,9 +32,10 @@ party_group = app_commands.Group(
 @app_commands.check(check_if_completed_setup)
 @app_commands.check(check_if_banned)
 @app_commands.check(check_if_dm)
+@app_commands.describe(player="Ladder name, Discord username, or Discord ID")
 async def party_invite_command(
     interaction: discord.Interaction,
-    user: discord.User,
+    player: str,
 ) -> None:
     await interaction.response.defer()
     uid = interaction.user.id
@@ -55,9 +56,14 @@ async def party_invite_command(
         return
     inviter_name: str = inviter_player.get("player_name", interaction.user.name)
 
-    # Fetch invitee's player name.
+    # Resolve invitee by string.
     try:
-        async with get_session().get(f"{BACKEND_URL}/players/{user.id}") as resp:
+        async with get_session().get(f"{BACKEND_URL}/players/by_name/{player}") as resp:
+            if resp.status == 404:
+                await interaction.followup.send(
+                    f"No player found matching **{player}**."
+                )
+                return
             data = await resp.json()
     except Exception:
         await interaction.followup.send("Failed to reach the backend. Try again later.")
@@ -65,17 +71,21 @@ async def party_invite_command(
 
     invitee_player = data.get("player")
     if invitee_player is None:
-        await interaction.followup.send(
-            f"{user.mention} has not completed setup yet. They need to run `/setup` first."
-        )
+        await interaction.followup.send(f"No player found matching **{player}**.")
         return
-    invitee_name: str = invitee_player.get("player_name", user.name)
+
+    invitee_discord_uid: int = invitee_player["discord_uid"]
+    invitee_name: str = invitee_player["player_name"]
+
+    if invitee_discord_uid == uid:
+        await interaction.followup.send("You cannot invite yourself to a party.")
+        return
 
     # Send invite to backend.
     payload = {
         "inviter_discord_uid": uid,
         "inviter_player_name": inviter_name,
-        "invitee_discord_uid": user.id,
+        "invitee_discord_uid": invitee_discord_uid,
         "invitee_player_name": invitee_name,
     }
     try:
@@ -101,15 +111,16 @@ async def party_invite_command(
         color=discord.Color.blue(),
     )
     view = PartyInviteResponseView(
-        invitee_discord_uid=user.id,
+        invitee_discord_uid=invitee_discord_uid,
         inviter_name=inviter_name,
     )
 
     try:
-        await user.send(embed=embed, view=view)
+        invitee_user = await interaction.client.fetch_user(invitee_discord_uid)
+        await invitee_user.send(embed=embed, view=view)
     except discord.Forbidden:
         await interaction.followup.send(
-            f"Could not DM {user.mention}. They may have DMs disabled."
+            f"Could not DM **{invitee_name}**. They may have DMs disabled."
         )
         return
 

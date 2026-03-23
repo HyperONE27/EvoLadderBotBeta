@@ -125,11 +125,12 @@ def _race_display(race_code: str, locale: str = "enUS") -> str:
 
 
 def _get_map_game(map_name: str) -> str:
-    """Return 'bw' or 'sc2' for a map by looking it up in the map pool."""
-    maps = get_maps(game_mode="1v1", season=CURRENT_SEASON) or {}
-    map_data = maps.get(map_name)
-    if map_data:
-        return map_data.get("game", "sc2")
+    """Return 'bw' or 'sc2' for a map by looking it up in both map pools."""
+    for mode in ("1v1", "2v2"):
+        maps = get_maps(game_mode=mode, season=CURRENT_SEASON) or {}
+        map_data = maps.get(map_name)
+        if map_data:
+            return map_data.get("game", "sc2")
     return "sc2"
 
 
@@ -895,13 +896,19 @@ def _team_header_2v2(match_data: dict, team: str, locale: str = "enUS") -> str:
 
 
 class QueueSetupEmbed2v2(discord.Embed):
-    """Queue setup for 2v2: shows leader + partner race selections."""
+    """Queue setup for 2v2: shows all three composition selections."""
 
     def __init__(
         self,
-        leader_race: str | None,
-        member_race: str | None,
+        pure_bw_leader_race: str | None,
+        pure_bw_member_race: str | None,
+        mixed_leader_race: str | None,
+        mixed_member_race: str | None,
+        pure_sc2_leader_race: str | None,
+        pure_sc2_member_race: str | None,
         map_vetoes: list[str],
+        leader_player_name: str = "Leader",
+        member_player_name: str = "Member",
         locale: str = "enUS",
     ) -> None:
         super().__init__(
@@ -909,45 +916,53 @@ class QueueSetupEmbed2v2(discord.Embed):
             color=discord.Color.blurple(),
         )
 
-        leader_race_name = _race_display(leader_race, locale) if leader_race else "—"
-        member_race_name = _race_display(member_race, locale) if member_race else "—"
-
-        # Derive composition label
-        bw_codes = ["bw_terran", "bw_zerg", "bw_protoss"]
-        if leader_race and member_race:
-            if leader_race in bw_codes and member_race in bw_codes:
-                comp = "Pure BW"
-            elif leader_race not in bw_codes and member_race not in bw_codes:
-                comp = "Pure SC2"
-            else:
-                comp = "Mixed (BW + SC2)"
-        else:
-            comp = "—"
+        def _comp_value(leader_race: str | None, member_race: str | None) -> str:
+            if leader_race and member_race:
+                lr_emote = get_race_emote(leader_race)
+                mr_emote = get_race_emote(member_race)
+                return (
+                    f"- {leader_player_name}: {lr_emote} {_race_display(leader_race, locale)}\n"
+                    f"- {member_player_name}: {mr_emote} {_race_display(member_race, locale)}"
+                )
+            return "—"
 
         self.add_field(
-            name="Your race",
-            value=leader_race_name,
-            inline=True,
+            name="Pure BW",
+            value=_comp_value(pure_bw_leader_race, pure_bw_member_race),
+            inline=False,
         )
         self.add_field(
-            name="Partner's race",
-            value=member_race_name,
-            inline=True,
+            name="Mixed",
+            value=_comp_value(mixed_leader_race, mixed_member_race),
+            inline=False,
         )
         self.add_field(
-            name="Composition",
-            value=comp,
-            inline=True,
+            name="Pure SC2",
+            value=_comp_value(pure_sc2_leader_race, pure_sc2_member_race),
+            inline=False,
         )
 
+        veto_count = len(map_vetoes)
         if map_vetoes:
-            self.add_field(
-                name=f"Map vetoes ({len(map_vetoes)})",
-                value=", ".join(map_vetoes),
-                inline=False,
-            )
+            sorted_vetoes = sorted(map_vetoes)
+            veto_lines: list[str] = []
+            for i, map_name in enumerate(sorted_vetoes):
+                game = _get_map_game(map_name)
+                game_emote = get_game_emote(game)
+                veto_lines.append(f"{_NUMBER_EMOTES[i]} {game_emote} {map_name}")
+            veto_value = "\n".join(veto_lines)
         else:
-            self.add_field(name="Map vetoes", value="None", inline=False)
+            veto_value = t("queue_setup_embed.veto_value_none.1", locale)
+        self.add_field(
+            name=t(
+                "queue_setup_embed.field_name.3",
+                locale,
+                veto_count=str(veto_count),
+                max_map_vetoes=str(MAX_MAP_VETOES),
+            ),
+            value=veto_value,
+            inline=False,
+        )
 
         apply_default_embed_footer(self, locale=locale)
 
@@ -1758,15 +1773,17 @@ class SetCountryConfirmEmbed(discord.Embed):
 
 
 class BanPreviewEmbed(discord.Embed):
-    def __init__(self, target: discord.User, locale: str = "enUS") -> None:
+    def __init__(
+        self, target_discord_uid: int, target_player_name: str, locale: str = "enUS"
+    ) -> None:
         super().__init__(
             title=t("ban_preview_embed.title.1", locale),
             description=t(
                 "ban_preview_embed.description.1",
                 locale,
-                mention=target.mention,
-                username=target.name,
-                uid=str(target.id),
+                mention=f"<@{target_discord_uid}>",
+                username=target_player_name,
+                uid=str(target_discord_uid),
             ),
             color=discord.Color.orange(),
         )
@@ -1776,7 +1793,11 @@ class BanPreviewEmbed(discord.Embed):
 
 class BanSuccessEmbed(discord.Embed):
     def __init__(
-        self, target: discord.User, new_is_banned: bool, locale: str = "enUS"
+        self,
+        target_discord_uid: int,
+        target_player_name: str,
+        new_is_banned: bool,
+        locale: str = "enUS",
     ) -> None:
         title_key = (
             "ban_success_embed.title_banned.1"
@@ -1794,9 +1815,9 @@ class BanSuccessEmbed(discord.Embed):
             description=t(
                 "ban_success_embed.description.1",
                 locale,
-                mention=target.mention,
-                username=target.name,
-                uid=str(target.id),
+                mention=f"<@{target_discord_uid}>",
+                username=target_player_name,
+                uid=str(target_discord_uid),
                 status=t(status_key, locale),
             ),
             color=color,
@@ -2602,15 +2623,17 @@ class AdminResolutionEmbed(discord.Embed):
 
 
 class StatusResetPreviewEmbed(discord.Embed):
-    def __init__(self, target: discord.User, locale: str = "enUS") -> None:
+    def __init__(
+        self, target_discord_uid: int, target_player_name: str, locale: str = "enUS"
+    ) -> None:
         super().__init__(
             title=t("status_reset_preview_embed.title.1", locale),
             description=t(
                 "status_reset_preview_embed.description.1",
                 locale,
-                mention=target.mention,
-                username=target.name,
-                uid=str(target.id),
+                mention=f"<@{target_discord_uid}>",
+                username=target_player_name,
+                uid=str(target_discord_uid),
             ),
             color=discord.Color.orange(),
         )
@@ -2621,7 +2644,8 @@ class StatusResetPreviewEmbed(discord.Embed):
 class StatusResetSuccessEmbed(discord.Embed):
     def __init__(
         self,
-        target: discord.User,
+        target_discord_uid: int,
+        target_player_name: str,
         old_status: str | None,
         admin: discord.User | discord.Member,
         locale: str = "enUS",
@@ -2631,9 +2655,9 @@ class StatusResetSuccessEmbed(discord.Embed):
             description=t(
                 "status_reset_success_embed.description.1",
                 locale,
-                mention=target.mention,
-                username=target.name,
-                uid=str(target.id),
+                mention=f"<@{target_discord_uid}>",
+                username=target_player_name,
+                uid=str(target_discord_uid),
                 old_status=(
                     t(f"player_status.{old_status}", locale)
                     if old_status
@@ -2657,15 +2681,17 @@ class StatusResetSuccessEmbed(discord.Embed):
 
 
 class ToggleAdminPreviewEmbed(discord.Embed):
-    def __init__(self, target: discord.User, locale: str = "enUS") -> None:
+    def __init__(
+        self, target_discord_uid: int, target_player_name: str, locale: str = "enUS"
+    ) -> None:
         super().__init__(
             title=t("toggle_admin_preview_embed.title.1", locale),
             description=t(
                 "toggle_admin_preview_embed.description.1",
                 locale,
-                mention=target.mention,
-                username=target.name,
-                uid=str(target.id),
+                mention=f"<@{target_discord_uid}>",
+                username=target_player_name,
+                uid=str(target_discord_uid),
             ),
             color=discord.Color.orange(),
         )
@@ -2675,7 +2701,12 @@ class ToggleAdminPreviewEmbed(discord.Embed):
 
 class ToggleAdminSuccessEmbed(discord.Embed):
     def __init__(
-        self, target: discord.User, action: str, new_role: str, locale: str = "enUS"
+        self,
+        target_discord_uid: int,
+        target_player_name: str,
+        action: str,
+        new_role: str,
+        locale: str = "enUS",
     ) -> None:
         if action == "promoted":
             title_key = "toggle_admin_success_embed.title_promoted.1"
@@ -2692,9 +2723,9 @@ class ToggleAdminSuccessEmbed(discord.Embed):
             description=t(
                 "toggle_admin_success_embed.description.1",
                 locale,
-                mention=target.mention,
-                username=target.name,
-                uid=str(target.id),
+                mention=f"<@{target_discord_uid}>",
+                username=target_player_name,
+                uid=str(target_discord_uid),
                 action=t(f"toggle_admin_success_embed.action.{action}", locale),
                 new_role=new_role,
             ),
@@ -2711,7 +2742,12 @@ class ToggleAdminSuccessEmbed(discord.Embed):
 
 class SetMMRPreviewEmbed(discord.Embed):
     def __init__(
-        self, target: discord.User, race: str, new_mmr: int, locale: str = "enUS"
+        self,
+        target_discord_uid: int,
+        target_player_name: str,
+        race: str,
+        new_mmr: int,
+        locale: str = "enUS",
     ) -> None:
         try:
             race_emote = get_race_emote(race)
@@ -2723,9 +2759,9 @@ class SetMMRPreviewEmbed(discord.Embed):
             description=t(
                 "set_mmr_preview_embed.description.1",
                 locale,
-                mention=target.mention,
-                username=target.name,
-                uid=str(target.id),
+                mention=f"<@{target_discord_uid}>",
+                username=target_player_name,
+                uid=str(target_discord_uid),
                 race_emote=str(race_emote),
                 race=_race_display(race, locale),
                 new_mmr=str(new_mmr),
@@ -2739,7 +2775,8 @@ class SetMMRPreviewEmbed(discord.Embed):
 class SetMMRSuccessEmbed(discord.Embed):
     def __init__(
         self,
-        target: discord.User,
+        target_discord_uid: int,
+        target_player_name: str,
         race: str,
         old_mmr: int | None,
         new_mmr: int,
@@ -2757,9 +2794,9 @@ class SetMMRSuccessEmbed(discord.Embed):
             description=t(
                 "set_mmr_success_embed.description.1",
                 locale,
-                mention=target.mention,
-                username=target.name,
-                uid=str(target.id),
+                mention=f"<@{target_discord_uid}>",
+                username=target_player_name,
+                uid=str(target_discord_uid),
                 race_emote=str(race_emote),
                 race=_race_display(race, locale),
                 old_mmr=old_str,

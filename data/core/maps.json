@@ -106,13 +106,86 @@
     },
     "2v2": {
         "season_alpha": {
-            "": {
-                "short_name": "",
-                "name": "",
+            "Jacob's Summit": {
+                "short_name": "Jacob's Summit",
+                "name": "Jacob's Summit",
                 "author": "",
                 "am_link": "",
                 "eu_link": "",
-                "as_link": ""
+                "as_link": "",
+                "game": "sc2"
+            },
+            "Memecatcher": {
+                "short_name": "Memecatcher",
+                "name": "Memecatcher",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+                "as_link": "",
+                "game": "sc2"
+            },
+            "New Bed of Chaos": {
+                "short_name": "New Bed of Chaos",
+                "name": "New Bed of Chaos",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+                "as_link": "",
+                "game": "sc2"
+            },
+            "Reclamation": {
+                "short_name": "Reclamation",
+                "name": "Reclamation",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+                "as_link": "",
+                "game": "sc2"
+            },
+            "Rohana": {
+                "short_name": "Rohana",
+                "name": "Rohana",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+                "as_link": "",
+                "game": "sc2"
+            },
+            "Rust Bucket": {
+                "short_name": "Rust Bucket",
+                "name": "Rust Bucket",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+                "as_link": "",
+                "game": "sc2"
+            },
+            "Team Biodome": {
+                "short_name": "Team Biodome",
+                "name": "Team Biodome",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+                "as_link": "",
+                "game": "sc2"
+            },
+            "Undercurrent": {
+                "short_name": "Undercurrent",
+                "name": "Undercurrent",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+                "as_link": "",
+                "game": "sc2"
+            },
+            "Yellowjacket": {
+                "short_name": "Yellowjacket",
+                "name": "Yellowjacket",
+                "author": "",
+                "am_link": "",
+                "eu_link": "",
+                "as_link": "",
+                "game": "sc2"
             }
         },
         "season_beta": {

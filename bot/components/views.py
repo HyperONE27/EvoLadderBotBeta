@@ -1086,7 +1086,9 @@ async def _send_setcountry_request(
 
 
 class BanConfirmView(discord.ui.View):
-    def __init__(self, caller_id: int, target: discord.User) -> None:
+    def __init__(
+        self, caller_id: int, target_discord_uid: int, target_player_name: str
+    ) -> None:
         super().__init__()
 
         async def on_confirm(interaction: discord.Interaction) -> None:
@@ -1096,7 +1098,7 @@ class BanConfirmView(discord.ui.View):
                     ephemeral=True,
                 )
                 return
-            await _send_ban_request(interaction, target)
+            await _send_ban_request(interaction, target_discord_uid, target_player_name)
 
         _locale = get_player_locale(caller_id)
         self.add_item(
@@ -1107,11 +1109,15 @@ class BanConfirmView(discord.ui.View):
 
 async def _send_ban_request(
     interaction: discord.Interaction,
-    target: discord.User,
+    target_discord_uid: int,
+    target_player_name: str,
 ) -> None:
     async with get_session().put(
         f"{BACKEND_URL}/admin/ban",
-        json={"discord_uid": target.id, "admin_discord_uid": interaction.user.id},
+        json={
+            "discord_uid": target_discord_uid,
+            "admin_discord_uid": interaction.user.id,
+        },
     ) as response:
         data = await response.json()
 
@@ -1130,11 +1136,14 @@ async def _send_ban_request(
     new_is_banned: bool = data["new_is_banned"]
     logger.info(
         f"Admin {interaction.user.name} ({interaction.user.id}) toggled ban for "
-        f"{target.name} ({target.id}): is_banned={new_is_banned}"
+        f"{target_player_name} ({target_discord_uid}): is_banned={new_is_banned}"
     )
     await interaction.response.edit_message(
         embed=BanSuccessEmbed(
-            target, new_is_banned, locale=get_player_locale(interaction.user.id)
+            target_discord_uid,
+            target_player_name,
+            new_is_banned,
+            locale=get_player_locale(interaction.user.id),
         ),
         view=None,
     )
@@ -1277,7 +1286,9 @@ async def _send_to_match_log(
 
 
 class StatusResetConfirmView(discord.ui.View):
-    def __init__(self, caller_id: int, target: discord.User) -> None:
+    def __init__(
+        self, caller_id: int, target_discord_uid: int, target_player_name: str
+    ) -> None:
         super().__init__()
 
         async def on_confirm(interaction: discord.Interaction) -> None:
@@ -1287,7 +1298,9 @@ class StatusResetConfirmView(discord.ui.View):
                     ephemeral=True,
                 )
                 return
-            await _send_statusreset_request(interaction, target)
+            await _send_statusreset_request(
+                interaction, target_discord_uid, target_player_name
+            )
 
         _locale = get_player_locale(caller_id)
         self.add_item(
@@ -1298,11 +1311,15 @@ class StatusResetConfirmView(discord.ui.View):
 
 async def _send_statusreset_request(
     interaction: discord.Interaction,
-    target: discord.User,
+    target_discord_uid: int,
+    target_player_name: str,
 ) -> None:
     async with get_session().put(
         f"{BACKEND_URL}/admin/statusreset",
-        json={"discord_uid": target.id, "admin_discord_uid": interaction.user.id},
+        json={
+            "discord_uid": target_discord_uid,
+            "admin_discord_uid": interaction.user.id,
+        },
     ) as response:
         data = await response.json()
 
@@ -1324,12 +1341,13 @@ async def _send_statusreset_request(
     old_status = data.get("old_status")
     logger.info(
         f"Admin {interaction.user.name} ({interaction.user.id}) reset status for "
-        f"{target.name} ({target.id}): {old_status} -> idle"
+        f"{target_player_name} ({target_discord_uid}): {old_status} -> idle"
     )
 
     await interaction.response.edit_message(
         embed=StatusResetSuccessEmbed(
-            target,
+            target_discord_uid,
+            target_player_name,
             old_status,
             interaction.user,
             locale=get_player_locale(interaction.user.id),
@@ -1344,7 +1362,13 @@ async def _send_statusreset_request(
 
 
 class ToggleAdminConfirmView(discord.ui.View):
-    def __init__(self, caller_id: int, target: discord.User) -> None:
+    def __init__(
+        self,
+        caller_id: int,
+        target_discord_uid: int,
+        target_player_name: str,
+        target_discord_username: str,
+    ) -> None:
         super().__init__()
 
         async def on_confirm(interaction: discord.Interaction) -> None:
@@ -1354,7 +1378,12 @@ class ToggleAdminConfirmView(discord.ui.View):
                     ephemeral=True,
                 )
                 return
-            await _send_toggle_admin_request(interaction, target)
+            await _send_toggle_admin_request(
+                interaction,
+                target_discord_uid,
+                target_player_name,
+                target_discord_username,
+            )
 
         _locale = get_player_locale(caller_id)
         self.add_item(
@@ -1365,13 +1394,15 @@ class ToggleAdminConfirmView(discord.ui.View):
 
 async def _send_toggle_admin_request(
     interaction: discord.Interaction,
-    target: discord.User,
+    target_discord_uid: int,
+    target_player_name: str,
+    target_discord_username: str,
 ) -> None:
     async with get_session().put(
         f"{BACKEND_URL}/owner/admin",
         json={
-            "discord_uid": target.id,
-            "discord_username": target.name,
+            "discord_uid": target_discord_uid,
+            "discord_username": target_discord_username,
             "owner_discord_uid": interaction.user.id,
         },
     ) as response:
@@ -1395,12 +1426,16 @@ async def _send_toggle_admin_request(
 
     logger.info(
         f"Owner {interaction.user.name} ({interaction.user.id}) toggled admin for "
-        f"{target.name} ({target.id}): action={action}, new_role={new_role}"
+        f"{target_player_name} ({target_discord_uid}): action={action}, new_role={new_role}"
     )
 
     await interaction.response.edit_message(
         embed=ToggleAdminSuccessEmbed(
-            target, action, new_role, locale=get_player_locale(interaction.user.id)
+            target_discord_uid,
+            target_player_name,
+            action,
+            new_role,
+            locale=get_player_locale(interaction.user.id),
         ),
         view=None,
     )
@@ -1415,7 +1450,8 @@ class SetMMRConfirmView(discord.ui.View):
     def __init__(
         self,
         caller_id: int,
-        target: discord.User,
+        target_discord_uid: int,
+        target_player_name: str,
         race: str,
         new_mmr: int,
     ) -> None:
@@ -1428,7 +1464,9 @@ class SetMMRConfirmView(discord.ui.View):
                     ephemeral=True,
                 )
                 return
-            await _send_set_mmr_request(interaction, target, race, new_mmr)
+            await _send_set_mmr_request(
+                interaction, target_discord_uid, target_player_name, race, new_mmr
+            )
 
         _locale = get_player_locale(caller_id)
         self.add_item(
@@ -1439,14 +1477,15 @@ class SetMMRConfirmView(discord.ui.View):
 
 async def _send_set_mmr_request(
     interaction: discord.Interaction,
-    target: discord.User,
+    target_discord_uid: int,
+    target_player_name: str,
     race: str,
     new_mmr: int,
 ) -> None:
     async with get_session().put(
         f"{BACKEND_URL}/owner/mmr",
         json={
-            "discord_uid": target.id,
+            "discord_uid": target_discord_uid,
             "race": race,
             "new_mmr": new_mmr,
             "owner_discord_uid": interaction.user.id,
@@ -1470,12 +1509,13 @@ async def _send_set_mmr_request(
 
     logger.info(
         f"Owner {interaction.user.name} ({interaction.user.id}) set MMR for "
-        f"{target.name} ({target.id}): race={race}, {old_mmr} -> {new_mmr}"
+        f"{target_player_name} ({target_discord_uid}): race={race}, {old_mmr} -> {new_mmr}"
     )
 
     await interaction.response.edit_message(
         embed=SetMMRSuccessEmbed(
-            target,
+            target_discord_uid,
+            target_player_name,
             race,
             old_mmr,
             new_mmr,
@@ -2309,44 +2349,100 @@ async def _abort_match(interaction: discord.Interaction, match_id: int) -> None:
 # =========================================================================
 
 
-class AllRaceSelect(discord.ui.Select):
-    """Select for all BW + SC2 races (used by the 2v2 setup view)."""
+class CompSelect2v2(discord.ui.Select):
+    """Select for a 2v2 composition slot.
+
+    Each race in *race_codes* appears twice (suffixed ``_1`` / ``_2``) so
+    both players can pick the same race.  ``max_values=2``: the first
+    selection is the leader's race, the second is the partner's.
+    """
 
     def __init__(
         self,
-        role: str,
-        selected: str | None = None,
+        comp: str,
+        race_codes: list[str],
+        selected_leader: str | None = None,
+        selected_member: str | None = None,
         locale: str = "enUS",
         row: int = 1,
     ) -> None:
-        self._role = role  # "leader" or "member"
+        self._comp = comp  # "pure_bw", "mixed", or "pure_sc2"
+        # Pure comps need duplicate options (_1/_2 suffixes) so both players
+        # can pick the same race (e.g. BW Terran mirror).  Mixed comp has
+        # 6 unique races (one per BW/SC2 T/Z/P) — no duplicates needed.
+        needs_duplicates = comp != "mixed"
         races = get_races()
         options: list[discord.SelectOption] = []
-        for code in get_bw_race_codes() + get_sc2_race_codes():
-            if code in races:
+        for code in race_codes:
+            if code not in races:
+                continue
+            label = t(f"race.{code}.name", locale)
+            emoji = get_race_emote(code)
+            if needs_duplicates:
+                for suffix in ("_1", "_2"):
+                    value = f"{code}{suffix}"
+                    is_default = (code == selected_leader and suffix == "_1") or (
+                        code == selected_member and suffix == "_2"
+                    )
+                    options.append(
+                        discord.SelectOption(
+                            label=label,
+                            value=value,
+                            emoji=emoji,
+                            default=is_default,
+                        )
+                    )
+            else:
+                is_default = code == selected_leader or code == selected_member
                 options.append(
                     discord.SelectOption(
-                        label=t(f"race.{code}.name", locale),
+                        label=label,
                         value=code,
-                        emoji=get_race_emote(code),
-                        default=(code == selected),
+                        emoji=emoji,
+                        default=is_default,
                     )
                 )
-        placeholder = "Your race" if role == "leader" else "Partner's race"
+        placeholders = {
+            "pure_bw": "Pure BW — your race, then partner's",
+            "mixed": "Mixed — your race, then partner's",
+            "pure_sc2": "Pure SC2 — your race, then partner's",
+        }
         super().__init__(
-            placeholder=placeholder,
+            placeholder=placeholders.get(comp, "Select races"),
             min_values=0,
-            max_values=1,
+            max_values=2,
             options=options,
             row=row,
         )
 
+    @staticmethod
+    def strip_suffix(value: str) -> str:
+        """Remove the ``_1`` / ``_2`` uniqueness suffix."""
+        if value.endswith(("_1", "_2")):
+            return value[:-2]
+        return value
+
     async def callback(self, interaction: discord.Interaction) -> None:
         view: QueueSetupView2v2 = self.view  # type: ignore[assignment]
-        if self._role == "leader":
-            view.leader_race = self.values[0] if self.values else None
+        if len(self.values) == 2:
+            leader = self.strip_suffix(self.values[0])
+            member = self.strip_suffix(self.values[1])
+        elif len(self.values) == 1:
+            leader = self.strip_suffix(self.values[0])
+            member = None
         else:
-            view.member_race = self.values[0] if self.values else None
+            leader = None
+            member = None
+
+        if self._comp == "pure_bw":
+            view.pure_bw_leader_race = leader
+            view.pure_bw_member_race = member
+        elif self._comp == "mixed":
+            view.mixed_leader_race = leader
+            view.mixed_member_race = member
+        else:
+            view.pure_sc2_leader_race = leader
+            view.pure_sc2_member_race = member
         await view.persist_and_refresh(interaction)
 
 
@@ -2377,7 +2473,7 @@ class MapVetoSelect2v2(discord.ui.Select):
             min_values=0,
             max_values=min(MAX_MAP_VETOES, len(options)),
             options=options,
-            row=3,
+            row=4,
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -2416,15 +2512,27 @@ class QueueSetupView2v2(discord.ui.View):
     def __init__(
         self,
         discord_user_id: int,
-        leader_race: str | None = None,
-        member_race: str | None = None,
+        pure_bw_leader_race: str | None = None,
+        pure_bw_member_race: str | None = None,
+        mixed_leader_race: str | None = None,
+        mixed_member_race: str | None = None,
+        pure_sc2_leader_race: str | None = None,
+        pure_sc2_member_race: str | None = None,
         map_vetoes: list[str] | None = None,
+        leader_player_name: str = "Leader",
+        member_player_name: str = "Member",
     ) -> None:
         super().__init__(timeout=300)
         self.discord_user_id = discord_user_id
-        self.leader_race = leader_race
-        self.member_race = member_race
+        self.pure_bw_leader_race = pure_bw_leader_race
+        self.pure_bw_member_race = pure_bw_member_race
+        self.mixed_leader_race = mixed_leader_race
+        self.mixed_member_race = mixed_member_race
+        self.pure_sc2_leader_race = pure_sc2_leader_race
+        self.pure_sc2_member_race = pure_sc2_member_race
         self.map_vetoes = map_vetoes or []
+        self.leader_player_name = leader_player_name
+        self.member_player_name = member_player_name
         self._build()
 
     def _build(self) -> None:
@@ -2436,8 +2544,12 @@ class QueueSetupView2v2(discord.ui.View):
             await _join_queue_2v2(
                 interaction,
                 self.discord_user_id,
-                self.leader_race,
-                self.member_race,
+                self.pure_bw_leader_race,
+                self.pure_bw_member_race,
+                self.mixed_leader_race,
+                self.mixed_member_race,
+                self.pure_sc2_leader_race,
+                self.pure_sc2_member_race,
                 self.map_vetoes,
             )
 
@@ -2451,8 +2563,12 @@ class QueueSetupView2v2(discord.ui.View):
         self.add_item(join_btn)
 
         async def on_clear(interaction: discord.Interaction) -> None:
-            self.leader_race = None
-            self.member_race = None
+            self.pure_bw_leader_race = None
+            self.pure_bw_member_race = None
+            self.mixed_leader_race = None
+            self.mixed_member_race = None
+            self.pure_sc2_leader_race = None
+            self.pure_sc2_member_race = None
             self.map_vetoes = []
             await self.persist_and_refresh(interaction)
 
@@ -2478,52 +2594,58 @@ class QueueSetupView2v2(discord.ui.View):
         cancel_btn.callback = on_cancel  # type: ignore[method-assign]
         self.add_item(cancel_btn)
 
-        self.add_item(AllRaceSelect("leader", self.leader_race, locale=_locale, row=1))
-        self.add_item(AllRaceSelect("member", self.member_race, locale=_locale, row=2))
+        bw_codes = get_bw_race_codes()
+        sc2_codes = get_sc2_race_codes()
+
+        # Row 1: Pure BW composition
+        self.add_item(
+            CompSelect2v2(
+                "pure_bw",
+                bw_codes,
+                self.pure_bw_leader_race,
+                self.pure_bw_member_race,
+                locale=_locale,
+                row=1,
+            )
+        )
+        # Row 2: Mixed composition
+        self.add_item(
+            CompSelect2v2(
+                "mixed",
+                bw_codes + sc2_codes,
+                self.mixed_leader_race,
+                self.mixed_member_race,
+                locale=_locale,
+                row=2,
+            )
+        )
+        # Row 3: Pure SC2 composition
+        self.add_item(
+            CompSelect2v2(
+                "pure_sc2",
+                sc2_codes,
+                self.pure_sc2_leader_race,
+                self.pure_sc2_member_race,
+                locale=_locale,
+                row=3,
+            )
+        )
+        # Row 4: Map vetoes
         self.add_item(MapVetoSelect2v2(self.map_vetoes, locale=_locale))
 
     async def persist_and_refresh(self, interaction: discord.Interaction) -> None:
         """Save preferences to backend and refresh the embed."""
         try:
-            bw_codes = get_bw_race_codes()
-            leader = self.leader_race
-            member = self.member_race
-            # Derive which composition fields to store
-            pure_bw_leader = (
-                leader
-                if (leader and leader in bw_codes and member and member in bw_codes)
-                else None
-            )
-            pure_bw_member = member if pure_bw_leader else None
-            sc2_codes = get_sc2_race_codes()
-            pure_sc2_leader = (
-                leader
-                if (leader and leader in sc2_codes and member and member in sc2_codes)
-                else None
-            )
-            pure_sc2_member = member if pure_sc2_leader else None
-            mixed_leader = (
-                leader
-                if (
-                    leader
-                    and member
-                    and pure_bw_leader is None
-                    and pure_sc2_leader is None
-                )
-                else None
-            )
-            mixed_member = member if mixed_leader else None
-
             async with get_session().put(
                 f"{BACKEND_URL}/preferences_2v2",
                 json={
                     "discord_uid": self.discord_user_id,
-                    "last_pure_bw_leader_race": pure_bw_leader,
-                    "last_pure_bw_member_race": pure_bw_member,
-                    "last_mixed_leader_race": mixed_leader,
-                    "last_mixed_member_race": mixed_member,
-                    "last_pure_sc2_leader_race": pure_sc2_leader,
-                    "last_pure_sc2_member_race": pure_sc2_member,
+                    "last_pure_bw_leader_race": self.pure_bw_leader_race,
+                    "last_pure_bw_member_race": self.pure_bw_member_race,
+                    "last_mixed_leader_race": self.mixed_leader_race,
+                    "last_mixed_member_race": self.mixed_member_race,
+                    "last_pure_sc2_leader_race": self.pure_sc2_leader_race,
+                    "last_pure_sc2_member_race": self.pure_sc2_member_race,
                     "last_chosen_vetoes": sorted(self.map_vetoes),
                 },
             ) as resp:
@@ -2532,11 +2654,29 @@ class QueueSetupView2v2(discord.ui.View):
             logger.warning("Failed to persist 2v2 preferences", exc_info=True)
 
         new_view = QueueSetupView2v2(
-            self.discord_user_id, self.leader_race, self.member_race, self.map_vetoes
+            self.discord_user_id,
+            self.pure_bw_leader_race,
+            self.pure_bw_member_race,
+            self.mixed_leader_race,
+            self.mixed_member_race,
+            self.pure_sc2_leader_race,
+            self.pure_sc2_member_race,
+            self.map_vetoes,
+            leader_player_name=self.leader_player_name,
+            member_player_name=self.member_player_name,
         )
         locale = get_player_locale(self.discord_user_id)
         embed = QueueSetupEmbed2v2(
-            self.leader_race, self.member_race, self.map_vetoes, locale=locale
+            self.pure_bw_leader_race,
+            self.pure_bw_member_race,
+            self.mixed_leader_race,
+            self.mixed_member_race,
+            self.pure_sc2_leader_race,
+            self.pure_sc2_member_race,
+            self.map_vetoes,
+            leader_player_name=self.leader_player_name,
+            member_player_name=self.member_player_name,
+            locale=locale,
         )
         await interaction.response.edit_message(embed=embed, view=new_view)
 
@@ -2690,15 +2830,26 @@ async def _fetch_mmr_2v2(leader_uid: int, member_uid: int) -> int:
 async def _join_queue_2v2(
     interaction: discord.Interaction,
     discord_user_id: int,
-    leader_race: str | None,
-    member_race: str | None,
+    pure_bw_leader_race: str | None,
+    pure_bw_member_race: str | None,
+    mixed_leader_race: str | None,
+    mixed_member_race: str | None,
+    pure_sc2_leader_race: str | None,
+    pure_sc2_member_race: str | None,
     map_vetoes: list[str],
 ) -> None:
-    if leader_race is None or member_race is None:
+    # At least one comp must have both leader and member selected.
+    has_full_comp = (
+        (pure_bw_leader_race is not None and pure_bw_member_race is not None)
+        or (mixed_leader_race is not None and mixed_member_race is not None)
+        or (pure_sc2_leader_race is not None and pure_sc2_member_race is not None)
+    )
+    if not has_full_comp:
         _locale = get_player_locale(discord_user_id)
         await interaction.response.send_message(
             embed=QueueErrorEmbed(
-                "Select both your race and your partner's race before joining.",
+                "Select both your race and your partner's race "
+                "for at least one composition before joining.",
                 locale=_locale,
             ),
             ephemeral=True,
@@ -2707,34 +2858,18 @@ async def _join_queue_2v2(
 
     await interaction.response.defer()
 
-    bw_codes = get_bw_race_codes()
-    sc2_codes = get_sc2_race_codes()
-
-    pure_bw_leader = (
-        leader_race if (leader_race in bw_codes and member_race in bw_codes) else None
-    )
-    pure_bw_member = member_race if pure_bw_leader else None
-    pure_sc2_leader = (
-        leader_race if (leader_race in sc2_codes and member_race in sc2_codes) else None
-    )
-    pure_sc2_member = member_race if pure_sc2_leader else None
-    mixed_leader = (
-        leader_race if (pure_bw_leader is None and pure_sc2_leader is None) else None
-    )
-    mixed_member = member_race if mixed_leader else None
-
     try:
         async with get_session().post(
             f"{BACKEND_URL}/queue_2v2/join",
             json={
                 "discord_uid": discord_user_id,
                 "discord_username": interaction.user.name,
-                "pure_bw_leader_race": pure_bw_leader,
-                "pure_bw_member_race": pure_bw_member,
-                "mixed_leader_race": mixed_leader,
-                "mixed_member_race": mixed_member,
-                "pure_sc2_leader_race": pure_sc2_leader,
-                "pure_sc2_member_race": pure_sc2_member,
+                "pure_bw_leader_race": pure_bw_leader_race,
+                "pure_bw_member_race": pure_bw_member_race,
+                "mixed_leader_race": mixed_leader_race,
+                "mixed_member_race": mixed_member_race,
+                "pure_sc2_leader_race": pure_sc2_leader_race,
+                "pure_sc2_member_race": pure_sc2_member_race,
                 "map_vetoes": map_vetoes,
             },
         ) as resp:

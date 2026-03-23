@@ -126,11 +126,11 @@ New 2v2 embeds:
 - `MatchFoundView2v2` — Confirm + Abort buttons; calls `PUT /matches_2v2/{match_id}/confirm` or `abort`
 - `MatchReportView2v2` — report dropdown with `team_1_win`, `team_2_win`, `draw` options
 
-**Discord 5-row constraint:** 2v2 has up to 6 race fields (3 compositions × 2 roles). Fitting this into Discord's 5-row view limit is solved by using two "all races" selects (leader race + member race) rather than separate BW/SC2 selects per composition. The composition type (pure BW / pure SC2 / mixed) is derived automatically from the selected races. Only one composition is declared per queue session in this V1 UI.
+**Discord 5-row constraint:** Row 0 has action buttons. Rows 1–3 have the three composition selects (Pure BW, Mixed, Pure SC2). Row 4 has map vetoes. Pure BW and Pure SC2 selects use duplicate options (\_1/\_2 suffixes) so both players can pick the same race for mirror matchups. The mixed select has 6 unique options (one per race). Selection order determines role: first pick = leader, second pick = member.
 
 ### Commands
 
-- `/queue2v2` (`bot/commands/user/queue_2v2_command.py`) — loads saved preferences from `GET /preferences_2v2/{discord_uid}`, restores the last-used composition, shows `QueueSetupEmbed2v2` + `QueueSetupView2v2`
+- `/queue game_mode:2v2` (`bot/commands/user/queue_command.py`) — verifies party membership via `GET /party_2v2/{uid}`, loads saved preferences from `GET /preferences_2v2/{discord_uid}`, restores the last-used composition, shows `QueueSetupEmbed2v2` + `QueueSetupView2v2`
 - `/party invite {user}` — sends invite to backend, DMs the invitee
 - `/party leave` — removes the caller from their party
 - `/party status` — shows current party state

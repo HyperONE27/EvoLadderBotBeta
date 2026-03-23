@@ -26,6 +26,7 @@ from backend.lookups.mmr_1v1_lookups import (
 from backend.lookups.notification_lookups import get_notification_by_discord_uid
 from backend.lookups.player_lookups import (
     get_player_by_discord_uid,
+    get_player_by_string,
     is_player_name_taken,
 )
 from backend.lookups.preferences_1v1_lookups import get_preferences_1v1_by_discord_uid
@@ -53,6 +54,10 @@ class StateReader:
     def get_player(self, discord_uid: int) -> PlayersRow | None:
         """Get a player by their Discord UID."""
         return get_player_by_discord_uid(discord_uid)
+
+    def get_player_by_string(self, s: str) -> PlayersRow | None:
+        """Resolve an arbitrary string to a player row (UID, player_name, or discord_username)."""
+        return get_player_by_string(s)
 
     def is_player_name_available(
         self, player_name: str, exclude_discord_uid: int | None = None

@@ -73,6 +73,10 @@ class Orchestrator:
         """Get a player by their Discord UID."""
         return self._state_reader.get_player(discord_uid)
 
+    def get_player_by_string(self, s: str) -> PlayersRow | None:
+        """Resolve an arbitrary string to a player row (UID, player_name, or discord_username)."""
+        return self._state_reader.get_player_by_string(s)
+
     def is_player_name_available(
         self, player_name: str, exclude_discord_uid: int | None = None
     ) -> bool:
