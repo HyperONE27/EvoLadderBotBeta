@@ -2091,10 +2091,17 @@ class QueueSnapshotEmbed2v2(discord.Embed):
     def __init__(self, queue: list[dict], locale: str = "enUS") -> None:
         queue_size = len(queue)
         super().__init__(
-            title="2v2 Queue Snapshot",
+            title=t("queue_snapshot_embed_2v2.title.1", locale),
             color=discord.Color.green(),
         )
-        description = f"**Teams in queue:** {queue_size}\n"
+        description = (
+            t(
+                "queue_snapshot_embed_2v2.teams_in_queue.1",
+                locale,
+                count=str(queue_size),
+            )
+            + "\n"
+        )
         for i, entry in enumerate(queue[:15]):
             leader = entry.get("player_name", "?")
             member = entry.get("party_member_name", "?")
@@ -2111,7 +2118,11 @@ class QueueSnapshotEmbed2v2(discord.Embed):
                 f"`{i + 1:>2}` **{leader}** & **{member}** ({mmr}) [{comp_str}]\n"
             )
         if queue_size > 15:
-            description += f"\n_...and {queue_size - 15} more_"
+            description += t(
+                "queue_snapshot_embed_2v2.and_more.1",
+                locale,
+                count=str(queue_size - 15),
+            )
         self.description = description
         apply_default_embed_footer(self, locale=locale)
 
@@ -2122,10 +2133,13 @@ class MatchesEmbed2v2(discord.Embed):
     def __init__(self, active_matches: list[dict], locale: str = "enUS") -> None:
         match_count = len(active_matches)
         super().__init__(
-            title="2v2 Active Matches",
+            title=t("matches_embed_2v2.title.1", locale),
             color=discord.Color.orange(),
         )
-        description = f"**Active matches:** {match_count}\n"
+        description = (
+            t("matches_embed_2v2.active_matches.1", locale, count=str(match_count))
+            + "\n"
+        )
         for m in active_matches[:10]:
             mid = m.get("id", "?")
             t1p1 = m.get("team_1_player_1_name", "?")
@@ -2139,7 +2153,9 @@ class MatchesEmbed2v2(discord.Embed):
                 f"vs **{t2p1}** & **{t2p2}** ({t2_mmr})\n"
             )
         if match_count > 10:
-            description += f"\n_...and {match_count - 10} more_"
+            description += t(
+                "parties_embed.and_more.1", locale, count=str(match_count - 10)
+            )
         self.description = description
         apply_default_embed_footer(self, locale=locale)
 
@@ -2150,16 +2166,28 @@ class PartiesEmbed(discord.Embed):
     def __init__(self, parties: list[dict], locale: str = "enUS") -> None:
         party_count = len(parties)
         super().__init__(
-            title="2v2 Parties",
+            title=t("parties_embed.title.1", locale),
             color=discord.Color.purple(),
         )
-        description = f"**Active parties:** {party_count}\n"
+        description = (
+            t("parties_embed.active_parties.1", locale, count=str(party_count)) + "\n"
+        )
         for p in parties[:20]:
             leader = p.get("leader_name", "?")
             member = p.get("member_name", "?")
-            description += f"- **{leader}** & **{member}**\n"
+            description += (
+                t(
+                    "parties_embed.roster_line.1",
+                    locale,
+                    leader=leader,
+                    member=member,
+                )
+                + "\n"
+            )
         if party_count > 20:
-            description += f"\n_...and {party_count - 20} more_"
+            description += t(
+                "parties_embed.and_more.1", locale, count=str(party_count - 20)
+            )
         self.description = description
         apply_default_embed_footer(self, locale=locale)
 

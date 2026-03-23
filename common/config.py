@@ -27,7 +27,6 @@ IN_GAME_CHANNEL: str = "SCEvoLadder"
 GAME_MODES: list[tuple[str, str]] = [
     ("1v1", "1v1"),
     ("2v2", "2v2"),
-    ("FFA", "ffa"),
 ]
 
 MAX_MAP_VETOES: int = 4

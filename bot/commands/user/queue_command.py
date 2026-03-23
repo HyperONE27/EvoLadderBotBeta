@@ -50,13 +50,42 @@ def register_queue_command(tree: app_commands.CommandTree) -> None:
         )
         await interaction.response.defer()
 
-        if mode == "2v2":
+        if mode == "1v1":
+            await _queue_1v1(interaction)
+        elif mode == "2v2":
             await _queue_2v2(interaction)
         else:
-            await _queue_1v1(interaction)
+            locale = get_player_locale(interaction.user.id)
+            await interaction.followup.send(
+                embed=ErrorEmbed(
+                    title=t("error_embed.title.generic", locale),
+                    description=t("error.unexpected_error", locale),
+                    locale=locale,
+                )
+            )
 
 
 async def _queue_1v1(interaction: discord.Interaction) -> None:
+    uid = interaction.user.id
+    locale = get_player_locale(uid)
+
+    # Gate: player must NOT be in a party.
+    try:
+        async with get_session().get(f"{BACKEND_URL}/party_2v2/{uid}") as resp:
+            party_data = await resp.json()
+    except Exception:
+        party_data = {}
+
+    if party_data.get("in_party"):
+        await interaction.followup.send(
+            embed=ErrorEmbed(
+                title=t("error_embed.title.generic", locale),
+                description=t("error.queue_in_party", locale),
+                locale=locale,
+            )
+        )
+        return
+
     bw_race: str | None = None
     sc2_race: str | None = None
     map_vetoes: list[str] = []

@@ -49,7 +49,7 @@ def create_party_invite(
         # (re-inviting after previous member left).
         party = self._state_manager.parties_2v2.get(inviter_discord_uid)
         if party is not None:
-            return False, "You are already in a party. Leave first to form a new one."
+            return False, "You cannot invite other users while in a party."
         # inviter has in_party status but no party entry — stale status, reset
         self._set_player_status(
             inviter_discord_uid, "idle", match_mode=None, match_id=None
