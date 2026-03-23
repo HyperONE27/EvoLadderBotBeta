@@ -12,7 +12,7 @@ from backend.domain_types.dataframes import (
     Preferences2v2Row,
     Replays1v1Row,
 )
-from backend.domain_types.ephemeral import QueueEntry1v1
+from backend.domain_types.ephemeral import PartyEntry2v2, QueueEntry1v1, QueueEntry2v2
 
 
 class GreetingResponse(BaseModel):
@@ -111,6 +111,13 @@ class AdminSnapshotResponse(BaseModel):
     dataframe_stats: dict
 
 
+class AdminSnapshot2v2Response(BaseModel):
+    queue: list[QueueEntry2v2]
+    active_matches: list[Matches2v2Row]
+    parties: list[PartyEntry2v2]
+    dataframe_stats: dict
+
+
 # --- /admin match ---
 
 
@@ -122,6 +129,15 @@ class AdminMatchResponse(BaseModel):
     replays: list[Replays1v1Row]
     verification: list[dict | None]
     replay_urls: list[str | None]
+
+
+class AdminMatch2v2Response(BaseModel):
+    match: Matches2v2Row | None
+    team_1_player_1: PlayersRow | None
+    team_1_player_2: PlayersRow | None
+    team_2_player_1: PlayersRow | None
+    team_2_player_2: PlayersRow | None
+    admin: AdminsRow | None
 
 
 # --- /owner admin ---
@@ -402,6 +418,17 @@ class QueueStatsResponse(BaseModel):
     bw_only: int
     sc2_only: int
     both: int
+
+
+class Queue2v2StatsResponse(BaseModel):
+    total: int
+    bw_only: int
+    mixed_only: int
+    sc2_only: int
+    bw_mixed: int
+    bw_sc2: int
+    mixed_sc2: int
+    all_three: int
 
 
 # --- /analytics/queue_joins ---

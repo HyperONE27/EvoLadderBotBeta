@@ -2,8 +2,8 @@ import structlog
 import discord
 from discord import app_commands
 
-from bot.components.embeds import ResolvePreviewEmbed, UnsupportedGameModeEmbed
-from bot.components.views import ResolveConfirmView
+from bot.components.embeds import ResolvePreviewEmbed
+from bot.components.views import ResolveConfirmView, ResolveConfirmView2v2
 from bot.core.config import GAME_MODE_CHOICES
 from bot.core.dependencies import get_player_locale
 from bot.helpers.checks import check_if_admin
@@ -11,9 +11,26 @@ from common.i18n import t
 
 logger = structlog.get_logger(__name__)
 
-RESULT_CHOICES = [
+RESULT_CHOICES_1V1 = [
     app_commands.Choice(name="Player 1 Wins", value="player_1_win"),
     app_commands.Choice(name="Player 2 Wins", value="player_2_win"),
+    app_commands.Choice(name="Draw", value="draw"),
+    app_commands.Choice(name="Invalidate", value="invalidated"),
+]
+
+RESULT_CHOICES_2V2 = [
+    app_commands.Choice(name="Team 1 Wins", value="team_1_win"),
+    app_commands.Choice(name="Team 2 Wins", value="team_2_win"),
+    app_commands.Choice(name="Draw", value="draw"),
+    app_commands.Choice(name="Invalidate", value="invalidated"),
+]
+
+# Combined set for autocomplete — includes all possible values.
+ALL_RESULT_CHOICES = [
+    app_commands.Choice(name="Player 1 / Team 1 Wins", value="player_1_win"),
+    app_commands.Choice(name="Player 2 / Team 2 Wins", value="player_2_win"),
+    app_commands.Choice(name="Team 1 Wins", value="team_1_win"),
+    app_commands.Choice(name="Team 2 Wins", value="team_2_win"),
     app_commands.Choice(name="Draw", value="draw"),
     app_commands.Choice(name="Invalidate", value="invalidated"),
 ]
@@ -27,7 +44,7 @@ RESULT_CHOICES = [
 def register_admin_resolve_command(tree: app_commands.CommandTree) -> None:
     @tree.command(name="resolve", description="[Admin] Manually resolve a match result")
     @app_commands.check(check_if_admin)
-    @app_commands.choices(game_mode=GAME_MODE_CHOICES, result=RESULT_CHOICES)
+    @app_commands.choices(game_mode=GAME_MODE_CHOICES, result=ALL_RESULT_CHOICES)
     async def resolve_command(
         interaction: discord.Interaction,
         match_id: int,
@@ -40,12 +57,6 @@ def register_admin_resolve_command(tree: app_commands.CommandTree) -> None:
         mode = game_mode.value if game_mode else "1v1"
         locale = get_player_locale(interaction.user.id)
 
-        if mode != "1v1":
-            await interaction.followup.send(
-                embed=UnsupportedGameModeEmbed(mode, locale=locale)
-            )
-            return
-
         logger.info(
             f"Admin {interaction.user.name} ({interaction.user.id}) "
             f"invoked /resolve {match_id} result={result.value} (mode={mode})"
@@ -56,11 +67,21 @@ def register_admin_resolve_command(tree: app_commands.CommandTree) -> None:
             embed=ResolvePreviewEmbed(
                 match_id, result.value, result_display, reason, locale=locale
             ),
-            view=ResolveConfirmView(
-                interaction.user.id,
-                match_id,
-                result.value,
-                interaction.user.id,
-                reason,
+            view=(
+                ResolveConfirmView2v2(
+                    interaction.user.id,
+                    match_id,
+                    result.value,
+                    interaction.user.id,
+                    reason,
+                )
+                if mode == "2v2"
+                else ResolveConfirmView(
+                    interaction.user.id,
+                    match_id,
+                    result.value,
+                    interaction.user.id,
+                    reason,
+                )
             ),
         )

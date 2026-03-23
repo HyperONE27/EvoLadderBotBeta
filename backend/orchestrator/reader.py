@@ -14,6 +14,7 @@ from backend.domain_types.dataframes import (
 from backend.domain_types.ephemeral import (
     LeaderboardEntry1v1,
     LeaderboardEntry2v2,
+    PartyEntry2v2,
     QueueEntry1v1,
     QueueEntry2v2,
 )
@@ -96,6 +97,10 @@ class StateReader:
     def get_queue_2v2(self) -> list[QueueEntry2v2]:
         """Return the current 2v2 queue (shallow copy)."""
         return list(self._state_manager.queue_2v2)
+
+    def get_parties_2v2(self) -> list[PartyEntry2v2]:
+        """Return all active 2v2 parties."""
+        return list(self._state_manager.parties_2v2.values())
 
     def get_queue_entry_1v1(self, discord_uid: int) -> QueueEntry1v1 | None:
         """Find a specific player's queue entry, or None."""

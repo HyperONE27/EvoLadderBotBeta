@@ -631,6 +631,28 @@ class DatabaseWriter:
             }
         ).eq("id", match_id).execute()
 
+    def admin_resolve_match_2v2(
+        self,
+        match_id: int,
+        *,
+        match_result: str,
+        team_1_mmr_change: int,
+        team_2_mmr_change: int,
+        admin_discord_uid: int,
+        completed_at: datetime,
+    ) -> None:
+        """Admin-resolve a 2v2 match: set result, MMR deltas, and admin audit columns."""
+        self.client.table("matches_2v2").update(
+            {
+                "match_result": match_result,
+                "team_1_mmr_change": team_1_mmr_change,
+                "team_2_mmr_change": team_2_mmr_change,
+                "admin_intervened": True,
+                "admin_discord_uid": admin_discord_uid,
+                "completed_at": completed_at.isoformat(),
+            }
+        ).eq("id", match_id).execute()
+
     # ------------------------------------------------------------------
     # MMR 1v1 (admin operations)
     # ------------------------------------------------------------------

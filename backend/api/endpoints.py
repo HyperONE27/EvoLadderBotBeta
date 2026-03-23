@@ -16,12 +16,14 @@ from common.datetime_helpers import ensure_utc, utc_now
 from backend.api.models import (
     AdminBanRequest,
     AdminBanResponse,
+    AdminMatch2v2Response,
     AdminMatchResponse,
     AdminStatusResetRequest,
     AdminStatusResetResponse,
     AdminResolveRequest,
     AdminResolveResponse,
     ActiveMatchSnapshotRow,
+    AdminSnapshot2v2Response,
     AdminSnapshotResponse,
     AdminsResponse,
     LeaderboardEntry,
@@ -71,6 +73,7 @@ from backend.api.models import (
     Queue2v2JoinResponse,
     Queue2v2LeaveRequest,
     Queue2v2LeaveResponse,
+    Queue2v2StatsResponse,
     QueueJoinAnalyticsBucket,
     QueueJoinAnalyticsResponse,
     QueueJoinRequest,
@@ -337,6 +340,85 @@ async def admin_resolve(
     return AdminResolveResponse(success=True, data=result)
 
 
+# --- /admin match 2v2 ---
+
+
+@router.get("/admin/matches_2v2/{match_id}", response_model=AdminMatch2v2Response)
+async def admin_match_2v2(
+    match_id: int,
+    caller_uid: int = Query(...),
+    app: Backend = Depends(get_backend),
+) -> AdminMatch2v2Response:
+    match = app.orchestrator.get_match_2v2(match_id)
+
+    t1_p1 = t1_p2 = t2_p1 = t2_p2 = None
+    admin = None
+    if match is not None:
+        t1_p1 = app.orchestrator.get_player(match["team_1_player_1_discord_uid"])
+        t1_p2 = app.orchestrator.get_player(match["team_1_player_2_discord_uid"])
+        t2_p1 = app.orchestrator.get_player(match["team_2_player_1_discord_uid"])
+        t2_p2 = app.orchestrator.get_player(match["team_2_player_2_discord_uid"])
+        admin_uid = match.get("admin_discord_uid")
+        if admin_uid is not None:
+            admin = get_admin_by_discord_uid(admin_uid)
+
+    app.orchestrator.log_event(
+        {
+            "discord_uid": caller_uid,
+            "event_type": "admin_command",
+            "action": "match_view",
+            "game_mode": "2v2",
+            "match_id": match_id,
+            "event_data": {"game_mode": "2v2", "match_id": match_id},
+        }
+    )
+    return AdminMatch2v2Response(
+        match=match,
+        team_1_player_1=t1_p1,
+        team_1_player_2=t1_p2,
+        team_2_player_1=t2_p1,
+        team_2_player_2=t2_p2,
+        admin=admin,
+    )
+
+
+# --- /admin resolve 2v2 ---
+
+
+@router.put(
+    "/admin/matches_2v2/{match_id}/resolve", response_model=AdminResolveResponse
+)
+async def admin_resolve_2v2(
+    match_id: int,
+    request: AdminResolveRequest,
+    app: Backend = Depends(get_backend),
+    ws: ConnectionManager = Depends(get_ws_manager),
+) -> AdminResolveResponse:
+    result = app.orchestrator.admin_resolve_match_2v2(
+        match_id, request.result, request.admin_discord_uid
+    )
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=404, detail=result.get("error", "Match not found.")
+        )
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.admin_discord_uid,
+            "event_type": "admin_command",
+            "action": "resolve",
+            "game_mode": "2v2",
+            "match_id": match_id,
+            "event_data": {
+                "game_mode": "2v2",
+                "match_id": match_id,
+                "result": request.result,
+            },
+        }
+    )
+    await _broadcast_leaderboard_if_dirty(app, ws)
+    return AdminResolveResponse(success=True, data=result)
+
+
 # --- /admin snapshot ---
 
 
@@ -373,6 +455,43 @@ async def admin_snapshot(
     return AdminSnapshotResponse(
         queue=queue,
         active_matches=active,
+        dataframe_stats=stats,
+    )
+
+
+@router.get("/admin/snapshot_2v2", response_model=AdminSnapshot2v2Response)
+async def admin_snapshot_2v2(
+    caller_uid: int = Query(...),
+    app: Backend = Depends(get_backend),
+) -> AdminSnapshot2v2Response:
+    queue = app.orchestrator.get_queue_snapshot_2v2()
+    active = app.orchestrator.get_active_matches_2v2()
+    parties = app.orchestrator.get_parties_snapshot()
+
+    sm = app.state_manager
+    stats: dict[str, dict[str, object]] = {}
+    for attr_name in dir(sm):
+        if attr_name.endswith("_df"):
+            df = getattr(sm, attr_name)
+            if hasattr(df, "estimated_size"):
+                table = attr_name.removesuffix("_df")
+                stats[table] = {
+                    "rows": len(df),
+                    "size_mb": round(df.estimated_size("mb"), 3),
+                }
+
+    app.orchestrator.log_event(
+        {
+            "discord_uid": caller_uid,
+            "event_type": "admin_command",
+            "action": "snapshot_2v2",
+            "event_data": {},
+        }
+    )
+    return AdminSnapshot2v2Response(
+        queue=queue,
+        active_matches=active,
+        parties=parties,
         dataframe_stats=stats,
     )
 
@@ -661,6 +780,14 @@ async def queue_stats(
 
 
 # --- /queue_2v2 ---
+
+
+@router.get("/queue_2v2/stats", response_model=Queue2v2StatsResponse)
+async def queue_stats_2v2(
+    app: Backend = Depends(get_backend),
+) -> Queue2v2StatsResponse:
+    stats = app.orchestrator.get_queue_stats_2v2()
+    return Queue2v2StatsResponse(**stats)
 
 
 @router.post("/queue_2v2/join", response_model=Queue2v2JoinResponse)

@@ -532,17 +532,45 @@ def _apply_match_2v2_resolution(
     t2_mmr_update = _compute_mmr_update_2v2(self, t2_p1, t2_p2, new_t2_mmr, now)
 
     # Write the match row.
-    finalise_kwargs: dict = dict(
+    cache_kwargs: dict = dict(
         match_result=result,
-        team_1_report=team_1_report,
-        team_1_reporter_discord_uid=team_1_reporter_discord_uid,
-        team_2_report=team_2_report,
-        team_2_reporter_discord_uid=team_2_reporter_discord_uid,
         team_1_mmr_change=t1_change if t1_change != 0 else None,
         team_2_mmr_change=t2_change if t2_change != 0 else None,
         completed_at=now,
     )
-    self._db_writer.finalise_match_2v2(match_id, **finalise_kwargs)
+
+    if team_1_report is not None:
+        cache_kwargs["team_1_report"] = team_1_report
+    if team_1_reporter_discord_uid is not None:
+        cache_kwargs["team_1_reporter_discord_uid"] = team_1_reporter_discord_uid
+    if team_2_report is not None:
+        cache_kwargs["team_2_report"] = team_2_report
+    if team_2_reporter_discord_uid is not None:
+        cache_kwargs["team_2_reporter_discord_uid"] = team_2_reporter_discord_uid
+
+    if admin_intervened:
+        cache_kwargs["admin_intervened"] = True
+        cache_kwargs["admin_discord_uid"] = admin_discord_uid
+        self._db_writer.admin_resolve_match_2v2(
+            match_id,
+            match_result=result,
+            team_1_mmr_change=t1_change,
+            team_2_mmr_change=t2_change,
+            admin_discord_uid=admin_discord_uid or 0,
+            completed_at=now,
+        )
+    else:
+        self._db_writer.finalise_match_2v2(
+            match_id,
+            match_result=result,
+            team_1_report=team_1_report,
+            team_1_reporter_discord_uid=team_1_reporter_discord_uid,
+            team_2_report=team_2_report,
+            team_2_reporter_discord_uid=team_2_reporter_discord_uid,
+            team_1_mmr_change=t1_change if t1_change != 0 else None,
+            team_2_mmr_change=t2_change if t2_change != 0 else None,
+            completed_at=now,
+        )
 
     # Update MMR rows.
     mmr_updates = [u for u in (t1_mmr_update, t2_mmr_update) if u is not None]
@@ -550,8 +578,8 @@ def _apply_match_2v2_resolution(
         self._db_writer.batch_update_mmrs_2v2(mmr_updates)
 
     # Update in-memory cache.
-    cache_kwargs: dict = {k: v for k, v in finalise_kwargs.items() if v is not None}
-    _update_match_2v2_cache(self, match_id, **cache_kwargs)
+    non_none_kwargs: dict = {k: v for k, v in cache_kwargs.items() if v is not None}
+    _update_match_2v2_cache(self, match_id, **non_none_kwargs)
     for u in mmr_updates:
         _apply_mmr_2v2_cache_update(
             self, u["player_1_discord_uid"], u["player_2_discord_uid"], u

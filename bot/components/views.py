@@ -17,6 +17,7 @@ import structlog
 
 from bot.components.queue_activity_chart import render_queue_join_chart_png
 from bot.components.embeds import (
+    AdminResolution2v2Embed,
     AdminResolutionEmbed,
     BanSuccessEmbed,
     ErrorEmbed,
@@ -28,6 +29,7 @@ from bot.components.embeds import (
     QueueSetupEmbed1v1,
     QueueSetupEmbed2v2,
     QueueSearchingEmbed,
+    QueueSearchingEmbed2v2,
     SetCountryConfirmEmbed,
     SetMMRSuccessEmbed,
     SetupIntroEmbed,
@@ -1278,6 +1280,139 @@ async def _send_to_match_log(
             await queue_channel_send_low(channel, embed=embed)
     except Exception:
         logger.warning("Failed to send admin resolve embed to match log channel")
+
+
+# =========================================================================
+# Admin: Resolve 2v2
+# =========================================================================
+
+
+class ResolveConfirmView2v2(discord.ui.View):
+    def __init__(
+        self,
+        caller_id: int,
+        match_id: int,
+        result: str,
+        admin_discord_uid: int,
+        reason: str | None,
+    ) -> None:
+        super().__init__()
+
+        async def on_confirm(interaction: discord.Interaction) -> None:
+            if interaction.user.id != caller_id:
+                await interaction.response.send_message(
+                    t("error.not_your_button", get_player_locale(interaction.user.id)),
+                    ephemeral=True,
+                )
+                return
+            await _send_resolve_request_2v2(
+                interaction, match_id, result, admin_discord_uid, reason
+            )
+
+        _locale = get_player_locale(caller_id)
+        self.add_item(
+            ConfirmButton(callback=on_confirm, label=t("button.confirm", _locale))
+        )
+        self.add_item(CancelButton(locale=_locale))
+
+
+async def _send_resolve_request_2v2(
+    interaction: discord.Interaction,
+    match_id: int,
+    result: str,
+    admin_discord_uid: int,
+    reason: str | None,
+) -> None:
+    async with get_session().put(
+        f"{BACKEND_URL}/admin/matches_2v2/{match_id}/resolve",
+        json={
+            "result": result,
+            "admin_discord_uid": admin_discord_uid,
+        },
+    ) as response:
+        data = await response.json()
+
+    if response.status >= 400:
+        _locale = get_player_locale(interaction.user.id)
+        error = data.get("detail") or t("error.unexpected_error", _locale)
+        await interaction.response.edit_message(
+            embed=ErrorEmbed(
+                title=t("error_embed.title.resolution_failed", _locale),
+                description=t(
+                    "error_embed.description.with_error", _locale, error=error
+                ),
+                locale=_locale,
+            ),
+            view=None,
+        )
+        return
+
+    resolve_data = data.get("data") or {}
+    admin_name = interaction.user.name
+    logger.info(
+        f"Admin {admin_name} ({interaction.user.id}) resolved "
+        f"2v2 match #{match_id}: result={result}"
+    )
+
+    admin_embed = AdminResolution2v2Embed(
+        resolve_data,
+        reason=reason,
+        admin_name=admin_name,
+        is_admin_confirm=True,
+        locale=get_player_locale(interaction.user.id),
+    )
+    await interaction.response.edit_message(embed=admin_embed, view=None)
+
+    await _notify_players_2v2(interaction, resolve_data, reason, admin_name)
+    await _send_to_match_log_2v2(interaction, resolve_data, reason, admin_name)
+
+
+async def _notify_players_2v2(
+    interaction: discord.Interaction,
+    data: dict,
+    reason: str | None,
+    admin_name: str,
+) -> None:
+    """DM all four players with the Admin Resolution 2v2 embed."""
+    uids = set()
+    for team_num in (1, 2):
+        for p_num in (1, 2):
+            uid = data.get(f"team_{team_num}_player_{p_num}_discord_uid")
+            if uid is not None:
+                uids.add(uid)
+
+    for uid in uids:
+        try:
+            locale = get_player_locale(uid)
+            user = await interaction.client.fetch_user(uid)
+            await queue_user_send_low(
+                user,
+                embed=AdminResolution2v2Embed(
+                    data, reason=reason, admin_name=admin_name, locale=locale
+                ),
+            )
+        except Exception:
+            logger.warning(f"Failed to DM player {uid} about admin resolve 2v2")
+
+
+async def _send_to_match_log_2v2(
+    interaction: discord.Interaction,
+    data: dict,
+    reason: str | None,
+    admin_name: str,
+) -> None:
+    """Send the Admin Resolution 2v2 embed to the match log channel."""
+    try:
+        channel = interaction.client.get_channel(MATCH_LOG_CHANNEL_ID)
+        if channel is None:
+            channel = await interaction.client.fetch_channel(MATCH_LOG_CHANNEL_ID)
+        if channel is not None and isinstance(channel, discord.TextChannel):
+            embed = AdminResolution2v2Embed(
+                data, reason=reason, admin_name=admin_name, locale="enUS"
+            )
+            await queue_channel_send_low(channel, embed=embed)
+    except Exception:
+        logger.warning("Failed to send admin resolve 2v2 embed to match log channel")
 
 
 # =========================================================================
@@ -2796,15 +2931,93 @@ class _CancelQueueButton2v2(discord.ui.Button["QueueSearchingView2v2"]):
 
 
 class QueueSearchingView2v2(discord.ui.View):
-    """Searching view for 2v2 queue — provides a cancel button.
+    """Searching view for 2v2 queue with heartbeat and cancel button."""
 
-    Unlike the 1v1 ``QueueSearchingView`` there is no heartbeat because the 2v2
-    queue does not have a stats endpoint yet.
-    """
-
-    def __init__(self, discord_user_id: int) -> None:
+    def __init__(
+        self,
+        interaction: discord.Interaction,
+        discord_user_id: int,
+    ) -> None:
         super().__init__(timeout=None)
+        self._interaction = interaction
+        self._message: discord.Message | None = None
+        self._token_expired: bool = False
+        self._heartbeat_task: asyncio.Task[None] | None = None
         self.add_item(_CancelQueueButton2v2(discord_user_id))
+
+    async def start_heartbeat(self) -> None:
+        self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
+
+    async def _heartbeat_loop(self) -> None:
+        """Update the searching embed at the 15th second of every minute."""
+        while True:
+            try:
+                now = time.time()
+                current_minute_start = (now // 60) * 60
+                next_beat = current_minute_start + 15
+                if next_beat <= now:
+                    next_beat += 60
+                await asyncio.sleep(next_beat - now)
+
+                stats: dict | None = None
+                try:
+                    async with get_session().get(
+                        f"{BACKEND_URL}/queue_2v2/stats"
+                    ) as resp:
+                        stats = await resp.json()
+                except Exception:
+                    pass
+
+                locale = get_player_locale(self._interaction.user.id)
+                embed = QueueSearchingEmbed2v2(stats, locale=locale)
+                await self._apply_searching_heartbeat_embed(embed)
+
+            except asyncio.CancelledError:
+                return
+            except Exception:
+                logger.warning("queue_2v2_heartbeat_error", exc_info=True)
+                await asyncio.sleep(QUEUE_SEARCHING_HEARTBEAT_SECONDS)
+
+    async def _apply_searching_heartbeat_embed(self, embed: discord.Embed) -> None:
+        """Edit the searching DM using the interaction webhook while valid, else bot token."""
+        if not self._token_expired:
+            try:
+                await self._interaction.edit_original_response(embed=embed, view=self)
+                return
+            except discord.HTTPException as e:
+                if e.status != 401:
+                    raise
+                self._token_expired = True
+                logger.info(
+                    "queue_searching_2v2_webhook_token_expired",
+                    discord_uid=self._interaction.user.id,
+                )
+
+        ref = self._message
+        if ref is None:
+            logger.warning(
+                "queue_2v2_heartbeat_no_cached_message",
+                discord_uid=self._interaction.user.id,
+            )
+            return
+
+        ch = ref.channel
+        if not isinstance(ch, discord.DMChannel):
+            logger.warning(
+                "queue_2v2_heartbeat_expected_dm",
+                channel_type=type(ch).__name__,
+                discord_uid=self._interaction.user.id,
+            )
+            return
+
+        partial = ch.get_partial_message(ref.id)
+        updated = await queue_message_edit_low(partial, embed=embed, view=self)
+        self._message = updated
+        get_cache().active_searching_messages[self._interaction.user.id] = updated
+
+    def stop_heartbeat(self) -> None:
+        if self._heartbeat_task and not self._heartbeat_task.done():
+            self._heartbeat_task.cancel()
 
 
 # =========================================================================
@@ -2886,14 +3099,22 @@ async def _join_queue_2v2(
             )
             return
 
+        stats: dict | None = None
+        try:
+            async with get_session().get(f"{BACKEND_URL}/queue_2v2/stats") as resp2:
+                stats = await resp2.json()
+        except Exception:
+            pass
+
         locale = get_player_locale(discord_user_id)
-        searching_view = QueueSearchingView2v2(discord_user_id)
+        searching_view = QueueSearchingView2v2(interaction, discord_user_id)
         await interaction.edit_original_response(
-            embed=QueueSearchingEmbed(locale=locale),
+            embed=QueueSearchingEmbed2v2(stats, locale=locale),
             view=searching_view,
         )
         try:
             msg = await interaction.original_response()
+            searching_view._message = msg
             cache = get_cache()
             cache.active_searching_messages[discord_user_id] = msg
             cache.active_searching_views[discord_user_id] = searching_view
@@ -2902,6 +3123,8 @@ async def _join_queue_2v2(
                 "Could not cache 2v2 searching message reference",
                 discord_user_id=discord_user_id,
             )
+
+        await searching_view.start_heartbeat()
 
     except Exception:
         logger.exception("Failed to join 2v2 queue")
@@ -2944,7 +3167,9 @@ async def _leave_queue_2v2(
         try:
             cache = get_cache()
             cache.active_searching_messages.pop(discord_user_id, None)
-            cache.active_searching_views.pop(discord_user_id, None)
+            view = cache.active_searching_views.pop(discord_user_id, None)
+            if view is not None and hasattr(view, "stop_heartbeat"):
+                view.stop_heartbeat()
         except Exception:
             pass
 

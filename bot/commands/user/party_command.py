@@ -5,6 +5,7 @@ import discord
 from discord import app_commands
 
 from bot.core.config import BACKEND_URL
+from bot.core.dependencies import get_player_locale
 from bot.core.http import get_session
 from bot.helpers.checks import (
     check_if_accepted_tos,
@@ -12,8 +13,37 @@ from bot.helpers.checks import (
     check_if_completed_setup,
     check_if_dm,
 )
+from bot.helpers.embed_branding import apply_default_embed_footer
+from common.i18n import t
 
 logger = structlog.get_logger(__name__)
+
+
+# --------------------
+# Embed helpers
+# --------------------
+
+
+def _party_embed(
+    title_key: str, desc_key: str, locale: str, color: discord.Color, **kwargs: str
+) -> discord.Embed:
+    embed = discord.Embed(
+        title=t(title_key, locale),
+        description=t(desc_key, locale, **kwargs),
+        color=color,
+    )
+    apply_default_embed_footer(embed, locale=locale)
+    return embed
+
+
+def _error_embed(desc_key: str, locale: str, **kwargs: str) -> discord.Embed:
+    embed = discord.Embed(
+        title=t("error_embed.title.generic", locale),
+        description=t(desc_key, locale, **kwargs),
+        color=discord.Color.red(),
+    )
+    apply_default_embed_footer(embed, locale=locale)
+    return embed
 
 
 # --------------------
@@ -39,19 +69,22 @@ async def party_invite_command(
 ) -> None:
     await interaction.response.defer()
     uid = interaction.user.id
+    locale = get_player_locale(uid)
 
     # Fetch inviter's player name.
     try:
         async with get_session().get(f"{BACKEND_URL}/players/{uid}") as resp:
             data = await resp.json()
     except Exception:
-        await interaction.followup.send("Failed to reach the backend. Try again later.")
+        await interaction.followup.send(
+            embed=_error_embed("party.error.backend_unavailable", locale)
+        )
         return
 
     inviter_player = data.get("player")
     if inviter_player is None:
         await interaction.followup.send(
-            "Your player profile was not found. Run `/setup` first."
+            embed=_error_embed("party.error.no_profile", locale)
         )
         return
     inviter_name: str = inviter_player.get("player_name", interaction.user.name)
@@ -61,24 +94,32 @@ async def party_invite_command(
         async with get_session().get(f"{BACKEND_URL}/players/by_name/{player}") as resp:
             if resp.status == 404:
                 await interaction.followup.send(
-                    f"No player found matching **{player}**."
+                    embed=_error_embed(
+                        "party.error.player_not_found", locale, player=player
+                    )
                 )
                 return
             data = await resp.json()
     except Exception:
-        await interaction.followup.send("Failed to reach the backend. Try again later.")
+        await interaction.followup.send(
+            embed=_error_embed("party.error.backend_unavailable", locale)
+        )
         return
 
     invitee_player = data.get("player")
     if invitee_player is None:
-        await interaction.followup.send(f"No player found matching **{player}**.")
+        await interaction.followup.send(
+            embed=_error_embed("party.error.player_not_found", locale, player=player)
+        )
         return
 
     invitee_discord_uid: int = invitee_player["discord_uid"]
     invitee_name: str = invitee_player["player_name"]
 
     if invitee_discord_uid == uid:
-        await interaction.followup.send("You cannot invite yourself to a party.")
+        await interaction.followup.send(
+            embed=_error_embed("party.error.cannot_invite_self", locale)
+        )
         return
 
     # Send invite to backend.
@@ -95,20 +136,26 @@ async def party_invite_command(
             if resp.status != 200:
                 error_data = await resp.json()
                 detail = error_data.get("detail", "Unknown error.")
-                await interaction.followup.send(f"Could not send invite: {detail}")
+                await interaction.followup.send(
+                    embed=_error_embed(
+                        "party.error.invite_failed", locale, detail=detail
+                    )
+                )
                 return
     except Exception:
-        await interaction.followup.send("Failed to reach the backend. Try again later.")
+        await interaction.followup.send(
+            embed=_error_embed("party.error.backend_unavailable", locale)
+        )
         return
 
     # Send DM to the invitee with accept/decline buttons.
-    embed = discord.Embed(
-        title="2v2 Party Invite",
-        description=(
-            f"**{inviter_name}** has invited you to form a 2v2 party!\n\n"
-            f"Accept to team up and queue together."
-        ),
-        color=discord.Color.blue(),
+    invitee_locale = get_player_locale(invitee_discord_uid)
+    invite_embed = _party_embed(
+        "party.invite_received.title",
+        "party.invite_received.description",
+        invitee_locale,
+        discord.Color.blue(),
+        inviter_name=inviter_name,
     )
     view = PartyInviteResponseView(
         invitee_discord_uid=invitee_discord_uid,
@@ -117,15 +164,23 @@ async def party_invite_command(
 
     try:
         invitee_user = await interaction.client.fetch_user(invitee_discord_uid)
-        await invitee_user.send(embed=embed, view=view)
+        await invitee_user.send(embed=invite_embed, view=view)
     except discord.Forbidden:
         await interaction.followup.send(
-            f"Could not DM **{invitee_name}**. They may have DMs disabled."
+            embed=_error_embed(
+                "party.error.cannot_dm", locale, invitee_name=invitee_name
+            )
         )
         return
 
     await interaction.followup.send(
-        f"Party invite sent to **{invitee_name}**! They will receive a DM to accept or decline."
+        embed=_party_embed(
+            "party.invite_sent.title",
+            "party.invite_sent.description",
+            locale,
+            discord.Color.green(),
+            invitee_name=invitee_name,
+        )
     )
 
 
@@ -135,6 +190,7 @@ async def party_invite_command(
 async def party_leave_command(interaction: discord.Interaction) -> None:
     await interaction.response.defer()
     uid = interaction.user.id
+    locale = get_player_locale(uid)
 
     payload = {"discord_uid": uid}
     try:
@@ -144,24 +200,42 @@ async def party_leave_command(interaction: discord.Interaction) -> None:
             if resp.status != 200:
                 error_data = await resp.json()
                 detail = error_data.get("detail", "Unknown error.")
-                await interaction.followup.send(f"Could not leave party: {detail}")
+                await interaction.followup.send(
+                    embed=_error_embed(
+                        "party.error.leave_failed", locale, detail=detail
+                    )
+                )
                 return
             data = await resp.json()
     except Exception:
-        await interaction.followup.send("Failed to reach the backend. Try again later.")
+        await interaction.followup.send(
+            embed=_error_embed("party.error.backend_unavailable", locale)
+        )
         return
 
     partner_uid = data.get("partner_discord_uid")
     await interaction.followup.send(
-        "You have left the party. Both players are now idle."
+        embed=_party_embed(
+            "party.left.title",
+            "party.left.description",
+            locale,
+            discord.Color.orange(),
+        )
     )
 
     # Notify the partner via DM.
     if partner_uid:
         try:
+            partner_locale = get_player_locale(partner_uid)
             partner_user = await interaction.client.fetch_user(partner_uid)
             await partner_user.send(
-                f"Your 2v2 party has been disbanded because **{interaction.user.name}** left."
+                embed=_party_embed(
+                    "party.disbanded.title",
+                    "party.disbanded.description",
+                    partner_locale,
+                    discord.Color.orange(),
+                    leaver_name=interaction.user.name,
+                )
             )
         except Exception:
             logger.warning(f"Could not notify partner {partner_uid} about party leave")
@@ -172,27 +246,46 @@ async def party_leave_command(interaction: discord.Interaction) -> None:
 async def party_status_command(interaction: discord.Interaction) -> None:
     await interaction.response.defer()
     uid = interaction.user.id
+    locale = get_player_locale(uid)
 
     try:
         async with get_session().get(f"{BACKEND_URL}/party_2v2/{uid}") as resp:
             data = await resp.json()
     except Exception:
-        await interaction.followup.send("Failed to reach the backend. Try again later.")
+        await interaction.followup.send(
+            embed=_error_embed("party.error.backend_unavailable", locale)
+        )
         return
 
     if not data.get("in_party"):
-        await interaction.followup.send("You are not currently in a 2v2 party.")
+        await interaction.followup.send(
+            embed=_party_embed(
+                "party.not_in_party.title",
+                "party.not_in_party.description",
+                locale,
+                discord.Color.greyple(),
+            )
+        )
         return
 
     leader_name = data.get("leader_player_name", "Unknown")
     member_name = data.get("member_player_name", "Unknown")
 
     embed = discord.Embed(
-        title="2v2 Party Status",
+        title=t("party.status.title", locale),
         color=discord.Color.green(),
     )
-    embed.add_field(name="Leader", value=leader_name, inline=True)
-    embed.add_field(name="Member", value=member_name, inline=True)
+    embed.add_field(
+        name=t("party.status.field_name.leader", locale),
+        value=leader_name,
+        inline=True,
+    )
+    embed.add_field(
+        name=t("party.status.field_name.member", locale),
+        value=member_name,
+        inline=True,
+    )
+    apply_default_embed_footer(embed, locale=locale)
 
     await interaction.followup.send(embed=embed)
 
@@ -210,25 +303,33 @@ class PartyInviteResponseView(discord.ui.View):
         self.invitee_discord_uid = invitee_discord_uid
         self.inviter_name = inviter_name
 
-    @discord.ui.button(label="Accept", style=discord.ButtonStyle.green)
-    async def accept_button(
-        self,
-        interaction: discord.Interaction,
-        button: discord.ui.Button["PartyInviteResponseView"],
-    ) -> None:
-        await interaction.response.defer()
-        await self._respond(interaction, accepted=True)
+        _locale = get_player_locale(invitee_discord_uid)
 
-    @discord.ui.button(label="Decline", style=discord.ButtonStyle.red)
-    async def decline_button(
-        self,
-        interaction: discord.Interaction,
-        button: discord.ui.Button["PartyInviteResponseView"],
-    ) -> None:
-        await interaction.response.defer()
-        await self._respond(interaction, accepted=False)
+        accept_btn: discord.ui.Button[PartyInviteResponseView] = discord.ui.Button(
+            label=t("party.button.accept", _locale),
+            style=discord.ButtonStyle.green,
+        )
+        decline_btn: discord.ui.Button[PartyInviteResponseView] = discord.ui.Button(
+            label=t("party.button.decline", _locale),
+            style=discord.ButtonStyle.red,
+        )
+
+        async def _on_accept(interaction: discord.Interaction) -> None:
+            await interaction.response.defer()
+            await self._respond(interaction, accepted=True)
+
+        async def _on_decline(interaction: discord.Interaction) -> None:
+            await interaction.response.defer()
+            await self._respond(interaction, accepted=False)
+
+        accept_btn.callback = _on_accept  # type: ignore[method-assign]
+        decline_btn.callback = _on_decline  # type: ignore[method-assign]
+        self.add_item(accept_btn)
+        self.add_item(decline_btn)
 
     async def _respond(self, interaction: discord.Interaction, accepted: bool) -> None:
+        locale = get_player_locale(interaction.user.id)
+
         # Disable buttons after responding.
         for item in self.children:
             if isinstance(item, discord.ui.Button):
@@ -246,31 +347,48 @@ class PartyInviteResponseView(discord.ui.View):
                 if resp.status != 200:
                     error_data = await resp.json()
                     detail = error_data.get("detail", "Unknown error.")
+                    action = "accept" if accepted else "decline"
                     await interaction.followup.send(
-                        f"Could not {'accept' if accepted else 'decline'} invite: {detail}"
+                        embed=_error_embed(
+                            "party.error.respond_failed",
+                            locale,
+                            action=action,
+                            detail=detail,
+                        )
                     )
                     return
                 data = await resp.json()
         except Exception:
             await interaction.followup.send(
-                "Failed to reach the backend. Try again later."
+                embed=_error_embed("party.error.backend_unavailable", locale)
             )
             return
 
+        inviter_uid = data.get("inviter_discord_uid")
+        invitee_name = data.get("invitee_player_name", "your partner")
+
         if accepted:
             await interaction.followup.send(
-                f"You have joined **{self.inviter_name}**'s party! "
-                f"Both players can now `/queue` for 2v2."
+                embed=_party_embed(
+                    "party.accepted_invitee.title",
+                    "party.accepted_invitee.description",
+                    locale,
+                    discord.Color.green(),
+                    inviter_name=self.inviter_name,
+                )
             )
-            # Notify the inviter.
-            inviter_uid = data.get("inviter_discord_uid")
-            invitee_name = data.get("invitee_player_name", "your partner")
             if inviter_uid:
                 try:
+                    inviter_locale = get_player_locale(inviter_uid)
                     inviter_user = await interaction.client.fetch_user(inviter_uid)
                     await inviter_user.send(
-                        f"**{invitee_name}** has accepted your party invite! "
-                        f"Both players can now `/queue` for 2v2."
+                        embed=_party_embed(
+                            "party.accepted_inviter.title",
+                            "party.accepted_inviter.description",
+                            inviter_locale,
+                            discord.Color.green(),
+                            invitee_name=invitee_name,
+                        )
                     )
                 except Exception:
                     logger.warning(
@@ -278,16 +396,26 @@ class PartyInviteResponseView(discord.ui.View):
                     )
         else:
             await interaction.followup.send(
-                f"You have declined the party invite from **{self.inviter_name}**."
+                embed=_party_embed(
+                    "party.declined_invitee.title",
+                    "party.declined_invitee.description",
+                    locale,
+                    discord.Color.red(),
+                    inviter_name=self.inviter_name,
+                )
             )
-            # Notify the inviter.
-            inviter_uid = data.get("inviter_discord_uid")
-            invitee_name = data.get("invitee_player_name", "the invitee")
             if inviter_uid:
                 try:
+                    inviter_locale = get_player_locale(inviter_uid)
                     inviter_user = await interaction.client.fetch_user(inviter_uid)
                     await inviter_user.send(
-                        f"**{invitee_name}** has declined your party invite."
+                        embed=_party_embed(
+                            "party.declined_inviter.title",
+                            "party.declined_inviter.description",
+                            inviter_locale,
+                            discord.Color.red(),
+                            invitee_name=invitee_name,
+                        )
                     )
                 except Exception:
                     logger.warning(

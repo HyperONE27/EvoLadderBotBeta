@@ -4,9 +4,11 @@ from discord import app_commands
 
 from bot.components.embeds import (
     MatchesEmbed,
+    MatchesEmbed2v2,
+    PartiesEmbed,
     QueueSnapshotEmbed,
+    QueueSnapshotEmbed2v2,
     SystemStatsEmbed,
-    UnsupportedGameModeEmbed,
 )
 from bot.core.config import BACKEND_URL, GAME_MODE_CHOICES
 from bot.core.dependencies import get_player_locale
@@ -37,30 +39,44 @@ def register_admin_snapshot_command(tree: app_commands.CommandTree) -> None:
         mode = game_mode.value if game_mode else "1v1"
         locale = get_player_locale(interaction.user.id)
 
-        if mode != "1v1":
-            await interaction.followup.send(
-                embed=UnsupportedGameModeEmbed(mode, locale=locale)
-            )
-            return
-
         logger.info(
             f"Admin {interaction.user.name} ({interaction.user.id}) "
             f"invoked /snapshot (mode={mode})"
         )
 
-        async with get_session().get(
-            f"{BACKEND_URL}/admin/snapshot_1v1",
-            params={"caller_uid": interaction.user.id},
-        ) as response:
-            data = await response.json()
+        if mode == "2v2":
+            async with get_session().get(
+                f"{BACKEND_URL}/admin/snapshot_2v2",
+                params={"caller_uid": interaction.user.id},
+            ) as response:
+                data = await response.json()
 
-        queue = data.get("queue") or []
-        active = data.get("active_matches") or []
-        stats = data.get("dataframe_stats") or {}
-        await interaction.followup.send(
-            embeds=[
-                SystemStatsEmbed(stats, locale=locale),
-                QueueSnapshotEmbed(queue, locale=locale),
-                MatchesEmbed(active, locale=locale),
-            ]
-        )
+            queue = data.get("queue") or []
+            active = data.get("active_matches") or []
+            parties = data.get("parties") or []
+            stats = data.get("dataframe_stats") or {}
+            await interaction.followup.send(
+                embeds=[
+                    SystemStatsEmbed(stats, locale=locale),
+                    PartiesEmbed(parties, locale=locale),
+                    QueueSnapshotEmbed2v2(queue, locale=locale),
+                    MatchesEmbed2v2(active, locale=locale),
+                ]
+            )
+        else:
+            async with get_session().get(
+                f"{BACKEND_URL}/admin/snapshot_1v1",
+                params={"caller_uid": interaction.user.id},
+            ) as response:
+                data = await response.json()
+
+            queue = data.get("queue") or []
+            active = data.get("active_matches") or []
+            stats = data.get("dataframe_stats") or {}
+            await interaction.followup.send(
+                embeds=[
+                    SystemStatsEmbed(stats, locale=locale),
+                    QueueSnapshotEmbed(queue, locale=locale),
+                    MatchesEmbed(active, locale=locale),
+                ]
+            )

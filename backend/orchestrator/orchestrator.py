@@ -26,6 +26,7 @@ from backend.domain_types.ephemeral import (
     PartyEntry2v2,
     PendingPartyInvite2v2,
     QueueEntry1v1,
+    QueueEntry2v2,
 )
 from backend.orchestrator.queue_notify import compute_queue_activity_targets
 from backend.orchestrator.reader import StateReader
@@ -186,6 +187,54 @@ class Orchestrator:
             "bw_only": bw_only,
             "sc2_only": sc2_only,
             "both": both,
+        }
+
+    def get_queue_stats_2v2(self) -> dict[str, int]:
+        """Return 2v2 queue population by composition category."""
+        queue = self._state_reader.get_queue_2v2()
+        bw_only = 0
+        mixed_only = 0
+        sc2_only = 0
+        bw_mixed = 0
+        bw_sc2 = 0
+        mixed_sc2 = 0
+        all_three = 0
+        for entry in queue:
+            has_bw = (
+                entry["pure_bw_leader_race"] is not None
+                and entry["pure_bw_member_race"] is not None
+            )
+            has_mixed = (
+                entry["mixed_leader_race"] is not None
+                and entry["mixed_member_race"] is not None
+            )
+            has_sc2 = (
+                entry["pure_sc2_leader_race"] is not None
+                and entry["pure_sc2_member_race"] is not None
+            )
+            if has_bw and has_mixed and has_sc2:
+                all_three += 1
+            elif has_bw and has_mixed:
+                bw_mixed += 1
+            elif has_bw and has_sc2:
+                bw_sc2 += 1
+            elif has_mixed and has_sc2:
+                mixed_sc2 += 1
+            elif has_bw:
+                bw_only += 1
+            elif has_mixed:
+                mixed_only += 1
+            elif has_sc2:
+                sc2_only += 1
+        return {
+            "total": len(queue),
+            "bw_only": bw_only,
+            "mixed_only": mixed_only,
+            "sc2_only": sc2_only,
+            "bw_mixed": bw_mixed,
+            "bw_sc2": bw_sc2,
+            "mixed_sc2": mixed_sc2,
+            "all_three": all_three,
         }
 
     # ------------------------------------------------------------------
@@ -530,6 +579,14 @@ class Orchestrator:
             match_id, result, admin_discord_uid
         )
 
+    def admin_resolve_match_2v2(
+        self, match_id: int, result: str, admin_discord_uid: int
+    ) -> dict:
+        """Admin-resolve a 2v2 match bypassing the two-report flow."""
+        return self._transition_manager.admin_resolve_match_2v2(
+            match_id, result, admin_discord_uid
+        )
+
     def admin_set_mmr(
         self, discord_uid: int, race: str, new_mmr: int
     ) -> tuple[bool, int | None]:
@@ -555,6 +612,18 @@ class Orchestrator:
     def get_active_matches_1v1(self) -> list[Matches1v1Row]:
         """Return all matches with match_result IS NULL."""
         return self._transition_manager.get_active_matches_1v1()
+
+    def get_queue_snapshot_2v2(self) -> list[QueueEntry2v2]:
+        """Return the current 2v2 queue."""
+        return self._transition_manager.get_queue_snapshot_2v2()
+
+    def get_active_matches_2v2(self) -> list[Matches2v2Row]:
+        """Return all 2v2 matches with match_result IS NULL."""
+        return self._transition_manager.get_active_matches_2v2()
+
+    def get_parties_snapshot(self) -> list[PartyEntry2v2]:
+        """Return all active parties."""
+        return self._state_reader.get_parties_2v2()
 
     # ------------------------------------------------------------------
     # Leaderboard

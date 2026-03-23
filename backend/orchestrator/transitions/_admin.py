@@ -8,8 +8,8 @@ import polars as pl
 import structlog
 
 from common.datetime_helpers import utc_now
-from backend.domain_types.dataframes import Matches1v1Row, row_as
-from backend.domain_types.ephemeral import QueueEntry1v1
+from backend.domain_types.dataframes import Matches1v1Row, Matches2v2Row, row_as
+from backend.domain_types.ephemeral import QueueEntry1v1, QueueEntry2v2
 
 if TYPE_CHECKING:
     from backend.orchestrator.transitions import TransitionManager
@@ -201,6 +201,123 @@ def admin_resolve_match(
 
 
 # ==================================================================
+# Admin: resolve match (2v2)
+# ==================================================================
+
+
+def admin_resolve_match_2v2(
+    self: TransitionManager,
+    match_id: int,
+    result: str,
+    admin_discord_uid: int,
+) -> dict:
+    """Admin-resolve a 2v2 match. Bypasses the two-report flow.
+
+    Sets match_result, calculates team MMR from snapshotted initial MMRs,
+    sets admin_intervened=True, and returns all four players to in_party/idle.
+
+    Args:
+        match_id: Match to resolve.
+        result: One of 'team_1_win', 'team_2_win', 'draw', 'invalidated'.
+        admin_discord_uid: UID of the resolving admin.
+
+    Returns:
+        Dict with resolution details.
+    """
+    from backend.orchestrator.transitions._match_2v2 import (
+        _calculate_mmr_changes_2v2,
+        _apply_match_2v2_resolution,
+        _get_match_2v2_row,
+    )
+
+    match = _get_match_2v2_row(self, match_id)
+    if match is None:
+        return {"success": False, "error": "Match not found."}
+
+    t1_p1_uid = match["team_1_player_1_discord_uid"]
+    t1_p2_uid = match["team_1_player_2_discord_uid"]
+    t2_p1_uid = match["team_2_player_1_discord_uid"]
+    t2_p2_uid = match["team_2_player_2_discord_uid"]
+    t1_mmr = match["team_1_mmr"]
+    t2_mmr = match["team_2_mmr"]
+
+    now = utc_now()
+
+    if result == "invalidated":
+        new_t1_mmr, new_t2_mmr, t1_change, t2_change = t1_mmr, t2_mmr, 0, 0
+    else:
+        new_t1_mmr, new_t2_mmr, t1_change, t2_change = _calculate_mmr_changes_2v2(
+            match, result
+        )
+
+    _apply_match_2v2_resolution(
+        self,
+        match_id,
+        match,
+        result,
+        t1_change,
+        t2_change,
+        new_t1_mmr,
+        new_t2_mmr,
+        now,
+        admin_intervened=True,
+        admin_discord_uid=admin_discord_uid,
+    )
+
+    self._db_writer.insert_event(
+        {
+            "discord_uid": admin_discord_uid,
+            "event_type": "match_event",
+            "action": "match_resolved",
+            "game_mode": "2v2",
+            "match_id": match_id,
+            "event_data": {
+                "game_mode": "2v2",
+                "match_id": match_id,
+                "result": result,
+                "t1_p1_uid": t1_p1_uid,
+                "t1_p2_uid": t1_p2_uid,
+                "t2_p1_uid": t2_p1_uid,
+                "t2_p2_uid": t2_p2_uid,
+                "t1_mmr_change": t1_change,
+                "t2_mmr_change": t2_change,
+            },
+        }
+    )
+
+    logger.info(
+        f"Match 2v2 #{match_id} admin-resolved by {admin_discord_uid}: "
+        f"{result} (t1 {t1_mmr}→{new_t1_mmr}, t2 {t2_mmr}→{new_t2_mmr})"
+    )
+
+    return {
+        "success": True,
+        "match_id": match_id,
+        "result": result,
+        "team_1_player_1_discord_uid": t1_p1_uid,
+        "team_1_player_2_discord_uid": t1_p2_uid,
+        "team_2_player_1_discord_uid": t2_p1_uid,
+        "team_2_player_2_discord_uid": t2_p2_uid,
+        "team_1_player_1_name": match["team_1_player_1_name"],
+        "team_1_player_2_name": match["team_1_player_2_name"],
+        "team_2_player_1_name": match["team_2_player_1_name"],
+        "team_2_player_2_name": match["team_2_player_2_name"],
+        "team_1_player_1_race": match["team_1_player_1_race"],
+        "team_1_player_2_race": match["team_1_player_2_race"],
+        "team_2_player_1_race": match["team_2_player_1_race"],
+        "team_2_player_2_race": match["team_2_player_2_race"],
+        "team_1_mmr": t1_mmr,
+        "team_2_mmr": t2_mmr,
+        "team_1_mmr_new": new_t1_mmr,
+        "team_2_mmr_new": new_t2_mmr,
+        "team_1_mmr_change": t1_change,
+        "team_2_mmr_change": t2_change,
+        "map_name": match["map_name"],
+        "server_name": match["server_name"],
+    }
+
+
+# ==================================================================
 # Admin: set MMR (idempotent)
 # ==================================================================
 
@@ -307,3 +424,15 @@ def get_active_matches_1v1(self: TransitionManager) -> list[Matches1v1Row]:
     df = self._state_manager.matches_1v1_df
     active = df.filter(pl.col("match_result").is_null())
     return [row_as(Matches1v1Row, row) for row in active.iter_rows(named=True)]
+
+
+def get_queue_snapshot_2v2(self: TransitionManager) -> list[QueueEntry2v2]:
+    """Return the current 2v2 queue (shallow copy)."""
+    return list(self._state_manager.queue_2v2)
+
+
+def get_active_matches_2v2(self: TransitionManager) -> list[Matches2v2Row]:
+    """Return all 2v2 matches with match_result IS NULL."""
+    df = self._state_manager.matches_2v2_df
+    active = df.filter(pl.col("match_result").is_null())
+    return [row_as(Matches2v2Row, row) for row in active.iter_rows(named=True)]

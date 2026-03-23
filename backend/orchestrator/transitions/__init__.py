@@ -113,7 +113,10 @@ class TransitionManager:
     reset_player_status = _admin.reset_player_status
     toggle_ban = _admin.toggle_ban
     admin_resolve_match = _admin.admin_resolve_match
+    admin_resolve_match_2v2 = _admin.admin_resolve_match_2v2
     admin_set_mmr = _admin.admin_set_mmr
     toggle_admin_role = _admin.toggle_admin_role
     get_queue_snapshot_1v1 = _admin.get_queue_snapshot_1v1
     get_active_matches_1v1 = _admin.get_active_matches_1v1
+    get_queue_snapshot_2v2 = _admin.get_queue_snapshot_2v2
+    get_active_matches_2v2 = _admin.get_active_matches_2v2

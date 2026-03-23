@@ -340,6 +340,60 @@ class QueueSearchingEmbed(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
+class QueueSearchingEmbed2v2(discord.Embed):
+    """Searching embed for 2v2 queue with 7-category composition breakdown."""
+
+    def __init__(
+        self,
+        stats: dict | None = None,
+        *,
+        match_found: bool = False,
+        locale: str = "enUS",
+    ) -> None:
+        now = time.time()
+        next_search = int((now // 60 + 1) * 60)
+
+        if match_found:
+            description = t("queue_searching_embed.description.2", locale)
+        else:
+            total = stats.get("total", 0) if stats else 0
+            bw_only = stats.get("bw_only", 0) if stats else 0
+            mixed_only = stats.get("mixed_only", 0) if stats else 0
+            sc2_only = stats.get("sc2_only", 0) if stats else 0
+            bw_mixed = stats.get("bw_mixed", 0) if stats else 0
+            bw_sc2 = stats.get("bw_sc2", 0) if stats else 0
+            mixed_sc2 = stats.get("mixed_sc2", 0) if stats else 0
+            all_three = stats.get("all_three", 0) if stats else 0
+            description = (
+                "The queue is searching for a 2v2 game.\n\n"
+                f"- Next search: <t:{next_search}:R>\n"
+                "- Search interval: 60 seconds\n"
+                f"- Teams queueing: **{total}**\n"
+                f"  - BW only: {bw_only}\n"
+                f"  - Mixed only: {mixed_only}\n"
+                f"  - SC2 only: {sc2_only}\n"
+                f"  - BW + Mixed: {bw_mixed}\n"
+                f"  - BW + SC2: {bw_sc2}\n"
+                f"  - Mixed + SC2: {mixed_sc2}\n"
+                f"  - All: {all_three}"
+            )
+
+        super().__init__(
+            title=t("queue_searching_embed.title.1", locale),
+            description=description,
+            color=discord.Color.blue(),
+        )
+
+        if match_found:
+            self.add_field(
+                name=t("queue_searching_embed.field_name.1", locale),
+                value=t("queue_searching_embed.field_value.1", locale),
+                inline=False,
+            )
+
+        apply_default_embed_footer(self, locale=locale)
+
+
 class QueueErrorEmbed(discord.Embed):
     def __init__(self, error: str, locale: str = "enUS") -> None:
         super().__init__(
@@ -2031,6 +2085,85 @@ class MatchesEmbed(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
+class QueueSnapshotEmbed2v2(discord.Embed):
+    """2v2 queue snapshot: shows teams (parties) currently searching."""
+
+    def __init__(self, queue: list[dict], locale: str = "enUS") -> None:
+        queue_size = len(queue)
+        super().__init__(
+            title="2v2 Queue Snapshot",
+            color=discord.Color.green(),
+        )
+        description = f"**Teams in queue:** {queue_size}\n"
+        for i, entry in enumerate(queue[:15]):
+            leader = entry.get("player_name", "?")
+            member = entry.get("party_member_name", "?")
+            mmr = entry.get("team_mmr", "?")
+            comps: list[str] = []
+            if entry.get("pure_bw_leader_race") and entry.get("pure_bw_member_race"):
+                comps.append("BW")
+            if entry.get("mixed_leader_race") and entry.get("mixed_member_race"):
+                comps.append("Mix")
+            if entry.get("pure_sc2_leader_race") and entry.get("pure_sc2_member_race"):
+                comps.append("SC2")
+            comp_str = "+".join(comps) or "—"
+            description += (
+                f"`{i + 1:>2}` **{leader}** & **{member}** ({mmr}) [{comp_str}]\n"
+            )
+        if queue_size > 15:
+            description += f"\n_...and {queue_size - 15} more_"
+        self.description = description
+        apply_default_embed_footer(self, locale=locale)
+
+
+class MatchesEmbed2v2(discord.Embed):
+    """2v2 active matches snapshot."""
+
+    def __init__(self, active_matches: list[dict], locale: str = "enUS") -> None:
+        match_count = len(active_matches)
+        super().__init__(
+            title="2v2 Active Matches",
+            color=discord.Color.orange(),
+        )
+        description = f"**Active matches:** {match_count}\n"
+        for m in active_matches[:10]:
+            mid = m.get("id", "?")
+            t1p1 = m.get("team_1_player_1_name", "?")
+            t1p2 = m.get("team_1_player_2_name", "?")
+            t2p1 = m.get("team_2_player_1_name", "?")
+            t2p2 = m.get("team_2_player_2_name", "?")
+            t1_mmr = m.get("team_1_mmr", "?")
+            t2_mmr = m.get("team_2_mmr", "?")
+            description += (
+                f"`#{mid}` **{t1p1}** & **{t1p2}** ({t1_mmr}) "
+                f"vs **{t2p1}** & **{t2p2}** ({t2_mmr})\n"
+            )
+        if match_count > 10:
+            description += f"\n_...and {match_count - 10} more_"
+        self.description = description
+        apply_default_embed_footer(self, locale=locale)
+
+
+class PartiesEmbed(discord.Embed):
+    """Active 2v2 parties snapshot."""
+
+    def __init__(self, parties: list[dict], locale: str = "enUS") -> None:
+        party_count = len(parties)
+        super().__init__(
+            title="2v2 Parties",
+            color=discord.Color.purple(),
+        )
+        description = f"**Active parties:** {party_count}\n"
+        for p in parties[:20]:
+            leader = p.get("leader_name", "?")
+            member = p.get("member_name", "?")
+            description += f"- **{leader}** & **{member}**\n"
+        if party_count > 20:
+            description += f"\n_...and {party_count - 20} more_"
+        self.description = description
+        apply_default_embed_footer(self, locale=locale)
+
+
 # =========================================================================
 # Admin: Match Details
 # =========================================================================
@@ -2447,6 +2580,259 @@ class AdminReplayDetailsEmbed(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
+class AdminMatchEmbed2v2(discord.Embed):
+    """Admin match overview for a 2v2 match — 4 players / 2 teams."""
+
+    def __init__(
+        self,
+        match: dict[str, Any],
+        players: dict[str, dict[str, Any] | None],
+        admin: dict[str, Any] | None,
+        locale: str = "enUS",
+    ) -> None:
+        match_id = match.get("id", "?")
+        result = match.get("match_result")
+
+        if result is None:
+            color = discord.Color.blue()
+        elif result == "invalidated":
+            color = discord.Color.dark_grey()
+        else:
+            color = discord.Color.green()
+
+        t1_mmr = match.get("team_1_mmr") or 0
+        t2_mmr = match.get("team_2_mmr") or 0
+
+        super().__init__(
+            title=t("admin_match_embed_2v2.title.1", locale, match_id=str(match_id)),
+            description=t(
+                "admin_match_embed_2v2.description.1",
+                locale,
+                t1_mmr=str(t1_mmr),
+                t2_mmr=str(t2_mmr),
+            ),
+            color=color,
+        )
+
+        # --- Team rosters ---
+        roster_lines: list[str] = []
+        for team_num in (1, 2):
+            roster_lines.append(f"**Team {team_num}:**")
+            for player_num in (1, 2):
+                key = f"team_{team_num}_player_{player_num}"
+                name = match.get(f"{key}_name") or t("shared.unknown", locale)
+                race = match.get(f"{key}_race") or ""
+                p = players.get(key)
+                nat = p.get("nationality") if p else None
+                prefix = _player_prefix(race, nat)
+                roster_lines.append(f"- {prefix} **{name}**")
+        self.add_field(
+            name=t("admin_match_embed_2v2.field_name.team_rosters", locale),
+            value="\n".join(roster_lines),
+            inline=False,
+        )
+
+        # --- Result overview ---
+        display = _result_display_2v2(result, locale)
+        self.add_field(
+            name="",
+            value=t(
+                "admin_match_embed_2v2.field_value.overview",
+                locale,
+                display=display,
+                t1_p1_uid=str(match.get("team_1_player_1_discord_uid") or 0),
+                t1_p2_uid=str(match.get("team_1_player_2_discord_uid") or 0),
+                t2_p1_uid=str(match.get("team_2_player_1_discord_uid") or 0),
+                t2_p2_uid=str(match.get("team_2_player_2_discord_uid") or 0),
+            ),
+            inline=False,
+        )
+
+        # --- Reports ---
+        t1_report_code = match.get("team_1_report")
+        t2_report_code = match.get("team_2_report")
+        t1_report = t(f"match_result.{t1_report_code or 'no_report'}", locale)
+        t2_report = t(f"match_result.{t2_report_code or 'no_report'}", locale)
+        self.add_field(
+            name=t("admin_match_embed_2v2.field_name.reports", locale),
+            value=t(
+                "admin_match_embed_2v2.field_value.reports",
+                locale,
+                t1_report=t1_report,
+                t2_report=t2_report,
+            ),
+            inline=True,
+        )
+
+        # --- Admin resolved ---
+        admin_intervened = match.get("admin_intervened", False)
+        if admin_intervened:
+            admin_uid = match.get("admin_discord_uid")
+            admin_username = admin.get("discord_username") if admin else None
+            if admin_username:
+                resolved_text = t(
+                    "admin_match_embed.resolved_yes_with_name",
+                    locale,
+                    admin_username=admin_username,
+                    admin_uid=str(admin_uid),
+                )
+            else:
+                resolved_text = t(
+                    "admin_match_embed.resolved_yes_no_name",
+                    locale,
+                    admin_uid=str(admin_uid),
+                )
+        else:
+            resolved_text = t("admin_match_embed.resolved_no", locale)
+
+        self.add_field(
+            name=t("admin_match_embed.field_name.resolved", locale),
+            value=resolved_text,
+            inline=True,
+        )
+
+        # --- MMR changes ---
+        t1_change = match.get("team_1_mmr_change")
+        t2_change = match.get("team_2_mmr_change")
+        if t1_change is not None or t2_change is not None:
+            t1_c = t1_change or 0
+            t2_c = t2_change or 0
+            t1_new = t1_mmr + t1_c
+            t2_new = t2_mmr + t2_c
+            mmr_text = t(
+                "admin_match_embed_2v2.field_value.mmr_changes",
+                locale,
+                t1_change=f"{t1_c:+d}",
+                t1_mmr=str(t1_mmr),
+                t1_new=str(t1_new),
+                t2_change=f"{t2_c:+d}",
+                t2_mmr=str(t2_mmr),
+                t2_new=str(t2_new),
+            )
+            self.add_field(
+                name=t("admin_match_embed.field_name.mmr_changes", locale),
+                value=mmr_text,
+                inline=False,
+            )
+
+        # --- Match info ---
+        map_name = match.get("map_name") or t("shared.unknown", locale)
+        server_code = match.get("server_name")
+        info_text = t(
+            "admin_match_embed.match_info.map_server",
+            locale,
+            map_name=map_name,
+            server=_admin_server_display(server_code, locale),
+        )
+        info_text += t(
+            "admin_match_embed.match_info.assigned",
+            locale,
+            ts=to_discord_timestamp(raw=match.get("assigned_at")),
+        )
+        if match.get("completed_at"):
+            info_text += t(
+                "admin_match_embed.match_info.completed",
+                locale,
+                ts=to_discord_timestamp(raw=match.get("completed_at")),
+            )
+        self.add_field(
+            name=t("admin_match_embed.field_name.match_info", locale),
+            value=info_text,
+            inline=False,
+        )
+
+        # --- Raw JSON ---
+        raw: dict[str, Any] = {}
+        for key in (
+            "id",
+            "team_1_player_1_discord_uid",
+            "team_1_player_2_discord_uid",
+            "team_2_player_1_discord_uid",
+            "team_2_player_2_discord_uid",
+            "team_1_player_1_name",
+            "team_1_player_2_name",
+            "team_2_player_1_name",
+            "team_2_player_2_name",
+            "team_1_player_1_race",
+            "team_1_player_2_race",
+            "team_2_player_1_race",
+            "team_2_player_2_race",
+            "team_1_mmr",
+            "team_2_mmr",
+            "team_1_report",
+            "team_2_report",
+            "match_result",
+            "team_1_mmr_change",
+            "team_2_mmr_change",
+            "map_name",
+            "server_name",
+            "assigned_at",
+            "completed_at",
+            "admin_intervened",
+            "admin_discord_uid",
+            "team_1_replay_path",
+            "team_1_replay_row_id",
+            "team_1_uploaded_at",
+            "team_2_replay_path",
+            "team_2_replay_row_id",
+            "team_2_uploaded_at",
+        ):
+            val = match.get(key)
+            if isinstance(val, datetime):
+                raw[key] = str(val)
+            elif key.endswith("_replay_path") and isinstance(val, str):
+                raw[key] = val.rsplit("/", 1)[-1] if "/" in val else val
+            else:
+                raw[key] = val
+
+        raw_json = json.dumps(raw, indent=2, ensure_ascii=False)
+        if len(raw_json) > 950:
+            raw_json = raw_json[:950] + "\n..."
+        self.add_field(
+            name=t("admin_match_embed.field_name.raw", locale),
+            value=f"```json\n{raw_json}\n```",
+            inline=False,
+        )
+
+        # --- Replay status ---
+        t1_replay = match.get("team_1_replay_path")
+        t2_replay = match.get("team_2_replay_path")
+        t1_status = (
+            t("admin_match_embed.replay_uploaded", locale)
+            if t1_replay
+            else t("admin_match_embed.replay_no", locale)
+        )
+        t2_status = (
+            t("admin_match_embed.replay_uploaded", locale)
+            if t2_replay
+            else t("admin_match_embed.replay_no", locale)
+        )
+        self.add_field(
+            name=t("admin_match_embed.field_name.replay_status", locale),
+            value=t(
+                "admin_match_embed_2v2.field_value.replay_status",
+                locale,
+                t1_status=t1_status,
+                t2_status=t2_status,
+            ),
+            inline=False,
+        )
+
+        apply_default_embed_footer(self, locale=locale)
+
+
+def _result_display_2v2(result: str | None, locale: str = "enUS") -> str:
+    if result == "team_1_win":
+        return t("result_display.team_1_win.1", locale)
+    if result == "team_2_win":
+        return t("result_display.team_2_win.1", locale)
+    if result == "draw":
+        return t("result_display.draw.1", locale)
+    if result == "invalidated":
+        return t("result_display.invalidated.1", locale)
+    return t("result_display.in_progress.1", locale)
+
+
 # =========================================================================
 # Admin: Resolve
 # =========================================================================
@@ -2596,6 +2982,101 @@ class AdminResolutionEmbed(discord.Embed):
             p2_change=f"{p2_change:+d}",
             p2_old=str(p2_old),
             p2_new=str(p2_new),
+        )
+        self.add_field(
+            name=t("shared.field_name.mmr_changes", locale), value=mmr_text, inline=True
+        )
+
+        intervention_text = t(
+            "admin_resolution_embed.resolved_by.1", locale, admin_name=admin_name
+        )
+        if reason:
+            intervention_text += t(
+                "admin_resolution_embed.reason.1", locale, reason=reason
+            )
+        self.add_field(
+            name=t("admin_resolution_embed.field_name.1", locale),
+            value=intervention_text,
+            inline=False,
+        )
+
+        apply_default_embed_footer(self, locale=locale)
+
+
+class AdminResolution2v2Embed(discord.Embed):
+    """Admin Resolution embed for 2v2 matches."""
+
+    def __init__(
+        self,
+        data: dict,
+        *,
+        reason: str | None,
+        admin_name: str,
+        is_admin_confirm: bool = False,
+        locale: str = "enUS",
+    ) -> None:
+        match_id = data.get("match_id", "?")
+        result = data.get("result", "?")
+        t1_old = data.get("team_1_mmr", 0)
+        t2_old = data.get("team_2_mmr", 0)
+        t1_new = data.get("team_1_mmr_new", 0)
+        t2_new = data.get("team_2_mmr_new", 0)
+        t1_change = data.get("team_1_mmr_change", 0)
+        t2_change = data.get("team_2_mmr_change", 0)
+
+        # Build roster strings.
+        t1_roster_parts: list[str] = []
+        t2_roster_parts: list[str] = []
+        for team_num, parts in ((1, t1_roster_parts), (2, t2_roster_parts)):
+            for p_num in (1, 2):
+                name = data.get(f"team_{team_num}_player_{p_num}_name", "?")
+                race = data.get(f"team_{team_num}_player_{p_num}_race", "")
+                try:
+                    emote = get_race_emote(race)
+                except ValueError:
+                    emote = "🎮"
+                parts.append(f"{emote} {name}")
+
+        color = discord.Color.green() if is_admin_confirm else discord.Color.gold()
+        title_key = (
+            "admin_resolution_embed_2v2.title_confirm.1"
+            if is_admin_confirm
+            else "admin_resolution_embed_2v2.title_player.1"
+        )
+
+        super().__init__(
+            title=t(title_key, locale, match_id=str(match_id)),
+            description=t(
+                "admin_resolution_embed_2v2.description.1",
+                locale,
+                t1_roster=", ".join(t1_roster_parts),
+                t1_old=str(t1_old),
+                t1_new=str(t1_new),
+                t2_roster=", ".join(t2_roster_parts),
+                t2_old=str(t2_old),
+                t2_new=str(t2_new),
+            ),
+            color=color,
+        )
+
+        self.add_field(name="", value="\u3164", inline=False)
+
+        result_display = _result_display_2v2(result, locale)
+        self.add_field(
+            name=t("shared.field_name.result", locale),
+            value=result_display,
+            inline=True,
+        )
+
+        mmr_text = t(
+            "admin_resolution_embed_2v2.field_value.mmr_changes",
+            locale,
+            t1_change=f"{t1_change:+d}",
+            t1_old=str(t1_old),
+            t1_new=str(t1_new),
+            t2_change=f"{t2_change:+d}",
+            t2_old=str(t2_old),
+            t2_new=str(t2_new),
         )
         self.add_field(
             name=t("shared.field_name.mmr_changes", locale), value=mmr_text, inline=True
