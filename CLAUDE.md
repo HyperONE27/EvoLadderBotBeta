@@ -9,7 +9,7 @@ EvoLadderBotBeta is a Discord-based ladder (ranked matchmaking) system for the S
 1. **Backend** — a FastAPI service holding all game state in-memory (Polars DataFrames) backed by Supabase (PostgreSQL). Exposed at `BACKEND_URL`.
 2. **Bot** — a discord.py client that handles all Discord interactions and forwards state-changing actions to the backend via HTTP calls (using `aiohttp`). Receives real-time events from the backend via WebSocket.
 
-1v1 mode is fully implemented. 2v2 mode is partially implemented (matchmaker, party system, queue/match lifecycle, bot UI, and preferences are live; replay upload, leaderboard display, and admin tools are not yet wired). 3v3 and FFA are planned but not yet in the codebase.
+1v1 mode is fully implemented. 2v2 mode is partially implemented (matchmaker, party system, queue/match lifecycle, bot UI, preferences, replay upload, and leaderboard display are live; admin tools are not yet wired). 3v3 and FFA are planned but not yet in the codebase.
 
 ## Running the Project
 
@@ -346,8 +346,6 @@ python -m pytest tests/ -v
 ### Not Yet Implemented
 
 These items appear in planning docs or have stub code but are not functional:
-- 2v2 leaderboard (built at startup and rebuilt after matches, but no display endpoint or command)
-- 2v2 replay upload (no parser, verifier, upload endpoint, or bot handler)
 - 2v2 admin tools (no `/admin snapshot_2v2` or 2v2 match admin endpoints)
 - i18n/localization (locale files exist, framework in place, not wired to commands)
 - 3v3, FFA modes

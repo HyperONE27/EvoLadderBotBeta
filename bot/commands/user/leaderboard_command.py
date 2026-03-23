@@ -754,12 +754,8 @@ def register_leaderboard_command(tree: app_commands.CommandTree) -> None:
         if game_mode == "2v2":
             entries_2v2 = await _ensure_leaderboard_2v2(interaction.user.id)
             view_2v2 = Leaderboard2v2View(entries_2v2, locale=locale)
-            await interaction.followup.send(
-                embed=view_2v2.build_embed(), view=view_2v2
-            )
+            await interaction.followup.send(embed=view_2v2.build_embed(), view=view_2v2)
         else:
             entries_1v1 = await _ensure_leaderboard(interaction.user.id)
             view_1v1 = LeaderboardView(entries_1v1, locale=locale)
-            await interaction.followup.send(
-                embed=view_1v1.build_embed(), view=view_1v1
-            )
+            await interaction.followup.send(embed=view_1v1.build_embed(), view=view_1v1)

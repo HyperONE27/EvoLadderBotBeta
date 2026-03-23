@@ -141,16 +141,14 @@ New 2v2 embeds:
 
 ## 9. Replay System (2v2)
 
-**What:** `backend/algorithms/replay_parser_2v2.py` and `backend/algorithms/replay_verifier_2v2.py` — parse and verify 2v2 replays. The parser uses `sc2reader` identical to the 1v1 parser; the verifier checks 4 players instead of 2.
+**What:** `parse_replay_2v2()` in `backend/algorithms/replay_parser.py` and `verify_replay_2v2()` in `backend/algorithms/replay_verifier.py` — parse and verify 2v2 replays. The parser uses `sc2reader` identical to the 1v1 parser; the verifier checks 4 players instead of 2.
 
-**Not yet wired:** The bot's `on_message` replay upload handler (`bot/core/app.py`) and the `POST /matches_2v2/{match_id}/replay` endpoint are not yet implemented. Replay upload for 2v2 is out of scope for this phase.
+**Wired:** The bot's replay upload handler (`bot/helpers/replay_handler.py`) detects 2v2 matches and routes to `POST /matches_2v2/{match_id}/replay`. The endpoint runs the full 8-step flow (validate, parse in ProcessPoolExecutor, insert pending row, upload to storage, update status, update match refs, verify, auto-resolve).
 
 ---
 
 ## What Is Not Yet Implemented
 
-- **2v2 replay upload** — parser and verifier exist but the upload endpoint and bot handler are not yet wired
-- **2v2 leaderboard** — `LeaderboardEntry2v2` type exists, `StateManager.leaderboard_2v2` list exists, but it is never populated and there is no `/leaderboard` command for 2v2
 - **Party WS events** — party invite/accept/leave are synchronous (request/response); there are no WS broadcasts for party state changes. The bot handles party feedback in the command response and sends a manual DM to the other player.
 - **`/admin snapshot_2v2`** — no admin snapshot for 2v2 queue/match state yet
 - **3v3, FFA** — no planned work yet
