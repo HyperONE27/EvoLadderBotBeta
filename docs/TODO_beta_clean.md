@@ -154,3 +154,20 @@ The parties embed shows every entry in `parties_2v2` (the in-memory dict keyed b
 The queue embed mirrors the 1v1 version but displays party pairs instead of individual players. Each entry shows the leader and member side by side, their composition slots (BW/SC2/mixed), team MMR, and wait time. The active matches embed is analogous to 1v1 but shows all four players per match (two per team), the resolved composition (which team is BW, which is SC2), map, server, and elapsed time.
 
 The main open question is display layout. 1v1 queue entries and match rows fit in monospace backtick strings because each row has two players. 2v2 doubles the player count per row, which will overflow Discord's embed width in monospace. Options: (a) stack team rows vertically (two lines per match instead of one), (b) abbreviate more aggressively (drop nationality, shorten names), or (c) use embed fields instead of monospace blocks. This needs to be prototyped with real data to see what actually fits before committing to a format.
+
+---
+
+# Discord Announcement
+
+Hello @everyone,
+
+The pre-beta phase of the 
+
+
+Features you can look forward to:
+- New gamemodes: 
+
+
+What is not currently in scope:
+- **Lobby automation:** This is a big one. While the problem can be solved, 
+- 
