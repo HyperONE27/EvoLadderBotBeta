@@ -2,12 +2,17 @@ import structlog
 import discord
 from discord import app_commands
 
-from bot.components.embeds import SetMMRPreviewEmbed, UnsupportedGameModeEmbed
+from bot.components.embeds import (
+    ErrorEmbed,
+    SetMMRPreviewEmbed,
+    UnsupportedGameModeEmbed,
+)
 from bot.components.views import SetMMRConfirmView
 from bot.core.config import BACKEND_URL, GAME_MODE_CHOICES
 from bot.core.dependencies import get_player_locale
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_owner
+from common.i18n import t
 from common.lookups.race_lookups import get_races
 
 logger = structlog.get_logger(__name__)
@@ -64,14 +69,24 @@ def register_owner_mmr_command(tree: app_commands.CommandTree) -> None:
         async with get_session().get(f"{BACKEND_URL}/players/by_name/{player}") as resp:
             if resp.status == 404:
                 await interaction.followup.send(
-                    f"No player found matching **{player}**."
+                    embed=ErrorEmbed(
+                        title=t("error_embed.title.generic", locale),
+                        description=t("error.player_not_found", locale, player=player),
+                        locale=locale,
+                    )
                 )
                 return
             data = await resp.json()
 
         target = data.get("player")
         if target is None:
-            await interaction.followup.send(f"No player found matching **{player}**.")
+            await interaction.followup.send(
+                embed=ErrorEmbed(
+                    title=t("error_embed.title.generic", locale),
+                    description=t("error.player_not_found", locale, player=player),
+                    locale=locale,
+                )
+            )
             return
 
         target_discord_uid: int = target["discord_uid"]

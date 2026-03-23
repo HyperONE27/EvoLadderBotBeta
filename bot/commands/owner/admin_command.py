@@ -2,12 +2,13 @@ import structlog
 import discord
 from discord import app_commands
 
-from bot.components.embeds import ToggleAdminPreviewEmbed
+from bot.components.embeds import ErrorEmbed, ToggleAdminPreviewEmbed
 from bot.components.views import ToggleAdminConfirmView
 from bot.core.config import BACKEND_URL
 from bot.core.dependencies import get_player_locale
 from bot.core.http import get_session
 from bot.helpers.checks import check_if_owner
+from common.i18n import t
 
 logger = structlog.get_logger(__name__)
 
@@ -27,17 +28,29 @@ def register_owner_admin_command(tree: app_commands.CommandTree) -> None:
     ) -> None:
         await interaction.response.defer()
 
+        locale = get_player_locale(interaction.user.id)
+
         async with get_session().get(f"{BACKEND_URL}/players/by_name/{player}") as resp:
             if resp.status == 404:
                 await interaction.followup.send(
-                    f"No player found matching **{player}**."
+                    embed=ErrorEmbed(
+                        title=t("error_embed.title.generic", locale),
+                        description=t("error.player_not_found", locale, player=player),
+                        locale=locale,
+                    )
                 )
                 return
             data = await resp.json()
 
         target = data.get("player")
         if target is None:
-            await interaction.followup.send(f"No player found matching **{player}**.")
+            await interaction.followup.send(
+                embed=ErrorEmbed(
+                    title=t("error_embed.title.generic", locale),
+                    description=t("error.player_not_found", locale, player=player),
+                    locale=locale,
+                )
+            )
             return
 
         target_discord_uid: int = target["discord_uid"]
@@ -48,7 +61,6 @@ def register_owner_admin_command(tree: app_commands.CommandTree) -> None:
             f"Owner {interaction.user.name} ({interaction.user.id}) "
             f"invoked /admin for {target_player_name} ({target_discord_uid})"
         )
-        locale = get_player_locale(interaction.user.id)
         await interaction.followup.send(
             embed=ToggleAdminPreviewEmbed(
                 target_discord_uid, target_player_name, locale=locale

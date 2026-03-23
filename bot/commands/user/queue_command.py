@@ -2,7 +2,7 @@ import structlog
 import discord
 from discord import app_commands
 
-from bot.components.embeds import QueueSetupEmbed1v1, QueueSetupEmbed2v2
+from bot.components.embeds import ErrorEmbed, QueueSetupEmbed1v1, QueueSetupEmbed2v2
 from bot.components.views import (
     MatchFoundView1v1,
     MatchReportView1v1,
@@ -12,6 +12,7 @@ from bot.components.views import (
 from bot.core.config import BACKEND_URL, GAME_MODE_CHOICES
 from bot.core.dependencies import get_player_locale
 from bot.core.http import get_session
+from common.i18n import t
 from bot.helpers.checks import (
     check_if_accepted_tos,
     check_if_banned,
@@ -94,12 +95,22 @@ async def _queue_2v2(interaction: discord.Interaction) -> None:
         async with get_session().get(f"{BACKEND_URL}/party_2v2/{uid}") as resp:
             party_data = await resp.json()
     except Exception:
-        await interaction.followup.send("Failed to reach the backend. Try again later.")
+        await interaction.followup.send(
+            embed=ErrorEmbed(
+                title=t("error_embed.title.generic", locale),
+                description=t("error.backend_unavailable", locale),
+                locale=locale,
+            )
+        )
         return
 
     if not party_data.get("in_party"):
         await interaction.followup.send(
-            "You must be in a 2v2 party to queue. Use `/party invite` first."
+            embed=ErrorEmbed(
+                title=t("error_embed.title.generic", locale),
+                description=t("error.queue_not_in_party", locale),
+                locale=locale,
+            )
         )
         return
 
