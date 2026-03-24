@@ -3803,6 +3803,20 @@ class ReplaySuccessEmbed2v2(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
+class TalkChannelEmbed(discord.Embed):
+    """Notifies a player that a private talk channel has been created for their match."""
+
+    def __init__(self, message_url: str, locale: str = "enUS") -> None:
+        super().__init__(
+            title=t("talk_channel_embed.title.1", locale),
+            description=t("talk_channel_embed.description.1", locale).format(
+                message_url=message_url
+            ),
+            color=discord.Color.blurple(),
+        )
+        apply_default_embed_footer(self, locale=locale)
+
+
 class ReplayErrorEmbed(discord.Embed):
     """Red error embed for a replay parsing failure."""
 

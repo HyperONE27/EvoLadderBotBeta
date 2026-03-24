@@ -7,11 +7,31 @@ What remains?
 - ⏰ Write pre-beta feature announcement
 - ⏰ Re-write Terms of Service
 - ⏰ Store canonical copies of migrated old database so I can easily launch the pre-beta
-- ⏰ Rectify inconsistencies between 1v1 and 2v2
+- ✅ Combine /termsofservice and /setup:
+    - /termsofservice embed should become the first step in /setup
+- ✅ Automatically send the /termsofservice embed/first step of /setup whenever someone messages the bot and they are a new user
+    - Create their `players` table row automatically
+- ⏰ Create a channel manager microservice
+    - Two endpoints:
+        - Accept match information about two players, create a channel, send the match info embed inside it
+            - This should return the message share link of the embed message to the backend
+            - The backend should transmit the link to the bot
+            - The bot should share the channel link to both players in the match notification so they know where to look
+        - Delete a channel by message ID or channel ID
+            - Happens when a match is resolved
+            - Optional: time delay the deletion so we have time to clean a mess up if needed
+            - Needs safety measures so the bot only can delete channels it created / specifically in its data tables
+    - Players can optionally use this channel to coordinate once matched but they cannot find each other
+- ⏰ Add instructions under MatchInfoEmbed (in a new embed):
+    - How to change servers
+    - How to join a channel
+    - How to find opponents
+    - How to host a lobby or join a lobby your opponent hosted
+- ✅ Rectify inconsistencies between 1v1 and 2v2
 - ⏰ Update untranslated keys
-- ⏰ Make sure 2v2-related functionality uses the keys
-- ⏰ Finish 2v2 implementation
-- ⏰ Quality check 2v2 implementation
+- ✅ Make sure 2v2-related functionality uses the keys
+- ✅ Finish 2v2 implementation
+- ✅ Quality check 2v2 implementation
     - Especially replay uploads
 - ✅ Player names should be unique
 - ✅ Player names cannot contain symbols
@@ -167,10 +187,55 @@ The main open question is display layout. 1v1 queue entries and match rows fit i
 
 Hello @everyone,
 
-The pre-beta phase of the 
+The pre-beta phase of the SC: Evo Complete ladder arrives soon.
 
+I want to take this time to share with you what you can look forward to:
 
-Features you can look forward to:
-- New gamemodes: 2v2 will be joining 1v1 as an available game . I also plan to include certain seasonal gamemodes, 
-- 
+## New Gamemodes
 
+2v2 is coming to the ladder.
+- The pre-beta will introduce functionality to create a party. **You must be in a party to play 2v2.** The 2v2 queue will not accept solo players.
+- Your 2v2 MMR will be unique to each partner you play with — but not to each race, so you and your partner can freely queue with any races you like.
+- The 2v2 ladder will feature both **BW + BW vs SC2 + SC2** and **BW + SC2 vs BW + SC2** matching.
+    - You will be able to set a preferred **BW + BW**, **BW + SC2**, and **SC2 + SC2** team composition.
+
+In addition, there may be seasonal gamemodes in the future, such as Archon or FFA variants.
+
+## Improved Activity Visibility
+
+One pattern that arose from the bot data during the alpha phase was the frequency with which players would just barely miss each other in down time.
+
+To address this, we are introducing two new features:
+- Opt-in notifications every time someone joins the ladder (tuneable to be no more than once per time period of your chosen duration).
+- Public view access to the queue activity log, so you can see what times of the day and week have historically been most active.
+
+## Improved Match Flow
+
+During the alpha, a common pain point was uploading your replay and reporting the result of the match...only for your opponent to go AFK, leaving you stuck and unable to queue. Or worse, many players accidentally misreported match results while auto-piloting through the post-match process, requiring significant admin intervention.
+
+Now, whenever possible, as soon as any player in your match uploads a replay, the system will automatically resolve the match and update your MMR based on replay data. This will eliminate the need for manual reporting in 99% of cases.
+
+## New Locales
+
+To support our core player communities from around the world, our localization crew is proud to present four new locales:
+
+- 🇲🇽 esMX (Mexican Spanish)
+- 🇰🇷 koKR (Korean)
+- 🇷🇺 ruRU (Russian)
+- 🇨🇳 zhCN (Simplified Chinese)
+
+## Pricing and Monetization
+
+In previous announcements, I openly discussed plans for monetizing the ladder. This has understandably worried many of our fans.
+
+So, please allow me to assure you, the SC: Evo Complete ladder **will always be free to use** for core features — matchmaking, leaderboards, alternative gamemodes, and such. I will offer these at **no cost forever**, because the SC: Evo Complete community deserves proper practice infrastructure that is seamless and free of cheaters.
+
+That said, there will be paid functionality in the future. Running a service of this nature is not free. I currently pay for all costs associated with hosting and development out of my own pocket. I do this because I love SC: Evo Complete, and I intend to keep doing so for as long as I can. However, if running the ladder costs me more than I can personally absorb, the ladder will go down.
+
+Paid tiers and features will be introduced in the beta. I will do my best to ensure that these features make the ladder experience extra special for those who can give a bit back to what makes this mod great, without diminishing the experience for the masses.
+
+## Before I go,
+
+There will be more to look forward to in the pre-beta and beyond, not just ladder features but also the wider SC: Evo Complete multiplayer ecosystem. In particular, let's just say that it might be a good idea to start climbing the 1v1 leaderboard as soon as the pre-beta launches...
+
+I look forward to releasing the pre-beta. See you soon!

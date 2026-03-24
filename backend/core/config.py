@@ -155,3 +155,16 @@ REPLAY_TIMESTAMP_WINDOW_MINUTES: int = 60
 # QUICKSTART_URL  → common/urls.py
 # TOS_URL         → common/urls.py
 # TOS_MIRROR_URL  → common/urls.py
+
+# ---------------------
+# Channel Manager
+# ---------------------
+
+# Base URL of the channel_manager service.  If unset, channel creation is skipped.
+CHANNEL_MANAGER_URL: str | None = os.getenv("CHANNEL_MANAGER_URL") or None
+
+# Seconds to wait before asking the channel manager to delete a match channel.
+# Gives admins time to review conflict channels before they disappear.
+CHANNEL_DELETION_DELAY_SECONDS: int = int(
+    os.getenv("CHANNEL_DELETION_DELAY_SECONDS", "0")
+)

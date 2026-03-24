@@ -36,6 +36,7 @@ from bot.components.embeds import (
     MatchInfoEmbed1v1,
     MatchInfoEmbeds2v2,
     QueueSearchingEmbed,
+    TalkChannelEmbed,
 )
 from bot.core.config import (
     BACKEND_URL,
@@ -125,12 +126,34 @@ async def _handle_message(client: discord.Client, raw: str) -> None:
             await _on_match_conflict_2v2(client, data)
         else:
             await _on_match_conflict(client, data)
+    elif event == "talk_channel_created":
+        await _on_talk_channel_created(client, data)
     elif event == "leaderboard_updated":
         _on_leaderboard_updated(data)
     elif event == "queue_join_activity":
         await _on_queue_join_activity(client, data)
     else:
         logger.warning(f"[WS] Unknown event type: {event}")
+
+
+async def _on_talk_channel_created(client: discord.Client, data: dict) -> None:
+    """DM all matched players with a link to their newly created talk channel."""
+    message_url: str = data.get("message_url", "")
+    raw_uids: list = data.get("discord_uids") or []
+
+    for uid_raw in raw_uids:
+        try:
+            uid = int(uid_raw)
+        except (TypeError, ValueError):
+            continue
+        try:
+            user = await client.fetch_user(uid)
+            locale = get_player_locale(uid)
+            await queue_user_send_low(
+                user, embed=TalkChannelEmbed(message_url, locale=locale)
+            )
+        except Exception:
+            logger.exception(f"[WS] Failed to DM user {uid} for talk_channel_created")
 
 
 async def _on_queue_join_activity(client: discord.Client, data: dict) -> None:

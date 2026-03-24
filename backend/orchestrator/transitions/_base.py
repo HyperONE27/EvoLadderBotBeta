@@ -23,7 +23,8 @@ def _handle_missing_player(
 
     rows = df.filter(pl.col("discord_uid") == discord_uid)
     if not rows.is_empty():
-        logger.info(f"Player {discord_username} with ID {discord_uid} already exists")
+        # This dumb row is too loud
+        # logger.info(f"Player {discord_username} with ID {discord_uid} already exists")
         return rows.row(0, named=True)
 
     logger.info(f"Creating new player row for {discord_username} with ID {discord_uid}")
