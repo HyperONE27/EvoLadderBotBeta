@@ -969,7 +969,7 @@ def _team_header_2v2(
 
     if not show_mmr:
         return (
-            f"{rank_emote} {p1_flag} {p1_race_emote} **{p1_name}** &\n"
+            f"{rank_emote} {p1_flag} {p1_race_emote} **{p1_name}** & "
             f"{p2_flag} {p2_race_emote} **{p2_name}**"
         )
     mmr_part = f"({mmr} → {new_mmr})" if new_mmr is not None else f"({mmr})"
@@ -3231,7 +3231,12 @@ class AdminResolutionEmbed(discord.Embed):
 
 
 class AdminResolution2v2Embed(discord.Embed):
-    """Admin Resolution embed for 2v2 matches."""
+    """Admin confirmation embed for 2v2 admin-resolved matches.
+
+    Mirrors the MatchFinalizedEmbed2v2 layout (rank emotes, flags, race,
+    MMR delta) and appends an Admin Intervention field. Green for the
+    admin's own view; not used for player DMs (those get MatchFinalizedEmbed2v2).
+    """
 
     def __init__(
         self,
@@ -3239,30 +3244,27 @@ class AdminResolution2v2Embed(discord.Embed):
         *,
         reason: str | None,
         admin_name: str,
+        player_infos: dict[int, dict[str, Any] | None] | None = None,
         is_admin_confirm: bool = False,
         locale: str = "enUS",
     ) -> None:
-        match_id = data.get("match_id", "?")
-        result = data.get("result", "?")
-        t1_old = data.get("team_1_mmr", 0)
-        t2_old = data.get("team_2_mmr", 0)
-        t1_new = data.get("team_1_mmr_new", 0)
-        t2_new = data.get("team_2_mmr_new", 0)
-        t1_change = data.get("team_1_mmr_change", 0)
-        t2_change = data.get("team_2_mmr_change", 0)
+        # Support both "id" (alias added by endpoint) and the raw "match_id".
+        match_id = data.get("id", data.get("match_id", "?"))
+        # Support both "match_result" (alias) and the raw "result".
+        result = data.get("match_result", data.get("result", "?"))
+        t1_mmr = data.get("team_1_mmr", 0)
+        t2_mmr = data.get("team_2_mmr", 0)
+        t1_change = data.get("team_1_mmr_change") or 0
+        t2_change = data.get("team_2_mmr_change") or 0
+        t1_new = t1_mmr + t1_change
+        t2_new = t2_mmr + t2_change
 
-        # Build roster strings.
-        t1_roster_parts: list[str] = []
-        t2_roster_parts: list[str] = []
-        for team_num, parts in ((1, t1_roster_parts), (2, t2_roster_parts)):
-            for p_num in (1, 2):
-                name = data.get(f"team_{team_num}_player_{p_num}_name", "?")
-                race = data.get(f"team_{team_num}_player_{p_num}_race", "")
-                try:
-                    emote = get_race_emote(race)
-                except ValueError:
-                    emote = "🎮"
-                parts.append(f"{emote} {name}")
+        t1_hdr = _team_header_2v2(
+            data, "team_1", player_infos, new_mmr=t1_new, locale=locale
+        )
+        t2_hdr = _team_header_2v2(
+            data, "team_2", player_infos, new_mmr=t2_new, locale=locale
+        )
 
         color = discord.Color.green() if is_admin_confirm else discord.Color.gold()
         title_key = (
@@ -3273,40 +3275,41 @@ class AdminResolution2v2Embed(discord.Embed):
 
         super().__init__(
             title=t(title_key, locale, match_id=str(match_id)),
-            description=t(
-                "admin_resolution_embed_2v2.description.1",
-                locale,
-                t1_roster=", ".join(t1_roster_parts),
-                t1_old=str(t1_old),
-                t1_new=str(t1_new),
-                t2_roster=", ".join(t2_roster_parts),
-                t2_old=str(t2_old),
-                t2_new=str(t2_new),
-            ),
+            description=f"{t1_hdr}\nvs\n{t2_hdr}",
             color=color,
         )
 
-        self.add_field(name="", value="\u3164", inline=False)
+        # Result field — mirrors MatchFinalizedEmbed2v2 exactly.
+        if result == "draw":
+            result_value = t("shared.result_draw", locale)
+        elif result == "invalidated":
+            result_value = _result_display_2v2(result, locale)
+        elif result == "team_1_win":
+            t1_hdr_short = _team_header_2v2(
+                data, "team_1", player_infos, show_mmr=False, locale=locale
+            )
+            result_value = f"🏆 {t1_hdr_short}"
+        else:  # team_2_win
+            t2_hdr_short = _team_header_2v2(
+                data, "team_2", player_infos, show_mmr=False, locale=locale
+            )
+            result_value = f"🏆 {t2_hdr_short}"
 
-        result_display = _result_display_2v2(result, locale)
+        t1_sign = "+" if t1_change >= 0 else ""
+        t2_sign = "+" if t2_change >= 0 else ""
+
         self.add_field(
             name=t("shared.field_name.result", locale),
-            value=result_display,
+            value=result_value,
             inline=True,
         )
-
-        mmr_text = t(
-            "admin_resolution_embed_2v2.field_value.mmr_changes",
-            locale,
-            t1_change=f"{t1_change:+d}",
-            t1_old=str(t1_old),
-            t1_new=str(t1_new),
-            t2_change=f"{t2_change:+d}",
-            t2_old=str(t2_old),
-            t2_new=str(t2_new),
-        )
         self.add_field(
-            name=t("shared.field_name.mmr_changes", locale), value=mmr_text, inline=True
+            name=t("shared.field_name.mmr_changes", locale),
+            value=(
+                f"- Team 1: `{t1_sign}{t1_change} ({t1_mmr} → {t1_new})`\n"
+                f"- Team 2: `{t2_sign}{t2_change} ({t2_mmr} → {t2_new})`"
+            ),
+            inline=True,
         )
 
         intervention_text = t(

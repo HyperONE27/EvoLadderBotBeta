@@ -1355,16 +1355,16 @@ async def _send_resolve_request_2v2(
         f"2v2 match #{match_id}: result={result}"
     )
 
+    player_infos = await _fetch_all_player_infos_2v2(resolve_data)
     admin_embed = AdminResolution2v2Embed(
         resolve_data,
         reason=reason,
         admin_name=admin_name,
+        player_infos=player_infos,
         is_admin_confirm=True,
         locale=get_player_locale(interaction.user.id),
     )
     await interaction.response.edit_message(embed=admin_embed, view=None)
-
-    player_infos = await _fetch_all_player_infos_2v2(resolve_data)
     await _notify_players_2v2(
         interaction, resolve_data, player_infos, reason, admin_name
     )
