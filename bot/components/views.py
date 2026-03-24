@@ -39,7 +39,6 @@ from bot.components.embeds import (
     SetupSuccessEmbed,
     SetupValidationErrorEmbed,
     StatusResetSuccessEmbed,
-    TermsOfServiceAcceptedEmbed,
     TermsOfServiceDeclinedEmbed,
     ToggleAdminSuccessEmbed,
 )
@@ -949,39 +948,43 @@ async def _send_setup_request(
 # Terms of Service
 # =========================================================================
 
-
-class TermsOfServiceView(discord.ui.View):
-    def __init__(self, discord_uid: int, discord_username: str) -> None:
-        super().__init__()
-
-        async def on_accept(interaction: discord.Interaction) -> None:
-            logger.info(
-                f"User {discord_username} ({discord_uid}) accepting Terms of Service"
-            )
-            await _send_tos_request(
-                interaction, discord_uid, discord_username, accepted=True
-            )
-
-        async def on_decline(interaction: discord.Interaction) -> None:
-            logger.info(
-                f"User {discord_username} ({discord_uid}) declining Terms of Service"
-            )
-            await _send_tos_request(
-                interaction, discord_uid, discord_username, accepted=False
-            )
-
-        _locale = get_player_locale(discord_uid)
-        self.add_item(
-            ConfirmButton(label=t("button.accept", _locale), callback=on_accept)
-        )
-        self.add_item(
-            ConfirmButton(
-                label=t("button.decline", _locale),
-                callback=on_decline,
-                style=discord.ButtonStyle.red,
-                emoji="✖️",
-            )
-        )
+# TermsOfServiceView is deprecated.
+# The standalone /termsofservice command has been merged into /setup. The ToS
+# accept/decline flow is now handled by TermsOfServiceSetupView, which transitions
+# to the setup flow on accept rather than ending in a standalone confirmation.
+#
+# class TermsOfServiceView(discord.ui.View):
+#     def __init__(self, discord_uid: int, discord_username: str) -> None:
+#         super().__init__()
+#
+#         async def on_accept(interaction: discord.Interaction) -> None:
+#             logger.info(
+#                 f"User {discord_username} ({discord_uid}) accepting Terms of Service"
+#             )
+#             await _send_tos_request(
+#                 interaction, discord_uid, discord_username, accepted=True
+#             )
+#
+#         async def on_decline(interaction: discord.Interaction) -> None:
+#             logger.info(
+#                 f"User {discord_username} ({discord_uid}) declining Terms of Service"
+#             )
+#             await _send_tos_request(
+#                 interaction, discord_uid, discord_username, accepted=False
+#             )
+#
+#         _locale = get_player_locale(discord_uid)
+#         self.add_item(
+#             ConfirmButton(label=t("button.accept", _locale), callback=on_accept)
+#         )
+#         self.add_item(
+#             ConfirmButton(
+#                 label=t("button.decline", _locale),
+#                 callback=on_decline,
+#                 style=discord.ButtonStyle.red,
+#                 emoji="✖️",
+#             )
+#         )
 
 
 async def _send_tos_request(
@@ -989,7 +992,15 @@ async def _send_tos_request(
     discord_uid: int,
     discord_username: str,
     accepted: bool,
+    on_accept_success: Callable[[discord.Interaction, str], Awaitable[None]]
+    | None = None,
 ) -> None:
+    """POST ToS accept/decline to the backend and update the message.
+
+    On decline: edits to TermsOfServiceDeclinedEmbed.
+    On accept: calls on_accept_success(interaction, locale) so the caller controls
+    the post-accept transition (e.g. continue to setup flow).
+    """
     async with get_session().put(
         f"{BACKEND_URL}/commands/termsofservice",
         json={
@@ -1000,8 +1011,9 @@ async def _send_tos_request(
     ) as response:
         data = await response.json()
 
+    _locale = get_player_locale(discord_uid)
+
     if response.status >= 400:
-        _locale = get_player_locale(discord_uid)
         error = data.get("detail") or t("error.unexpected_error", _locale)
         logger.error(
             f"TOS upsert failed for {discord_username} ({discord_uid}): {error}"
@@ -1019,13 +1031,99 @@ async def _send_tos_request(
     logger.info(
         f"TOS upsert succeeded for {discord_username} ({discord_uid}): accepted={accepted}"
     )
-    _locale = get_player_locale(discord_uid)
-    embed = (
-        TermsOfServiceAcceptedEmbed(locale=_locale)
-        if accepted
-        else TermsOfServiceDeclinedEmbed(locale=_locale)
-    )
-    await interaction.response.edit_message(embed=embed, view=None)
+
+    if accepted and on_accept_success is not None:
+        await on_accept_success(interaction, _locale)
+    else:
+        await interaction.response.edit_message(
+            embed=TermsOfServiceDeclinedEmbed(locale=_locale),
+            view=None,
+        )
+
+
+class TermsOfServiceSetupView(discord.ui.View):
+    """ToS accept/decline view used as the first step of /setup.
+
+    On accept: POSTs ToS acceptance, fetches player data for pre-population,
+    then transitions to SetupIntroEmbed + SetupIntroView.
+    On decline: POSTs ToS decline, then shows TermsOfServiceDeclinedEmbed.
+    """
+
+    def __init__(self, discord_uid: int, discord_username: str) -> None:
+        super().__init__()
+
+        async def _on_tos_accepted(
+            interaction: discord.Interaction, locale: str
+        ) -> None:
+            modal_presets: dict[str, str] | None = None
+            preselected_nationality: str | None = None
+            preselected_location: str | None = None
+            preselected_language: str | None = None
+
+            try:
+                async with get_session().get(
+                    f"{BACKEND_URL}/players/{discord_uid}"
+                ) as player_response:
+                    player_data = await player_response.json()
+                    player = player_data.get("player")
+                    if player:
+                        modal_presets = {
+                            "player_name": player.get("player_name") or "",
+                            "alt_ids": " ".join(player.get("alt_player_names") or []),
+                            "battletag": player.get("battletag") or "",
+                        }
+                        preselected_nationality = player.get("nationality")
+                        preselected_location = player.get("location")
+                        preselected_language = player.get("language")
+            except Exception:
+                logger.warning(
+                    f"TermsOfServiceSetupView: failed to fetch player data for user={discord_uid}, proceeding without pre-population",
+                    exc_info=True,
+                )
+
+            await interaction.response.edit_message(
+                embed=SetupIntroEmbed(locale=locale),
+                view=SetupIntroView(
+                    modal_presets=modal_presets,
+                    preselected_nationality=preselected_nationality,
+                    preselected_location=preselected_location,
+                    preselected_language=preselected_language,
+                    locale=locale,
+                ),
+            )
+
+        async def on_accept(interaction: discord.Interaction) -> None:
+            logger.info(
+                f"User {discord_username} ({discord_uid}) accepting Terms of Service via /setup"
+            )
+            await _send_tos_request(
+                interaction,
+                discord_uid,
+                discord_username,
+                accepted=True,
+                on_accept_success=_on_tos_accepted,
+            )
+
+        async def on_decline(interaction: discord.Interaction) -> None:
+            logger.info(
+                f"User {discord_username} ({discord_uid}) declining Terms of Service via /setup"
+            )
+            await _send_tos_request(
+                interaction, discord_uid, discord_username, accepted=False
+            )
+
+        _locale = get_player_locale(discord_uid)
+        self.add_item(
+            ConfirmButton(label=t("button.accept", _locale), callback=on_accept)
+        )
+        self.add_item(
+            ConfirmButton(
+                label=t("button.decline", _locale),
+                callback=on_decline,
+                style=discord.ButtonStyle.red,
+                emoji="✖️",
+            )
+        )
 
 
 # =========================================================================

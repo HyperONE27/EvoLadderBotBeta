@@ -1968,15 +1968,20 @@ class TermsOfServiceEmbed(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
-class TermsOfServiceAcceptedEmbed(discord.Embed):
-    def __init__(self, locale: str = "enUS") -> None:
-        super().__init__(
-            title=t("terms_of_service_accepted_embed.title.1", locale),
-            description=t("terms_of_service_accepted_embed.description.1", locale),
-            color=discord.Color.green(),
-        )
-
-        apply_default_embed_footer(self, locale=locale)
+# TermsOfServiceAcceptedEmbed is deprecated.
+# The standalone /termsofservice command has been merged into /setup. Accepting
+# the ToS now transitions directly to SetupIntroEmbed rather than terminating
+# in a standalone confirmation embed.
+#
+# class TermsOfServiceAcceptedEmbed(discord.Embed):
+#     def __init__(self, locale: str = "enUS") -> None:
+#         super().__init__(
+#             title=t("terms_of_service_accepted_embed.title.1", locale),
+#             description=t("terms_of_service_accepted_embed.description.1", locale),
+#             color=discord.Color.green(),
+#         )
+#
+#         apply_default_embed_footer(self, locale=locale)
 
 
 class TermsOfServiceDeclinedEmbed(discord.Embed):

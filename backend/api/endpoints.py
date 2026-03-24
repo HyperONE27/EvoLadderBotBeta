@@ -60,6 +60,8 @@ from backend.api.models import (
     PartyRespondRequest,
     PartyRespondResponse,
     PlayerNameAvailabilityResponse,
+    PlayerRegisterRequest,
+    PlayerRegisterResponse,
     PlayersResponse,
     Preferences1v1Response,
     Preferences2v2Response,
@@ -1248,6 +1250,17 @@ async def players_by_name(
     if player is None:
         raise HTTPException(status_code=404, detail="Player not found.")
     return PlayersResponse(player=player)
+
+
+@router.post("/players/register", response_model=PlayerRegisterResponse)
+async def register_player(
+    request: PlayerRegisterRequest,
+    app: Backend = Depends(get_backend),
+) -> PlayerRegisterResponse:
+    was_created = app.orchestrator.register_player(
+        request.discord_uid, request.discord_username
+    )
+    return PlayerRegisterResponse(created=was_created)
 
 
 @router.get("/players/{discord_uid}", response_model=PlayersResponse)

@@ -3,12 +3,13 @@ import discord
 import structlog
 from discord import app_commands
 
-from bot.components.embeds import ErrorEmbed
+from bot.components.embeds import ErrorEmbed, TermsOfServiceEmbed
+from bot.components.views import TermsOfServiceSetupView
 from bot.core.bootstrap import Bot
-from bot.core.config import BOT_TOKEN
+from bot.core.config import BACKEND_URL, BOT_TOKEN
 from bot.core.dependencies import get_player_locale, set_bot
 from common.i18n import t
-from bot.core.http import init_session, close_session
+from bot.core.http import get_session, init_session, close_session
 from bot.core.message_queue import get_message_queue, initialize_message_queue
 
 from bot.commands.admin.ban_command import register_admin_ban_command
@@ -27,7 +28,6 @@ from bot.commands.user.profile_command import register_profile_command
 from bot.commands.user.queue_command import register_queue_command
 from bot.commands.user.setcountry_command import register_setcountry_command
 from bot.commands.user.setup_command import register_setup_command
-from bot.commands.user.termsofservice_command import register_termsofservice_command
 from bot.core.ws_listener import start_ws_listener
 from bot.helpers.message_helpers import queue_channel_send_low
 from bot.helpers.replay_handler import handle_replay_upload
@@ -71,7 +71,7 @@ def _register_commands(client: discord.Client) -> None:
     register_queue_command(tree)
     register_setcountry_command(tree)
     register_setup_command(tree)
-    register_termsofservice_command(tree)
+    # register_termsofservice_command(tree)  # Deprecated: merged into /setup
 
 
 # --------------------
@@ -88,9 +88,35 @@ async def on_message(message: discord.Message) -> None:
     if message.content.startswith("!"):
         await queue_channel_send_low(message.channel, content="🌎 Hello, world!")
 
-    # Replay upload handler — only fires for DM messages with attachments.
-    if isinstance(message.channel, discord.DMChannel) and message.attachments:
-        await handle_replay_upload(client, message)
+    if isinstance(message.channel, discord.DMChannel):
+        # Register the player if this is their first interaction with the bot.
+        # If newly created, send the ToS + setup flow automatically.
+        try:
+            async with get_session().post(
+                f"{BACKEND_URL}/players/register",
+                json={
+                    "discord_uid": message.author.id,
+                    "discord_username": message.author.name,
+                },
+            ) as response:
+                data = await response.json()
+                if response.status < 400 and data.get("created"):
+                    locale = get_player_locale(message.author.id)
+                    await message.channel.send(
+                        embed=TermsOfServiceEmbed(locale=locale),
+                        view=TermsOfServiceSetupView(
+                            message.author.id, message.author.name
+                        ),
+                    )
+        except Exception:
+            logger.warning(
+                f"on_message: player registration check failed for user={message.author.id}",
+                exc_info=True,
+            )
+
+        # Replay upload handler — only fires for DM messages with attachments.
+        if message.attachments:
+            await handle_replay_upload(client, message)
 
 
 @client.event

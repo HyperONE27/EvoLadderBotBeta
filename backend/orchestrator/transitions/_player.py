@@ -174,6 +174,18 @@ def set_tos_for_player(
     return True, None
 
 
+def register_player(
+    self: TransitionManager,
+    discord_uid: int,
+    discord_username: str,
+) -> bool:
+    """Ensure a player row exists. Returns True if the row was newly created."""
+    df = self._state_manager.players_df
+    was_created = df.filter(pl.col("discord_uid") == discord_uid).is_empty()
+    self._handle_missing_player(discord_uid, discord_username)
+    return was_created
+
+
 def reset_all_player_statuses(self: TransitionManager) -> None:
     """Reset all players to idle with no active match (called at startup)."""
     self._db_writer.reset_all_player_statuses()

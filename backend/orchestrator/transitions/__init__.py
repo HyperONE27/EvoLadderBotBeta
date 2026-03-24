@@ -44,6 +44,7 @@ class TransitionManager:
     _get_player_letter_rank = _base._get_player_letter_rank
 
     # -- player transitions (_player.py) -------------------------------------
+    register_player = _player.register_player
     set_country_for_player = _player.set_country_for_player
     setup_player = _player.setup_player
     set_tos_for_player = _player.set_tos_for_player

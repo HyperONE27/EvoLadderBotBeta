@@ -522,6 +522,15 @@ class PlayersResponse(BaseModel):
     player: PlayersRow | None
 
 
+class PlayerRegisterRequest(BaseModel):
+    discord_uid: int
+    discord_username: str
+
+
+class PlayerRegisterResponse(BaseModel):
+    created: bool
+
+
 class PlayerNameAvailabilityResponse(BaseModel):
     available: bool
 

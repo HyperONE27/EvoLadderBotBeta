@@ -241,6 +241,10 @@ class Orchestrator:
     # Player management
     # ------------------------------------------------------------------
 
+    def register_player(self, discord_uid: int, discord_username: str) -> bool:
+        """Ensure a player row exists. Returns True if newly created."""
+        return self._transition_manager.register_player(discord_uid, discord_username)
+
     def setcountry(
         self, discord_uid: int, discord_username: str, country_code: str
     ) -> tuple[bool, str | None]:
