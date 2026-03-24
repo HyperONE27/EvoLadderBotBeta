@@ -730,13 +730,18 @@ class MatchAbortedEmbed(discord.Embed):
             aborter = p2_name
 
         super().__init__(
-            title=t("match_aborted_embed.title.1", locale, match_id=str(match_id)),
+            title=t(
+                "match_aborted_embed.title.1",
+                locale,
+                match_id=str(match_id),
+                game_mode="1v1",
+            ),
             description=f"{p1_hdr} vs {p2_hdr}",
             color=discord.Color.red(),
         )
         self.add_field(
             name=t("shared.field_name.mmr_changes", locale),
-            value=f"• {p1_name}: `+0 ({p1_mmr})`\n• {p2_name}: `+0 ({p2_mmr})`",
+            value=f"- {p1_name}: `+0 ({p1_mmr})`\n- {p2_name}: `+0 ({p2_mmr})`",
             inline=False,
         )
         self.add_field(
@@ -788,13 +793,18 @@ class MatchAbandonedEmbed(discord.Embed):
             abandoner = p2_name
 
         super().__init__(
-            title=t("match_abandoned_embed.title.1", locale, match_id=str(match_id)),
+            title=t(
+                "match_abandoned_embed.title.1",
+                locale,
+                match_id=str(match_id),
+                game_mode="1v1",
+            ),
             description=f"{p1_hdr} vs {p2_hdr}",
             color=discord.Color.red(),
         )
         self.add_field(
             name=t("shared.field_name.mmr_changes", locale),
-            value=f"• {p1_name}: `+0 ({p1_mmr})`\n• {p2_name}: `+0 ({p2_mmr})`",
+            value=f"- {p1_name}: `+0 ({p1_mmr})`\n- {p2_name}: `+0 ({p2_mmr})`",
             inline=False,
         )
         self.add_field(
@@ -844,7 +854,12 @@ class MatchFinalizedEmbed(discord.Embed):
         )
 
         super().__init__(
-            title=t("match_finalized_embed.title.1", locale, match_id=str(match_id)),
+            title=t(
+                "match_finalized_embed.title.1",
+                locale,
+                match_id=str(match_id),
+                game_mode="1v1",
+            ),
             description=f"{p1_hdr} vs {p2_hdr}",
             color=discord.Color.gold(),
         )
@@ -912,7 +927,12 @@ class MatchConflictEmbed(discord.Embed):
         p2_report = match_data.get("player_2_report", "?")
 
         super().__init__(
-            title=t("match_conflict_embed.title.1", locale, match_id=str(match_id)),
+            title=t(
+                "match_conflict_embed.title.1",
+                locale,
+                match_id=str(match_id),
+                game_mode="1v1",
+            ),
             description=f"{p1_hdr} vs {p2_hdr}",
             color=discord.Color.orange(),
         )
@@ -974,7 +994,7 @@ def _team_header_2v2(
         )
     mmr_part = f"({mmr} → {new_mmr})" if new_mmr is not None else f"({mmr})"
     return (
-        f"{rank_emote} {p1_flag} {p1_race_emote} **{p1_name}** &\n"
+        f"{rank_emote} {p1_flag} {p1_race_emote} **{p1_name}** & "
         f"{p2_flag} {p2_race_emote} **{p2_name}** {mmr_part}"
     )
 
@@ -1262,16 +1282,18 @@ class MatchAbortedEmbed2v2(discord.Embed):
         t2_hdr = _team_header_2v2(match_data, "team_2", player_infos, locale=locale)
 
         super().__init__(
-            title=(
-                t("match_aborted_embed.title.1", locale, match_id=str(match_id))
-                + " — 2v2"
+            title=t(
+                "match_aborted_embed.title.1",
+                locale,
+                match_id=str(match_id),
+                game_mode="2v2",
             ),
             description=f"{t1_hdr}\nvs\n{t2_hdr}",
             color=discord.Color.red(),
         )
         self.add_field(
             name=t("shared.field_name.mmr_changes", locale),
-            value=(f"• Team 1: `+0 ({t1_mmr})`\n• Team 2: `+0 ({t2_mmr})`"),
+            value=(f"- Team 1: `+0 ({t1_mmr})`\n- Team 2: `+0 ({t2_mmr})`"),
             inline=False,
         )
         self.add_field(
@@ -1296,16 +1318,18 @@ class MatchAbandonedEmbed2v2(discord.Embed):
         t2_hdr = _team_header_2v2(match_data, "team_2", player_infos, locale=locale)
 
         super().__init__(
-            title=(
-                t("match_abandoned_embed.title.1", locale, match_id=str(match_id))
-                + " — 2v2"
+            title=t(
+                "match_abandoned_embed.title.1",
+                locale,
+                match_id=str(match_id),
+                game_mode="2v2",
             ),
             description=f"{t1_hdr}\nvs\n{t2_hdr}",
             color=discord.Color.red(),
         )
         self.add_field(
             name=t("shared.field_name.mmr_changes", locale),
-            value=(f"• Team 1: `+0 ({t1_mmr})`\n• Team 2: `+0 ({t2_mmr})`"),
+            value=(f"- Team 1: `+0 ({t1_mmr})`\n- Team 2: `+0 ({t2_mmr})`"),
             inline=False,
         )
         self.add_field(
@@ -1339,9 +1363,11 @@ class MatchFinalizedEmbed2v2(discord.Embed):
         )
 
         super().__init__(
-            title=(
-                t("match_finalized_embed.title.1", locale, match_id=str(match_id))
-                + " — 2v2"
+            title=t(
+                "match_finalized_embed.title.1",
+                locale,
+                match_id=str(match_id),
+                game_mode="2v2",
             ),
             description=f"{t1_hdr}\nvs\n{t2_hdr}",
             color=discord.Color.gold(),
@@ -1393,9 +1419,11 @@ class MatchConflictEmbed2v2(discord.Embed):
         t2_report = match_data.get("team_2_report", "?")
 
         super().__init__(
-            title=(
-                t("match_conflict_embed.title.1", locale, match_id=str(match_id))
-                + " — 2v2"
+            title=t(
+                "match_conflict_embed.title.1",
+                locale,
+                match_id=str(match_id),
+                game_mode="2v2",
             ),
             description=f"{t1_hdr}\nvs\n{t2_hdr}",
             color=discord.Color.orange(),
