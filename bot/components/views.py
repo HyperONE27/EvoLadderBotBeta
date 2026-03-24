@@ -19,12 +19,13 @@ from bot.components.queue_activity_chart import render_queue_join_chart_png
 from bot.components.embeds import (
     AdminResolution2v2Embed,
     AdminResolutionEmbed,
+    MatchFinalizedEmbed2v2,
     BanSuccessEmbed,
     ErrorEmbed,
     MatchAbortAckEmbed,
     MatchConfirmedEmbed,
     MatchInfoEmbed1v1,
-    MatchInfoEmbed2v2,
+    MatchInfoEmbeds2v2,
     QueueErrorEmbed,
     QueueSetupEmbed1v1,
     QueueSetupEmbed2v2,
@@ -1363,23 +1364,43 @@ async def _send_resolve_request_2v2(
     )
     await interaction.response.edit_message(embed=admin_embed, view=None)
 
-    await _notify_players_2v2(interaction, resolve_data, reason, admin_name)
-    await _send_to_match_log_2v2(interaction, resolve_data, reason, admin_name)
+    player_infos = await _fetch_all_player_infos_2v2(resolve_data)
+    await _notify_players_2v2(
+        interaction, resolve_data, player_infos, reason, admin_name
+    )
+    await _send_to_match_log_2v2(
+        interaction, resolve_data, player_infos, reason, admin_name
+    )
+
+
+async def _fetch_all_player_infos_2v2(data: dict) -> dict[int, dict | None]:
+    """Fetch nationality info for all four 2v2 players concurrently."""
+    uids: list[int] = []
+    for team_num in (1, 2):
+        for p_num in (1, 2):
+            uid = data.get(f"team_{team_num}_player_{p_num}_discord_uid")
+            if uid is not None:
+                uids.append(uid)
+    results = await asyncio.gather(
+        *(_fetch_player_info(uid) for uid in uids), return_exceptions=True
+    )
+    return {uid: (r if isinstance(r, dict) else None) for uid, r in zip(uids, results)}
 
 
 async def _notify_players_2v2(
     interaction: discord.Interaction,
     data: dict,
+    player_infos: dict[int, dict | None],
     reason: str | None,
     admin_name: str,
 ) -> None:
-    """DM all four players with the Admin Resolution 2v2 embed."""
-    uids = set()
+    """DM all four players with the MatchFinalizedEmbed2v2 layout."""
+    uids: list[int] = []
     for team_num in (1, 2):
         for p_num in (1, 2):
             uid = data.get(f"team_{team_num}_player_{p_num}_discord_uid")
             if uid is not None:
-                uids.add(uid)
+                uids.append(uid)
 
     for uid in uids:
         try:
@@ -1387,8 +1408,8 @@ async def _notify_players_2v2(
             user = await interaction.client.fetch_user(uid)
             await queue_user_send_low(
                 user,
-                embed=AdminResolution2v2Embed(
-                    data, reason=reason, admin_name=admin_name, locale=locale
+                embed=MatchFinalizedEmbed2v2(
+                    data, player_infos=player_infos, locale=locale
                 ),
             )
         except Exception:
@@ -1398,17 +1419,18 @@ async def _notify_players_2v2(
 async def _send_to_match_log_2v2(
     interaction: discord.Interaction,
     data: dict,
+    player_infos: dict[int, dict | None],
     reason: str | None,
     admin_name: str,
 ) -> None:
-    """Send the Admin Resolution 2v2 embed to the match log channel."""
+    """Send the MatchFinalizedEmbed2v2 to the match log channel."""
     try:
         channel = interaction.client.get_channel(MATCH_LOG_CHANNEL_ID)
         if channel is None:
             channel = await interaction.client.fetch_channel(MATCH_LOG_CHANNEL_ID)
         if channel is not None and isinstance(channel, discord.TextChannel):
-            embed = AdminResolution2v2Embed(
-                data, reason=reason, admin_name=admin_name, locale="enUS"
+            embed = MatchFinalizedEmbed2v2(
+                data, player_infos=player_infos, locale="enUS"
             )
             await queue_channel_send_low(channel, embed=embed)
     except Exception:
@@ -2894,13 +2916,13 @@ class MatchReportView2v2(discord.ui.View):
                 option.default = option.value == report
             self.report_select.disabled = True
             locale = get_player_locale(interaction.user.id)
-            new_embed = MatchInfoEmbed2v2(
+            new_embeds = MatchInfoEmbeds2v2(
                 self._match_data,
                 self._player_infos,
                 pending_report=report,
                 locale=locale,
             )
-            await interaction.edit_original_response(embed=new_embed, view=self)
+            await interaction.edit_original_response(embeds=new_embeds, view=self)
 
         except Exception:
             logger.exception("Failed to submit 2v2 match report")

@@ -659,6 +659,8 @@
     "replay_success_embed.winner_draw.1": "⚖️ Ничья",
     "replay_success_embed.winner_p1.1": "🥇 {race_emote} {name}",
     "replay_success_embed.winner_p2.1": "🥇 {race_emote} {name}",
+    "replay_success_embed_2v2.winner_indeterminate.1": "❓ Indeterminate",
+    "replay_success_embed_2v2.winner_indeterminate_coerced.1": "📋 Loss (Indeterminate — recorded before match ended)",
     "replay_success_embed_2v2.winner_team_1.1": "🏆 {team}",
     "replay_success_embed_2v2.winner_team_2.1": "🏆 {team}",
     "resolve_preview_embed.confirm_suffix.1": "\n\nЭто обновит результат матча и MMR. Подтвердить?",

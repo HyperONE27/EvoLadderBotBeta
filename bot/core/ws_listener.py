@@ -34,7 +34,7 @@ from bot.components.embeds import (
     MatchFinalizedEmbed2v2,
     MatchFoundEmbed,
     MatchInfoEmbed1v1,
-    MatchInfoEmbed2v2,
+    MatchInfoEmbeds2v2,
     QueueSearchingEmbed,
 )
 from bot.core.config import (
@@ -447,7 +447,7 @@ async def _on_all_confirmed_2v2(client: discord.Client, match_data: dict) -> Non
             dm_coros.append(
                 queue_user_send_high(
                     user,
-                    embed=MatchInfoEmbed2v2(match_data, infos, locale=locale),
+                    embeds=MatchInfoEmbeds2v2(match_data, infos, locale=locale),
                     view=MatchReportView2v2(match_id, match_data, infos, locale=locale),
                 )
             )
@@ -472,7 +472,7 @@ async def _on_all_confirmed_2v2(client: discord.Client, match_data: dict) -> Non
 
 async def _on_match_aborted_2v2(client: discord.Client, match_data: dict) -> None:
     all_uids = _get_2v2_uids(match_data)
-    player_infos = _get_cached_player_infos_2v2(all_uids)
+    player_infos = await _fetch_player_infos_2v2(all_uids)
     await _send_to_all_2v2_localized(
         client, all_uids, MatchAbortedEmbed2v2, match_data, player_infos
     )
@@ -485,7 +485,7 @@ async def _on_match_aborted_2v2(client: discord.Client, match_data: dict) -> Non
 
 async def _on_match_abandoned_2v2(client: discord.Client, match_data: dict) -> None:
     all_uids = _get_2v2_uids(match_data)
-    player_infos = _get_cached_player_infos_2v2(all_uids)
+    player_infos = await _fetch_player_infos_2v2(all_uids)
     await _send_to_all_2v2_localized(
         client, all_uids, MatchAbandonedEmbed2v2, match_data, player_infos
     )
@@ -498,7 +498,7 @@ async def _on_match_abandoned_2v2(client: discord.Client, match_data: dict) -> N
 
 async def _on_match_completed_2v2(client: discord.Client, match_data: dict) -> None:
     all_uids = _get_2v2_uids(match_data)
-    player_infos = _get_cached_player_infos_2v2(all_uids)
+    player_infos = await _fetch_player_infos_2v2(all_uids)
     await _send_to_all_2v2_localized(
         client, all_uids, MatchFinalizedEmbed2v2, match_data, player_infos
     )
@@ -511,7 +511,7 @@ async def _on_match_completed_2v2(client: discord.Client, match_data: dict) -> N
 
 async def _on_match_conflict_2v2(client: discord.Client, match_data: dict) -> None:
     all_uids = _get_2v2_uids(match_data)
-    player_infos = _get_cached_player_infos_2v2(all_uids)
+    player_infos = await _fetch_player_infos_2v2(all_uids)
     await _send_to_all_2v2_localized(
         client, all_uids, MatchConflictEmbed2v2, match_data, player_infos
     )
@@ -653,6 +653,16 @@ def _get_cached_player_infos_2v2(
             )
             return infos
     return {}
+
+
+async def _fetch_player_infos_2v2(
+    uids: list[int],
+) -> dict[int, dict | None]:
+    """Fetch fresh player nationality info for all 2v2 players via HTTP."""
+    results = await asyncio.gather(
+        *(_fetch_player_info(uid) for uid in uids), return_exceptions=True
+    )
+    return {uid: (r if isinstance(r, dict) else None) for uid, r in zip(uids, results)}
 
 
 async def _send_to_all_2v2_localized(

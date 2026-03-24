@@ -11,7 +11,7 @@ import discord
 
 from bot.components.embeds import (
     MatchInfoEmbed1v1,
-    MatchInfoEmbed2v2,
+    MatchInfoEmbeds2v2,
     ReplayErrorEmbed,
     ReplaySuccessEmbed,
     ReplaySuccessEmbed2v2,
@@ -142,11 +142,12 @@ async def handle_replay_upload(
         if match_msg is not None:
             should_unlock = (not ENABLE_REPLAY_VALIDATION) or _races_pass(verification)
 
-            new_embed: discord.Embed
+            new_embed: discord.Embed | None = None
+            new_embeds: list[discord.Embed] | None = None
             new_view: discord.ui.View
             if game_mode == "2v2":
                 player_infos: dict = match_info.get("player_infos", {})
-                new_embed = MatchInfoEmbed2v2(
+                new_embeds = MatchInfoEmbeds2v2(
                     match_data, player_infos, replay_uploaded=True, locale=locale
                 )
                 new_view = MatchReportView2v2(
@@ -171,7 +172,14 @@ async def handle_replay_upload(
                     locale=locale,
                 )
             try:
-                await queue_message_edit_high(match_msg, embed=new_embed, view=new_view)
+                if new_embeds is not None:
+                    await queue_message_edit_high(
+                        match_msg, embeds=new_embeds, view=new_view
+                    )
+                else:
+                    await queue_message_edit_high(
+                        match_msg, embed=new_embed, view=new_view
+                    )
             except Exception:
                 logger.exception(
                     "[Replay] Failed to update MatchInfoEmbed after upload",
@@ -200,4 +208,10 @@ def _races_pass(verification: dict | None) -> bool:
     """Return True only if the races check passed (no critical failure)."""
     if verification is None:
         return False
-    return bool(verification.get("races", {}).get("success", False))
+    if "races" in verification:
+        return bool(verification["races"].get("success", False))
+    # 2v2: both teams must pass
+    return bool(
+        verification.get("races_team_1", {}).get("success", False)
+        and verification.get("races_team_2", {}).get("success", False)
+    )

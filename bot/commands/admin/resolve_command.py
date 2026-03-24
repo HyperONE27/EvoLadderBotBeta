@@ -57,21 +57,29 @@ def register_admin_resolve_command(tree: app_commands.CommandTree) -> None:
         mode = game_mode.value if game_mode else "1v1"
         locale = get_player_locale(interaction.user.id)
 
+        # Map 1v1-style result codes to 2v2-style when mode is 2v2.
+        result_value = result.value
+        if mode == "2v2":
+            if result_value == "player_1_win":
+                result_value = "team_1_win"
+            elif result_value == "player_2_win":
+                result_value = "team_2_win"
+
         logger.info(
             f"Admin {interaction.user.name} ({interaction.user.id}) "
-            f"invoked /resolve {match_id} result={result.value} (mode={mode})"
+            f"invoked /resolve {match_id} result={result_value} (mode={mode})"
         )
 
-        result_display = t(f"resolve_result_display.{result.value}", locale)
+        result_display = t(f"resolve_result_display.{result_value}", locale)
         await interaction.followup.send(
             embed=ResolvePreviewEmbed(
-                match_id, result.value, result_display, reason, locale=locale
+                match_id, result_value, result_display, reason, locale=locale
             ),
             view=(
                 ResolveConfirmView2v2(
                     interaction.user.id,
                     match_id,
-                    result.value,
+                    result_value,
                     interaction.user.id,
                     reason,
                 )
@@ -79,7 +87,7 @@ def register_admin_resolve_command(tree: app_commands.CommandTree) -> None:
                 else ResolveConfirmView(
                     interaction.user.id,
                     match_id,
-                    result.value,
+                    result_value,
                     interaction.user.id,
                     reason,
                 )

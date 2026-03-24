@@ -14,6 +14,7 @@ import discord
 
 from bot.core.config import (
     ALLOW_AI_PLAYERS,
+    COERCE_INDETERMINATE_AS_LOSS,
     CONFIRMATION_TIMEOUT,
     CURRENT_SEASON,
     ENABLE_REPLAY_VALIDATION,
@@ -942,9 +943,10 @@ def _team_header_2v2(
     team: str,
     player_infos: dict[int, dict[str, Any] | None] | None = None,
     new_mmr: int | str | None = None,
+    show_mmr: bool = True,
     locale: str = "enUS",
 ) -> str:
-    """Return '{rank} {flag} {race} P1 & {flag} {race} P2 (MMR)' for a 2v2 team."""
+    """Return '{rank} {flag} {race} P1 & {flag} {race} P2 [(MMR)]' for a 2v2 team."""
     player_infos = player_infos or {}
     p1_uid = match_data.get(f"{team}_player_1_discord_uid")
     p2_uid = match_data.get(f"{team}_player_2_discord_uid")
@@ -965,10 +967,15 @@ def _team_header_2v2(
     p1_race_emote = get_race_emote(p1_race) if p1_race else ""
     p2_race_emote = get_race_emote(p2_race) if p2_race else ""
 
+    if not show_mmr:
+        return (
+            f"{rank_emote} {p1_flag} {p1_race_emote} **{p1_name}** &\n"
+            f"{p2_flag} {p2_race_emote} **{p2_name}**"
+        )
     mmr_part = f"({mmr} → {new_mmr})" if new_mmr is not None else f"({mmr})"
     return (
-        f"{rank_emote} {p1_flag} {p1_race_emote} **{p1_name}** "
-        f"& {p2_flag} {p2_race_emote} **{p2_name}** {mmr_part}"
+        f"{rank_emote} {p1_flag} {p1_race_emote} **{p1_name}** &\n"
+        f"{p2_flag} {p2_race_emote} **{p2_name}** {mmr_part}"
     )
 
 
@@ -1044,8 +1051,8 @@ class QueueSetupEmbed2v2(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
-class MatchInfoEmbed2v2(discord.Embed):
-    """Full match details for a 2v2 match."""
+class MatchInfoEmbeds2v2(list[discord.Embed]):
+    """Two-embed list for a 2v2 match: [players embed, details embed]."""
 
     def __init__(
         self,
@@ -1063,13 +1070,14 @@ class MatchInfoEmbed2v2(discord.Embed):
         t1_hdr = _team_header_2v2(match_data, "team_1", player_infos, locale=locale)
         t2_hdr = _team_header_2v2(match_data, "team_2", player_infos, locale=locale)
 
-        title = (
-            f"{t('match_info_embed_2v2.title.1', locale, match_id=str(match_id))}\n"
-            f"{t1_hdr}\nvs\n{t2_hdr}"
+        # --- Embed 1: title + teams + player details ---
+        title = t("match_info_embed_2v2.title.1", locale, match_id=str(match_id))
+        description = f"{t1_hdr}\nvs\n{t2_hdr}"
+        embed1 = discord.Embed(
+            title=title, description=description, color=discord.Color.teal()
         )
-        super().__init__(title=title, description="", color=discord.Color.teal())
 
-        self.add_field(name="", value="", inline=False)
+        embed1.add_field(name="", value="", inline=False)
 
         # Team player details
         t1_p1_uid = match_data.get("team_1_player_1_discord_uid")
@@ -1130,17 +1138,19 @@ class MatchInfoEmbed2v2(discord.Embed):
             )
         )
 
-        self.add_field(
+        embed1.add_field(
             name=t("match_info_embed_2v2.team.1", locale),
             value=t1_lines,
             inline=True,
         )
-        self.add_field(
+        embed1.add_field(
             name=t("match_info_embed_2v2.team.2", locale),
             value=t2_lines,
             inline=True,
         )
-        self.add_field(name="", value="", inline=False)
+
+        # --- Embed 2: map, lobby settings, report, replay ---
+        embed2 = discord.Embed(description="", color=discord.Color.teal())
 
         map_info = get_map_by_short_name(map_name)
         map_author = map_info["author"] if map_info else "Unknown"
@@ -1153,7 +1163,7 @@ class MatchInfoEmbed2v2(discord.Embed):
 
         server_full = _server_display(server_code, locale)
 
-        self.add_field(
+        embed2.add_field(
             name=t("match_info_embed.field_name.2", locale),
             value=t(
                 "match_info_embed.field_value.2",
@@ -1168,9 +1178,9 @@ class MatchInfoEmbed2v2(discord.Embed):
             inline=False,
         )
 
-        self.add_field(name="", value="", inline=False)
+        embed2.add_field(name="", value="", inline=False)
 
-        self.add_field(
+        embed2.add_field(
             name=t("match_info_embed.field_name.3", locale),
             value=t(
                 "match_info_embed.field_value.3",
@@ -1183,7 +1193,7 @@ class MatchInfoEmbed2v2(discord.Embed):
             inline=True,
         )
 
-        self.add_field(
+        embed2.add_field(
             name="\u3164",
             value=t(
                 "match_info_embed.field_value.4",
@@ -1199,8 +1209,8 @@ class MatchInfoEmbed2v2(discord.Embed):
             inline=True,
         )
 
-        self.add_field(name="", value="", inline=False)
-        self.add_field(name="", value="", inline=False)
+        embed2.add_field(name="", value="", inline=False)
+        embed2.add_field(name="", value="", inline=False)
 
         if pending_report is not None:
             result_value = t(
@@ -1210,7 +1220,7 @@ class MatchInfoEmbed2v2(discord.Embed):
             )
         else:
             result_value = t("match_info_embed.field_value_none.4", locale)
-        self.add_field(
+        embed2.add_field(
             name=t("match_info_embed.field_name.4", locale),
             value=result_value,
             inline=True,
@@ -1221,7 +1231,7 @@ class MatchInfoEmbed2v2(discord.Embed):
             if replay_uploaded
             else t("match_info_embed.field_value_no_replay.5", locale)
         )
-        self.add_field(
+        embed2.add_field(
             name=t("match_info_embed.field_name.5", locale),
             value=replay_value,
             inline=True,
@@ -1231,9 +1241,11 @@ class MatchInfoEmbed2v2(discord.Embed):
             footer_text = t("match_info_embed.footer.1", locale)
         else:
             footer_text = t("match_info_embed.footer.2", locale)
-        self.set_footer(text=footer_text)
+        embed2.set_footer(text=footer_text)
 
-        apply_default_embed_footer(self, locale=locale)
+        apply_default_embed_footer(embed2, locale=locale)
+
+        super().__init__([embed1, embed2])
 
 
 class MatchAbortedEmbed2v2(discord.Embed):
@@ -1254,7 +1266,7 @@ class MatchAbortedEmbed2v2(discord.Embed):
                 t("match_aborted_embed.title.1", locale, match_id=str(match_id))
                 + " — 2v2"
             ),
-            description=f"{t1_hdr} vs {t2_hdr}",
+            description=f"{t1_hdr}\nvs\n{t2_hdr}",
             color=discord.Color.red(),
         )
         self.add_field(
@@ -1288,7 +1300,7 @@ class MatchAbandonedEmbed2v2(discord.Embed):
                 t("match_abandoned_embed.title.1", locale, match_id=str(match_id))
                 + " — 2v2"
             ),
-            description=f"{t1_hdr} vs {t2_hdr}",
+            description=f"{t1_hdr}\nvs\n{t2_hdr}",
             color=discord.Color.red(),
         )
         self.add_field(
@@ -1331,7 +1343,7 @@ class MatchFinalizedEmbed2v2(discord.Embed):
                 t("match_finalized_embed.title.1", locale, match_id=str(match_id))
                 + " — 2v2"
             ),
-            description=f"{t1_hdr} vs {t2_hdr}",
+            description=f"{t1_hdr}\nvs\n{t2_hdr}",
             color=discord.Color.gold(),
         )
 
@@ -1339,12 +1351,12 @@ class MatchFinalizedEmbed2v2(discord.Embed):
             result_value = t("shared.result_draw", locale)
         elif result == "team_1_win":
             t1_hdr_short = _team_header_2v2(
-                match_data, "team_1", player_infos, locale=locale
+                match_data, "team_1", player_infos, show_mmr=False, locale=locale
             )
             result_value = f"🏆 {t1_hdr_short}"
         else:
             t2_hdr_short = _team_header_2v2(
-                match_data, "team_2", player_infos, locale=locale
+                match_data, "team_2", player_infos, show_mmr=False, locale=locale
             )
             result_value = f"🏆 {t2_hdr_short}"
 
@@ -1385,7 +1397,7 @@ class MatchConflictEmbed2v2(discord.Embed):
                 t("match_conflict_embed.title.1", locale, match_id=str(match_id))
                 + " — 2v2"
             ),
-            description=f"{t1_hdr} vs {t2_hdr}",
+            description=f"{t1_hdr}\nvs\n{t2_hdr}",
             color=discord.Color.orange(),
         )
         self.add_field(
@@ -3669,6 +3681,13 @@ class ReplaySuccessEmbed2v2(discord.Embed):
                 locale,
                 team=team_2_line,
             )
+        elif winner_result == -1:
+            winner_text = t(
+                "replay_success_embed_2v2.winner_indeterminate_coerced.1"
+                if COERCE_INDETERMINATE_AS_LOSS
+                else "replay_success_embed_2v2.winner_indeterminate.1",
+                locale,
+            )
         else:
             winner_text = t("replay_success_embed.winner_draw.1", locale)
 
@@ -3774,20 +3793,38 @@ def format_verification(
 ) -> str:
     lines: list[str] = []
 
-    races_check = results.get("races", {})
-    if races_check.get("success"):
-        lines.append(t("format_verification.races_match.1", locale))
-    else:
-        expected = ", ".join(sorted(races_check.get("expected_races", [])))
-        played = ", ".join(sorted(races_check.get("played_races", [])))
-        lines.append(
-            t(
-                "format_verification.races_mismatch.1",
-                locale,
-                expected=expected,
-                played=played,
+    if "races" in results:
+        races_check = results["races"]
+        if races_check.get("success"):
+            lines.append(t("format_verification.races_match.1", locale))
+        else:
+            expected = ", ".join(sorted(races_check.get("expected_races", [])))
+            played = ", ".join(sorted(races_check.get("played_races", [])))
+            lines.append(
+                t(
+                    "format_verification.races_mismatch.1",
+                    locale,
+                    expected=expected,
+                    played=played,
+                )
             )
-        )
+    else:
+        # 2v2: separate check per team
+        for team_key in ("races_team_1", "races_team_2"):
+            rc = results.get(team_key, {})
+            if rc.get("success"):
+                lines.append(t("format_verification.races_match.1", locale))
+            else:
+                expected = ", ".join(sorted(rc.get("expected_races", [])))
+                played = ", ".join(sorted(rc.get("played_races", [])))
+                lines.append(
+                    t(
+                        "format_verification.races_mismatch.1",
+                        locale,
+                        expected=expected,
+                        played=played,
+                    )
+                )
 
     map_check = results.get("map", {})
     if map_check.get("success"):
@@ -3919,22 +3956,25 @@ def format_verification(
                 )
             )
 
-    all_ok = all(
-        results.get(k, {}).get("success", False)
-        for k in (
-            "races",
-            "map",
-            "mod",
-            "timestamp",
-            "observers",
-            "game_privacy",
-            "game_speed",
-            "game_duration",
-            "locked_alliances",
-            "ai_players",
-        )
+    is_2v2 = "races" not in results
+    race_keys = ("races_team_1", "races_team_2") if is_2v2 else ("races",)
+    shared_keys = (
+        "map",
+        "mod",
+        "timestamp",
+        "observers",
+        "game_privacy",
+        "game_speed",
+        "game_duration",
+        "locked_alliances",
+        "ai_players",
     )
-    critical_failed = not races_check.get("success", True)
+    all_ok = all(
+        results.get(k, {}).get("success", False) for k in (*race_keys, *shared_keys)
+    )
+    critical_failed = not all(
+        results.get(k, {}).get("success", True) for k in race_keys
+    )
 
     lines.append("")
 

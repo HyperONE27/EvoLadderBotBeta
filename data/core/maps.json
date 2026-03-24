@@ -108,8 +108,8 @@
         "season_alpha": {
             "Jacob's Summit": {
                 "short_name": "Jacob's Summit",
-                "name": "Jacob's Summit",
-                "author": "",
+                "name": "[TLMC TM3] Jacob's Summit",
+                "author": "OfficialTLMC",
                 "am_link": "",
                 "eu_link": "",
                 "as_link": "",
@@ -117,8 +117,8 @@
             },
             "Memecatcher": {
                 "short_name": "Memecatcher",
-                "name": "Memecatcher",
-                "author": "",
+                "name": "Memecatcher SEL",
+                "author": "HyperONE",
                 "am_link": "",
                 "eu_link": "",
                 "as_link": "",
@@ -126,8 +126,8 @@
             },
             "New Bed of Chaos": {
                 "short_name": "New Bed of Chaos",
-                "name": "New Bed of Chaos",
-                "author": "",
+                "name": "New Bed of Chaos LE",
+                "author": "Blizzard Entertainment",
                 "am_link": "",
                 "eu_link": "",
                 "as_link": "",
@@ -135,8 +135,8 @@
             },
             "Reclamation": {
                 "short_name": "Reclamation",
-                "name": "Reclamation",
-                "author": "",
+                "name": "Reclamation LE",
+                "author": "Blizzard Entertainment",
                 "am_link": "",
                 "eu_link": "",
                 "as_link": "",
@@ -144,8 +144,8 @@
             },
             "Rohana": {
                 "short_name": "Rohana",
-                "name": "Rohana",
-                "author": "",
+                "name": "Rohana LE",
+                "author": "Blizzard Entertainment",
                 "am_link": "",
                 "eu_link": "",
                 "as_link": "",
@@ -153,8 +153,8 @@
             },
             "Rust Bucket": {
                 "short_name": "Rust Bucket",
-                "name": "Rust Bucket",
-                "author": "",
+                "name": "Rust Bucket LE",
+                "author": "Blizzard Entertainment",
                 "am_link": "",
                 "eu_link": "",
                 "as_link": "",
@@ -162,8 +162,8 @@
             },
             "Team Biodome": {
                 "short_name": "Team Biodome",
-                "name": "Team Biodome",
-                "author": "",
+                "name": "[SO] Team Biodome",
+                "author": "Superouman",
                 "am_link": "",
                 "eu_link": "",
                 "as_link": "",
@@ -172,7 +172,7 @@
             "Undercurrent": {
                 "short_name": "Undercurrent",
                 "name": "Undercurrent",
-                "author": "",
+                "author": "Blizzard Entertainment",
                 "am_link": "",
                 "eu_link": "",
                 "as_link": "",
@@ -181,7 +181,7 @@
             "Yellowjacket": {
                 "short_name": "Yellowjacket",
                 "name": "Yellowjacket",
-                "author": "",
+                "author": "Blizzard Entertainment",
                 "am_link": "",
                 "eu_link": "",
                 "as_link": "",

@@ -401,6 +401,11 @@ async def admin_resolve_2v2(
         raise HTTPException(
             status_code=404, detail=result.get("error", "Match not found.")
         )
+    # Add rank letters (leaderboard was just rebuilt inside admin_resolve_match_2v2)
+    # and key aliases so the bot can pass the dict directly to MatchFinalizedEmbed2v2.
+    result = app.orchestrator.enrich_match_2v2_with_ranks(result)
+    result["id"] = result.get("match_id")
+    result["match_result"] = result.get("result")
     app.orchestrator.log_event(
         {
             "discord_uid": request.admin_discord_uid,
@@ -1624,10 +1629,13 @@ async def upload_replay_2v2(
     is_determinate_2v2 = replay_result_2v2 in ("team_1_win", "team_2_win", "draw")
     is_indeterminate_2v2 = not is_determinate_2v2 and COERCE_INDETERMINATE_AS_LOSS
 
+    races_pass_2v2 = verification.get("races_team_1", {}).get(
+        "success", False
+    ) and verification.get("races_team_2", {}).get("success", False)
     can_auto_resolve = (
         current_match is not None
         and current_match["match_result"] is None
-        and verification.get("races", {}).get("success", False)
+        and races_pass_2v2
         and verification.get("map", {}).get("success", False)
         and verification.get("timestamp", {}).get("success", False)
         and verification.get("ai_players", {}).get("success", True)
