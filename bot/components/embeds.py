@@ -1278,6 +1278,7 @@ class LobbyGuideEmbed(discord.Embed):
         self,
         server_code: str,
         locale: str = "enUS",
+        visible: bool = True,
     ) -> None:
         server = get_game_server_by_code(server_code)
         game_region_code = server["game_region_code"] if server else "AM"
@@ -1287,16 +1288,28 @@ class LobbyGuideEmbed(discord.Embed):
             if raw_region != f"game_region.{game_region_code}.name"
             else game_region_code
         )
-        game_server = _server_display(server_code, locale)
+        raw_server = (
+            t(f"game_server.{server['code']}.name", locale) if server else server_code
+        )
+        game_server = (
+            raw_server
+            if server and raw_server != f"game_server.{server['code']}.name"
+            else (server["name"] if server else server_code)
+        )
 
-        super().__init__(
-            title=t("lobby_guide_embed.title.1", locale),
-            description=t(
+        if visible:
+            description = t(
                 "lobby_guide_embed.description.1",
                 locale,
                 game_region=game_region,
                 game_server=game_server,
-            ),
+            )
+        else:
+            description = t("lobby_guide_embed.description_hidden.1", locale)
+
+        super().__init__(
+            title=t("lobby_guide_embed.title.1", locale),
+            description=description,
             color=discord.Color.gold(),
         )
         apply_default_embed_footer(self, locale=locale)

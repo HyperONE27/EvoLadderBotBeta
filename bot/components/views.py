@@ -21,6 +21,7 @@ from bot.components.embeds import (
     AdminResolutionEmbed,
     BanSuccessEmbed,
     ErrorEmbed,
+    LobbyGuideEmbed,
     MatchAbortAckEmbed,
     MatchConfirmedEmbed,
     MatchInfoEmbed1v1,
@@ -2592,6 +2593,45 @@ class MatchFoundView1v1(discord.ui.View):
         self.add_item(abort_btn)
 
 
+class LobbyGuideToggleButton(
+    discord.ui.Button["MatchReportView1v1 | MatchReportView2v2"]
+):
+    """Blurple/gray button that shows or hides the LobbyGuideEmbed."""
+
+    def __init__(self, locale: str = "enUS", guide_visible: bool = True) -> None:
+        label, style = self._attrs(guide_visible, locale)
+        super().__init__(label=label, style=style, row=1)
+        self._locale = locale
+
+    @staticmethod
+    def _attrs(visible: bool, locale: str) -> tuple[str, discord.ButtonStyle]:
+        if visible:
+            return t("button.hide_lobby_guide", locale), discord.ButtonStyle.primary
+        return t("button.expand_lobby_guide", locale), discord.ButtonStyle.secondary
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        await interaction.response.defer()
+        view: MatchReportView1v1 | MatchReportView2v2 = self.view  # type: ignore[assignment]
+        uid = interaction.user.id
+        locale = get_player_locale(uid)
+
+        try:
+            async with get_session().post(
+                f"{BACKEND_URL}/players/{uid}/toggle_lobby_guide"
+            ) as resp:
+                data = await resp.json()
+            new_value: bool = data.get("new_value", not view.guide_visible)
+        except Exception:
+            logger.exception("Failed to toggle lobby guide for %s", uid)
+            new_value = not view.guide_visible
+
+        view.guide_visible = new_value
+        self.label, self.style = self._attrs(new_value, locale)
+        await interaction.edit_original_response(
+            embeds=view._build_embeds(locale), view=view
+        )
+
+
 class MatchReportView1v1(discord.ui.View):
     def __init__(
         self,
@@ -2604,6 +2644,7 @@ class MatchReportView1v1(discord.ui.View):
         *,
         report_locked: bool = False,
         locale: str = "enUS",
+        guide_visible: bool = True,
     ) -> None:
         super().__init__(timeout=None)
         self.match_id = match_id
@@ -2611,11 +2652,31 @@ class MatchReportView1v1(discord.ui.View):
         self._p1_info = p1_info
         self._p2_info = p2_info
         self._locale = locale
+        self.guide_visible = guide_visible
         self.report_select = MatchReportSelect(
             match_id, p1_name, p2_name, locale=locale
         )
         self.report_select.disabled = report_locked
         self.add_item(self.report_select)
+        self._toggle_button = LobbyGuideToggleButton(
+            locale=locale, guide_visible=guide_visible
+        )
+        self.add_item(self._toggle_button)
+
+    def _build_embeds(
+        self, locale: str, pending_report: str | None = None
+    ) -> list[discord.Embed]:
+        server_code = self._match_data.get("server_name", "USW")
+        return [
+            MatchInfoEmbed1v1(
+                self._match_data,
+                self._p1_info,
+                self._p2_info,
+                pending_report=pending_report,
+                locale=locale,
+            ),
+            LobbyGuideEmbed(server_code, locale=locale, visible=self.guide_visible),
+        ]
 
     async def submit_report(
         self, interaction: discord.Interaction, report: str
@@ -2646,14 +2707,9 @@ class MatchReportView1v1(discord.ui.View):
                 option.default = option.value == report
             self.report_select.disabled = True
             locale = get_player_locale(interaction.user.id)
-            new_embed = MatchInfoEmbed1v1(
-                self._match_data,
-                self._p1_info,
-                self._p2_info,
-                pending_report=report,
-                locale=locale,
+            await interaction.edit_original_response(
+                embeds=self._build_embeds(locale, pending_report=report), view=self
             )
-            await interaction.edit_original_response(embed=new_embed, view=self)
 
         except Exception:
             logger.exception("Failed to submit match report")
@@ -3268,15 +3324,34 @@ class MatchReportView2v2(discord.ui.View):
         *,
         report_locked: bool = False,
         locale: str = "enUS",
+        guide_visible: bool = True,
     ) -> None:
         super().__init__(timeout=None)
         self.match_id = match_id
         self._match_data = match_data or {}
         self._player_infos = player_infos or {}
         self._locale = locale
+        self.guide_visible = guide_visible
         self.report_select = MatchReportSelect2v2(match_id, locale=locale)
         self.report_select.disabled = report_locked
         self.add_item(self.report_select)
+        self._toggle_button = LobbyGuideToggleButton(
+            locale=locale, guide_visible=guide_visible
+        )
+        self.add_item(self._toggle_button)
+
+    def _build_embeds(
+        self, locale: str, pending_report: str | None = None
+    ) -> list[discord.Embed]:
+        server_code = self._match_data.get("server_name", "USW")
+        return list(
+            MatchInfoEmbeds2v2(
+                self._match_data,
+                self._player_infos,
+                pending_report=pending_report,
+                locale=locale,
+            )
+        ) + [LobbyGuideEmbed(server_code, locale=locale, visible=self.guide_visible)]
 
     async def submit_report(
         self, interaction: discord.Interaction, report: str
@@ -3307,13 +3382,9 @@ class MatchReportView2v2(discord.ui.View):
                 option.default = option.value == report
             self.report_select.disabled = True
             locale = get_player_locale(interaction.user.id)
-            new_embeds = MatchInfoEmbeds2v2(
-                self._match_data,
-                self._player_infos,
-                pending_report=report,
-                locale=locale,
+            await interaction.edit_original_response(
+                embeds=self._build_embeds(locale, pending_report=report), view=self
             )
-            await interaction.edit_original_response(embeds=new_embeds, view=self)
 
         except Exception:
             logger.exception("Failed to submit 2v2 match report")

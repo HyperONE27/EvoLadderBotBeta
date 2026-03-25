@@ -20,13 +20,20 @@ What remains?
         - ⏰ esMX: Kat
         - ⏰ zhCN: Sprite, DragonVector
         - ⏰ ruRU: Rake, ZaRDieNT, ShadowDragon
-- ⏰ `/snapshot 2v2` needs to include flags and races
-    - ⏰ Come up with letter-grid-style display
+- ✅ `/snapshot 2v2` needs to include flags and races
+    - ✅ Come up with letter-grid-style display
+    - ✅ Fixed the display to look much more like `/snapshot 1v1` across all embeds
 - ⏰ `/profile` stats could be better
     - ⏰ Improve overall look and feel
     - ⏰ Add 2v2 stats...but how? Just sum across all partners?
-- ⏰ Set global cooldown on bot stuff?
-    - ⏰ Do I even need to set this?
+- ✅ Set global cooldown on bot stuff?
+    - ❌ Do I even need to set this?
+        - Most views use a default of 180s
+        - ActivityChartView uses 600s
+        - QueueSetupViews uses 300s
+        - MatchFoundViews use 60s (1 minute to confirm)
+        - MatchReportViews are unlimited so people can take as long as they need to report
+        - ✅ These durations seem fine
 - ✅ `/leaderboard 2v2` does not display flags
     - ✅ Flag filtering is broken
     - ✅ Embed does not show selected countries for filter

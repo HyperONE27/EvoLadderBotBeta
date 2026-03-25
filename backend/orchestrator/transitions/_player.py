@@ -186,6 +186,29 @@ def register_player(
     return was_created
 
 
+def toggle_lobby_guide(self: TransitionManager, discord_uid: int) -> tuple[bool, bool]:
+    """Toggle read_lobby_guide for a player. Returns (success, new_value)."""
+    df = self._state_manager.players_df
+    rows = df.filter(pl.col("discord_uid") == discord_uid)
+    if rows.is_empty():
+        return False, False
+
+    player = rows.row(0, named=True)
+    player_id: int = player["id"]
+    new_value = not player["read_lobby_guide"]
+
+    self._db_writer.update_player_lobby_guide(player_id, new_value)
+
+    self._state_manager.players_df = df.with_columns(
+        read_lobby_guide=pl.when(pl.col("discord_uid") == discord_uid)
+        .then(pl.lit(new_value))
+        .otherwise(pl.col("read_lobby_guide"))
+    )
+
+    logger.info(f"Player {discord_uid} read_lobby_guide toggled to {new_value}")
+    return True, new_value
+
+
 def reset_all_player_statuses(self: TransitionManager) -> None:
     """Reset all players to idle with no active match (called at startup)."""
     self._db_writer.reset_all_player_statuses()

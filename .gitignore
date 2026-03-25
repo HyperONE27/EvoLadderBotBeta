@@ -224,7 +224,7 @@ scripts/*
 .cursor/*
 
 # Pictures
-pics/*
+pics/misc/*
 
 # CSVs
 *.csv

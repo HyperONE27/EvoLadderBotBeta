@@ -250,6 +250,10 @@ class Orchestrator:
         """Ensure a player row exists. Returns True if newly created."""
         return self._transition_manager.register_player(discord_uid, discord_username)
 
+    def toggle_lobby_guide(self, discord_uid: int) -> tuple[bool, bool]:
+        """Toggle read_lobby_guide for a player. Returns (success, new_value)."""
+        return self._transition_manager.toggle_lobby_guide(discord_uid)
+
     def setcountry(
         self, discord_uid: int, discord_username: str, country_code: str
     ) -> tuple[bool, str | None]:

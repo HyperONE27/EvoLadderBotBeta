@@ -279,6 +279,14 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
     p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
     # _fetch_player_info seeds player_locales as a side effect.
 
+    player_info_map: dict[int, dict | None] = {}
+    if p1_uid is not None:
+        player_info_map[p1_uid] = p1_info
+    if p2_uid is not None:
+        player_info_map[p2_uid] = p2_info
+
+    server_code = match_data.get("server_name", "USW")
+
     # High priority: DM both players with per-locale MatchInfoEmbed concurrently.
     dm_coros = []
     dm_uids: list[int] = []
@@ -295,13 +303,15 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
         try:
             user = await client.fetch_user(uid)
             locale = get_player_locale(uid)
+            info = player_info_map.get(uid)
+            guide_visible = not bool(info and info.get("read_lobby_guide"))
             dm_coros.append(
                 queue_user_send_high(
                     user,
                     embeds=[
                         MatchInfoEmbed1v1(match_data, p1_info, p2_info, locale=locale),
                         LobbyGuideEmbed(
-                            match_data.get("server_name", "USW"), locale=locale
+                            server_code, locale=locale, visible=guide_visible
                         ),
                     ],
                     view=MatchReportView1v1(
@@ -313,6 +323,7 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
                         p2_info,
                         report_locked=ENABLE_REPLAY_VALIDATION,
                         locale=locale,
+                        guide_visible=guide_visible,
                     ),
                 )
             )
@@ -471,13 +482,17 @@ async def _on_all_confirmed_2v2(client: discord.Client, match_data: dict) -> Non
         try:
             user = await client.fetch_user(uid)
             locale = get_player_locale(uid)
+            info = infos.get(uid)
+            guide_visible = not bool(info and info.get("read_lobby_guide"))
             dm_coros.append(
                 queue_user_send_high(
                     user,
-                    embeds=MatchInfoEmbeds2v2(match_data, infos, locale=locale)
+                    embeds=list(MatchInfoEmbeds2v2(match_data, infos, locale=locale))
                     + [
                         LobbyGuideEmbed(
-                            match_data.get("server_name", "USW"), locale=locale
+                            match_data.get("server_name", "USW"),
+                            locale=locale,
+                            visible=guide_visible,
                         )
                     ],
                     view=MatchReportView2v2(
@@ -486,6 +501,7 @@ async def _on_all_confirmed_2v2(client: discord.Client, match_data: dict) -> Non
                         infos,
                         report_locked=ENABLE_REPLAY_VALIDATION,
                         locale=locale,
+                        guide_visible=guide_visible,
                     ),
                 )
             )

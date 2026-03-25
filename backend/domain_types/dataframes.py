@@ -48,6 +48,7 @@ PLAYERS_SCHEMA: dict[str, pl.DataType] = {
     "player_status": pl.String,
     "current_match_mode": pl.String,
     "current_match_id": pl.Int64,
+    "read_lobby_guide": pl.Boolean,
 }
 
 NOTIFICATIONS_SCHEMA: dict[str, pl.DataType] = {
@@ -303,6 +304,7 @@ class PlayersRow(TypedDict):
     player_status: str
     current_match_mode: str | None
     current_match_id: int | None
+    read_lobby_guide: bool
 
 
 class NotificationsRow(TypedDict):

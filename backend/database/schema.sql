@@ -41,7 +41,8 @@ CREATE TABLE IF NOT EXISTS players (
         CHECK (current_match_mode IN 
             ('1v1', '2v2', 'FFA')
         ),
-    current_match_id        BIGINT DEFAULT NULL
+    current_match_id        BIGINT DEFAULT NULL,
+    read_lobby_guide        BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS notifications (

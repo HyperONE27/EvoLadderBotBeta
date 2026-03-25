@@ -49,6 +49,7 @@ class TransitionManager:
     setup_player = _player.setup_player
     set_tos_for_player = _player.set_tos_for_player
     reset_all_player_statuses = _player.reset_all_player_statuses
+    toggle_lobby_guide = _player.toggle_lobby_guide
     upsert_preferences_1v1 = _player.upsert_preferences_1v1
     upsert_preferences_2v2 = _player.upsert_preferences_2v2
 

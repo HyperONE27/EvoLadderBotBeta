@@ -585,6 +585,11 @@ class PlayerNameAvailabilityResponse(BaseModel):
     available: bool
 
 
+class ToggleLobbyGuideResponse(BaseModel):
+    success: bool
+    new_value: bool
+
+
 class Matches1v1Response(BaseModel):
     match: Matches1v1Row | None
 

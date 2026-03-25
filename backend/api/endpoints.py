@@ -71,6 +71,7 @@ from backend.api.models import (
     PlayerNameAvailabilityResponse,
     PlayerRegisterRequest,
     PlayerRegisterResponse,
+    ToggleLobbyGuideResponse,
     PlayersResponse,
     Preferences1v1Response,
     Preferences2v2Response,
@@ -1381,6 +1382,18 @@ async def register_player(
         request.discord_uid, request.discord_username
     )
     return PlayerRegisterResponse(created=was_created)
+
+
+@router.post(
+    "/players/{discord_uid}/toggle_lobby_guide",
+    response_model=ToggleLobbyGuideResponse,
+)
+async def toggle_lobby_guide(
+    discord_uid: int,
+    app: Backend = Depends(get_backend),
+) -> ToggleLobbyGuideResponse:
+    success, new_value = app.orchestrator.toggle_lobby_guide(discord_uid)
+    return ToggleLobbyGuideResponse(success=success, new_value=new_value)
 
 
 @router.get("/players/{discord_uid}", response_model=PlayersResponse)

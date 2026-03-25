@@ -618,6 +618,12 @@ class DatabaseWriter:
             "id", player_id
         ).execute()
 
+    def update_player_lobby_guide(self, player_id: int, read_lobby_guide: bool) -> None:
+        """Set the read_lobby_guide flag for a player."""
+        self.client.table("players").update({"read_lobby_guide": read_lobby_guide}).eq(
+            "id", player_id
+        ).execute()
+
     # ------------------------------------------------------------------
     # Matches 1v1 (admin operations)
     # ------------------------------------------------------------------
