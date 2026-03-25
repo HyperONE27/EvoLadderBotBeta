@@ -214,28 +214,9 @@ MMR for 2v2 is per **unique player pair** (stored in `mmrs_2v2` with the smaller
 
 12 tables: `admins`, `players`, `notifications`, `events`, `matches_1v1`, `mmrs_1v1`, `preferences_1v1`, `replays_1v1`, `matches_2v2`, `mmrs_2v2`, `preferences_2v2`, `replays_2v2`.
 
-Key constraints:
-- Admin roles: `owner`, `admin`, `inactive`
-- Player statuses: `idle`, `queueing`, `in_match`, `timed_out`, `in_party`
-- Match modes: `1v1`, `2v2`, `FFA`
-- Races: `bw_terran`, `bw_zerg`, `bw_protoss`, `sc2_terran`, `sc2_zerg`, `sc2_protoss`
-- Match results: `player_1_win`, `player_2_win`, `draw`, `conflict`, `abort`, `abandoned`, `invalidated`, `no_report`
-- Languages: `enUS`, `esMX`, `koKR`, `ruRU`, `zhCN`
-
 ### Deployment
 
-Deployed on Railway as three separate services:
-- Backend (`backend/railway.json`): `uvicorn backend.api.app:app --host 0.0.0.0 --port 8080 --workers 1`
-- Bot (`bot/railway.json`): `python -m bot.core.app`
-- Channel Manager (`channel_manager/railway.json`): `python -m channel_manager.app`
-
-All use Railpack builder with restart-on-failure (max 10 retries).
-
-### Key Dependencies
-
-`discord.py`, `fastapi`, `polars`, `supabase`, `sc2reader`, `xxhash`, `uvicorn`, `python-dotenv`, `python-multipart`, `structlog`
-
-Dev: `ruff`, `mypy`, `pytest`
+Deployed on Railway as three separate services (backend, bot, channel manager). The backend uses `--workers 1` intentionally — single worker is required because all game state lives in-memory.
 
 ## Naming Conventions
 
@@ -257,6 +238,7 @@ Locale strings live in `data/locales/`. When adding or updating keys in any loca
 - The `common/` package is shared between backend and bot — changes here affect both processes.
 - Both matchmakers are stateless and pure — they can be unit-tested with synthetic queue entries without any I/O.
 - Replay parsing runs in a subprocess pool — avoid async or event-loop-dependent code in `replay_parser.py`.
+- You should use/add to the datetime helpers in common/ instead of spinning your own implementations when working with datetimes — ESPECIALLY when JSON-serializing.
 
 ## Testing
 
