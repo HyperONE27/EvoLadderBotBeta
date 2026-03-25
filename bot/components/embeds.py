@@ -1016,7 +1016,7 @@ class QueueSetupEmbed2v2(discord.Embed):
         locale: str = "enUS",
     ) -> None:
         super().__init__(
-            title="2v2 Queue Setup",
+            title=t("queue_setup_embed_2v2.title.1", locale),
             color=discord.Color.blurple(),
         )
 
@@ -1031,17 +1031,17 @@ class QueueSetupEmbed2v2(discord.Embed):
             return "—"
 
         self.add_field(
-            name="Pure BW",
+            name=t("queue_setup_embed_2v2.field_bw_bw.1", locale),
             value=_comp_value(pure_bw_leader_race, pure_bw_member_race),
             inline=False,
         )
         self.add_field(
-            name="Mixed",
+            name=t("queue_setup_embed_2v2.field_bw_sc2.1", locale),
             value=_comp_value(mixed_leader_race, mixed_member_race),
             inline=False,
         )
         self.add_field(
-            name="Pure SC2",
+            name=t("queue_setup_embed_2v2.field_sc2_sc2.1", locale),
             value=_comp_value(pure_sc2_leader_race, pure_sc2_member_race),
             inline=False,
         )

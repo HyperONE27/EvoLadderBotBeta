@@ -2913,9 +2913,9 @@ class CompSelect2v2(discord.ui.Select):
         row: int = 1,
     ) -> None:
         self._comp = comp  # "pure_bw", "mixed", or "pure_sc2"
-        # Pure comps need duplicate options (_1/_2 suffixes) so both players
-        # can pick the same race (e.g. BW Terran mirror).  Mixed comp has
-        # 6 unique races (one per BW/SC2 T/Z/P) — no duplicates needed.
+        # BW + BW and SC2 + SC2 comps need duplicate options (_1/_2 suffixes)
+        # so both players can pick the same race (e.g. BW Terran mirror).
+        # BW + SC2 comp has 6 unique races (one per BW/SC2 T/Z/P) — no duplicates needed.
         needs_duplicates = comp != "mixed"
         races = get_races()
         options: list[discord.SelectOption] = []
@@ -2949,9 +2949,9 @@ class CompSelect2v2(discord.ui.Select):
                     )
                 )
         placeholders = {
-            "pure_bw": "Pure BW — your race, then partner's",
-            "mixed": "Mixed — your race, then partner's",
-            "pure_sc2": "Pure SC2 — your race, then partner's",
+            "pure_bw": "BW + BW — your race, then partner's",
+            "mixed": "BW + SC2 — your race, then partner's",
+            "pure_sc2": "SC2 + SC2 — your race, then partner's",
         }
         super().__init__(
             placeholder=placeholders.get(comp, "Select races"),
@@ -3145,7 +3145,7 @@ class QueueSetupView2v2(discord.ui.View):
         bw_codes = get_bw_race_codes()
         sc2_codes = get_sc2_race_codes()
 
-        # Row 1: Pure BW composition
+        # Row 1: BW + BW composition
         self.add_item(
             CompSelect2v2(
                 "pure_bw",
@@ -3156,7 +3156,7 @@ class QueueSetupView2v2(discord.ui.View):
                 row=1,
             )
         )
-        # Row 2: Mixed composition
+        # Row 2: BW + SC2 composition
         self.add_item(
             CompSelect2v2(
                 "mixed",
@@ -3167,7 +3167,7 @@ class QueueSetupView2v2(discord.ui.View):
                 row=2,
             )
         )
-        # Row 3: Pure SC2 composition
+        # Row 3: SC2 + SC2 composition
         self.add_item(
             CompSelect2v2(
                 "pure_sc2",

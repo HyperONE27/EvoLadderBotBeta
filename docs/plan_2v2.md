@@ -613,9 +613,9 @@ A team's **possible compositions** are determined by what each member queued:
 
 | Player 1 \ Player 2 | bw_only | sc2_only | both |
 |---|---|---|---|
-| **bw_only** | BW+BW only | mixed only | BW+BW or mixed |
-| **sc2_only** | mixed only | SC2+SC2 only | SC2+SC2 or mixed |
-| **both** | BW+BW or mixed | SC2+SC2 or mixed | BW+BW, SC2+SC2, or mixed |
+| **bw_only** | BW+BW only | BW + SC2 only | BW+BW or BW + SC2 |
+| **sc2_only** | BW + SC2 only | SC2+SC2 only | SC2+SC2 or BW + SC2 |
+| **both** | BW+BW or BW + SC2 | SC2+SC2 or BW + SC2 | BW+BW, SC2+SC2, or BW + SC2 |
 
 Three pools: `pure_bw`, `pure_sc2`, `mixed`.
 
@@ -623,7 +623,7 @@ Three pools: `pure_bw`, `pure_sc2`, `mixed`.
 - A team is **eligible for `pure_sc2`** if both players have a `sc2_race`.
 - A team is **eligible for `mixed`** if at least one player has `bw_race` and
   at least one has `sc2_race` (the two players need not be the same ones
-  covering both sides; e.g., P1=BW only + P2=SC2 only qualifies as mixed-only).
+  covering both sides; e.g., P1=BW only + P2=SC2 only qualifies as BW + SC2-only).
 
 A team that qualifies for multiple pools (flexible) is distributed using the
 same equalise logic as the 1v1 matchmaker (balance pool sizes first, then
@@ -832,7 +832,7 @@ For **BW+BW vs SC2+SC2**: the two replay teams have different race prefixes
 (one is all bw_*, the other is all sc2_*). Team mapping is unambiguous without
 name matching.
 
-For **mixed vs mixed (BW+SC2 vs BW+SC2)**: both replay teams contain one bw_*
+For **BW + SC2 vs BW + SC2**: both replay teams contain one bw_*
 and one sc2_* player. Race alone cannot distinguish them. You need to match at
 least one known player to their replay entry to determine team mapping.
 
@@ -848,7 +848,7 @@ race (e.g. both bw_terran), it is not — this is the genuinely hard sub-case.
 
 For **SC2+SC2**: same logic.
 
-For **mixed teams**: one player is BW, one is SC2 — race prefix disambiguates
+For **BW + SC2 teams**: one player is BW, one is SC2 — race prefix disambiguates
 within the team cleanly.
 
 **Available matching signals (ranked by reliability):**
@@ -886,8 +886,8 @@ Verification results should carry a confidence level:
 
 For the initial implementation, target at minimum:
 - Race identification (covers BW+BW vs SC2+SC2 fully, and within-team identity
-  in most mixed cases)
-- Soft name matching as fallback for team mapping in mixed vs mixed
+  in most BW + SC2 cases)
+- Soft name matching as fallback for team mapping in BW + SC2 vs BW + SC2
 - Graceful degradation to manual reporting when both fail
 
 The LLM approach and toon handle accumulation are deferred improvements.
@@ -1088,7 +1088,7 @@ Concrete gaps in the current type definitions:
   players should give you 1 or 2, but confirm whether sc2reader assigns these correctly for custom lobbies
   vs standard matchmaking.
 
-  The BW/SC2 mixed composition is worth probing specifically. In a mixed 2v2 where two players use BW races
+  The BW + SC2 composition is worth probing specifically. In a BW + SC2 2v2 where two players use BW races
    and two use SC2 races, confirm that player.play_race gives you the specific race (e.g. "Terran" for BW
   Terran) or whether it gives you a generic indicator. The verifier needs to map this back to your internal
    bw_terran/sc2_terran distinction — how does sc2reader represent the race for a BW player in an SC: Evo
@@ -1253,10 +1253,10 @@ removed from it. The member cannot independently queue or leave the queue.
 Allowing each player to queue individually (the prior design) fails to express the
 rich intra-team race coordination that 2v2 requires. In particular:
 
-- Valid match types are **only** BW+BW vs SC2+SC2, or Mixed vs Mixed. This is a
+- Valid match types are **only** BW+BW vs SC2+SC2, or BW + SC2 vs BW + SC2. This is a
   team-level constraint that cannot be cleanly expressed by two independent per-player
   `bw_race / sc2_race` choices without a coordination protocol.
-- In mixed compositions, teams care strongly about *which player* is BW and *which* is
+- In BW + SC2 compositions, teams care strongly about *which player* is BW and *which* is
   SC2 (BW Terran + SC2 Protoss is a very different comp from BW Protoss + SC2 Terran).
   Individual menus do not allow teams to express this preference reliably.
 - Double same-race teams are legitimate (e.g. BW Terran + BW Terran). The UI must
@@ -1328,7 +1328,7 @@ Guards:
   - leader must have player_status == "in_party"
   - leader must be the party leader (not the member) — check parties_2v2[leader_uid]
   - at least one comp must be non-None
-  - if mixed comp is set: mixed_leader_race and mixed_member_race must cover different eras
+  - if BW + SC2 comp is set: mixed_leader_race and mixed_member_race must cover different eras
 On success:
   - Look up or create mmrs_2v2 row for (leader, member) pair
   - Look up member's nationality + location from players_df
@@ -1521,7 +1521,7 @@ to `queueing`. Needs to:
 - Enforce that the caller is the party leader (not just any `in_party` player).
 - Look up member's nationality + location from `players_df`.
 - Set **both** leader and member to `queueing`.
-- Validate the mixed comp covers both eras.
+- Validate the BW + SC2 comp covers both eras.
 
 **`leave_queue_2v2` transition in `_queue.py`**
 Currently removes an entry by matching `discord_uid` on the entry's `discord_uid`
@@ -1607,7 +1607,7 @@ breaking change.
 
 **`QueueSetupEmbed` / `QueueSetupView` (bot UI)**
 These currently implement the 1v1 queue UI. They need 2v2 variants with 3 optional
-comp sections (pure BW, mixed, pure SC2), each section showing two selects (leader
+comp sections (BW + BW, BW + SC2, SC2 + SC2), each section showing two selects (leader
 race, member race). Both player names must be visible in the embed so the leader knows
 which select controls which player.
 

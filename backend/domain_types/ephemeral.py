@@ -97,7 +97,7 @@ class QueueEntry2v2(TypedDict):
     Race preferences are expressed as three optional team compositions.  A
     composition is "declared" when both of its race fields are non-None.  The
     application enforces that each declared comp has both fields set, and that
-    at least one comp is declared.  The mixed comp additionally requires that
+    at least one comp is declared.  The BW + SC2 comp additionally requires that
     the two races come from different eras (one bw_*, one sc2_*).
 
     Only the leader queues; the member's player_status is set to 'queueing' by

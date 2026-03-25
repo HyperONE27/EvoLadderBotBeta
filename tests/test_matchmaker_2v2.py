@@ -76,7 +76,7 @@ class TestCompatible:
         assert _compatible(a, b) is True
         assert _compatible(b, a) is True  # symmetry
 
-    def test_mixed_vs_mixed(self) -> None:
+    def test_bw_sc2_vs_bw_sc2(self) -> None:
         a = _team(1, 2, mixed=("bw_terran", "sc2_zerg"))
         b = _team(3, 4, mixed=("sc2_protoss", "bw_protoss"))
         assert _compatible(a, b) is True
@@ -254,12 +254,12 @@ class TestResolveToCandidate:
         assert candidate["team_2_player_1_discord_uid"] == 3  # leader
         assert candidate["team_2_player_2_discord_uid"] == 4  # member
 
-    def test_mixed_preserves_declared_races(self) -> None:
-        """Mixed comp: races pass through unchanged."""
+    def test_bw_sc2_preserves_declared_races(self) -> None:
+        """BW + SC2 comp: races pass through unchanged."""
         a = _team(1, 2, mixed=("bw_terran", "sc2_zerg"))
         b = _team(3, 4, mixed=("sc2_protoss", "bw_protoss"))
         candidate = _resolve_to_candidate(a, b)
-        # team_1 is a (caller order preserved for mixed).
+        # team_1 is a (caller order preserved for BW + SC2).
         assert candidate["team_1_player_1_race"] == "bw_terran"
         assert candidate["team_1_player_2_race"] == "sc2_zerg"
         assert candidate["team_2_player_1_race"] == "sc2_protoss"

@@ -162,7 +162,7 @@ def join_queue_2v2(
     Validates that the caller is the party leader and has ``in_party`` status,
     then enforces comp rules:
     - At least one comp must be declared (both of its race fields non-None).
-    - The mixed comp, if declared, must cover different eras (one bw_*, one sc2_*).
+    - The BW + SC2 comp, if declared, must cover different eras (one bw_*, one sc2_*).
 
     On success, appends one ``QueueEntry2v2`` (representing the full team) and
     sets **both** the leader and the member to ``'queueing'``.
@@ -192,7 +192,7 @@ def join_queue_2v2(
     if not (pure_bw_declared or mixed_declared or pure_sc2_declared):
         return False, "At least one team composition must be fully declared."
 
-    # Mixed comp must cover both eras.
+    # BW + SC2 comp must cover both eras.
     if mixed_declared:
         leader_is_bw = mixed_leader_race is not None and mixed_leader_race.startswith(
             "bw_"
@@ -201,7 +201,7 @@ def join_queue_2v2(
             "bw_"
         )
         if leader_is_bw == member_is_bw:
-            return False, "Mixed composition must have one BW race and one SC2 race."
+            return False, "BW + SC2 composition must have one BW race and one SC2 race."
 
     member_uid: int = party["member_discord_uid"]
     player_name: str = player.get("player_name") or discord_username

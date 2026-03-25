@@ -17,7 +17,7 @@ This document describes what was actually built across the 2v2 implementation se
 **What:** Six new in-memory TypedDicts in `backend/domain_types/ephemeral.py`:
 - `PendingPartyInvite2v2` — an outstanding invite (inviter + invitee UIDs/names, timestamp)
 - `PartyEntry2v2` — a formed party (leader + member, created_at)
-- `QueueEntry2v2` — one queue slot per party; holds all three composition slots (pure BW, pure SC2, mixed) so the matchmaker can derive compatibility
+- `QueueEntry2v2` — one queue slot per party; holds all three composition slots (BW + BW, SC2 + SC2, BW + SC2) so the matchmaker can derive compatibility
 - `MatchCandidate2v2` — output of the matchmaker; one match, fully resolved composition
 - `MatchParams2v2` — map, server, channel for a specific 2v2 match
 - `LeaderboardEntry2v2` — 2v2 leaderboard row (not yet populated)
@@ -70,9 +70,9 @@ Key design decisions:
 - `Orchestrator.get_preferences_2v2` / `upsert_preferences_2v2` — public API
 - Endpoints: `GET /preferences_2v2/{discord_uid}`, `PUT /preferences_2v2`
 
-Preferences stored: last used leader/member races per composition type (pure BW, pure SC2, mixed) + last chosen map vetoes.
+Preferences stored: last used leader/member races per composition type (BW + BW, SC2 + SC2, BW + SC2) + last chosen map vetoes.
 
-**Why:** Mirrors `preferences_1v1` exactly. Persisting race selections means the queue setup view can restore defaults across sessions, reducing friction for repeat queuers. The three-composition structure (pure BW, pure SC2, mixed) allows each composition's preferred races to be remembered independently.
+**Why:** Mirrors `preferences_1v1` exactly. Persisting race selections means the queue setup view can restore defaults across sessions, reducing friction for repeat queuers. The three-composition structure (BW + BW, SC2 + SC2, BW + SC2) allows each composition's preferred races to be remembered independently.
 
 ---
 

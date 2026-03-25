@@ -27,13 +27,13 @@ What remains?
     - ⏰ Add 2v2 stats...but how? Just sum across all partners?
 - ⏰ Set global cooldown on bot stuff?
     - ⏰ Do I even need to set this?
-- ⏰ `/leaderboard 2v2` does not display flags
-    - ⏰ Flag filtering is broken
-    - ⏰ Embed does not show selected countries for filter
-    - ⏰ Come up with wide display 
-    - ⏰ Select parameters for entries on `/leaderboard 2v2` pages (probably 5 x 4 = 20 wide entries per page)
-    - ⏰ Examine LeaderboardEntry2v2 to see if we need more data
-    - ⏰ Optionally, display most recently played race combination as the races displayed on leaderboard
+- ✅ `/leaderboard 2v2` does not display flags
+    - ✅ Flag filtering is broken
+    - ✅ Embed does not show selected countries for filter
+    - ✅ Come up with wide display 
+    - ✅ Select parameters for entries on `/leaderboard 2v2` pages (probably 5 x 4 = 20 wide entries per page)
+    - ✅ Examine LeaderboardEntry2v2 to see if we need more data
+    - ❌ Optionally, display most recently played race combination as the races displayed on leaderboard
 - ✅ Store canonical copies of migrated old database so I can easily launch the pre-beta
 - ✅ Zip up the replays too?
     - ✅ Alpha replays zipped up

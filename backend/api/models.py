@@ -312,7 +312,7 @@ class Queue2v2JoinRequest(BaseModel):
     """Queue join request — submitted by the party leader on behalf of the team.
 
     At least one composition must be fully declared (both race fields non-None).
-    The mixed comp, if declared, must cover different eras (one bw_*, one sc2_*).
+    The BW + SC2 comp, if declared, must cover different eras (one bw_*, one sc2_*).
     """
 
     discord_uid: int  # leader only

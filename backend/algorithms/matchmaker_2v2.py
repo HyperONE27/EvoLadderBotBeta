@@ -26,7 +26,7 @@ Step 1 — Build an n×n cost matrix over all teams:
 Two teams are compatible if any of the following hold:
     A.has_bw  and B.has_sc2   →  BW+BW vs SC2+SC2 is possible
     A.has_sc2 and B.has_bw   →  BW+BW vs SC2+SC2 is possible (roles swap)
-    A.has_mixed and B.has_mixed →  mixed vs mixed is possible
+    A.has_mixed and B.has_mixed →  BW + SC2 vs BW + SC2 is possible
 
 Step 2 — Run the O(n³) Hungarian algorithm on the cost matrix to find a
 minimum-weight maximum-cardinality matching.  Incompatible and out-of-window
@@ -37,7 +37,7 @@ Step 3 — Extract unique matched pairs from the assignment (deduplicating
 the symmetric result) and resolve each pair's composition directly:
     - BW+BW vs SC2+SC2: the BW team is always team_1, SC2 team is team_2.
       If both teams could play either role, the assignment is randomised.
-    - mixed vs mixed: both teams use their declared mixed comp.
+    - BW + SC2 vs BW + SC2: both teams use their declared BW + SC2 comp.
     When a pair is valid under both compositions, one is chosen randomly.
 """
 
@@ -239,15 +239,15 @@ def _resolve_to_candidate(
                 a["pure_sc2_member_race"],
             )
         )
-    # Mixed vs mixed: caller order preserved.
+    # BW + SC2 vs BW + SC2: caller order preserved.
     if _has_mixed(a) and _has_mixed(b):
         if a["mixed_leader_race"] is None or a["mixed_member_race"] is None:
             raise ValueError(
-                f"Team {a['discord_uid']} declared mixed but has None races"
+                f"Team {a['discord_uid']} declared BW + SC2 but has None races"
             )
         if b["mixed_leader_race"] is None or b["mixed_member_race"] is None:
             raise ValueError(
-                f"Team {b['discord_uid']} declared mixed but has None races"
+                f"Team {b['discord_uid']} declared BW + SC2 but has None races"
             )
         options.append(
             (
