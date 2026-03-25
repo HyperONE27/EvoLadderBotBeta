@@ -37,6 +37,7 @@ def _make_client(db: ChannelDatabase) -> discord.Client:
         try:
             db.append_message(
                 channel_id=message.channel.id,
+                message_id=message.id,
                 discord_uid=message.author.id,
                 content=message.content,
                 ts=message.created_at.isoformat(),
@@ -65,6 +66,7 @@ def _make_client(db: ChannelDatabase) -> discord.Client:
         try:
             db.append_edit(
                 channel_id=after.channel.id,
+                message_id=after.id,
                 discord_uid=after.author.id,
                 original_content=before.content,
                 new_content=after.content,

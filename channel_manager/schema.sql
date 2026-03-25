@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS channels (
     message_url     TEXT NOT NULL,             -- https://discord.com/channels/{guild}/{channel}/{message}
     messages        JSONB NOT NULL DEFAULT '[]',
         -- Append-only log of messages and edits for audit purposes.
-        -- Message entry: {"type": "message", "ts": "<ISO>", "discord_uid": <int>, "content": "<text>"}
-        -- Edit entry:    {"type": "edit",    "ts": "<ISO>", "discord_uid": <int>, "original_content": "<text>", "new_content": "<text>"}
+        -- Message entry: {"type": "message", "message_id": <int>, "ts": "<ISO>", "discord_uid": <int>, "content": "<text>"}
+        -- Edit entry:    {"type": "edit",    "message_id": <int>, "ts": "<ISO>", "discord_uid": <int>, "original_content": "<text>", "new_content": "<text>"}
     created_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at      TIMESTAMPTZ,              -- NULL until the channel is deleted
 

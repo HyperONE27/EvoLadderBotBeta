@@ -64,6 +64,7 @@ class ChannelDatabase:
     def append_message(
         self,
         channel_id: int,
+        message_id: int,
         discord_uid: int,
         content: str,
         ts: str,
@@ -75,6 +76,7 @@ class ChannelDatabase:
                 "p_channel_id": channel_id,
                 "p_message": {
                     "type": "message",
+                    "message_id": message_id,
                     "ts": ts,
                     "discord_uid": discord_uid,
                     "content": content,
@@ -85,6 +87,7 @@ class ChannelDatabase:
     def append_edit(
         self,
         channel_id: int,
+        message_id: int,
         discord_uid: int,
         original_content: str,
         new_content: str,
@@ -97,6 +100,7 @@ class ChannelDatabase:
                 "p_channel_id": channel_id,
                 "p_message": {
                     "type": "edit",
+                    "message_id": message_id,
                     "ts": ts,
                     "discord_uid": discord_uid,
                     "original_content": original_content,
