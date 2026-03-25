@@ -711,7 +711,7 @@
   "setup_modal.field_placeholder.battletag": "例如 Username#1234",
   "setup_modal.field_placeholder.player_name": "3–12个字符（字母、数字、- _ .）",
   "setup_modal.title.1": "玩家设置",
-  "setup_notification_embed.description.1": "选择当有玩家加入队列时，您希望收到通知的频率。\n\n您可以随时使用 `/notifyme` 更新这些设置。",
+  "setup_notification_embed.description.1": "选择当有玩家加入队列时，您希望收到通知的频率。",
   "setup_notification_embed.title.1": "🔔 设置 — 通知",
   "setup_notification_view.option.15min": "每15分钟",
   "setup_notification_view.option.1hr": "每小时",

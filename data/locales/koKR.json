@@ -711,7 +711,7 @@
   "setup_modal.field_placeholder.battletag": "예: 닉네임#1234",
   "setup_modal.field_placeholder.player_name": "3~12자 (문자, 숫자, - _ .)",
   "setup_modal.title.1": "플레이어 설정",
-  "setup_notification_embed.description.1": "플레이어가 대기열에 참가할 때 알림을 받을 빈도를 선택하세요.\n\n`/notifyme` 명령어를 사용해 언제든지 설정을 변경할 수 있습니다.",
+  "setup_notification_embed.description.1": "플레이어가 대기열에 참가할 때 알림을 받을 빈도를 선택하세요.",
   "setup_notification_embed.title.1": "🔔 설정 — 알림",
   "setup_notification_view.option.15min": "매 15분",
   "setup_notification_view.option.1hr": "매 1시간",

@@ -711,7 +711,7 @@
   "setup_modal.field_placeholder.battletag": "e.g. Username#1234",
   "setup_modal.field_placeholder.player_name": "3–12 characters (letters, digits, - _ .)",
   "setup_modal.title.1": "Player Setup",
-  "setup_notification_embed.description.1": "Choose how often you'd like to be notified when a player joins the queue.\n\nYou can update these settings at any time using `/notifyme`.",
+  "setup_notification_embed.description.1": "Choose how often you'd like to be notified when a player joins the queue.",
   "setup_notification_embed.title.1": "🔔 Setup — Notifications",
   "setup_notification_view.option.15min": "Every 15 minutes",
   "setup_notification_view.option.1hr": "Every hour",

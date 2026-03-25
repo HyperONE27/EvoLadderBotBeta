@@ -711,7 +711,7 @@
   "setup_modal.field_placeholder.battletag": "например Имя пользователя#1234",
   "setup_modal.field_placeholder.player_name": "3–12 символов (буквы, цифры, - _ .)",
   "setup_modal.title.1": "Настройка игрока",
-  "setup_notification_embed.description.1": "Выберите, как часто вы хотите получать уведомления, когда игрок заходит в очередь.\n\nВы можете изменить эти настройки в любое время с помощью `/notifyme`.",
+  "setup_notification_embed.description.1": "Выберите, как часто вы хотите получать уведомления, когда игрок заходит в очередь.",
   "setup_notification_embed.title.1": "🔔 Настройка — Уведомления",
   "setup_notification_view.option.15min": "Каждые 15 минут",
   "setup_notification_view.option.1hr": "Каждый час",

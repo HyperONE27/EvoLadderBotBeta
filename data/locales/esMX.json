@@ -711,7 +711,7 @@
   "setup_modal.field_placeholder.battletag": "ej. Username#1234",
   "setup_modal.field_placeholder.player_name": "3–12 caracteres (letras, dígitos, - _ .)",
   "setup_modal.title.1": "Configuración del Jugador",
-  "setup_notification_embed.description.1": "Elige con qué frecuencia quieres recibir notificaciones cuando un jugador se une a la cola.\n\nPuedes actualizar estas configuraciones en cualquier momento usando `/notifyme`.",
+  "setup_notification_embed.description.1": "Elige con qué frecuencia quieres recibir notificaciones cuando un jugador se une a la cola.",
   "setup_notification_embed.title.1": "🔔 Configuración — Notificaciones",
   "setup_notification_view.option.15min": "Cada 15 minutos",
   "setup_notification_view.option.1hr": "Cada hora",
