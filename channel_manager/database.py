@@ -48,6 +48,22 @@ class ChannelDatabase:
         )
         return result.data[0] if result.data else None
 
+    def append_message(
+        self,
+        channel_id: int,
+        discord_uid: int,
+        content: str,
+        ts: str,
+    ) -> None:
+        """Atomically append one message entry to the channel's messages log."""
+        self._client.rpc(
+            "append_channel_message",
+            {
+                "p_channel_id": channel_id,
+                "p_message": {"ts": ts, "discord_uid": discord_uid, "content": content},
+            },
+        ).execute()
+
     def mark_deleted(self, channel_id: int) -> None:
         """Stamp deleted_at on the channel row."""
         from datetime import datetime, timezone

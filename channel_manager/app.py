@@ -27,6 +27,8 @@ from channel_manager.models import (
     ChannelCreateRequest,
     ChannelCreateResponse,
     ChannelDeleteResponse,
+    ChannelMessageRequest,
+    ChannelMessageResponse,
 )
 from common.logging.config import configure_structlog
 
@@ -71,10 +73,24 @@ async def create_channel(request: ChannelCreateRequest) -> ChannelCreateResponse
         )
         raise HTTPException(status_code=502, detail="Discord channel creation failed.")
 
-    # Ping all players so they receive a notification in the new channel.
+    # Ping all players and send a welcome embed.
     ping_content = " ".join(f"<@{uid}>" for uid in request.discord_uids)
+    description = (
+        "This channel has been created for your convenience. "
+        "Please use it if you are unable to find your opponent in-game."
+    )
+    if DISCORD_STAFF_ROLE_IDS:
+        staff_mention = f"<@&{DISCORD_STAFF_ROLE_IDS[0]}>"
+        description += f" Feel free to ping {staff_mention} if you need assistance."
+    welcome_embed = {
+        "title": f"✉️ {request.match_mode} • Match #{request.match_id} • Talk Channel",
+        "description": description,
+        "color": 0x5865F2,  # Discord blurple
+    }
     try:
-        message_id = await _discord.send_message(channel_id, ping_content)
+        message_id = await _discord.send_message(
+            channel_id, ping_content, embeds=[welcome_embed]
+        )
     except Exception:
         logger.exception(
             f"[ChannelManager] Failed to send ping message in channel {channel_id}"
@@ -132,3 +148,25 @@ async def delete_channel_by_match(
 
     asyncio.create_task(_do_delete())
     return ChannelDeleteResponse(success=True)
+
+
+@app.post("/channels/{channel_id}/messages", response_model=ChannelMessageResponse)
+async def log_channel_message(
+    channel_id: int,
+    request: ChannelMessageRequest,
+) -> ChannelMessageResponse:
+    """Append a player message to the channel's audit log."""
+    assert _db is not None
+    try:
+        _db.append_message(
+            channel_id=channel_id,
+            discord_uid=request.discord_uid,
+            content=request.content,
+            ts=request.timestamp,
+        )
+    except Exception:
+        logger.exception(
+            f"[ChannelManager] Failed to log message for channel {channel_id}"
+        )
+        raise HTTPException(status_code=502, detail="Failed to log message.")
+    return ChannelMessageResponse(success=True)

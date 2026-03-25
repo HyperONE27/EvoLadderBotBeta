@@ -104,6 +104,11 @@ class Cache:
         # backend round-trip.
         self.player_presets: dict[int, dict[str, Any]] = {}
 
+        # Active match talk channels: match_id → Discord channel snowflake.
+        # Populated on talk_channel_created WS event; used by on_message to route
+        # guild messages to the channel manager's audit log.
+        self.active_talk_channels: dict[int, int] = {}
+
         self._populate_json_data()
         self._populate_locale_data()
 

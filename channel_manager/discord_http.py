@@ -79,11 +79,15 @@ class DiscordClient:
         self,
         channel_id: int,
         content: str,
+        embeds: list[dict] | None = None,
     ) -> int:
-        """Send a text message to a channel. Returns the message snowflake ID."""
+        """Send a message to a channel. Returns the message snowflake ID."""
+        payload: dict = {"content": content}
+        if embeds:
+            payload["embeds"] = embeds
         resp = await self._http.post(
             f"/channels/{channel_id}/messages",
-            json={"content": content},
+            json=payload,
         )
         resp.raise_for_status()
         return int(resp.json()["id"])

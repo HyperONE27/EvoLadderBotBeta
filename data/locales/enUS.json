@@ -784,7 +784,7 @@
     "system_stats_embed.field_name.1": "📊 DataFrames",
     "system_stats_embed.field_value_no_stats.1": "```\nNo stats available.\n```",
     "system_stats_embed.title.1": "🔍 Admin System Snapshot",
-    "talk_channel_embed.description.1": "A private talk channel has been created for this match.\n\n[Open channel]({message_url})\n\nThis channel is visible to both players and server staff. It will be deleted when the match concludes.",
+    "talk_channel_embed.description.1": "A private talk channel has been created for this match.\n\n[**CLICK HERE TO OPEN THE CHANNEL**]({message_url})\n\nThis channel is visible to the ladder staff and both players/teams.\nIt will be deleted when the match concludes.",
     "talk_channel_embed.title.1": "💬 Talk Channel Ready",
     "terms_of_service_accepted_embed.description.1": "Thank you for agreeing to the Terms of Service. Welcome to the SC: Evo Complete Ladder Bot!",
     "terms_of_service_accepted_embed.title.1": "✅ Terms of Service Accepted",

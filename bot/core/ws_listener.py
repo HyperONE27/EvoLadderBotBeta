@@ -141,6 +141,15 @@ async def _on_talk_channel_created(client: discord.Client, data: dict) -> None:
     message_url: str = data.get("message_url", "")
     raw_uids: list = data.get("discord_uids") or []
 
+    # Track channel_id so on_message can route audit logs to the channel manager.
+    match_id = data.get("match_id")
+    channel_id_raw = data.get("channel_id")
+    if match_id is not None and channel_id_raw is not None:
+        try:
+            get_cache().active_talk_channels[int(match_id)] = int(channel_id_raw)
+        except (TypeError, ValueError):
+            pass
+
     for uid_raw in raw_uids:
         try:
             uid = int(uid_raw)
@@ -345,7 +354,7 @@ async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
     await _send_to_both_localized(
         client, p1_uid, p2_uid, MatchAbortedEmbed, match_data, p1_info, p2_info
     )
-    await _clear_match_state_low(p1_uid, p2_uid)
+    await _clear_match_state_low(p1_uid, p2_uid, match_id=match_data.get("id"))
     await _post_to_match_log_low(
         client, MatchAbortedEmbed(match_data, p1_info, p2_info, locale="enUS")
     )
@@ -363,7 +372,7 @@ async def _on_match_abandoned(client: discord.Client, match_data: dict) -> None:
     await _send_to_both_localized(
         client, p1_uid, p2_uid, MatchAbandonedEmbed, match_data, p1_info, p2_info
     )
-    await _clear_match_state_low(p1_uid, p2_uid)
+    await _clear_match_state_low(p1_uid, p2_uid, match_id=match_data.get("id"))
     await _post_to_match_log_low(
         client, MatchAbandonedEmbed(match_data, p1_info, p2_info, locale="enUS")
     )
@@ -380,7 +389,7 @@ async def _on_match_completed(client: discord.Client, match_data: dict) -> None:
     await _send_to_both_localized(
         client, p1_uid, p2_uid, MatchFinalizedEmbed, match_data, p1_info, p2_info
     )
-    await _clear_match_state_low(p1_uid, p2_uid)
+    await _clear_match_state_low(p1_uid, p2_uid, match_id=match_data.get("id"))
     await _post_to_match_log_low(
         client, MatchFinalizedEmbed(match_data, p1_info, p2_info, locale="enUS")
     )
@@ -397,7 +406,7 @@ async def _on_match_conflict(client: discord.Client, match_data: dict) -> None:
     await _send_to_both_localized(
         client, p1_uid, p2_uid, MatchConflictEmbed, match_data, p1_info, p2_info
     )
-    await _clear_match_state_low(p1_uid, p2_uid)
+    await _clear_match_state_low(p1_uid, p2_uid, match_id=match_data.get("id"))
     await _post_to_match_log_low(
         client, MatchConflictEmbed(match_data, p1_info, p2_info, locale="enUS")
     )
@@ -499,7 +508,7 @@ async def _on_match_aborted_2v2(client: discord.Client, match_data: dict) -> Non
     await _send_to_all_2v2_localized(
         client, all_uids, MatchAbortedEmbed2v2, match_data, player_infos
     )
-    await _clear_match_state_all_2v2(all_uids)
+    await _clear_match_state_all_2v2(all_uids, match_id=match_data.get("id"))
     await _post_to_match_log_low(
         client,
         MatchAbortedEmbed2v2(match_data, player_infos=player_infos, locale="enUS"),
@@ -512,7 +521,7 @@ async def _on_match_abandoned_2v2(client: discord.Client, match_data: dict) -> N
     await _send_to_all_2v2_localized(
         client, all_uids, MatchAbandonedEmbed2v2, match_data, player_infos
     )
-    await _clear_match_state_all_2v2(all_uids)
+    await _clear_match_state_all_2v2(all_uids, match_id=match_data.get("id"))
     await _post_to_match_log_low(
         client,
         MatchAbandonedEmbed2v2(match_data, player_infos=player_infos, locale="enUS"),
@@ -525,7 +534,7 @@ async def _on_match_completed_2v2(client: discord.Client, match_data: dict) -> N
     await _send_to_all_2v2_localized(
         client, all_uids, MatchFinalizedEmbed2v2, match_data, player_infos
     )
-    await _clear_match_state_all_2v2(all_uids)
+    await _clear_match_state_all_2v2(all_uids, match_id=match_data.get("id"))
     await _post_to_match_log_low(
         client,
         MatchFinalizedEmbed2v2(match_data, player_infos=player_infos, locale="enUS"),
@@ -538,7 +547,7 @@ async def _on_match_conflict_2v2(client: discord.Client, match_data: dict) -> No
     await _send_to_all_2v2_localized(
         client, all_uids, MatchConflictEmbed2v2, match_data, player_infos
     )
-    await _clear_match_state_all_2v2(all_uids)
+    await _clear_match_state_all_2v2(all_uids, match_id=match_data.get("id"))
     await _post_to_match_log_low(
         client,
         MatchConflictEmbed2v2(match_data, player_infos=player_infos, locale="enUS"),
@@ -599,7 +608,11 @@ async def _clear_match_found_messages_low(
                 )
 
 
-async def _clear_match_state_low(p1_uid: int | None, p2_uid: int | None) -> None:
+async def _clear_match_state_low(
+    p1_uid: int | None,
+    p2_uid: int | None,
+    match_id: int | None = None,
+) -> None:
     """
     Remove match tracking from the cache and disable the MatchReportView
     on each player's MatchInfoEmbed message so stale dropdowns can't be used.
@@ -619,6 +632,9 @@ async def _clear_match_state_low(p1_uid: int | None, p2_uid: int | None) -> None
                 )
 
         cache.active_match_info.pop(uid, None)
+
+    if match_id is not None:
+        cache.active_talk_channels.pop(match_id, None)
 
 
 async def _post_to_match_log_low(
@@ -708,7 +724,9 @@ async def _send_to_all_2v2_localized(
             logger.exception(f"[WS] Failed to DM 2v2 user {uid}")
 
 
-async def _clear_match_state_all_2v2(uids: list[int]) -> None:
+async def _clear_match_state_all_2v2(
+    uids: list[int], match_id: int | None = None
+) -> None:
     """Clear all match state for a 2v2 match: remove found-message buttons and disable report views."""
     cache = get_cache()
     for uid in uids:
@@ -729,3 +747,5 @@ async def _clear_match_state_all_2v2(uids: list[int]) -> None:
                     f"[WS] Failed to disable 2v2 MatchReportView for user {uid}"
                 )
         cache.active_match_info.pop(uid, None)
+    if match_id is not None:
+        cache.active_talk_channels.pop(match_id, None)

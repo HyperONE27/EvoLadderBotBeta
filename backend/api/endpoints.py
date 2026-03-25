@@ -202,6 +202,7 @@ async def _request_channel_create(
                 "match_id": match_id,
                 "game_mode": match_mode,
                 "discord_uids": discord_uids,
+                "channel_id": data["channel_id"],
                 "message_url": data["message_url"],
             },
         )

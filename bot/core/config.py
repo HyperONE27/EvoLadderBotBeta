@@ -65,6 +65,8 @@ def _get_str_env(key: str) -> str:
 
 BACKEND_URL: str = _get_str_env("BACKEND_URL")
 
+CHANNEL_MANAGER_URL: str | None = os.getenv("CHANNEL_MANAGER_URL") or None
+
 BOT_TOKEN: str = _get_str_env("BOT_TOKEN")
 
 MATCH_LOG_CHANNEL_ID: int = _get_int_env("MATCH_LOG_CHANNEL_ID")
