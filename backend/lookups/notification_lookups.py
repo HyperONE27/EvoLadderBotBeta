@@ -45,7 +45,7 @@ def get_queue_activity_subscribers(joiner_uid: int, game_mode: str) -> pl.DataFr
     ToS acceptance, ban status, and idle status.  Excludes *joiner_uid*.
 
     Returns a DataFrame with columns from both tables, including
-    ``queue_notify_cooldown_minutes`` and ``language``.
+    ``notify_queue_1v1_cooldown`` and ``language``.
     """
     if game_mode != "1v1":
         return pl.DataFrame()

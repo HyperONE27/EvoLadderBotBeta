@@ -1489,7 +1489,6 @@ class SetupSelectionEmbed(discord.Embed):
         self,
         country: Country | None = None,
         region: GeographicRegion | None = None,
-        language: str | None = None,
         locale: str = "enUS",
     ) -> None:
         super().__init__(
@@ -1515,17 +1514,6 @@ class SetupSelectionEmbed(discord.Embed):
                     name=_localized_region(region["code"], locale),
                 )
             )
-        if language:
-            entry = LOCALE_DISPLAY_NAMES.get(language)
-            flag = entry[1] if entry else ""
-            selected_lines.append(
-                t(
-                    "setup_selection_embed.language_label.1",
-                    locale,
-                    flag=flag,
-                    name=_localized_language(language),
-                )
-            )
 
         if selected_lines:
             selected_block = (
@@ -1537,7 +1525,7 @@ class SetupSelectionEmbed(discord.Embed):
         else:
             selected_block = ""
 
-        if country and region and language:
+        if country and region:
             self.description = selected_block + t(
                 "setup_selection_embed.confirm_prompt.1", locale
             )
@@ -1547,8 +1535,6 @@ class SetupSelectionEmbed(discord.Embed):
                 missing.append(t("setup_selection_embed.missing.nationality", locale))
             if not region:
                 missing.append(t("setup_selection_embed.missing.location", locale))
-            if not language:
-                missing.append(t("setup_selection_embed.missing.language", locale))
             self.description = (
                 selected_block
                 + t(
@@ -1563,6 +1549,17 @@ class SetupSelectionEmbed(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
+class SetupNotificationEmbed(discord.Embed):
+    def __init__(self, locale: str = "enUS") -> None:
+        super().__init__(
+            title=t("setup_notification_embed.title.1", locale),
+            description=t("setup_notification_embed.description.1", locale),
+            color=discord.Color.blue(),
+        )
+
+        apply_default_embed_footer(self, locale=locale)
+
+
 class SetupPreviewEmbed(discord.Embed):
     def __init__(
         self,
@@ -1572,12 +1569,19 @@ class SetupPreviewEmbed(discord.Embed):
         country: Country,
         region: GeographicRegion,
         language: str,
+        notification_1v1: int | None,
+        notification_2v2: int | None,
         locale: str = "enUS",
     ) -> None:
         super().__init__(
             title=t("setup_preview_embed.title.1", locale),
             description=t("setup_preview_embed.description.1", locale),
             color=discord.Color.blue(),
+        )
+        self.add_field(
+            name=t("setup_preview_embed.field_name.language", locale),
+            value=f"`{_localized_language(language)}`",
+            inline=False,
         )
         self.add_field(
             name=t("shared.field_name.user_id", locale),
@@ -1587,6 +1591,12 @@ class SetupPreviewEmbed(discord.Embed):
         self.add_field(
             name=t("shared.field_name.battletag", locale),
             value=f"`{battletag}`",
+            inline=False,
+        )
+        alt_display = ", ".join(f"`{a}`" for a in alt_ids) if alt_ids else "`None`"
+        self.add_field(
+            name=t("shared.field_name.alt_ids", locale),
+            value=alt_display,
             inline=False,
         )
         self.add_field(
@@ -1607,15 +1617,35 @@ class SetupPreviewEmbed(discord.Embed):
             value=f"`{_localized_region(region['code'], locale)}`",
             inline=False,
         )
+
+        notif_lines: list[str] = []
+        if notification_1v1 is not None:
+            notif_lines.append(
+                t(
+                    "setup_preview_embed.notifications.interval_1v1",
+                    locale,
+                    minutes=str(notification_1v1),
+                )
+            )
+        else:
+            notif_lines.append(
+                "1v1: " + t("setup_preview_embed.notifications.off", locale)
+            )
+        if notification_2v2 is not None:
+            notif_lines.append(
+                t(
+                    "setup_preview_embed.notifications.interval_2v2",
+                    locale,
+                    minutes=str(notification_2v2),
+                )
+            )
+        else:
+            notif_lines.append(
+                "2v2: " + t("setup_preview_embed.notifications.off", locale)
+            )
         self.add_field(
-            name=t("shared.field_name.language", locale),
-            value=f"`{_localized_language(language)}`",
-            inline=False,
-        )
-        alt_display = ", ".join(f"`{a}`" for a in alt_ids) if alt_ids else "`None`"
-        self.add_field(
-            name=t("shared.field_name.alt_ids", locale),
-            value=alt_display,
+            name=t("setup_preview_embed.field_name.notifications", locale),
+            value="\n".join(notif_lines),
             inline=False,
         )
 

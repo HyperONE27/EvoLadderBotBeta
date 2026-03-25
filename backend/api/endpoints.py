@@ -723,7 +723,9 @@ def _notification_row_to_out(row: dict[str, Any]) -> NotificationsOut:
         notify_queue_1v1=bool(row["notify_queue_1v1"]),
         notify_queue_2v2=bool(row["notify_queue_2v2"]),
         notify_queue_ffa=bool(row["notify_queue_ffa"]),
-        queue_notify_cooldown_minutes=int(row["queue_notify_cooldown_minutes"]),
+        notify_queue_1v1_cooldown=int(row["notify_queue_1v1_cooldown"]),
+        notify_queue_2v2_cooldown=int(row["notify_queue_2v2_cooldown"]),
+        notify_queue_ffa_cooldown=int(row["notify_queue_ffa_cooldown"]),
         updated_at=ua_str,
     )
 
@@ -785,7 +787,9 @@ async def put_notifications(
         request.notify_queue_1v1 is None
         and request.notify_queue_2v2 is None
         and request.notify_queue_ffa is None
-        and request.queue_notify_cooldown_minutes is None
+        and request.notify_queue_1v1_cooldown is None
+        and request.notify_queue_2v2_cooldown is None
+        and request.notify_queue_ffa_cooldown is None
     ):
         raise HTTPException(status_code=400, detail="No preference fields to update")
     app.orchestrator.ensure_notifications(request.discord_uid)
@@ -794,7 +798,9 @@ async def put_notifications(
         notify_queue_1v1=request.notify_queue_1v1,
         notify_queue_2v2=request.notify_queue_2v2,
         notify_queue_ffa=request.notify_queue_ffa,
-        queue_notify_cooldown_minutes=request.queue_notify_cooldown_minutes,
+        notify_queue_1v1_cooldown=request.notify_queue_1v1_cooldown,
+        notify_queue_2v2_cooldown=request.notify_queue_2v2_cooldown,
+        notify_queue_ffa_cooldown=request.notify_queue_ffa_cooldown,
     )
     return _notification_row_to_out(row)
 

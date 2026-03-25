@@ -35,7 +35,12 @@ def compute_queue_activity_targets(
     locales: dict[str, str] = {}
     for row in eligible.iter_rows(named=True):
         uid = int(row["discord_uid"])
-        cd_min = int(row["queue_notify_cooldown_minutes"])
+        if game_mode == "2v2":
+            cd_min = int(row["notify_queue_2v2_cooldown"])
+        elif game_mode == "FFA":
+            cd_min = int(row["notify_queue_ffa_cooldown"])
+        else:
+            cd_min = int(row["notify_queue_1v1_cooldown"])
         prev = last_sent.get(uid)
         if prev is not None and (now - prev) < timedelta(minutes=cd_min):
             continue

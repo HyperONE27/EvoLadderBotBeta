@@ -57,7 +57,9 @@ NOTIFICATIONS_SCHEMA: dict[str, pl.DataType] = {
     "notify_queue_1v1": pl.Boolean,
     "notify_queue_2v2": pl.Boolean,
     "notify_queue_ffa": pl.Boolean,
-    "queue_notify_cooldown_minutes": pl.Int16,
+    "notify_queue_1v1_cooldown": pl.Int16,
+    "notify_queue_2v2_cooldown": pl.Int16,
+    "notify_queue_ffa_cooldown": pl.Int16,
     "updated_at": pl.Datetime("us", "utc"),
 }
 
@@ -307,7 +309,9 @@ class NotificationsRow(TypedDict):
     notify_queue_1v1: bool
     notify_queue_2v2: bool
     notify_queue_ffa: bool
-    queue_notify_cooldown_minutes: int
+    notify_queue_1v1_cooldown: int
+    notify_queue_2v2_cooldown: int
+    notify_queue_ffa_cooldown: int
     updated_at: datetime
 
 

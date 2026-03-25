@@ -79,7 +79,12 @@ def register_notifyme_command(tree: app_commands.CommandTree) -> None:
             "notify_queue_1v1": enabled,
         }
         if cooldown_minutes is not None:
-            payload["queue_notify_cooldown_minutes"] = cooldown_minutes
+            if game_mode == "1v1":
+                payload["notify_queue_1v1_cooldown"] = cooldown_minutes
+            elif game_mode == "2v2":
+                payload["notify_queue_2v2_cooldown"] = cooldown_minutes
+            elif game_mode == "FFA":
+                payload["notify_queue_ffa_cooldown"] = cooldown_minutes
 
         try:
             async with get_session().put(

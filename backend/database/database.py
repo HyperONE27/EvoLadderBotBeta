@@ -201,7 +201,9 @@ class DatabaseWriter:
             "notify_queue_1v1": False,
             "notify_queue_2v2": False,
             "notify_queue_ffa": False,
-            "queue_notify_cooldown_minutes": QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT,
+            "notify_queue_1v1_cooldown": QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT,
+            "notify_queue_2v2_cooldown": QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT,
+            "notify_queue_ffa_cooldown": QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT,
             "updated_at": utc_now().isoformat(),
         }
         response = self.client.table("notifications").insert(data).execute()

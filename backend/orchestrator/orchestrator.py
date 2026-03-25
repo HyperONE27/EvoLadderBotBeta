@@ -720,7 +720,9 @@ class Orchestrator:
         notify_queue_1v1: bool | None = None,
         notify_queue_2v2: bool | None = None,
         notify_queue_ffa: bool | None = None,
-        queue_notify_cooldown_minutes: int | None = None,
+        notify_queue_1v1_cooldown: int | None = None,
+        notify_queue_2v2_cooldown: int | None = None,
+        notify_queue_ffa_cooldown: int | None = None,
     ) -> dict:
         """Persist notification preference updates."""
 
@@ -729,7 +731,9 @@ class Orchestrator:
             notify_queue_1v1=notify_queue_1v1,
             notify_queue_2v2=notify_queue_2v2,
             notify_queue_ffa=notify_queue_ffa,
-            queue_notify_cooldown_minutes=queue_notify_cooldown_minutes,
+            notify_queue_1v1_cooldown=notify_queue_1v1_cooldown,
+            notify_queue_2v2_cooldown=notify_queue_2v2_cooldown,
+            notify_queue_ffa_cooldown=notify_queue_ffa_cooldown,
         )
 
     def build_queue_join_activity_payload(

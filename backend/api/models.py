@@ -456,7 +456,9 @@ class NotificationsOut(BaseModel):
     notify_queue_1v1: bool
     notify_queue_2v2: bool
     notify_queue_ffa: bool
-    queue_notify_cooldown_minutes: int
+    notify_queue_1v1_cooldown: int
+    notify_queue_2v2_cooldown: int
+    notify_queue_ffa_cooldown: int
     updated_at: str | None = None
 
 
@@ -465,7 +467,9 @@ class NotificationsUpsertRequest(BaseModel):
     notify_queue_1v1: bool | None = None
     notify_queue_2v2: bool | None = None
     notify_queue_ffa: bool | None = None
-    queue_notify_cooldown_minutes: int | None = Field(None, ge=5, le=1440)
+    notify_queue_1v1_cooldown: int | None = Field(None, ge=5, le=1440)
+    notify_queue_2v2_cooldown: int | None = Field(None, ge=5, le=1440)
+    notify_queue_ffa_cooldown: int | None = Field(None, ge=5, le=1440)
 
 
 # --- /setcountry ---

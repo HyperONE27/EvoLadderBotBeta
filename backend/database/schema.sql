@@ -54,13 +54,14 @@ CREATE TABLE IF NOT EXISTS notifications (
     notify_queue_2v2                BOOLEAN NOT NULL DEFAULT FALSE,
     notify_queue_ffa                BOOLEAN NOT NULL DEFAULT FALSE,
 
-    -- Minutes between anonymous “someone is queueing” DMs for this subscriber.
-    -- Default matches QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT in common/config.py.
-    queue_notify_cooldown_minutes   SMALLINT NOT NULL DEFAULT 15
-        CHECK (
-                queue_notify_cooldown_minutes >= 5
-                AND queue_notify_cooldown_minutes <= 1440
-            ),
+    -- Per-mode cooldown (minutes) between anonymous “someone is queueing” DMs.
+    -- Defaults match QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT in common/config.py.
+    notify_queue_1v1_cooldown       SMALLINT NOT NULL DEFAULT 15
+        CHECK (notify_queue_1v1_cooldown >= 5 AND notify_queue_1v1_cooldown <= 1440),
+    notify_queue_2v2_cooldown       SMALLINT NOT NULL DEFAULT 15
+        CHECK (notify_queue_2v2_cooldown >= 5 AND notify_queue_2v2_cooldown <= 1440),
+    notify_queue_ffa_cooldown       SMALLINT NOT NULL DEFAULT 15
+        CHECK (notify_queue_ffa_cooldown >= 5 AND notify_queue_ffa_cooldown <= 1440),
     updated_at                      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

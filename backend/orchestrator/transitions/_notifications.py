@@ -58,7 +58,9 @@ def upsert_notifications_preferences(
     notify_queue_1v1: bool | None = None,
     notify_queue_2v2: bool | None = None,
     notify_queue_ffa: bool | None = None,
-    queue_notify_cooldown_minutes: int | None = None,
+    notify_queue_1v1_cooldown: int | None = None,
+    notify_queue_2v2_cooldown: int | None = None,
+    notify_queue_ffa_cooldown: int | None = None,
 ) -> dict:
     """Merge preference updates and persist."""
 
@@ -70,8 +72,12 @@ def upsert_notifications_preferences(
         updated["notify_queue_2v2"] = notify_queue_2v2
     if notify_queue_ffa is not None:
         updated["notify_queue_ffa"] = notify_queue_ffa
-    if queue_notify_cooldown_minutes is not None:
-        updated["queue_notify_cooldown_minutes"] = int(queue_notify_cooldown_minutes)
+    if notify_queue_1v1_cooldown is not None:
+        updated["notify_queue_1v1_cooldown"] = int(notify_queue_1v1_cooldown)
+    if notify_queue_2v2_cooldown is not None:
+        updated["notify_queue_2v2_cooldown"] = int(notify_queue_2v2_cooldown)
+    if notify_queue_ffa_cooldown is not None:
+        updated["notify_queue_ffa_cooldown"] = int(notify_queue_ffa_cooldown)
 
     saved = self._db_writer.upsert_notifications_full_row(updated)
     _replace_notifications_row(self, saved)
