@@ -5,6 +5,7 @@ from backend.algorithms.game_stats import count_game_stats_in_completed_window
 from backend.domain_types.dataframes import (
     AdminsRow,
     Matches1v1Row,
+    Matches2v2Row,
     MMRs1v1Row,
     NotificationsRow,
     PlayersRow,
@@ -192,6 +193,33 @@ class StateReader:
         n2 = p2.get("nationality") if p2 is not None else None
         enriched["player_1_nationality"] = n1 if n1 else "--"
         enriched["player_2_nationality"] = n2 if n2 else "--"
+        return enriched
+
+    def enrich_match_for_snapshot_2v2(
+        self, match: Matches2v2Row | dict[str, Any]
+    ) -> dict:
+        """2v2 match row plus team letter ranks and all four player nationalities."""
+        enriched = self.enrich_match_2v2_with_ranks(dict(match))
+
+        def _nat(uid: int | None) -> str:
+            if uid is None:
+                return "--"
+            p = self.get_player(uid)
+            n = p.get("nationality") if p is not None else None
+            return n if n else "--"
+
+        enriched["team_1_player_1_nationality"] = _nat(
+            enriched.get("team_1_player_1_discord_uid")
+        )
+        enriched["team_1_player_2_nationality"] = _nat(
+            enriched.get("team_1_player_2_discord_uid")
+        )
+        enriched["team_2_player_1_nationality"] = _nat(
+            enriched.get("team_2_player_1_discord_uid")
+        )
+        enriched["team_2_player_2_nationality"] = _nat(
+            enriched.get("team_2_player_2_discord_uid")
+        )
         return enriched
 
     def get_recent_period_stats_1v1(

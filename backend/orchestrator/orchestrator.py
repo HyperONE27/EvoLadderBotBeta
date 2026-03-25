@@ -109,6 +109,11 @@ class Orchestrator:
         raw = self._transition_manager.get_active_matches_1v1()
         return [self._state_reader.enrich_match_for_snapshot(m) for m in raw]
 
+    def get_active_matches_snapshot_2v2(self) -> list[dict[str, Any]]:
+        """Active 2v2 matches with team letter ranks and player nationalities for /snapshot."""
+        raw = self._transition_manager.get_active_matches_2v2()
+        return [self._state_reader.enrich_match_for_snapshot_2v2(m) for m in raw]
+
     def get_queue_1v1(self) -> list[QueueEntry1v1]:
         """Return the current 1v1 queue (shallow copy)."""
         return self._state_reader.get_queue_1v1()

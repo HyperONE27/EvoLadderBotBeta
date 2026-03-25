@@ -2390,6 +2390,86 @@ class MatchesEmbed(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
+def _format_race_combo(r1: str | None, r2: str | None) -> str:
+    """Return ``'XX YY'`` if both races are set, else ``'-- --'``."""
+    if r1 and r2:
+        return f"{_race_short(r1)} {_race_short(r2)}"
+    return "-- --"
+
+
+def _format_queue_team_2v2(entry: dict) -> str:
+    """Format a 2v2 queue entry as two monospace backtick blocks.
+
+    ``{rank} {bw_combo} {mix_combo} {sc2_combo} {p1_nat} {p1_name:12} {p2_nat} {p2_name:12}``
+    followed by the wait time.
+    """
+    rank = (entry.get("team_letter_rank") or "U")[:1]
+    bw = _format_race_combo(
+        entry.get("pure_bw_leader_race"), entry.get("pure_bw_member_race")
+    )
+    mix = _format_race_combo(
+        entry.get("mixed_leader_race"), entry.get("mixed_member_race")
+    )
+    sc2 = _format_race_combo(
+        entry.get("pure_sc2_leader_race"), entry.get("pure_sc2_member_race")
+    )
+    p1_nat = (entry.get("nationality") or "--")[:2].ljust(2)
+    p2_nat = (entry.get("member_nationality") or "--")[:2].ljust(2)
+    p1_name = (entry.get("player_name") or "Unknown")[:12].ljust(12)
+    p2_name = (entry.get("party_member_name") or "Unknown")[:12].ljust(12)
+    wait = _elapsed_seconds(entry.get("joined_at"))
+    team_str = f"{rank} {bw} {mix} {sc2} {p1_nat} {p1_name} {p2_nat} {p2_name}"
+    return f"`{team_str}` `{wait}`"
+
+
+def _format_match_slot_2v2(match: dict, id_width: int) -> str:
+    """Format a 2v2 active match as two lines of monospace backtick blocks.
+
+    Line 1: ``{id:>N}`` ``{t1_rank} {t1p1_race} {t1p1_nat} {t1p1_name:12} {t1p2_race} {t1p2_nat} {t1p2_name:12}``
+    Line 2: ``   vs`` ``{t2_rank} {t2p1_race} {t2p1_nat} {t2p1_name:12} {t2p2_race} {t2p2_nat} {t2p2_name:12} {elapsed:>4}s``
+    """
+
+    def _team_block(
+        rank: str,
+        r1: str | None,
+        n1: str,
+        name1: str,
+        r2: str | None,
+        n2: str,
+        name2: str,
+    ) -> str:
+        rk = rank[:1]
+        race1 = _race_short(r1).ljust(2)[:2]
+        nat1 = (n1 or "--")[:2].ljust(2)
+        nm1 = (name1 or "Unknown")[:12].ljust(12)
+        race2 = _race_short(r2).ljust(2)[:2]
+        nat2 = (n2 or "--")[:2].ljust(2)
+        nm2 = (name2 or "Unknown")[:12].ljust(12)
+        return f"{rk} {race1} {nat1} {nm1} {race2} {nat2} {nm2}"
+
+    mid = f"{match.get('id') or 0:>{id_width}d}"
+    t1 = _team_block(
+        match.get("team_1_letter_rank") or "U",
+        match.get("team_1_player_1_race"),
+        match.get("team_1_player_1_nationality") or "--",
+        match.get("team_1_player_1_name") or "Unknown",
+        match.get("team_1_player_2_race"),
+        match.get("team_1_player_2_nationality") or "--",
+        match.get("team_1_player_2_name") or "Unknown",
+    )
+    t2 = _team_block(
+        match.get("team_2_letter_rank") or "U",
+        match.get("team_2_player_1_race"),
+        match.get("team_2_player_1_nationality") or "--",
+        match.get("team_2_player_1_name") or "Unknown",
+        match.get("team_2_player_2_race"),
+        match.get("team_2_player_2_nationality") or "--",
+        match.get("team_2_player_2_name") or "Unknown",
+    )
+    elapsed = _elapsed_seconds(match.get("assigned_at"))
+    return f"`{mid}` `{t1}`\n`   vs` `{t2} {elapsed}`"
+
+
 class QueueSnapshotEmbed2v2(discord.Embed):
     """2v2 queue snapshot: shows teams (parties) currently searching."""
 
@@ -2407,21 +2487,8 @@ class QueueSnapshotEmbed2v2(discord.Embed):
             )
             + "\n"
         )
-        for i, entry in enumerate(queue[:15]):
-            leader = entry.get("player_name", "?")
-            member = entry.get("party_member_name", "?")
-            mmr = entry.get("team_mmr", "?")
-            comps: list[str] = []
-            if entry.get("pure_bw_leader_race") and entry.get("pure_bw_member_race"):
-                comps.append("BW")
-            if entry.get("mixed_leader_race") and entry.get("mixed_member_race"):
-                comps.append("Mix")
-            if entry.get("pure_sc2_leader_race") and entry.get("pure_sc2_member_race"):
-                comps.append("SC2")
-            comp_str = "+".join(comps) or "—"
-            description += (
-                f"`{i + 1:>2}` **{leader}** & **{member}** ({mmr}) [{comp_str}]\n"
-            )
+        for entry in queue[:15]:
+            description += _format_queue_team_2v2(entry) + "\n"
         if queue_size > 15:
             description += t(
                 "queue_snapshot_embed_2v2.and_more.1",
@@ -2445,18 +2512,14 @@ class MatchesEmbed2v2(discord.Embed):
             t("matches_embed_2v2.active_matches.1", locale, count=str(match_count))
             + "\n"
         )
+
+        id_width = 5
+        if active_matches:
+            max_id = max(m.get("id") or 0 for m in active_matches)
+            id_width = max(5, len(str(max_id)))
+
         for m in active_matches[:10]:
-            mid = m.get("id", "?")
-            t1p1 = m.get("team_1_player_1_name", "?")
-            t1p2 = m.get("team_1_player_2_name", "?")
-            t2p1 = m.get("team_2_player_1_name", "?")
-            t2p2 = m.get("team_2_player_2_name", "?")
-            t1_mmr = m.get("team_1_mmr", "?")
-            t2_mmr = m.get("team_2_mmr", "?")
-            description += (
-                f"`#{mid}` **{t1p1}** & **{t1p2}** ({t1_mmr}) "
-                f"vs **{t2p1}** & **{t2p2}** ({t2_mmr})\n"
-            )
+            description += _format_match_slot_2v2(m, id_width) + "\n"
         if match_count > 10:
             description += t(
                 "parties_embed.and_more.1", locale, count=str(match_count - 10)
@@ -2478,17 +2541,9 @@ class PartiesEmbed(discord.Embed):
             t("parties_embed.active_parties.1", locale, count=str(party_count)) + "\n"
         )
         for p in parties[:20]:
-            leader = p.get("leader_player_name", "?")
-            member = p.get("member_player_name", "?")
-            description += (
-                t(
-                    "parties_embed.roster_line.1",
-                    locale,
-                    leader=leader,
-                    member=member,
-                )
-                + "\n"
-            )
+            leader = (p.get("leader_player_name") or "Unknown")[:12].ljust(12)
+            member = (p.get("member_player_name") or "Unknown")[:12].ljust(12)
+            description += f"- `{leader}` + `{member}`\n"
         if party_count > 20:
             description += t(
                 "parties_embed.and_more.1", locale, count=str(party_count - 20)

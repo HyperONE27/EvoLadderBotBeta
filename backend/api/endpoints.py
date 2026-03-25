@@ -30,6 +30,7 @@ from backend.api.models import (
     AdminResolveRequest,
     AdminResolveResponse,
     ActiveMatchSnapshotRow,
+    ActiveMatchSnapshot2v2Row,
     AdminSnapshot2v2Response,
     AdminSnapshotResponse,
     AdminsResponse,
@@ -556,7 +557,8 @@ async def admin_snapshot_2v2(
     app: Backend = Depends(get_backend),
 ) -> AdminSnapshot2v2Response:
     queue = app.orchestrator.get_queue_snapshot_2v2()
-    active = app.orchestrator.get_active_matches_2v2()
+    active_raw = app.orchestrator.get_active_matches_snapshot_2v2()
+    active = [ActiveMatchSnapshot2v2Row.model_validate(r) for r in active_raw]
     parties = app.orchestrator.get_parties_snapshot()
 
     sm = app.state_manager

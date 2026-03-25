@@ -111,9 +111,40 @@ class AdminSnapshotResponse(BaseModel):
     dataframe_stats: dict
 
 
+class ActiveMatchSnapshot2v2Row(BaseModel):
+    """``matches_2v2`` row enriched with team letter ranks and player nationalities."""
+
+    id: int
+    team_1_player_1_discord_uid: int
+    team_1_player_2_discord_uid: int
+    team_1_player_1_name: str
+    team_1_player_2_name: str
+    team_1_player_1_race: str
+    team_1_player_2_race: str
+    team_1_mmr: int
+    team_2_player_1_discord_uid: int
+    team_2_player_2_discord_uid: int
+    team_2_player_1_name: str
+    team_2_player_2_name: str
+    team_2_player_1_race: str
+    team_2_player_2_race: str
+    team_2_mmr: int
+    match_result: str | None = None
+    assigned_at: datetime | None = None
+    completed_at: datetime | None = None
+    admin_intervened: bool = False
+    admin_discord_uid: int | None = None
+    team_1_letter_rank: str = "U"
+    team_2_letter_rank: str = "U"
+    team_1_player_1_nationality: str = "--"
+    team_1_player_2_nationality: str = "--"
+    team_2_player_1_nationality: str = "--"
+    team_2_player_2_nationality: str = "--"
+
+
 class AdminSnapshot2v2Response(BaseModel):
     queue: list[QueueEntry2v2]
-    active_matches: list[Matches2v2Row]
+    active_matches: list[ActiveMatchSnapshot2v2Row]
     parties: list[PartyEntry2v2]
     dataframe_stats: dict
 
