@@ -42,7 +42,7 @@ _gateway_task: asyncio.Task[None] | None = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):  # type: ignore[type-arg]
+async def lifespan(app: FastAPI):
     configure_structlog(service_name="channel-manager")
     global _db, _discord, _gateway_task
     _db = ChannelDatabase()

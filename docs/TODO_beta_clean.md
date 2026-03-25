@@ -9,8 +9,9 @@ What remains?
 - ⏰ Store canonical copies of migrated old database so I can easily launch the pre-beta
 - ✅ Combine /termsofservice and /setup:
     - /termsofservice embed should become the first step in /setup
+    - ✅ locale selection now comes earlier in the /setup
+    - ✅ Players can now setup notifications in /setup
 - ✅ Automatically send the /termsofservice embed/first step of /setup whenever someone messages the bot and they are a new user
-    - Create their `players` table row automatically
 - ✅ Create a channel manager microservice
     - Two endpoints:
         - Accept match information about two players, create a channel, send the match info embed inside it
@@ -23,7 +24,7 @@ What remains?
             - Needs safety measures so the bot only can delete channels it created / specifically in its data tables
     - Players can optionally use this channel to coordinate once matched but they cannot find each other
     - ✅ It works now
-    - ⏰ Clean up the UI/presentation
+    - ✅ Clean up the UI/presentation
 - ⏰ Add instructions under MatchInfoEmbed (in a new embed):
     - How to change servers
     - How to join a channel

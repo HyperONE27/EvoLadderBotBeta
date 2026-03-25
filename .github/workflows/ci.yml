@@ -23,4 +23,4 @@ jobs:
         run: ruff check . && ruff format --check .
 
       - name: mypy
-        run: mypy backend bot common
+        run: mypy backend bot channel_manager common

@@ -1,6 +1,6 @@
 .PHONY: quality
 quality:
-	ruff check --fix . && ruff format . && mypy backend bot common
+	ruff check --fix . && ruff format . && mypy backend bot channel_manager common
 
 .PHONY: run
 run:

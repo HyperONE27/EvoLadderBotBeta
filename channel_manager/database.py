@@ -1,5 +1,7 @@
 """Supabase wrapper for the channel_manager's channels table."""
 
+from typing import Any, cast
+
 import structlog
 from supabase import create_client, Client
 
@@ -34,7 +36,7 @@ class ChannelDatabase:
             )
             .execute()
         )
-        return result.data[0]
+        return cast(dict[str, Any], result.data[0])
 
     def get_channel_by_match_id(self, match_id: int, match_mode: str) -> dict | None:
         """Return the channel row for a match, or None if not found."""
@@ -47,7 +49,7 @@ class ChannelDatabase:
             .limit(1)
             .execute()
         )
-        return result.data[0] if result.data else None
+        return cast(dict[str, Any], result.data[0]) if result.data else None
 
     def get_channel_by_channel_id(self, channel_id: int) -> dict | None:
         """Return the active channel row for a Discord channel snowflake, or None."""
@@ -59,7 +61,7 @@ class ChannelDatabase:
             .limit(1)
             .execute()
         )
-        return result.data[0] if result.data else None
+        return cast(dict[str, Any], result.data[0]) if result.data else None
 
     def append_message(
         self,
