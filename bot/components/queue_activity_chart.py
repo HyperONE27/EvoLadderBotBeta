@@ -68,13 +68,13 @@ def render_queue_join_chart_png(
     """Build a PNG line chart; *buckets* items have ``t`` (ISO) and ``count`` (int)."""
 
     buf = io.BytesIO()
-    y_axis = y_label if y_label is not None else t("activity_chart.y_axis.1", locale)
+    y_axis = y_label if y_label is not None else t("activity_chart.y_axis.1", "enUS")
     chart_title = f"Queue Activity · {game_mode}" if game_mode else title
 
     if not buckets:
         fig, ax = plt.subplots(figsize=(10, 5))
         _apply_style(fig, ax)
-        empty_msg = t("activity_chart.empty.1", locale)
+        empty_msg = t("activity_chart.empty.1", "enUS")
         ax.text(0.5, 0.5, empty_msg, ha="center", va="center", color=_TEXT_COLOR)
         ax.set_axis_off()
         fig.savefig(

@@ -44,7 +44,7 @@ def register_activity_command(tree: app_commands.CommandTree) -> None:
     @app_commands.choices(
         game_mode=[
             app_commands.Choice(name="1v1", value="1v1"),
-            app_commands.Choice(name="2v2 (soon)", value="2v2"),
+            app_commands.Choice(name="2v2", value="2v2"),
             app_commands.Choice(name="FFA (soon)", value="FFA"),
         ]
     )
@@ -53,7 +53,7 @@ def register_activity_command(tree: app_commands.CommandTree) -> None:
         game_mode: str = "1v1",
     ) -> None:
         locale = get_player_locale(interaction.user.id)
-        if game_mode != "1v1":
+        if game_mode not in ("1v1", "2v2"):
             uembed = discord.Embed(
                 title=t("unsupported_game_mode_embed.title.1", locale),
                 description=t(
