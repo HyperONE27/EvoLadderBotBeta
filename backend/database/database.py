@@ -215,7 +215,7 @@ class DatabaseWriter:
     def upsert_notifications_full_row(self, row: dict[str, Any]) -> dict[str, Any]:
         """Upsert a full ``notifications`` row on ``discord_uid`` conflict."""
 
-        payload = dict(row)
+        payload = _serialise_event_row(dict(row))
         payload["updated_at"] = utc_now().isoformat()
         response = (
             self.client.table("notifications")
