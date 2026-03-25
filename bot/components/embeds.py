@@ -1271,6 +1271,28 @@ class MatchInfoEmbeds2v2(list[discord.Embed]):
         super().__init__([embed1, embed2])
 
 
+class LobbyGuideEmbed(discord.Embed):
+    """Gold-colored step-by-step guide for joining a match lobby."""
+
+    def __init__(
+        self,
+        game_region: str,
+        game_server: str,
+        locale: str = "enUS",
+    ) -> None:
+        super().__init__(
+            title=t("lobby_guide_embed.title.1", locale),
+            description=t(
+                "lobby_guide_embed.description.1",
+                locale,
+                game_region=game_region,
+                game_server=game_server,
+            ),
+            color=discord.Color.gold(),
+        )
+        apply_default_embed_footer(self, locale=locale)
+
+
 class MatchAbortedEmbed2v2(discord.Embed):
     def __init__(
         self,
