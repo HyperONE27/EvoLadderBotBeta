@@ -630,9 +630,9 @@ class Orchestrator:
         """Return all 2v2 matches with match_result IS NULL."""
         return self._transition_manager.get_active_matches_2v2()
 
-    def get_parties_snapshot(self) -> list[PartyEntry2v2]:
-        """Return all active parties."""
-        return self._state_reader.get_parties_2v2()
+    def get_parties_snapshot(self) -> list[dict]:
+        """Return all active parties enriched with nationality."""
+        return self._state_reader.get_parties_snapshot()
 
     # ------------------------------------------------------------------
     # Leaderboard

@@ -2465,6 +2465,45 @@ def _format_match_slot_2v2(match: dict, id_width: int) -> str:
     return f"{line1}\n{line2}"
 
 
+_MAX_QUEUE_SLOTS_2V2 = 10
+_MAX_MATCH_SLOTS_2V2 = 5
+_MAX_PARTY_SLOTS = 15
+
+
+def _format_blank_queue_slot_2v2() -> str:
+    # Mirrors _format_queue_team_2v2 widths: rank(1) | combos(17) | p1(15) | p2(15) | wait(5)
+    return f"`{' ' * 1}` `{' ' * 17}` `{' ' * 15}` `{' ' * 15}` `{' ' * 5}`"
+
+
+def _format_blank_match_slot_2v2(id_width: int) -> str:
+    blank_id = " " * id_width
+    blank_player = " " * 17  # race(2) + space + nat(2) + space + name(12)
+    blank_time = " " * 5
+    return (
+        f"`{blank_id}` `{' ' * 1}` `{blank_player}` `{blank_player}`\n"
+        f"`{'   vs':>{id_width}}` `{' ' * 1}` `{blank_player}` `{blank_player}` `{blank_time}`"
+    )
+
+
+def _format_party_slot(party: dict) -> str:
+    """Format a party as two monospace backtick blocks plus a right-padded duration.
+
+    ``{p1_nat:2} {p1_name:12}`` ``{p2_nat:2} {p2_name:12}`` {duration:>5}s
+    """
+    p1_nat = (party.get("leader_nationality") or "--")[:2].ljust(2)
+    p1_name = (party.get("leader_player_name") or "Unknown")[:12].ljust(12)
+    p2_nat = (party.get("member_nationality") or "--")[:2].ljust(2)
+    p2_name = (party.get("member_player_name") or "Unknown")[:12].ljust(12)
+    dt = ensure_utc(party.get("created_at"))
+    duration = f"{int((utc_now() - dt).total_seconds()):>5d}s" if dt else "    ?s"
+    return f"`{p1_nat} {p1_name}` `{p2_nat} {p2_name}` {duration}"
+
+
+def _format_blank_party_slot() -> str:
+    # Matches _format_party_slot widths: nat(2)+space+name(12)=15 per block, 6 for duration
+    return f"`{' ' * 15}` `{' ' * 15}` {' ' * 6}"
+
+
 class QueueSnapshotEmbed2v2(discord.Embed):
     """2v2 queue snapshot: shows teams (parties) currently searching."""
 
@@ -2482,13 +2521,16 @@ class QueueSnapshotEmbed2v2(discord.Embed):
             )
             + "\n"
         )
-        for entry in queue[:15]:
-            description += _format_queue_team_2v2(entry) + "\n"
-        if queue_size > 15:
+        for i in range(_MAX_QUEUE_SLOTS_2V2):
+            if i < queue_size:
+                description += _format_queue_team_2v2(queue[i]) + "\n"
+            else:
+                description += _format_blank_queue_slot_2v2() + "\n"
+        if queue_size > _MAX_QUEUE_SLOTS_2V2:
             description += t(
                 "queue_snapshot_embed_2v2.and_more.1",
                 locale,
-                count=str(queue_size - 15),
+                count=str(queue_size - _MAX_QUEUE_SLOTS_2V2),
             )
         self.description = description
         apply_default_embed_footer(self, locale=locale)
@@ -2513,11 +2555,18 @@ class MatchesEmbed2v2(discord.Embed):
             max_id = max(m.get("id") or 0 for m in active_matches)
             id_width = max(5, len(str(max_id)))
 
-        for m in active_matches[:10]:
-            description += _format_match_slot_2v2(m, id_width) + "\n"
-        if match_count > 10:
+        for i in range(_MAX_MATCH_SLOTS_2V2):
+            if i < match_count:
+                description += (
+                    _format_match_slot_2v2(active_matches[i], id_width) + "\n"
+                )
+            else:
+                description += _format_blank_match_slot_2v2(id_width) + "\n"
+        if match_count > _MAX_MATCH_SLOTS_2V2:
             description += t(
-                "parties_embed.and_more.1", locale, count=str(match_count - 10)
+                "parties_embed.and_more.1",
+                locale,
+                count=str(match_count - _MAX_MATCH_SLOTS_2V2),
             )
         self.description = description
         apply_default_embed_footer(self, locale=locale)
@@ -2535,13 +2584,16 @@ class PartiesEmbed(discord.Embed):
         description = (
             t("parties_embed.active_parties.1", locale, count=str(party_count)) + "\n"
         )
-        for p in parties[:20]:
-            leader = (p.get("leader_player_name") or "Unknown")[:12].ljust(12)
-            member = (p.get("member_player_name") or "Unknown")[:12].ljust(12)
-            description += f"- `{leader}` + `{member}`\n"
-        if party_count > 20:
+        for i in range(_MAX_PARTY_SLOTS):
+            if i < party_count:
+                description += _format_party_slot(parties[i]) + "\n"
+            else:
+                description += _format_blank_party_slot() + "\n"
+        if party_count > _MAX_PARTY_SLOTS:
             description += t(
-                "parties_embed.and_more.1", locale, count=str(party_count - 20)
+                "parties_embed.and_more.1",
+                locale,
+                count=str(party_count - _MAX_PARTY_SLOTS),
             )
         self.description = description
         apply_default_embed_footer(self, locale=locale)

@@ -103,6 +103,27 @@ class StateReader:
         """Return all active 2v2 parties."""
         return list(self._state_manager.parties_2v2.values())
 
+    def get_parties_snapshot(self) -> list[dict]:
+        """Return parties enriched with nationality for the admin snapshot."""
+        result = []
+        for p in self._state_manager.parties_2v2.values():
+            leader = self.get_player(p["leader_discord_uid"])
+            member = self.get_player(p["member_discord_uid"])
+            result.append(
+                {
+                    **p,
+                    "leader_nationality": (
+                        leader.get("nationality") if leader is not None else None
+                    )
+                    or "--",
+                    "member_nationality": (
+                        member.get("nationality") if member is not None else None
+                    )
+                    or "--",
+                }
+            )
+        return result
+
     def get_queue_entry_1v1(self, discord_uid: int) -> QueueEntry1v1 | None:
         """Find a specific player's queue entry, or None."""
         for entry in self._state_manager.queue_1v1:

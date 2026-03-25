@@ -12,7 +12,7 @@ from backend.domain_types.dataframes import (
     Preferences2v2Row,
     Replays1v1Row,
 )
-from backend.domain_types.ephemeral import PartyEntry2v2, QueueEntry1v1, QueueEntry2v2
+from backend.domain_types.ephemeral import QueueEntry1v1, QueueEntry2v2
 
 
 class GreetingResponse(BaseModel):
@@ -142,10 +142,20 @@ class ActiveMatchSnapshot2v2Row(BaseModel):
     team_2_player_2_nationality: str = "--"
 
 
+class PartySnapshotRow(BaseModel):
+    leader_discord_uid: int
+    leader_player_name: str
+    leader_nationality: str = "--"
+    member_discord_uid: int
+    member_player_name: str
+    member_nationality: str = "--"
+    created_at: datetime
+
+
 class AdminSnapshot2v2Response(BaseModel):
     queue: list[QueueEntry2v2]
     active_matches: list[ActiveMatchSnapshot2v2Row]
-    parties: list[PartyEntry2v2]
+    parties: list[PartySnapshotRow]
     dataframe_stats: dict
 
 
