@@ -232,7 +232,7 @@ Locale strings live in `data/locales/`. When adding or updating keys in any loca
 ## When Making Changes
 
 - Run `make quality` to run local CI (ruff + mypy) and make sure all your changes pass.
-- Write a descriptive commit title (imperative mood) and a short body explaining *why* when the change isn't obvious. No bare `"."` commits.
+- Write a descriptive commit title (imperative mood) and a short body explaining *why* when the change isn't obvious. No bare `"."` commits. Your work isn't done until you write a commit and push, unless explicitly told not to do one or both.
 - All DataFrame mutations go through `TransitionManager` — never modify `StateManager` DataFrames directly.
 - WebSocket events are the only way the bot learns about match lifecycle changes — if adding a new match state transition, add a corresponding WS broadcast.
 - The `common/` package is shared between backend and bot — changes here affect both processes.
