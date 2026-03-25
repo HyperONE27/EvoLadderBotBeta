@@ -740,17 +740,21 @@ class Orchestrator:
         self,
         joiner_uid: int,
         game_mode: str,
-        last_sent: dict[int, datetime],
     ) -> dict[str, Any]:
-        """Subscribers + footers for ``queue_join_activity`` WS event; updates *last_sent*."""
+        """Subscribers + footers for ``queue_join_activity`` WS event.
+
+        Updates notifications DataFrame last_sent timestamps and logs the wave
+        to the events table via record_notify_wave.
+        """
 
         now = utc_now()
-        uids, footers, locales = compute_queue_activity_targets(
+        uids, footers, locales, cooldowns = compute_queue_activity_targets(
             joiner_uid,
             game_mode,
-            last_sent,
             now,
         )
+        if uids:
+            self._transition_manager.record_notify_wave(uids, game_mode, now, cooldowns)
         return {
             "game_mode": game_mode,
             "notify_discord_uids": uids,

@@ -21,32 +21,35 @@ def footer_for_cooldown_minutes(minutes: int, locale: str = "enUS") -> str:
 def compute_queue_activity_targets(
     joiner_uid: int,
     game_mode: str,
-    last_sent: dict[int, datetime],
     now: datetime,
-) -> tuple[list[int], dict[str, str], dict[str, str]]:
-    """Return (uids, footers, locales); mutates *last_sent* for chosen uids."""
+) -> tuple[list[int], dict[str, str], dict[str, str], dict[str, int]]:
+    """Return (uids, footers, locales, cooldowns).
+
+    Cooldowns is a {str(uid): cd_min} dict used by the caller to persist
+    last_sent timestamps and write the wave event row.
+    """
 
     eligible = get_queue_activity_subscribers(joiner_uid, game_mode)
     if eligible.is_empty():
-        return [], {}, {}
+        return [], {}, {}, {}
+
+    last_sent_col = f"notify_queue_{game_mode.lower()}_last_sent"
+    cooldown_col = f"notify_queue_{game_mode.lower()}_cooldown"
 
     uids: list[int] = []
     footers: dict[str, str] = {}
     locales: dict[str, str] = {}
+    cooldowns: dict[str, int] = {}
     for row in eligible.iter_rows(named=True):
         uid = int(row["discord_uid"])
-        if game_mode == "2v2":
-            cd_min = int(row["notify_queue_2v2_cooldown"])
-        elif game_mode == "FFA":
-            cd_min = int(row["notify_queue_ffa_cooldown"])
-        else:
-            cd_min = int(row["notify_queue_1v1_cooldown"])
-        prev = last_sent.get(uid)
+        cd_min = int(row[cooldown_col])
+        prev: datetime | None = row.get(last_sent_col)
         if prev is not None and (now - prev) < timedelta(minutes=cd_min):
             continue
         locale = str(row.get("language", "enUS"))
+        uid_str = str(uid)
         uids.append(uid)
-        footers[str(uid)] = footer_for_cooldown_minutes(cd_min, locale)
-        locales[str(uid)] = locale
-        last_sent[uid] = now
-    return uids, footers, locales
+        footers[uid_str] = footer_for_cooldown_minutes(cd_min, locale)
+        locales[uid_str] = locale
+        cooldowns[uid_str] = cd_min
+    return uids, footers, locales, cooldowns

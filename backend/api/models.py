@@ -454,11 +454,14 @@ class NotificationsOut(BaseModel):
     discord_uid: int
     read_quick_start_guide: bool
     notify_queue_1v1: bool
-    notify_queue_2v2: bool
-    notify_queue_ffa: bool
     notify_queue_1v1_cooldown: int
+    notify_queue_1v1_last_sent: str | None = None
+    notify_queue_2v2: bool
     notify_queue_2v2_cooldown: int
+    notify_queue_2v2_last_sent: str | None = None
+    notify_queue_ffa: bool
     notify_queue_ffa_cooldown: int
+    notify_queue_ffa_last_sent: str | None = None
     updated_at: str | None = None
 
 

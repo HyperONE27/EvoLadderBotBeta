@@ -44,10 +44,15 @@ def get_queue_activity_subscribers(joiner_uid: int, game_mode: str) -> pl.DataFr
     Joins notifications with players to filter by opt-in, setup completion,
     ToS acceptance, ban status, and idle status.  Excludes *joiner_uid*.
 
-    Returns a DataFrame with columns from both tables, including
-    ``notify_queue_1v1_cooldown`` and ``language``.
+    Returns a DataFrame with columns from both tables, including the
+    per-mode cooldown and last_sent columns, plus ``language``.
     """
-    if game_mode != "1v1":
+    flag_col = {
+        "1v1": "notify_queue_1v1",
+        "2v2": "notify_queue_2v2",
+        "FFA": "notify_queue_ffa",
+    }.get(game_mode)
+    if flag_col is None:
         return pl.DataFrame()
 
     sm = _get_state_manager()
@@ -56,7 +61,7 @@ def get_queue_activity_subscribers(joiner_uid: int, game_mode: str) -> pl.DataFr
     if ndf.is_empty():
         return pl.DataFrame()
 
-    subs = ndf.filter(pl.col("notify_queue_1v1"))
+    subs = ndf.filter(pl.col(flag_col))
     if subs.is_empty():
         return pl.DataFrame()
 

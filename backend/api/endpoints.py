@@ -708,25 +708,25 @@ async def profile(
 
 
 def _notification_row_to_out(row: dict[str, Any]) -> NotificationsOut:
-    ua = row.get("updated_at")
-    ua_str: str | None
-    if ua is None:
-        ua_str = None
-    elif hasattr(ua, "isoformat"):
-        ua_str = ua.isoformat()
-    else:
-        ua_str = str(ua)
+    def _ts(val: Any) -> str | None:
+        if val is None:
+            return None
+        return val.isoformat() if hasattr(val, "isoformat") else str(val)
+
     return NotificationsOut(
         id=int(row["id"]),
         discord_uid=int(row["discord_uid"]),
         read_quick_start_guide=bool(row["read_quick_start_guide"]),
         notify_queue_1v1=bool(row["notify_queue_1v1"]),
-        notify_queue_2v2=bool(row["notify_queue_2v2"]),
-        notify_queue_ffa=bool(row["notify_queue_ffa"]),
         notify_queue_1v1_cooldown=int(row["notify_queue_1v1_cooldown"]),
+        notify_queue_1v1_last_sent=_ts(row.get("notify_queue_1v1_last_sent")),
+        notify_queue_2v2=bool(row["notify_queue_2v2"]),
         notify_queue_2v2_cooldown=int(row["notify_queue_2v2_cooldown"]),
+        notify_queue_2v2_last_sent=_ts(row.get("notify_queue_2v2_last_sent")),
+        notify_queue_ffa=bool(row["notify_queue_ffa"]),
         notify_queue_ffa_cooldown=int(row["notify_queue_ffa_cooldown"]),
-        updated_at=ua_str,
+        notify_queue_ffa_last_sent=_ts(row.get("notify_queue_ffa_last_sent")),
+        updated_at=_ts(row.get("updated_at")),
     )
 
 

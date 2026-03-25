@@ -452,6 +452,7 @@
   "leaderboard_embed.title.2": "Clasificación 2v2",
   "locale_setup_embed.description.1": "¡Bienvenido a la configuración de la escalera de SC: Evo Complete! Por favor, selecciona tu idioma preferido.",
   "locale_setup_embed.title.1": "Language / Idioma / 언어 / Язык / 言語",
+    "locale_setup_view.placeholder.language": "Language / Idioma / 언어 / Язык / 言語",
   "match_abandoned_embed.field_value.1": "- {p1_name}: `+0 ({p1_mmr})`\n- {p2_name}: `+0 ({p2_mmr})`",
   "match_abandoned_embed.field_value.2": "El partido fue abandonado automáticamente porque **{abandoner}** no confirmó a tiempo.",
   "match_abandoned_embed.title.1": "🛑 {game_mode} • Partido #{match_id} Abandonado",

@@ -61,6 +61,7 @@ class TransitionManager:
     # -- notifications (_notifications.py) -----------------------------------
     ensure_notification_row = _notifications.ensure_notification_row
     upsert_notifications_preferences = _notifications.upsert_notifications_preferences
+    record_notify_wave = _notifications.record_notify_wave
 
     # -- MMR helpers (_mmr.py) -----------------------------------------------
     _handle_missing_mmr_1v1 = _mmr._handle_missing_mmr_1v1

@@ -1,6 +1,5 @@
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
-from datetime import datetime
 
 import structlog
 
@@ -43,8 +42,6 @@ def _noop() -> None:
 class Backend:
     def __init__(self) -> None:
         self.process_pool = ProcessPoolExecutor(max_workers=REPLAY_WORKER_PROCESSES)
-        self._queue_notify_lock = asyncio.Lock()
-        self._queue_notify_last_sent: dict[int, datetime] = {}
         self._initialize_orchestrator()
         self._initialize_lookups()
 
@@ -78,12 +75,10 @@ class Backend:
     ) -> None:
         """Notify opt-in subscribers (anonymous DMs) after a successful queue join."""
 
-        async with self._queue_notify_lock:
-            payload = self.orchestrator.build_queue_join_activity_payload(
-                joiner_uid,
-                game_mode,
-                self._queue_notify_last_sent,
-            )
+        payload = self.orchestrator.build_queue_join_activity_payload(
+            joiner_uid,
+            game_mode,
+        )
         if not payload.get("notify_discord_uids"):
             return
         await ws.broadcast("queue_join_activity", payload)

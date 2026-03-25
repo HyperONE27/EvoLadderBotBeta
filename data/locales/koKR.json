@@ -452,6 +452,7 @@
   "leaderboard_embed.title.2": "2v2 리더보드",
   "locale_setup_embed.description.1": "SC: Evo Complete 래더 설정에 오신 것을 환영합니다! 선호하는 언어를 선택해 주세요.",
   "locale_setup_embed.title.1": "Language / Idioma / 언어 / Язык / 言語",
+    "locale_setup_view.placeholder.language": "Language / Idioma / 언어 / Язык / 言語",
   "match_abandoned_embed.field_value.1": "- {p1_name}: `+0 ({p1_mmr})`\n- {p2_name}: `+0 ({p2_mmr})`",
   "match_abandoned_embed.field_value.2": "**{abandoner}**이(가) 제 시간에 수락하지 않아 매치가 자동으로 폐기 처리되었습니다.",
   "match_abandoned_embed.title.1": "🛑 {game_mode} • 매치 #{match_id} 취소됨",

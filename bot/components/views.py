@@ -285,7 +285,7 @@ class LanguageSelect(discord.ui.Select):
             for code in locales
         ]
         super().__init__(
-            placeholder=t("setup_selection_view.placeholder.language", locale),
+            placeholder=t("locale_setup_view.placeholder.language", locale),
             min_values=1,
             max_values=1,
             options=options,
@@ -1163,7 +1163,15 @@ async def _send_setup_request(
 
     await interaction.response.edit_message(
         embed=SetupSuccessEmbed(
-            player_name, battletag, alt_ids, country, region, language, locale=language
+            player_name,
+            battletag,
+            alt_ids,
+            country,
+            region,
+            language,
+            notification_1v1=notification_1v1,
+            notification_2v2=notification_2v2,
+            locale=language,
         ),
         view=None,
     )

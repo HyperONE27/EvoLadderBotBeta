@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import json
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 import polars as pl
 import structlog
+
 
 if TYPE_CHECKING:
     from backend.orchestrator.transitions import TransitionManager
@@ -82,3 +85,48 @@ def upsert_notifications_preferences(
     saved = self._db_writer.upsert_notifications_full_row(updated)
     _replace_notifications_row(self, saved)
     return saved
+
+
+def record_notify_wave(
+    self: TransitionManager,
+    uids: list[int],
+    game_mode: str,
+    now: datetime,
+    cooldowns: dict[str, int],
+) -> None:
+    """Update last_sent timestamps for each notified uid and log the wave event."""
+
+    if not uids:
+        return
+
+    last_sent_col = f"notify_queue_{game_mode.lower()}_last_sent"
+    df = self._state_manager.notifications_df
+
+    for uid in uids:
+        rows = df.filter(pl.col("discord_uid") == uid)
+        if rows.is_empty():
+            continue
+        updated = dict(rows.row(0, named=True))
+        updated[last_sent_col] = now
+        self._db_writer.update_notify_last_sent(uid, last_sent_col, now)
+        _replace_notifications_row(self, updated)
+        df = self._state_manager.notifications_df  # refresh after each replacement
+
+    self._db_writer.insert_event(
+        {
+            "discord_uid": 1,  # sentinel: backend process
+            "event_type": "system_event",
+            "action": "queue_notify_wave",
+            "game_mode": game_mode,
+            "match_id": None,
+            "target_discord_uid": None,
+            "event_data": json.dumps(
+                {
+                    "notified_discord_uids": uids,
+                    "notified_count": len(uids),
+                    "cooldowns": cooldowns,
+                }
+            ),
+            "performed_at": now,
+        }
+    )

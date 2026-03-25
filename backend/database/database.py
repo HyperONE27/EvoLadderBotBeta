@@ -199,11 +199,14 @@ class DatabaseWriter:
             "discord_uid": discord_uid,
             "read_quick_start_guide": False,
             "notify_queue_1v1": False,
-            "notify_queue_2v2": False,
-            "notify_queue_ffa": False,
             "notify_queue_1v1_cooldown": QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT,
+            "notify_queue_1v1_last_sent": None,
+            "notify_queue_2v2": False,
             "notify_queue_2v2_cooldown": QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT,
+            "notify_queue_2v2_last_sent": None,
+            "notify_queue_ffa": False,
             "notify_queue_ffa_cooldown": QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT,
+            "notify_queue_ffa_last_sent": None,
             "updated_at": utc_now().isoformat(),
         }
         response = self.client.table("notifications").insert(data).execute()
@@ -222,6 +225,14 @@ class DatabaseWriter:
         if not response.data:
             raise RuntimeError("notifications upsert returned no data")
         return cast(dict[str, Any], response.data[0])
+
+    def update_notify_last_sent(
+        self, discord_uid: int, column: str, ts: datetime
+    ) -> None:
+        """Update a single notify_queue_*_last_sent column for one player."""
+        self.client.table("notifications").update(
+            {column: ts.isoformat(), "updated_at": utc_now().isoformat()}
+        ).eq("discord_uid", discord_uid).execute()
 
     def fetch_notification_by_discord_uid(
         self, discord_uid: int

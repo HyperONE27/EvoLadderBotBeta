@@ -1624,24 +1624,24 @@ class SetupPreviewEmbed(discord.Embed):
                 t(
                     "setup_preview_embed.notifications.interval_1v1",
                     locale,
-                    minutes=str(notification_1v1),
+                    minutes=f"`{notification_1v1}`",
                 )
             )
         else:
             notif_lines.append(
-                "1v1: " + t("setup_preview_embed.notifications.off", locale)
+                "1v1: `" + t("setup_preview_embed.notifications.off", locale) + "`"
             )
         if notification_2v2 is not None:
             notif_lines.append(
                 t(
                     "setup_preview_embed.notifications.interval_2v2",
                     locale,
-                    minutes=str(notification_2v2),
+                    minutes=f"`{notification_2v2}`",
                 )
             )
         else:
             notif_lines.append(
-                "2v2: " + t("setup_preview_embed.notifications.off", locale)
+                "2v2: `" + t("setup_preview_embed.notifications.off", locale) + "`"
             )
         self.add_field(
             name=t("setup_preview_embed.field_name.notifications", locale),
@@ -1661,12 +1661,19 @@ class SetupSuccessEmbed(discord.Embed):
         country: Country,
         region: GeographicRegion,
         language: str,
+        notification_1v1: int | None = None,
+        notification_2v2: int | None = None,
         locale: str = "enUS",
     ) -> None:
         super().__init__(
             title=t("setup_success_embed.title.1", locale),
             description=t("setup_success_embed.description.1", locale),
             color=discord.Color.green(),
+        )
+        self.add_field(
+            name=t("setup_preview_embed.field_name.language", locale),
+            value=f"`{_localized_language(language)}`",
+            inline=False,
         )
         self.add_field(
             name=t("shared.field_name.user_id", locale),
@@ -1676,6 +1683,12 @@ class SetupSuccessEmbed(discord.Embed):
         self.add_field(
             name=t("shared.field_name.battletag", locale),
             value=f"`{battletag}`",
+            inline=False,
+        )
+        alt_display = ", ".join(f"`{a}`" for a in alt_ids) if alt_ids else "`None`"
+        self.add_field(
+            name=t("shared.field_name.alt_ids", locale),
+            value=alt_display,
             inline=False,
         )
         self.add_field(
@@ -1696,15 +1709,34 @@ class SetupSuccessEmbed(discord.Embed):
             value=f"`{_localized_region(region['code'], locale)}`",
             inline=False,
         )
+        notif_lines: list[str] = []
+        if notification_1v1 is not None:
+            notif_lines.append(
+                t(
+                    "setup_preview_embed.notifications.interval_1v1",
+                    locale,
+                    minutes=f"`{notification_1v1}`",
+                )
+            )
+        else:
+            notif_lines.append(
+                "1v1: `" + t("setup_preview_embed.notifications.off", locale) + "`"
+            )
+        if notification_2v2 is not None:
+            notif_lines.append(
+                t(
+                    "setup_preview_embed.notifications.interval_2v2",
+                    locale,
+                    minutes=f"`{notification_2v2}`",
+                )
+            )
+        else:
+            notif_lines.append(
+                "2v2: `" + t("setup_preview_embed.notifications.off", locale) + "`"
+            )
         self.add_field(
-            name=t("shared.field_name.language", locale),
-            value=f"`{_localized_language(language)}`",
-            inline=False,
-        )
-        alt_display = ", ".join(f"`{a}`" for a in alt_ids) if alt_ids else "`None`"
-        self.add_field(
-            name=t("shared.field_name.alt_ids", locale),
-            value=alt_display,
+            name=t("setup_preview_embed.field_name.notifications", locale),
+            value="\n".join(notif_lines),
             inline=False,
         )
 
