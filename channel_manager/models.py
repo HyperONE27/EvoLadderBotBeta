@@ -14,13 +14,3 @@ class ChannelCreateResponse(BaseModel):
 
 class ChannelDeleteResponse(BaseModel):
     success: bool
-
-
-class ChannelMessageRequest(BaseModel):
-    discord_uid: int
-    content: str
-    timestamp: str  # ISO 8601 UTC string
-
-
-class ChannelMessageResponse(BaseModel):
-    success: bool

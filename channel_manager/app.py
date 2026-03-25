@@ -5,6 +5,8 @@ Exposes two endpoints:
   POST /channels/create                      — create a private Discord channel for a match
   DELETE /channels/by_match/{match_id}       — delete a channel when the match concludes
 
+Also runs a Discord Gateway client that logs messages and edits in managed talk channels.
+
 Entry point:
   uvicorn channel_manager.app:app --host 0.0.0.0 --port 8090
 """
@@ -17,18 +19,18 @@ from fastapi import FastAPI, HTTPException
 
 from channel_manager.config import (
     CHANNEL_DELETION_DELAY_SECONDS,
+    DISCORD_BOT_TOKEN,
     DISCORD_CHANNEL_CATEGORY_ID,
     DISCORD_GUILD_ID,
     DISCORD_STAFF_ROLE_IDS,
 )
 from channel_manager.database import ChannelDatabase
 from channel_manager.discord_http import DiscordClient
+from channel_manager.gateway import start_gateway
 from channel_manager.models import (
     ChannelCreateRequest,
     ChannelCreateResponse,
     ChannelDeleteResponse,
-    ChannelMessageRequest,
-    ChannelMessageResponse,
 )
 from common.logging.config import configure_structlog
 
@@ -36,16 +38,19 @@ logger = structlog.get_logger(__name__)
 
 _db: ChannelDatabase | None = None
 _discord: DiscordClient | None = None
+_gateway_task: asyncio.Task[None] | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # type: ignore[type-arg]
     configure_structlog(service_name="channel-manager")
-    global _db, _discord
+    global _db, _discord, _gateway_task
     _db = ChannelDatabase()
     _discord = DiscordClient()
+    _gateway_task = asyncio.create_task(start_gateway(_db, DISCORD_BOT_TOKEN))
     logger.info("[ChannelManager] Started.")
     yield
+    _gateway_task.cancel()
     await _discord.close()
     logger.info("[ChannelManager] Shut down.")
 
@@ -118,11 +123,12 @@ async def create_channel(request: ChannelCreateRequest) -> ChannelCreateResponse
 @app.delete("/channels/by_match/{match_id}", response_model=ChannelDeleteResponse)
 async def delete_channel_by_match(
     match_id: int,
+    match_mode: str,
     delay_seconds: int = CHANNEL_DELETION_DELAY_SECONDS,
 ) -> ChannelDeleteResponse:
     assert _db is not None and _discord is not None
 
-    row = _db.get_channel_by_match_id(match_id)
+    row = _db.get_channel_by_match_id(match_id, match_mode)
     if row is None:
         raise HTTPException(
             status_code=404, detail=f"No active channel found for match #{match_id}."
@@ -148,25 +154,3 @@ async def delete_channel_by_match(
 
     asyncio.create_task(_do_delete())
     return ChannelDeleteResponse(success=True)
-
-
-@app.post("/channels/{channel_id}/messages", response_model=ChannelMessageResponse)
-async def log_channel_message(
-    channel_id: int,
-    request: ChannelMessageRequest,
-) -> ChannelMessageResponse:
-    """Append a player message to the channel's audit log."""
-    assert _db is not None
-    try:
-        _db.append_message(
-            channel_id=channel_id,
-            discord_uid=request.discord_uid,
-            content=request.content,
-            ts=request.timestamp,
-        )
-    except Exception:
-        logger.exception(
-            f"[ChannelManager] Failed to log message for channel {channel_id}"
-        )
-        raise HTTPException(status_code=502, detail="Failed to log message.")
-    return ChannelMessageResponse(success=True)

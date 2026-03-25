@@ -6,8 +6,8 @@ from discord import app_commands
 from bot.components.embeds import ErrorEmbed, LocaleSetupEmbed
 from bot.components.views import LocaleSetupView
 from bot.core.bootstrap import Bot
-from bot.core.config import BACKEND_URL, BOT_TOKEN, CHANNEL_MANAGER_URL
-from bot.core.dependencies import get_cache, get_player_locale, set_bot
+from bot.core.config import BACKEND_URL, BOT_TOKEN
+from bot.core.dependencies import get_player_locale, set_bot
 from common.i18n import t
 from bot.core.http import get_session, init_session, close_session
 from bot.core.message_queue import get_message_queue, initialize_message_queue
@@ -86,29 +86,6 @@ async def on_message(message: discord.Message) -> None:
     # Remove this when we have actual things to do here
     if message.content.startswith("!"):
         await queue_channel_send_low(message.channel, content="🌎 Hello, world!")
-
-    # Log messages sent in active talk channels to the channel manager audit log.
-    if (
-        CHANNEL_MANAGER_URL
-        and isinstance(message.channel, discord.TextChannel)
-        and message.channel.id in get_cache().active_talk_channels.values()
-    ):
-        try:
-            async with get_session().post(
-                f"{CHANNEL_MANAGER_URL}/channels/{message.channel.id}/messages",
-                json={
-                    "discord_uid": message.author.id,
-                    "content": message.content,
-                    "timestamp": message.created_at.isoformat(),
-                },
-            ) as _resp:
-                pass
-        except Exception:
-            logger.warning(
-                "on_message: failed to log talk channel message",
-                channel_id=message.channel.id,
-                exc_info=True,
-            )
 
     if isinstance(message.channel, discord.DMChannel):
         # Register the player if this is their first interaction with the bot.

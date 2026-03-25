@@ -36,12 +36,25 @@ class ChannelDatabase:
         )
         return result.data[0]
 
-    def get_channel_by_match_id(self, match_id: int) -> dict | None:
+    def get_channel_by_match_id(self, match_id: int, match_mode: str) -> dict | None:
         """Return the channel row for a match, or None if not found."""
         result = (
             self._client.table("channels")
             .select("*")
             .eq("match_id", match_id)
+            .eq("match_mode", match_mode)
+            .is_("deleted_at", "null")
+            .limit(1)
+            .execute()
+        )
+        return result.data[0] if result.data else None
+
+    def get_channel_by_channel_id(self, channel_id: int) -> dict | None:
+        """Return the active channel row for a Discord channel snowflake, or None."""
+        result = (
+            self._client.table("channels")
+            .select("*")
+            .eq("channel_id", channel_id)
             .is_("deleted_at", "null")
             .limit(1)
             .execute()
@@ -60,7 +73,35 @@ class ChannelDatabase:
             "append_channel_message",
             {
                 "p_channel_id": channel_id,
-                "p_message": {"ts": ts, "discord_uid": discord_uid, "content": content},
+                "p_message": {
+                    "type": "message",
+                    "ts": ts,
+                    "discord_uid": discord_uid,
+                    "content": content,
+                },
+            },
+        ).execute()
+
+    def append_edit(
+        self,
+        channel_id: int,
+        discord_uid: int,
+        original_content: str,
+        new_content: str,
+        ts: str,
+    ) -> None:
+        """Atomically append one edit entry to the channel's messages log."""
+        self._client.rpc(
+            "append_channel_message",
+            {
+                "p_channel_id": channel_id,
+                "p_message": {
+                    "type": "edit",
+                    "ts": ts,
+                    "discord_uid": discord_uid,
+                    "original_content": original_content,
+                    "new_content": new_content,
+                },
             },
         ).execute()
 

@@ -214,7 +214,7 @@ async def _request_channel_create(
         )
 
 
-async def _request_channel_delete(match_id: int) -> None:
+async def _request_channel_delete(match_id: int, match_mode: str) -> None:
     """Ask the channel manager to delete the talk channel for a concluded match.
 
     Fire-and-forget; 404 (no channel exists) is silently ignored.
@@ -225,7 +225,10 @@ async def _request_channel_delete(match_id: int) -> None:
         async with httpx.AsyncClient(timeout=10.0) as client:
             await client.delete(
                 f"{CHANNEL_MANAGER_URL}/channels/by_match/{match_id}",
-                params={"delay_seconds": CHANNEL_DELETION_DELAY_SECONDS},
+                params={
+                    "match_mode": match_mode,
+                    "delay_seconds": CHANNEL_DELETION_DELAY_SECONDS,
+                },
             )
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 404:
@@ -415,7 +418,7 @@ async def admin_resolve(
             },
         }
     )
-    asyncio.create_task(_request_channel_delete(match_id))
+    asyncio.create_task(_request_channel_delete(match_id, "1v1"))
     await _broadcast_leaderboard_if_dirty(app, ws)
     return AdminResolveResponse(success=True, data=result)
 
@@ -500,7 +503,7 @@ async def admin_resolve_2v2(
             },
         }
     )
-    asyncio.create_task(_request_channel_delete(match_id))
+    asyncio.create_task(_request_channel_delete(match_id, "2v2"))
     await _broadcast_leaderboard_if_dirty(app, ws)
     return AdminResolveResponse(success=True, data=result)
 
@@ -1096,10 +1099,10 @@ async def match_report(
         enriched = app.orchestrator.enrich_match_with_ranks(dict(match))
         if result == "conflict":
             await ws.broadcast("match_conflict", enriched)
-            asyncio.create_task(_request_channel_delete(match_id))
+            asyncio.create_task(_request_channel_delete(match_id, "1v1"))
         elif result is not None:
             await ws.broadcast("match_completed", enriched)
-            asyncio.create_task(_request_channel_delete(match_id))
+            asyncio.create_task(_request_channel_delete(match_id, "1v1"))
         await _broadcast_leaderboard_if_dirty(app, ws)
     app.orchestrator.log_event(
         {
@@ -1223,10 +1226,10 @@ async def match_2v2_report(
         enriched = app.orchestrator.enrich_match_2v2_with_ranks(dict(match))
         if result == "conflict":
             await ws.broadcast("match_conflict", {"game_mode": "2v2", **enriched})
-            asyncio.create_task(_request_channel_delete(match_id))
+            asyncio.create_task(_request_channel_delete(match_id, "2v2"))
         elif result is not None:
             await ws.broadcast("match_completed", {"game_mode": "2v2", **enriched})
-            asyncio.create_task(_request_channel_delete(match_id))
+            asyncio.create_task(_request_channel_delete(match_id, "2v2"))
         await _broadcast_leaderboard_if_dirty(app, ws)
     app.orchestrator.log_event(
         {
@@ -1559,7 +1562,7 @@ async def upload_replay(
             # Broadcast match_completed + leaderboard via WebSocket.
             resolved_match = app.orchestrator.enrich_match_with_ranks(resolved_match)
             await ws.broadcast("match_completed", resolved_match)
-            asyncio.create_task(_request_channel_delete(match_id))
+            asyncio.create_task(_request_channel_delete(match_id, "1v1"))
             await _broadcast_leaderboard_if_dirty(app, ws)
 
             logger.info(
@@ -1780,7 +1783,7 @@ async def upload_replay_2v2(
         # Broadcast match_completed + leaderboard via WebSocket.
         resolved_match["game_mode"] = "2v2"
         await ws.broadcast("match_completed", resolved_match)
-        asyncio.create_task(_request_channel_delete(match_id))
+        asyncio.create_task(_request_channel_delete(match_id, "2v2"))
         await _broadcast_leaderboard_if_dirty(app, ws)
 
         logger.info(
