@@ -7,6 +7,9 @@ What remains?
 - ✅ Write pre-beta feature announcement
 - ⏰ Write pre-beta launch announcement
 - ⏰ Re-write Terms of Service
+- ✅ /activity stuff
+    - ✅ `/activity` should not use Korean inside the chart
+    - ✅ Implement `/activity 2v2`
 - ✅ Apparently /setup is still not intuitive
     - ✅ Add some descriptions explaining what User ID, BattleTag, alternative IDs, nationality, location are
 - ✅ Add instructions under MatchInfoEmbed (in a new embed):
@@ -117,7 +120,6 @@ What remains?
     - queue_command.py is getting very large
 - ✅ Maybe split up transitions.py
     - This is also getting pretty large
-
 - ✅ Make HTML error codes explicit (4XX/5XX) instead of returning 200 everywhere
 - ✅ Fix mypy error suppressions and underlying issues
 - ✅ Migrate some config variables into ENV, there are many that would be convenient to have moved to backend/core/config.py or bot/core/config.py or even loaded from ENV directly

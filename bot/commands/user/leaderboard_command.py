@@ -1,6 +1,5 @@
-import structlog
-
 import discord
+import structlog
 from discord import app_commands
 
 from bot.core.config import (
@@ -595,7 +594,7 @@ class ClearFiltersButton(discord.ui.Button["LeaderboardView"]):
 
 class LeaderboardView(discord.ui.View):
     def __init__(self, entries: list[dict], locale: str = "enUS") -> None:
-        super().__init__(timeout=300)
+        super().__init__(timeout=600)
         self._all_entries = entries
         self.locale: str = locale
         self.current_page: int = 1
@@ -671,7 +670,7 @@ class Leaderboard2v2View(discord.ui.View):
     """2v2 leaderboard view — rank filter + nationality + pagination (no race filter)."""
 
     def __init__(self, entries: list[dict], locale: str = "enUS") -> None:
-        super().__init__(timeout=300)
+        super().__init__(timeout=600)
         self._all_entries = entries
         self.locale: str = locale
         self.current_page: int = 1
