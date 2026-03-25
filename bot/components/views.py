@@ -465,7 +465,27 @@ class SetupSelectionView(discord.ui.View):
                 return
 
             _locale = get_player_locale(interaction.user.id)
-            await interaction.response.edit_message(
+            await interaction.response.defer()
+            preselected_1v1: str | None = None
+            preselected_2v2: str | None = None
+            try:
+                async with get_session().get(
+                    f"{BACKEND_URL}/notifications/{interaction.user.id}"
+                ) as resp:
+                    notif = await resp.json()
+                preselected_1v1 = (
+                    "off"
+                    if not notif.get("notify_queue_1v1")
+                    else str(notif.get("notify_queue_1v1_cooldown", 15))
+                )
+                preselected_2v2 = (
+                    "off"
+                    if not notif.get("notify_queue_2v2")
+                    else str(notif.get("notify_queue_2v2_cooldown", 15))
+                )
+            except Exception:
+                logger.exception("Failed to fetch notifications for setup step")
+            await interaction.edit_original_response(
                 embed=SetupNotificationEmbed(locale=_locale),
                 view=SetupNotificationView(
                     player_name=self.player_name,
@@ -475,6 +495,8 @@ class SetupSelectionView(discord.ui.View):
                     country=self.selected_country,
                     region=self.selected_region,
                     language=get_player_locale(interaction.user.id),
+                    preselected_1v1=preselected_1v1,
+                    preselected_2v2=preselected_2v2,
                     locale=_locale,
                     show_cancel=self.show_cancel,
                 ),
