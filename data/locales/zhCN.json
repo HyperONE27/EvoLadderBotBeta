@@ -705,7 +705,7 @@
   "set_mmr_preview_embed.title.1": "⚠️ 设置MMR",
   "set_mmr_success_embed.description.1": "**用户:** {mention} (`{username}` / `{uid}`)\n**种族:** {race_emote} `{race}`\n**旧MMR:** `{old_mmr}`\n**新MMR:** `{new_mmr}`",
   "set_mmr_success_embed.title.1": "✅ MMR已更新",
-  "setup_intro_embed.description.1": "在加入天梯之前，我们需要您提供一些信息：\n- **User ID**\n    - 这是一个由您选择的3-12个字符的显示名称，用于向天梯工作人员和其他玩家识别您的身份。\n    - 我们只允许使用拉丁字母A-Z和a-z。不允许使用数字、特殊字符、其他拉丁字符或非拉丁文字。\n- **BattleTag**\n- **（可选）备用ID**\n    - 备用ID将在比赛中与您的主User ID一起显示给对手。\n    - 可以包含非拉丁字符和数字，但不能包含空格、特殊字符或符号。\n- **国籍**\n- **位置**\n    - 我们使用此信息为您匹配延迟/ping公平的对局。\n\n点击 **开始设置** 继续。",
+  "setup_intro_embed.description.1": "在加入天梯之前，我们需要您提供一些信息：\n- **User ID**\n  - 这是一个由您选择的3-12个字符的显示名称，用于向天梯工作人员和其他玩家识别您的身份。\n  - 我们只允许使用拉丁字母A-Z和a-z。不允许使用数字、特殊字符、其他拉丁字符或非拉丁文字。\n- **BattleTag**\n- **（可选）备用ID**\n  - 备用ID将在比赛中与您的主User ID一起显示给对手。\n  - 可以包含非拉丁字符和数字，但不能包含空格、特殊字符或符号。\n- **国籍**\n- **位置**\n  - 我们使用此信息为您匹配延迟/ping公平的对局。\n\n点击 **开始设置** 继续。",
   "setup_intro_embed.title.1": "⚙️ 玩家设置",
   "setup_modal.error.no_message": "发生错误。请重新运行 `/setup`。",
   "setup_modal.error.unexpected": "发生意外错误，请重试。",
