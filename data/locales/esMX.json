@@ -775,7 +775,7 @@
   "talk_channel_embed.title.1": "💬 Canal de Comunicación Listo",
   "terms_of_service_accepted_embed.description.1": "Gracias por aceptar los Términos de Servicio. ¡Bienvenido al SC: Evo Complete Ladder Bot!",
   "terms_of_service_accepted_embed.title.1": "✅ Términos de Servicio Aceptados",
-  "terms_of_service_declined_embed.description.1": "Has rechazado los Términos de Servicio. Por lo tanto, no puedes usar el SC: Evo Complete Ladder Bot.",
+  "terms_of_service_declined_embed.description.1": "Has rechazado los Términos de Servicio. Por lo tanto, no puedes usar el SC: Evo Complete Ladder Bot.\n\nSi cambias de opinión, puedes escribir e ingresar el comando `/setup` para comenzar de nuevo.",
   "terms_of_service_declined_embed.title.1": "❌ Términos de Servicio Rechazados",
   "terms_of_service_embed.description.1": "Lee nuestros Términos de Servicio, directrices de Conducta del Usuario, Política de Privacidad y Política de Reembolso. **Debes aceptar estos términos para usar el SC: Evo Complete Ladder Bot.**\n\n**Términos de Servicio Oficiales:**\n🔗 [SC: Evo Ladder ToS]({tos_url})\n🔗 [EvoLadderBot ToS (Mirror)]({tos_mirror_url})\n\nAl hacer clic en **✅ Acepto estos Términos** abajo, confirmas que has leído y aceptas cumplir los Términos de Servicio. Puedes retirar tu acuerdo en cualquier momento usando este comando de nuevo y haciendo clic en **❌ Rechazo estos Términos** abajo.\n\n**⚠️ No leer o no entender estos términos NO ES UNA DEFENSA ACEPTABLE para violarlos, y puede resultar en tu expulsión del Servicio.**",
   "terms_of_service_embed.title.1": "📜 Términos de Servicio",

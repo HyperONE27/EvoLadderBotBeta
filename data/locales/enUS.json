@@ -775,7 +775,7 @@
     "talk_channel_embed.title.1": "💬 Talk Channel Ready",
     "terms_of_service_accepted_embed.description.1": "Thank you for agreeing to the Terms of Service. Welcome to the SC: Evo Complete Ladder Bot!",
     "terms_of_service_accepted_embed.title.1": "✅ Terms of Service Accepted",
-    "terms_of_service_declined_embed.description.1": "You have declined the Terms of Service. As such, you may not use the SC: Evo Complete Ladder Bot.",
+    "terms_of_service_declined_embed.description.1": "You have declined the Terms of Service. As such, you may not use the SC: Evo Complete Ladder Bot.\n\nIf you change your mind, you can type and enter the `/setup` command to begin again.",
     "terms_of_service_declined_embed.title.1": "❌ Terms of Service Declined",
     "terms_of_service_embed.description.1": "Please read our Terms of Service, User Conduct guidelines, Privacy Policy, and Refund Policy. **You must accept these terms in order to use the SC: Evo Complete Ladder Bot.**\n\n**Official Terms of Service:**\n🔗 [SC: Evo Ladder ToS]({tos_url})\n🔗 [EvoLadderBot ToS (Mirror)]({tos_mirror_url})\n\nBy clicking **✅ I Accept These Terms** below, you confirm that you have read and agree to abide by the Terms of Service. You can withdraw your agreement to these terms at any time by using this command again and clicking **❌ I Decline These Terms** below.\n\n**⚠️ Failure to read or understand these terms is NOT AN ACCEPTABLE DEFENSE for violating them, and may result in your removal from the Service.**",
     "terms_of_service_embed.title.1": "📜 Terms of Service",

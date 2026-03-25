@@ -775,7 +775,7 @@
   "talk_channel_embed.title.1": "💬 聊天频道已就绪",
   "terms_of_service_accepted_embed.description.1": "感谢你同意服务条款。欢迎来到 SC: Evo Complete Ladder Bot！",
   "terms_of_service_accepted_embed.title.1": "✅ 已接受服务条款",
-  "terms_of_service_declined_embed.description.1": "你已拒绝服务条款。因此，你无法使用 SC: Evo Complete Ladder Bot。",
+  "terms_of_service_declined_embed.description.1": "你已拒绝服务条款。因此，你无法使用 SC: Evo Complete Ladder Bot。\n\n如果你改变主意，可以输入 `/setup` 命令重新开始。",
   "terms_of_service_declined_embed.title.1": "❌ 已拒绝服务条款",
   "terms_of_service_embed.description.1": "请阅读我们的服务条款、用户行为准则、隐私政策和退款政策。**你必须接受这些条款才能使用 SC: Evo Complete Ladder Bot。**\n\n**官方服务条款:**\n🔗 [SC: Evo Ladder ToS]({tos_url})\n🔗 [EvoLadderBot ToS (Mirror)]({tos_mirror_url})\n\n点击下方 **✅ 我接受这些条款** 即表示你确认已阅读并同意遵守服务条款。你可以随时再次使用此命令并点击下方 **❌ 我拒绝这些条款** 来撤回同意。\n\n**⚠️ 未阅读或不理解这些条款不能作为违反条款的合理辩解，可能导致你被从服务中移除。**",
   "terms_of_service_embed.title.1": "📜 服务条款",
