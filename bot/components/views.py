@@ -2620,13 +2620,16 @@ class LobbyGuideToggleButton(
                 f"{BACKEND_URL}/players/{uid}/toggle_lobby_guide"
             ) as resp:
                 data = await resp.json()
-            new_value: bool = data.get("new_value", not view.guide_visible)
+            # new_value is the new read_lobby_guide flag (True = dismissed),
+            # which is the inverse of guide_visible.
+            read_lobby_guide: bool = data.get("new_value", view.guide_visible)
         except Exception:
             logger.exception("Failed to toggle lobby guide for %s", uid)
-            new_value = not view.guide_visible
+            read_lobby_guide = view.guide_visible
 
-        view.guide_visible = new_value
-        self.label, self.style = self._attrs(new_value, locale)
+        guide_visible = not read_lobby_guide
+        view.guide_visible = guide_visible
+        self.label, self.style = self._attrs(guide_visible, locale)
         await interaction.edit_original_response(
             embeds=view._build_embeds(locale), view=view
         )
