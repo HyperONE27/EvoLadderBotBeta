@@ -2398,10 +2398,9 @@ def _format_race_combo(r1: str | None, r2: str | None) -> str:
 
 
 def _format_queue_team_2v2(entry: dict) -> str:
-    """Format a 2v2 queue entry as two monospace backtick blocks.
+    """Format a 2v2 queue entry as five separate monospace backtick blocks.
 
-    ``{rank} {bw_combo} {mix_combo} {sc2_combo} {p1_nat} {p1_name:12} {p2_nat} {p2_name:12}``
-    followed by the wait time.
+    ``{rank}`` ``{bw} {mix} {sc2}`` ``{p1_nat} {p1_name:12}`` ``{p2_nat} {p2_name:12}`` ``{elapsed}``
     """
     rank = (entry.get("team_letter_rank") or "U")[:1]
     bw = _format_race_combo(
@@ -2418,56 +2417,49 @@ def _format_queue_team_2v2(entry: dict) -> str:
     p1_name = (entry.get("player_name") or "Unknown")[:12].ljust(12)
     p2_name = (entry.get("party_member_name") or "Unknown")[:12].ljust(12)
     wait = _elapsed_seconds(entry.get("joined_at"))
-    team_str = f"{rank} {bw} {mix} {sc2} {p1_nat} {p1_name} {p2_nat} {p2_name}"
-    return f"`{team_str}` `{wait}`"
+    return f"`{rank}` `{bw} {mix} {sc2}` `{p1_nat} {p1_name}` `{p2_nat} {p2_name}` `{wait}`"
 
 
 def _format_match_slot_2v2(match: dict, id_width: int) -> str:
     """Format a 2v2 active match as two lines of monospace backtick blocks.
 
-    Line 1: ``{id:>N}`` ``{t1_rank} {t1p1_race} {t1p1_nat} {t1p1_name:12} {t1p2_race} {t1p2_nat} {t1p2_name:12}``
-    Line 2: ``   vs`` ``{t2_rank} {t2p1_race} {t2p1_nat} {t2p1_name:12} {t2p2_race} {t2p2_nat} {t2p2_name:12} {elapsed:>4}s``
+    Line 1: ``{id:>N}`` ``{t1_rank}`` ``{t1p1_race} {t1p1_nat} {t1p1_name:12}`` ``{t1p2_race} {t1p2_nat} {t1p2_name:12}``
+    Line 2: ``   vs`` ``{t2_rank}`` ``{t2p1_race} {t2p1_nat} {t2p1_name:12}`` ``{t2p2_race} {t2p2_nat} {t2p2_name:12}`` ``{elapsed}``
     """
 
-    def _team_block(
-        rank: str,
-        r1: str | None,
-        n1: str,
-        name1: str,
-        r2: str | None,
-        n2: str,
-        name2: str,
-    ) -> str:
-        rk = rank[:1]
-        race1 = _race_short(r1).ljust(2)[:2]
-        nat1 = (n1 or "--")[:2].ljust(2)
-        nm1 = (name1 or "Unknown")[:12].ljust(12)
-        race2 = _race_short(r2).ljust(2)[:2]
-        nat2 = (n2 or "--")[:2].ljust(2)
-        nm2 = (name2 or "Unknown")[:12].ljust(12)
-        return f"{rk} {race1} {nat1} {nm1} {race2} {nat2} {nm2}"
+    def _player_block(r: str | None, nat: str, name: str) -> str:
+        race = _race_short(r).ljust(2)[:2]
+        n = (nat or "--")[:2].ljust(2)
+        nm = (name or "Unknown")[:12].ljust(12)
+        return f"{race} {n} {nm}"
 
     mid = f"{match.get('id') or 0:>{id_width}d}"
-    t1 = _team_block(
-        match.get("team_1_letter_rank") or "U",
+    t1_rank = (match.get("team_1_letter_rank") or "U")[:1]
+    t2_rank = (match.get("team_2_letter_rank") or "U")[:1]
+    t1p1 = _player_block(
         match.get("team_1_player_1_race"),
         match.get("team_1_player_1_nationality") or "--",
         match.get("team_1_player_1_name") or "Unknown",
+    )
+    t1p2 = _player_block(
         match.get("team_1_player_2_race"),
         match.get("team_1_player_2_nationality") or "--",
         match.get("team_1_player_2_name") or "Unknown",
     )
-    t2 = _team_block(
-        match.get("team_2_letter_rank") or "U",
+    t2p1 = _player_block(
         match.get("team_2_player_1_race"),
         match.get("team_2_player_1_nationality") or "--",
         match.get("team_2_player_1_name") or "Unknown",
+    )
+    t2p2 = _player_block(
         match.get("team_2_player_2_race"),
         match.get("team_2_player_2_nationality") or "--",
         match.get("team_2_player_2_name") or "Unknown",
     )
     elapsed = _elapsed_seconds(match.get("assigned_at"))
-    return f"`{mid}` `{t1}`\n`   vs` `{t2} {elapsed}`"
+    line1 = f"`{mid}` `{t1_rank}` `{t1p1}` `{t1p2}`"
+    line2 = f"`   vs` `{t2_rank}` `{t2p1}` `{t2p2}` `{elapsed}`"
+    return f"{line1}\n{line2}"
 
 
 class QueueSnapshotEmbed2v2(discord.Embed):
