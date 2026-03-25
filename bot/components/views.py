@@ -40,6 +40,7 @@ from bot.components.embeds import (
     SetupValidationErrorEmbed,
     StatusResetSuccessEmbed,
     TermsOfServiceDeclinedEmbed,
+    TermsOfServiceEmbed,
     ToggleAdminSuccessEmbed,
 )
 from bot.core.config import (
@@ -123,8 +124,11 @@ class ConfirmButton(discord.ui.Button["discord.ui.View"]):
         style: discord.ButtonStyle = discord.ButtonStyle.green,
         emoji: str = "✅",
         row: int | None = None,
+        disabled: bool = False,
     ) -> None:
-        super().__init__(label=label, style=style, emoji=emoji, row=row)
+        super().__init__(
+            label=label, style=style, emoji=emoji, row=row, disabled=disabled
+        )
         self._callback = callback
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -262,7 +266,11 @@ class RegionSelect(discord.ui.Select):
 
 class LanguageSelect(discord.ui.Select):
     def __init__(
-        self, locales: list[str], selected_code: str | None, locale: str = "enUS"
+        self,
+        locales: list[str],
+        selected_code: str | None,
+        locale: str = "enUS",
+        row: int = 3,
     ) -> None:
         options = [
             discord.SelectOption(
@@ -280,7 +288,7 @@ class LanguageSelect(discord.ui.Select):
             min_values=1,
             max_values=1,
             options=options,
-            row=3,
+            row=row,
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -352,6 +360,7 @@ class SetupIntroView(discord.ui.View):
         preselected_location: str | None = None,
         preselected_language: str | None = None,
         locale: str = "enUS",
+        show_cancel: bool = True,
     ) -> None:
         super().__init__()
 
@@ -366,13 +375,15 @@ class SetupIntroView(discord.ui.View):
                 preselected_location=preselected_location,
                 preselected_language=preselected_language,
                 locale=get_player_locale(interaction.user.id),
+                show_cancel=show_cancel,
             )
             await interaction.response.send_modal(modal)
 
         self.add_item(
             ConfirmButton(callback=on_begin, label=t("button.begin_setup", locale))
         )
-        self.add_item(CancelButton(locale=locale))
+        if show_cancel:
+            self.add_item(CancelButton(locale=locale))
 
 
 class SetupSelectionView(discord.ui.View):
@@ -388,6 +399,7 @@ class SetupSelectionView(discord.ui.View):
         country_page1_code: str | None = None,
         country_page2_code: str | None = None,
         locale: str = "enUS",
+        show_cancel: bool = True,
     ) -> None:
         super().__init__()
         self.player_name = player_name
@@ -400,6 +412,7 @@ class SetupSelectionView(discord.ui.View):
         self.country_page1_code = country_page1_code
         self.country_page2_code = country_page2_code
         self.locale = locale
+        self.show_cancel = show_cancel
 
         self.countries: list[Country] = sorted(
             get_common_countries().values(), key=lambda c: c["code"]
@@ -458,6 +471,7 @@ class SetupSelectionView(discord.ui.View):
                     country_page1_code=self.country_page1_code,
                     country_page2_code=self.country_page2_code,
                     locale=get_player_locale(interaction.user.id),
+                    show_cancel=self.show_cancel,
                 )
                 await interaction.response.edit_message(embed=embed, view=fresh)
                 return
@@ -482,6 +496,7 @@ class SetupSelectionView(discord.ui.View):
                     region=self.selected_region,
                     language=self.selected_language,
                     locale=_locale,
+                    show_cancel=self.show_cancel,
                 ),
             )
 
@@ -503,6 +518,7 @@ class SetupSelectionView(discord.ui.View):
                     else None,
                     preselected_language=self.selected_language,
                     locale=_locale,
+                    show_cancel=self.show_cancel,
                 ),
             )
 
@@ -516,7 +532,8 @@ class SetupSelectionView(discord.ui.View):
                 callback=on_restart, row=4, label=t("button.restart", self.locale)
             )
         )
-        self.add_item(CancelButton(row=4, locale=self.locale))
+        if self.show_cancel:
+            self.add_item(CancelButton(row=4, locale=self.locale))
 
     async def refresh(self, interaction: discord.Interaction) -> None:
         new_view = SetupSelectionView(
@@ -530,6 +547,7 @@ class SetupSelectionView(discord.ui.View):
             country_page1_code=self.country_page1_code,
             country_page2_code=self.country_page2_code,
             locale=get_player_locale(interaction.user.id),
+            show_cancel=self.show_cancel,
         )
         await interaction.response.edit_message(
             embed=SetupSelectionEmbed(
@@ -553,6 +571,7 @@ class SetupPreviewView(discord.ui.View):
         region: GeographicRegion,
         language: str,
         locale: str = "enUS",
+        show_cancel: bool = True,
     ) -> None:
         super().__init__()
 
@@ -575,6 +594,7 @@ class SetupPreviewView(discord.ui.View):
                     preselected_location=region["code"],
                     preselected_language=language,
                     locale=_locale,
+                    show_cancel=show_cancel,
                 ),
             )
 
@@ -584,12 +604,17 @@ class SetupPreviewView(discord.ui.View):
         self.add_item(
             RestartButton(callback=on_restart, label=t("button.restart", locale))
         )
-        self.add_item(CancelButton(locale=locale))
+        if show_cancel:
+            self.add_item(CancelButton(locale=locale))
 
 
 class SetupValidationErrorView(discord.ui.View):
     def __init__(
-        self, presets: dict[str, str], message: discord.Message, locale: str = "enUS"
+        self,
+        presets: dict[str, str],
+        message: discord.Message,
+        locale: str = "enUS",
+        show_cancel: bool = True,
     ) -> None:
         super().__init__()
 
@@ -598,13 +623,15 @@ class SetupValidationErrorView(discord.ui.View):
                 presets=presets,
                 message=message,
                 locale=get_player_locale(interaction.user.id),
+                show_cancel=show_cancel,
             )
             await interaction.response.send_modal(modal)
 
         self.add_item(
             RestartButton(callback=on_restart, label=t("button.try_again", locale))
         )
-        self.add_item(CancelButton(locale=locale))
+        if show_cancel:
+            self.add_item(CancelButton(locale=locale))
 
 
 class SetupModal(discord.ui.Modal, title="Player Setup"):
@@ -620,12 +647,14 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
         preselected_location: str | None = None,
         preselected_language: str | None = None,
         locale: str = "enUS",
+        show_cancel: bool = True,
     ) -> None:
         super().__init__(title=t("setup_modal.title.1", locale))
         self._message = message
         self._preselected_nationality = preselected_nationality
         self._preselected_location = preselected_location
         self._preselected_language = preselected_language
+        self._show_cancel = show_cancel
         p = presets or {}
 
         self.player_name_input = discord.ui.TextInput(
@@ -701,6 +730,7 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
                     current_presets,
                     message,
                     locale=_locale,
+                    show_cancel=self._show_cancel,
                 ),
             )
             return
@@ -720,6 +750,7 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
                     current_presets,
                     message,
                     locale=_locale,
+                    show_cancel=self._show_cancel,
                 ),
             )
             return
@@ -749,6 +780,7 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
                         current_presets,
                         message,
                         locale=_locale,
+                        show_cancel=self._show_cancel,
                     ),
                 )
                 return
@@ -771,6 +803,7 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
                     current_presets,
                     message,
                     locale=_locale,
+                    show_cancel=self._show_cancel,
                 ),
             )
             return
@@ -794,6 +827,7 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
                     current_presets,
                     message,
                     locale=_locale,
+                    show_cancel=self._show_cancel,
                 ),
             )
             return
@@ -835,6 +869,7 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
                 country_page1_code=page1_code,
                 country_page2_code=page2_code,
                 locale=_locale,
+                show_cancel=self._show_cancel,
             ),
         )
 
@@ -1049,7 +1084,9 @@ class TermsOfServiceSetupView(discord.ui.View):
     On decline: POSTs ToS decline, then shows TermsOfServiceDeclinedEmbed.
     """
 
-    def __init__(self, discord_uid: int, discord_username: str) -> None:
+    def __init__(
+        self, discord_uid: int, discord_username: str, show_cancel: bool = True
+    ) -> None:
         super().__init__()
 
         async def _on_tos_accepted(
@@ -1060,26 +1097,16 @@ class TermsOfServiceSetupView(discord.ui.View):
             preselected_location: str | None = None
             preselected_language: str | None = None
 
-            try:
-                async with get_session().get(
-                    f"{BACKEND_URL}/players/{discord_uid}"
-                ) as player_response:
-                    player_data = await player_response.json()
-                    player = player_data.get("player")
-                    if player:
-                        modal_presets = {
-                            "player_name": player.get("player_name") or "",
-                            "alt_ids": " ".join(player.get("alt_player_names") or []),
-                            "battletag": player.get("battletag") or "",
-                        }
-                        preselected_nationality = player.get("nationality")
-                        preselected_location = player.get("location")
-                        preselected_language = player.get("language")
-            except Exception:
-                logger.warning(
-                    f"TermsOfServiceSetupView: failed to fetch player data for user={discord_uid}, proceeding without pre-population",
-                    exc_info=True,
-                )
+            player = get_cache().player_presets.get(discord_uid)
+            if player:
+                modal_presets = {
+                    "player_name": player.get("player_name") or "",
+                    "alt_ids": " ".join(player.get("alt_player_names") or []),
+                    "battletag": player.get("battletag") or "",
+                }
+                preselected_nationality = player.get("nationality")
+                preselected_location = player.get("location")
+                preselected_language = player.get("language")
 
             await interaction.response.edit_message(
                 embed=SetupIntroEmbed(locale=locale),
@@ -1089,6 +1116,7 @@ class TermsOfServiceSetupView(discord.ui.View):
                     preselected_location=preselected_location,
                     preselected_language=preselected_language,
                     locale=locale,
+                    show_cancel=show_cancel,
                 ),
             )
 
@@ -1124,6 +1152,61 @@ class TermsOfServiceSetupView(discord.ui.View):
                 emoji="✖️",
             )
         )
+
+
+class LocaleSetupView(discord.ui.View):
+    """First step of /setup: ask the player to pick their preferred language.
+
+    On continue: caches the selected locale in player_locales and transitions
+    to TermsOfServiceEmbed + TermsOfServiceSetupView rendered in that locale.
+    """
+
+    def __init__(
+        self,
+        discord_uid: int,
+        discord_username: str,
+        preselected_locale: str | None = None,
+        show_cancel: bool = True,
+    ) -> None:
+        super().__init__()
+        self.selected_language: str | None = preselected_locale
+
+        locales: list[str] = get_available_locales()
+
+        async def on_continue(interaction: discord.Interaction) -> None:
+            if not self.selected_language:
+                await interaction.response.defer()
+                return
+            get_cache().player_locales[discord_uid] = self.selected_language
+            await interaction.response.edit_message(
+                embed=TermsOfServiceEmbed(locale=self.selected_language),
+                view=TermsOfServiceSetupView(
+                    discord_uid, discord_username, show_cancel=show_cancel
+                ),
+            )
+
+        language_select = LanguageSelect(
+            locales=locales,
+            selected_code=preselected_locale,
+            locale="enUS",
+            row=0,
+        )
+        _continue_button = ConfirmButton(
+            label=t("button.continue", "enUS"),
+            callback=on_continue,
+            row=1,
+            disabled=preselected_locale is None,
+        )
+
+        async def on_language_select(interaction: discord.Interaction) -> None:
+            self.selected_language = language_select.values[0]
+            _continue_button.disabled = False
+            await interaction.response.edit_message(view=self)
+
+        language_select.callback = on_language_select  # type: ignore[method-assign]
+
+        self.add_item(language_select)
+        self.add_item(_continue_button)
 
 
 # =========================================================================

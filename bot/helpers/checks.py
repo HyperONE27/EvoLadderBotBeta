@@ -36,6 +36,7 @@ async def check_if_banned(interaction: discord.Interaction) -> bool:
         language = player.get("language")
         if language:
             get_cache().player_locales[uid] = language
+        get_cache().player_presets[uid] = player
         if player.get("is_banned"):
             raise BannedError()
     return True

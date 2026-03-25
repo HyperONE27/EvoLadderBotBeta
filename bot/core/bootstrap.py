@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import discord
@@ -97,6 +97,12 @@ class Cache:
         # Per-player locale preference (discord_uid → locale code, e.g. "enUS").
         # Populated when a player completes /setup or when their profile is loaded.
         self.player_locales: dict[int, str] = {}
+
+        # Per-player setup preset data (discord_uid → player dict from backend).
+        # Populated by check_if_banned from the GET /players/{uid} response so that
+        # TermsOfServiceSetupView can pre-populate the setup modal without a second
+        # backend round-trip.
+        self.player_presets: dict[int, dict[str, Any]] = {}
 
         self._populate_json_data()
         self._populate_locale_data()

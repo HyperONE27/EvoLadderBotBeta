@@ -1460,6 +1460,17 @@ class SetupIntroEmbed(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
+class LocaleSetupEmbed(discord.Embed):
+    def __init__(self, locale: str = "enUS") -> None:
+        super().__init__(
+            title=t("locale_setup_embed.title.1", locale),
+            description=t("locale_setup_embed.description.1", locale),
+            color=discord.Color.blue(),
+        )
+
+        apply_default_embed_footer(self, locale=locale)
+
+
 class SetupValidationErrorEmbed(discord.Embed):
     def __init__(self, title: str, error: str, locale: str = "enUS") -> None:
         super().__init__(
