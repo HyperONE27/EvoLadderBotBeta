@@ -2949,9 +2949,9 @@ class CompSelect2v2(discord.ui.Select):
                     )
                 )
         placeholders = {
-            "pure_bw": "BW + BW — your race, then partner's",
-            "mixed": "BW + SC2 — your race, then partner's",
-            "pure_sc2": "SC2 + SC2 — your race, then partner's",
+            "pure_bw": t("comp.bw_bw.1", locale),
+            "mixed": t("comp.bw_sc2.1", locale),
+            "pure_sc2": t("comp.sc2_sc2.1", locale),
         }
         super().__init__(
             placeholder=placeholders.get(comp, "Select races"),

@@ -377,6 +377,9 @@ class QueueSearchingEmbed2v2(discord.Embed):
                 bw_sc2=str(bw_sc2),
                 mixed_sc2=str(mixed_sc2),
                 all_three=str(all_three),
+                comp_bw_bw=t("comp.bw_bw.1", locale),
+                comp_bw_sc2=t("comp.bw_sc2.1", locale),
+                comp_sc2_sc2=t("comp.sc2_sc2.1", locale),
             )
 
         super().__init__(
@@ -1031,17 +1034,17 @@ class QueueSetupEmbed2v2(discord.Embed):
             return "—"
 
         self.add_field(
-            name=t("queue_setup_embed_2v2.field_bw_bw.1", locale),
+            name=t("comp.bw_bw.1", locale),
             value=_comp_value(pure_bw_leader_race, pure_bw_member_race),
             inline=False,
         )
         self.add_field(
-            name=t("queue_setup_embed_2v2.field_bw_sc2.1", locale),
+            name=t("comp.bw_sc2.1", locale),
             value=_comp_value(mixed_leader_race, mixed_member_race),
             inline=False,
         )
         self.add_field(
-            name=t("queue_setup_embed_2v2.field_sc2_sc2.1", locale),
+            name=t("comp.sc2_sc2.1", locale),
             value=_comp_value(pure_sc2_leader_race, pure_sc2_member_race),
             inline=False,
         )
