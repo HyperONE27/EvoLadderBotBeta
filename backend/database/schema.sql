@@ -381,6 +381,8 @@ CREATE TABLE IF NOT EXISTS replays_2v2 (
         CHECK (upload_status IN ('pending', 'completed', 'failed'))
 );
 
+-- Below are indexes I don't really think I care about right now
+
 /*
 -- =============================================
 -- "SET IT AND FORGET IT" ANALYTICS FEATURES
