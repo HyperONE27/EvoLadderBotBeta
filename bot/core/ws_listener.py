@@ -33,6 +33,7 @@ from bot.components.embeds import (
     MatchFinalizedEmbed,
     MatchFinalizedEmbed2v2,
     MatchFoundEmbed,
+    LobbyGuideEmbed,
     MatchInfoEmbed1v1,
     MatchInfoEmbeds2v2,
     QueueSearchingEmbed,
@@ -297,9 +298,12 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
             dm_coros.append(
                 queue_user_send_high(
                     user,
-                    embed=MatchInfoEmbed1v1(
-                        match_data, p1_info, p2_info, locale=locale
-                    ),
+                    embeds=[
+                        MatchInfoEmbed1v1(match_data, p1_info, p2_info, locale=locale),
+                        LobbyGuideEmbed(
+                            match_data.get("server_name", "USW"), locale=locale
+                        ),
+                    ],
                     view=MatchReportView1v1(
                         match_id,
                         p1_name,
@@ -470,7 +474,12 @@ async def _on_all_confirmed_2v2(client: discord.Client, match_data: dict) -> Non
             dm_coros.append(
                 queue_user_send_high(
                     user,
-                    embeds=MatchInfoEmbeds2v2(match_data, infos, locale=locale),
+                    embeds=MatchInfoEmbeds2v2(match_data, infos, locale=locale)
+                    + [
+                        LobbyGuideEmbed(
+                            match_data.get("server_name", "USW"), locale=locale
+                        )
+                    ],
                     view=MatchReportView2v2(
                         match_id,
                         match_data,

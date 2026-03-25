@@ -1276,10 +1276,19 @@ class LobbyGuideEmbed(discord.Embed):
 
     def __init__(
         self,
-        game_region: str,
-        game_server: str,
+        server_code: str,
         locale: str = "enUS",
     ) -> None:
+        server = get_game_server_by_code(server_code)
+        game_region_code = server["game_region_code"] if server else "AM"
+        raw_region = t(f"game_region.{game_region_code}.name", locale)
+        game_region = (
+            raw_region
+            if raw_region != f"game_region.{game_region_code}.name"
+            else game_region_code
+        )
+        game_server = _server_display(server_code, locale)
+
         super().__init__(
             title=t("lobby_guide_embed.title.1", locale),
             description=t(
