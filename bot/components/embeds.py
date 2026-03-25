@@ -221,7 +221,7 @@ class QueueSetupEmbed1v1(discord.Embed):
     ) -> None:
         super().__init__(
             title=t("queue_setup_embed.title.1", locale),
-            color=discord.Color.blurple(),
+            color=discord.Color.blue(),
         )
 
         self.add_field(
@@ -328,7 +328,7 @@ class QueueSearchingEmbed(discord.Embed):
         super().__init__(
             title=t("queue_searching_embed.title.1", locale),
             description=description,
-            color=discord.Color.blurple(),
+            color=discord.Color.blue(),
         )
 
         if match_found:
@@ -385,7 +385,7 @@ class QueueSearchingEmbed2v2(discord.Embed):
         super().__init__(
             title=t("queue_searching_embed.title.1", locale),
             description=description,
-            color=discord.Color.blurple(),
+            color=discord.Color.blue(),
         )
 
         if match_found:
@@ -425,7 +425,7 @@ class QueueJoinActivityNotifyEmbed(discord.Embed):
                 locale,
                 mode_label=mode_label,
             ),
-            color=discord.Color.blurple(),
+            color=discord.Color.blue(),
         )
 
         apply_default_embed_footer(self, locale=locale)
@@ -2082,10 +2082,12 @@ class ProfileInfoEmbed(discord.Embed):
         locale: str = "enUS",
     ) -> None:
         title_name = player.get("player_name") or user.name
+        completed = player.get("completed_setup", False)
+        color = discord.Color.green() if completed else discord.Color.orange()
 
         super().__init__(
             title=t("profile_embed.title.1", locale, title_name=title_name),
-            color=discord.Color.blurple(),
+            color=color,
         )
 
         if user.display_avatar:
@@ -2220,7 +2222,7 @@ class Profile1v1Embed(discord.Embed):
         title_name = player.get("player_name") or user.name
         super().__init__(
             title=t("profile_embed.1v1_title.1", locale, title_name=title_name),
-            color=discord.Color.blurple(),
+            color=discord.Color.blue(),
         )
         if user.display_avatar:
             self.set_thumbnail(url=user.display_avatar.url)
@@ -2278,7 +2280,7 @@ class Profile2v2Embed(discord.Embed):
         title_name = player.get("player_name") or user.name
         super().__init__(
             title=t("profile_embed.2v2_title.1", locale, title_name=title_name),
-            color=discord.Color.blurple(),
+            color=discord.Color.purple(),
         )
         if user.display_avatar:
             self.set_thumbnail(url=user.display_avatar.url)
@@ -2411,7 +2413,7 @@ class SetCountryPreviewEmbed(discord.Embed):
         super().__init__(
             title=t("set_country_preview_embed.title.1", locale),
             description=t("set_country_preview_embed.description.1", locale),
-            color=discord.Color.blurple(),
+            color=discord.Color.blue(),
         )
         self.add_field(
             name=t(
@@ -2430,7 +2432,7 @@ class SetCountryConfirmEmbed(discord.Embed):
         super().__init__(
             title=t("set_country_confirm_embed.title.1", locale),
             description=t("set_country_confirm_embed.description.1", locale),
-            color=discord.Color.blurple(),
+            color=discord.Color.blue(),
         )
         self.add_field(
             name=t(
@@ -2613,7 +2615,7 @@ class SystemStatsEmbed(discord.Embed):
     def __init__(self, dataframe_stats: dict, locale: str = "enUS") -> None:
         super().__init__(
             title=t("system_stats_embed.title.1", locale),
-            color=discord.Color.blurple(),
+            color=discord.Color.blue(),
         )
 
         if dataframe_stats:
@@ -2894,7 +2896,7 @@ class PartiesEmbed(discord.Embed):
         party_count = len(parties)
         super().__init__(
             title=t("parties_embed.title.1", locale),
-            color=discord.Color.blurple(),
+            color=discord.Color.purple(),
         )
         description = (
             t("parties_embed.active_parties.1", locale, count=str(party_count)) + "\n"
