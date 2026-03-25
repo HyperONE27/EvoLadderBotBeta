@@ -55,20 +55,27 @@ CREATE TABLE IF NOT EXISTS notifications (
     notify_queue_1v1                BOOLEAN NOT NULL DEFAULT FALSE,
     notify_queue_1v1_cooldown       SMALLINT NOT NULL DEFAULT 15
         CHECK (notify_queue_1v1_cooldown >= 5 AND notify_queue_1v1_cooldown <= 1440),
+    notify_queue_1v1_last_sent      TIMESTAMPTZ,
     notify_queue_2v2                BOOLEAN NOT NULL DEFAULT FALSE,
     notify_queue_2v2_cooldown       SMALLINT NOT NULL DEFAULT 15
         CHECK (notify_queue_2v2_cooldown >= 5 AND notify_queue_2v2_cooldown <= 1440),
+    notify_queue_2v2_last_sent      TIMESTAMPTZ,
     notify_queue_ffa                BOOLEAN NOT NULL DEFAULT FALSE,
     notify_queue_ffa_cooldown       SMALLINT NOT NULL DEFAULT 15
         CHECK (notify_queue_ffa_cooldown >= 5 AND notify_queue_ffa_cooldown <= 1440),
-
+    notify_queue_ffa_last_sent      TIMESTAMPTZ,
     updated_at                      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_notifications_notify_1v1
     ON notifications (notify_queue_1v1)
     WHERE notify_queue_1v1 = TRUE;
--- Optional later: partial indexes for 2v2/FFA when those columns go live.
+CREATE INDEX IF NOT EXISTS idx_notifications_notify_2v2
+    ON notifications (notify_queue_2v2)
+    WHERE notify_queue_2v2 = TRUE;
+CREATE INDEX IF NOT EXISTS idx_notifications_notify_ffa
+    ON notifications (notify_queue_ffa)
+    WHERE notify_queue_ffa = TRUE;
 
 CREATE TABLE IF NOT EXISTS events (
     id                      BIGSERIAL PRIMARY KEY,
