@@ -4,12 +4,39 @@ What remains?
 
 # FINISH BY PRE-BETA
 
-- ⏰ Write pre-beta feature announcement
+- ✅ Write pre-beta feature announcement
+- ⏰ Write pre-beta launch announcement
 - ⏰ Re-write Terms of Service
+- ⏰ Apparently /setup is still not intuitive
+    - ⏰ Add some descriptions explaining what User ID, BattleTag, alternative IDs, nationality, location are
+- ⏰ Add instructions under MatchInfoEmbed (in a new embed):
+    - How to change servers
+    - How to join a channel
+    - How to find opponents
+    - How to host a lobby or join a lobby your opponent hosted
+- ⏰ Update untranslated keys
+    - ⏰ Send to localizers:
+        - ⏰ koKR: Vanya
+        - ⏰ esMX: Kat
+        - ⏰ zhCN: Sprite, DragonVector
+        - ⏰ ruRU: Rake, ZaRDieNT, ShadowDragon
+- ⏰ `/snapshot 2v2` needs to include flags and races
+    - ⏰ Come up with letter-grid-style display
+- ⏰ `/profile` stats could be better
+    - ⏰ Improve overall look and feel
+    - ⏰ Add 2v2 stats...but how? Just sum across all partners?
+- ⏰ Set global cooldown on bot stuff?
+- ⏰ `/leaderboard 2v2` does not display flags
+    - ⏰ Flag filtering is broken
+    - ⏰ Embed does not show selected countries for filter
+    - ⏰ Come up with wide display 
+    - ⏰ Select parameters for entries on `/leaderboard 2v2` pages (probably 5 x 4 = 20 wide entries per page)
+    - ⏰ Optionally, display most recently played race combination as the races displayed on leaderboard
 - ✅ Store canonical copies of migrated old database so I can easily launch the pre-beta
-- ⏰ Zip up the replays too?
+- ✅ Zip up the replays too?
+    - ✅ Alpha replays zipped up
 - ✅ Combine /termsofservice and /setup:
-    - /termsofservice embed should become the first step in /setup
+    - ✅ /termsofservice embed should become the first step in /setup
     - ✅ locale selection now comes earlier in the /setup
     - ✅ Players can now setup notifications in /setup
 - ✅ Automatically send the /termsofservice embed/first step of /setup whenever someone messages the bot and they are a new user
@@ -26,13 +53,7 @@ What remains?
     - Players can optionally use this channel to coordinate once matched but they cannot find each other
     - ✅ It works now
     - ✅ Clean up the UI/presentation
-- ⏰ Add instructions under MatchInfoEmbed (in a new embed):
-    - How to change servers
-    - How to join a channel
-    - How to find opponents
-    - How to host a lobby or join a lobby your opponent hosted
 - ✅ Rectify inconsistencies between 1v1 and 2v2
-- ⏰ Update untranslated keys
 - ✅ Make sure 2v2-related functionality uses the keys
 - ✅ Finish 2v2 implementation
 - ✅ Quality check 2v2 implementation
@@ -41,11 +62,10 @@ What remains?
 - ✅ Player names cannot contain symbols
     - Letters only...
     - How do I tackle this for many languages and scripts?
-- ⏰ Apparently /setup is still not intuitive
-    - ⏰ Add some descriptions explaining what User ID, BattleTag, alternative IDs, nationality, location are
-- ⏰ Make sure visibility is solid
-    - Maybe some more admin/owner commands
-        - Directly reading DataFrame rows
+- ❌ Make sure visibility is solid
+    - ❌ Maybe some more admin/owner commands
+        - ❌ Directly reading DataFrame rows
+    - ❌ No longer a priority at this time
 - ✅ Add some kind of health check and automatic resurrection for:
     - ✅ replay parsing process pool
     - ❌ DataFrames
