@@ -1501,7 +1501,7 @@ class SetupIntroEmbed(discord.Embed):
         super().__init__(
             title=t("setup_intro_embed.title.1", locale),
             description=t("setup_intro_embed.description.1", locale),
-            color=discord.Color.blue(),
+            color=discord.Color.blurple(),
         )
 
         apply_default_embed_footer(self, locale=locale)
@@ -1512,7 +1512,7 @@ class LocaleSetupEmbed(discord.Embed):
         super().__init__(
             title=t("locale_setup_embed.title.1", locale),
             description=t("locale_setup_embed.description.1", locale),
-            color=discord.Color.blue(),
+            color=discord.Color.blurple(),
         )
 
         apply_default_embed_footer(self, locale=locale)
@@ -1540,7 +1540,7 @@ class SetupSelectionEmbed(discord.Embed):
     ) -> None:
         super().__init__(
             title=t("setup_selection_embed.title.1", locale),
-            color=discord.Color.blue(),
+            color=discord.Color.blurple(),
         )
         selected_lines: list[str] = []
         if country:
@@ -1601,7 +1601,7 @@ class SetupNotificationEmbed(discord.Embed):
         super().__init__(
             title=t("setup_notification_embed.title.1", locale),
             description=t("setup_notification_embed.description.1", locale),
-            color=discord.Color.blue(),
+            color=discord.Color.blurple(),
         )
 
         apply_default_embed_footer(self, locale=locale)
@@ -1623,7 +1623,7 @@ class SetupPreviewEmbed(discord.Embed):
         super().__init__(
             title=t("setup_preview_embed.title.1", locale),
             description=t("setup_preview_embed.description.1", locale),
-            color=discord.Color.blue(),
+            color=discord.Color.blurple(),
         )
         self.add_field(
             name=t("setup_preview_embed.field_name.language", locale),
@@ -1715,7 +1715,7 @@ class SetupSuccessEmbed(discord.Embed):
         super().__init__(
             title=t("setup_success_embed.title.1", locale),
             description=t("setup_success_embed.description.1", locale),
-            color=discord.Color.green(),
+            color=discord.Color.blurple(),
         )
         self.add_field(
             name=t("setup_preview_embed.field_name.language", locale),
@@ -2081,18 +2081,12 @@ class ProfileInfoEmbed(discord.Embed):
         notifications: dict | None,
         locale: str = "enUS",
     ) -> None:
+        title_name = player.get("player_name") or user.name
         completed = player.get("completed_setup", False)
         color = discord.Color.green() if completed else discord.Color.orange()
-        status_icon = "✅" if completed else "⚠️"
-        title_name = player.get("player_name") or user.name
 
         super().__init__(
-            title=t(
-                "profile_embed.title.1",
-                locale,
-                status_icon=status_icon,
-                title_name=title_name,
-            ),
+            title=t("profile_embed.title.1", locale, title_name=title_name),
             color=color,
         )
 
@@ -2188,24 +2182,26 @@ class ProfileInfoEmbed(discord.Embed):
         parts: list[str] = []
         if notifications.get("notify_queue_1v1"):
             parts.append(
-                t(
+                "- "
+                + t(
                     "profile_embed.notifications_1v1.1",
                     locale,
                     minutes=str(notifications.get("notify_queue_1v1_cooldown", 15)),
                 )
             )
         else:
-            parts.append(t("profile_embed.notifications_off_1v1.1", locale))
+            parts.append("- " + t("profile_embed.notifications_off_1v1.1", locale))
         if notifications.get("notify_queue_2v2"):
             parts.append(
-                t(
+                "- "
+                + t(
                     "profile_embed.notifications_2v2.1",
                     locale,
                     minutes=str(notifications.get("notify_queue_2v2_cooldown", 15)),
                 )
             )
         else:
-            parts.append(t("profile_embed.notifications_off_2v2.1", locale))
+            parts.append("- " + t("profile_embed.notifications_off_2v2.1", locale))
         self.add_field(
             name=t("profile_embed.notifications_field_name.1", locale),
             value="\n".join(parts),
@@ -2359,7 +2355,7 @@ class TermsOfServiceEmbed(discord.Embed):
                 tos_url=TOS_URL,
                 tos_mirror_url=TOS_MIRROR_URL,
             ),
-            color=discord.Color.blue(),
+            color=discord.Color.blurple(),
         )
 
         apply_default_embed_footer(self, locale=locale)

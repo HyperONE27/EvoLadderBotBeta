@@ -28,7 +28,7 @@ Changes to consent status are logged. We make a good-faith effort to keep the `/
 
 ### 2. Eligibility
 To use the Service, you must:
-- Be at least 13 years old (or the minimum age required by Discord in your region, e.g. 16 in some EU regions under local law), and
+- Be at least 13 years old (or the minimum age required by Discord in your region, e.g. 16 2in some EU regions under local law), and
 - Comply with **Discord's Terms of Service.**
 
 ### 3. User Conduct
@@ -54,7 +54,6 @@ Without limiting this principle, you specifically agree not to:
   - Scams, phishing links, or malicious software
 - Use the Service to distribute spam, malware, or unsolicited communications.  
 - Exploit bugs, automation, or reverse engineering to gain unfair advantage or disrupt normal operation.  
-- Misrepresent your identity or affiliation within the ladder or associated communities.  
 - Attempt to damage, interfere with, or gain unauthorized access to any systems, data, or accounts.  
 - Violate the Terms of Service, Privacy Policy, or the rules of Discord or StarCraft II.
 
