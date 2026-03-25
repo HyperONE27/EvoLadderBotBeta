@@ -363,7 +363,7 @@
   "error.failed_join_queue": "加入队列失败。",
   "error.failed_leave_queue": "离开队列失败。",
   "error.failed_submit_report": "提交报告失败。",
-  "error.not_accepted_tos": "使用此命令前必须接受服务条款。\n使用 `/termsofservice` 查看并接受。",
+  "error.not_accepted_tos": "使用此命令前必须接受服务条款。\n使用 `/setup` 查看并接受。",
   "error.not_admin": "此命令仅限管理员使用。",
   "error.not_completed_setup": "使用此命令前必须完成玩家设置。\n使用 `/setup` 配置你的资料。",
   "error.not_in_dm": "此命令只能在私信中使用。",

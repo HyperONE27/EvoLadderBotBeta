@@ -188,7 +188,7 @@ class NotAcceptedTosError(app_commands.CheckFailure):
     def __init__(self) -> None:
         super().__init__(
             "You must accept the Terms of Service before using this command.\n"
-            "Use `/termsofservice` to review and accept them."
+            "Use `/setup` to review and accept them."
         )
 
 

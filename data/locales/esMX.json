@@ -363,7 +363,7 @@
   "error.failed_join_queue": "No se pudo unir a la cola.",
   "error.failed_leave_queue": "No se pudo salir de la cola.",
   "error.failed_submit_report": "No se pudo enviar el reporte.",
-  "error.not_accepted_tos": "Debes aceptar los Términos de Servicio antes de usar este comando.\nUsa `/termsofservice` para revisarlos y aceptarlos.",
+  "error.not_accepted_tos": "Debes aceptar los Términos de Servicio antes de usar este comando.\nUsa `/setup` para revisarlos y aceptarlos.",
   "error.not_admin": "Este comando está restringido a administradores.",
   "error.not_completed_setup": "Debes completar la configuración de tu perfil antes de usar este comando.\nUsa `/setup` para configurar tu perfil.",
   "error.not_in_dm": "Este comando solo se puede usar en DMs.",

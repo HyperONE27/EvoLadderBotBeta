@@ -363,7 +363,7 @@
   "error.failed_join_queue": "Failed to join queue.",
   "error.failed_leave_queue": "Failed to leave queue.",
   "error.failed_submit_report": "Failed to submit report.",
-  "error.not_accepted_tos": "You must accept the Terms of Service before using this command.\nUse `/termsofservice` to review and accept them.",
+  "error.not_accepted_tos": "You must accept the Terms of Service before using this command.\nUse `/setup` to review and accept them.",
   "error.not_admin": "This command is restricted to administrators.",
   "error.not_completed_setup": "You must complete your player setup before using this command.\nUse `/setup` to configure your profile.",
   "error.not_in_dm": "This command can only be used in DMs.",
