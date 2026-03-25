@@ -55,10 +55,10 @@ NOTIFICATIONS_SCHEMA: dict[str, pl.DataType] = {
     "discord_uid": pl.Int64,
     "read_quick_start_guide": pl.Boolean,
     "notify_queue_1v1": pl.Boolean,
-    "notify_queue_2v2": pl.Boolean,
-    "notify_queue_ffa": pl.Boolean,
     "notify_queue_1v1_cooldown": pl.Int16,
+    "notify_queue_2v2": pl.Boolean,
     "notify_queue_2v2_cooldown": pl.Int16,
+    "notify_queue_ffa": pl.Boolean,
     "notify_queue_ffa_cooldown": pl.Int16,
     "updated_at": pl.Datetime("us", "utc"),
 }
@@ -307,10 +307,10 @@ class NotificationsRow(TypedDict):
     discord_uid: int
     read_quick_start_guide: bool
     notify_queue_1v1: bool
-    notify_queue_2v2: bool
-    notify_queue_ffa: bool
     notify_queue_1v1_cooldown: int
+    notify_queue_2v2: bool
     notify_queue_2v2_cooldown: int
+    notify_queue_ffa: bool
     notify_queue_ffa_cooldown: int
     updated_at: datetime
 
