@@ -26,6 +26,7 @@ What remains?
     - ⏰ Improve overall look and feel
     - ⏰ Add 2v2 stats...but how? Just sum across all partners?
 - ⏰ Set global cooldown on bot stuff?
+    - ⏰ Do I even need to set this?
 - ⏰ `/leaderboard 2v2` does not display flags
     - ⏰ Flag filtering is broken
     - ⏰ Embed does not show selected countries for filter
