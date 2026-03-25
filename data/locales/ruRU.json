@@ -590,7 +590,7 @@
   "profile_embed.battletag_label.1": "- **BattleTag:** {battletag}",
   "profile_embed.bw_mmr_field_name.1": "{bw_emote} Brood War MMR",
   "profile_embed.field_name.1": "📋 Основная информация",
-  "profile_embed.field_name.2": "📍Местоположение",
+  "profile_embed.field_name.2": "📍 Регион и язык",
   "profile_embed.footer.1": "Дискорд: {username} ● ID: {uid}",
   "profile_embed.language_label.1": "- **Язык:** {flag} {name}",
   "profile_embed.last_played.1": "- **Последняя игра:** {ts}",

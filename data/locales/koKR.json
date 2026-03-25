@@ -590,7 +590,7 @@
   "profile_embed.battletag_label.1": "- **배틀태그:** {battletag}",
   "profile_embed.bw_mmr_field_name.1": "{bw_emote} 스타1 MMR",
   "profile_embed.field_name.1": "📋 기본 정보",
-  "profile_embed.field_name.2": "📍 위치",
+  "profile_embed.field_name.2": "🌐 지역 & 언어",
   "profile_embed.footer.1": "Discord: {username} ● ID: {uid}",
   "profile_embed.language_label.1": "- **언어:** {flag} {name}",
   "profile_embed.last_played.1": "  - **마지막 플레이:** {ts}",
