@@ -1199,9 +1199,13 @@ class LocaleSetupView(discord.ui.View):
         )
 
         async def on_language_select(interaction: discord.Interaction) -> None:
-            self.selected_language = language_select.values[0]
-            _continue_button.disabled = False
-            await interaction.response.edit_message(view=self)
+            fresh = LocaleSetupView(
+                discord_uid,
+                discord_username,
+                preselected_locale=language_select.values[0],
+                show_cancel=show_cancel,
+            )
+            await interaction.response.edit_message(view=fresh)
 
         language_select.callback = on_language_select  # type: ignore[method-assign]
 
