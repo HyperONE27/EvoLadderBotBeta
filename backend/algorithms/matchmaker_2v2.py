@@ -67,15 +67,24 @@ def _max_mmr_diff(wait_cycles: int) -> int:
 
 
 def _has_bw(entry: QueueEntry2v2) -> bool:
-    return entry["pure_bw_leader_race"] is not None
+    return (
+        entry["pure_bw_leader_race"] is not None
+        and entry["pure_bw_member_race"] is not None
+    )
 
 
 def _has_sc2(entry: QueueEntry2v2) -> bool:
-    return entry["pure_sc2_leader_race"] is not None
+    return (
+        entry["pure_sc2_leader_race"] is not None
+        and entry["pure_sc2_member_race"] is not None
+    )
 
 
 def _has_mixed(entry: QueueEntry2v2) -> bool:
-    return entry["mixed_leader_race"] is not None
+    return (
+        entry["mixed_leader_race"] is not None
+        and entry["mixed_member_race"] is not None
+    )
 
 
 def _compatible(a: QueueEntry2v2, b: QueueEntry2v2) -> bool:

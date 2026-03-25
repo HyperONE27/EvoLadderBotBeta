@@ -26,6 +26,8 @@ from common.lookups.emote_lookups import init_emote_lookups
 from common.lookups.map_lookups import init_map_lookups
 from common.lookups.mod_lookups import init_mod_lookups
 from common.lookups.race_lookups import init_race_lookups
+from common.i18n import init_i18n
+from common.loader import JSONLoader
 from common.lookups.region_lookups import init_region_lookups
 
 logger = structlog.get_logger(__name__)
@@ -91,6 +93,7 @@ class Backend:
         self.orchestrator = Orchestrator(self.state_manager, self.db_writer)
 
     def _initialize_lookups(self) -> None:
+        init_i18n(JSONLoader().load_locale_data())
         modules = [
             init_admin_lookups,
             init_country_lookups,
