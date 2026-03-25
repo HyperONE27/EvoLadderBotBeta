@@ -2465,8 +2465,8 @@ def _format_match_slot_2v2(match: dict, id_width: int) -> str:
     return f"{line1}\n{line2}"
 
 
-_MAX_QUEUE_SLOTS_2V2 = 10
-_MAX_MATCH_SLOTS_2V2 = 5
+_MAX_QUEUE_SLOTS_2V2 = 15
+_MAX_MATCH_SLOTS_2V2 = 8
 _MAX_PARTY_SLOTS = 15
 
 
@@ -2496,12 +2496,12 @@ def _format_party_slot(party: dict) -> str:
     p2_name = (party.get("member_player_name") or "Unknown")[:12].ljust(12)
     dt = ensure_utc(party.get("created_at"))
     duration = f"{int((utc_now() - dt).total_seconds()):>5d}s" if dt else "    ?s"
-    return f"`{p1_nat} {p1_name}` `{p2_nat} {p2_name}` {duration}"
+    return f"`{p1_nat} {p1_name}` `{p2_nat} {p2_name}` `{duration}`"
 
 
 def _format_blank_party_slot() -> str:
     # Matches _format_party_slot widths: nat(2)+space+name(12)=15 per block, 6 for duration
-    return f"`{' ' * 15}` `{' ' * 15}` {' ' * 6}"
+    return f"`{' ' * 15}` `{' ' * 15}` `{' ' * 6}`"
 
 
 class QueueSnapshotEmbed2v2(discord.Embed):
