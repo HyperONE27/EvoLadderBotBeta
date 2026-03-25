@@ -1,14 +1,14 @@
 # EvoLadderBot Terms of Service, Privacy Policy, and Refund Policy
 ## 한국어: https://rentry.co/evoladderbot-tos-kr
-*Last updated: 2025-11-07*
+*Last updated: 2026-03-26*
 
 **Operator:** The **SC Evo Complete Ladder Bot** (“EvoLadderBot,” “the Service,” “we,” or “our”) is a community StarCraft II ladder created by HyperONE, a member of Team Koprulu, and operated by **HyperONE Dev** on behalf of **Team Koprulu** for the **SC: Evo Complete** project.
 
 EvoLadderBot is an independent, fan-made project **not affiliated with or endorsed by Blizzard Entertainment**.
 
-**Alpha Stage Notice:**  
-EvoLadderBot is currently in **Alpha testing**, and these Terms, Policies, and features are subject to change as the Service evolves.  
-Participation in the Alpha indicates understanding that features, data, and moderation systems may be incomplete or unstable.  
+**Pre-Beta Stage Notice:**  
+EvoLadderBot is currently in **pre-Beta testing**, and these Terms, Policies, and features are subject to change as the Service evolves.  
+Participation in the pre-Beta indicates understanding that features, data, and moderation systems may be incomplete or unstable.  
 We make a good-faith effort to maintain operational integrity, but downtime, resets, or unexpected issues may occur during this phase.
 
 > **Canonical Version Notice:** These Terms and Policies may be provided in several languages. We make a good-faith effort to ensure the accuracy of these translations. However, the English-language version of this document is the only legally binding version.
@@ -28,7 +28,7 @@ Changes to consent status are logged. We make a good-faith effort to keep the `/
 
 ### 2. Eligibility
 To use the Service, you must:
-- Be at least 13 years old (or the minimum age required by Discord in your region), and
+- Be at least 13 years old (or the minimum age required by Discord in your region, e.g. 16 in some EU regions under local law), and
 - Comply with **Discord's Terms of Service.**
 
 ### 3. User Conduct
@@ -105,13 +105,14 @@ We do not collect other sensitive Personally Identifiable Information (PII), suc
 ### 2. Purpose of Collection
 Data is used to:
 - Maintain persistent player records
-- Power matchmaking, rankings, and seasonal leaderboards
+- Power matchmaking, rankings, and leaderboards
 - Maintain system integrity and prevent abuse
+- Ensure the proper functioning of new features in testing and development
 
 ### 3. Data Sharing
-We do not sell or share user data. Limited processing occurs through:
-- **Discord API** (identity and messaging)
-- **Supabase** (database hosting)
+We do not sell or share user data. Limited third-party processing occurs through:
+- **Discord API** — for identity verification and messaging features
+- **Supabase** — for database hosting and related backend services
 
 ### 4. Data Retention
 We retain ladder and account data for as long as your account remains active or as needed for operational integrity and archival purposes. Users may request deletion via Discord. Deletion may result in permanent loss of ladder progress.
@@ -147,7 +148,7 @@ If you have questions about these terms, your data, or future transactions, cont
 
 ---
 
-© 2025 **HyperONE Dev**. All rights reserved.  
+© 2025-2026 **HyperONE Dev**. All rights reserved.  
 SC Evo Complete Ladder Bot (“EvoLadderBot”) was created and is owned by **HyperONE Dev**, a member of **Team Koprulu**, and is operated on behalf of Team Koprulu for the **SC: Evo Complete** project.  
 Team Koprulu oversees community coordination and project governance, while all software, systems, and documentation for EvoLadderBot remain the intellectual property of HyperONE Dev.
 EvoLadderBot is a fan-made, independent project not affiliated with or endorsed by Blizzard Entertainment.  

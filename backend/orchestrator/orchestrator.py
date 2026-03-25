@@ -96,12 +96,19 @@ class Orchestrator:
 
     def get_profile(
         self, discord_uid: int
-    ) -> tuple[PlayersRow | None, list[dict[str, Any]]]:
-        """Get a player's profile row and enriched 1v1 MMR rows (ranks + recent stats)."""
+    ) -> tuple[
+        PlayersRow | None,
+        list[dict[str, Any]],
+        list[dict[str, Any]],
+        NotificationsRow | None,
+    ]:
+        """Get a player's profile: player row, enriched 1v1 MMRs, top-5 2v2 partners, notifications."""
 
         player = self._state_reader.get_player(discord_uid)
-        mmrs = self._state_reader.build_profile_mmrs_1v1(discord_uid)
-        return player, mmrs
+        mmrs_1v1 = self._state_reader.build_profile_mmrs_1v1(discord_uid)
+        mmrs_2v2 = self._state_reader.build_profile_2v2_partners(discord_uid)
+        notifications = self._state_reader.get_notifications_row(discord_uid)
+        return player, mmrs_1v1, mmrs_2v2, notifications
 
     def get_active_matches_snapshot_1v1(self) -> list[dict[str, Any]]:
         """Active 1v1 matches with letter ranks and ISO nationalities for /snapshot."""

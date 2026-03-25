@@ -1,7 +1,10 @@
 from datetime import timedelta
 from typing import Any
 
-from backend.algorithms.game_stats import count_game_stats_in_completed_window
+from backend.algorithms.game_stats import (
+    count_game_stats_2v2_in_completed_window,
+    count_game_stats_in_completed_window,
+)
 from backend.domain_types.dataframes import (
     AdminsRow,
     Matches1v1Row,
@@ -251,7 +254,7 @@ class StateReader:
         df = self._state_manager.matches_1v1_df
         now = utc_now()
         out: dict[str, dict[str, int]] = {}
-        for key, days in (("14d", 14), ("30d", 30), ("90d", 90)):
+        for key, days in (("7d", 7), ("30d", 30)):
             since = now - timedelta(days=days)
             out[key] = count_game_stats_in_completed_window(
                 df, discord_uid, race, since, now
@@ -269,6 +272,61 @@ class StateReader:
             d["letter_rank"] = self.get_letter_rank_1v1(discord_uid, race)
             d["recent"] = self.get_recent_period_stats_1v1(discord_uid, race)
             result.append(d)
+        return result
+
+    def get_recent_period_stats_2v2(
+        self, discord_uid: int, partner_discord_uid: int
+    ) -> dict[str, dict[str, int]]:
+        """Per-window game counts for a specific 2v2 pair (7d / 30d by completed_at)."""
+        df = self._state_manager.matches_2v2_df
+        now = utc_now()
+        out: dict[str, dict[str, int]] = {}
+        for key, days in (("7d", 7), ("30d", 30)):
+            since = now - timedelta(days=days)
+            out[key] = count_game_stats_2v2_in_completed_window(
+                df, discord_uid, partner_discord_uid, since, now
+            )
+        return out
+
+    def build_profile_2v2_partners(self, discord_uid: int) -> list[dict[str, Any]]:
+        """Top-5 2v2 partners by most recently played, with lifetime stats and 7d/30d recent."""
+        import polars as pl
+
+        df = self._state_manager.mmrs_2v2_df
+        player_rows = (
+            df.filter(
+                (pl.col("player_1_discord_uid") == discord_uid)
+                | (pl.col("player_2_discord_uid") == discord_uid)
+            )
+            .sort("last_played_at", descending=True, nulls_last=True)
+            .head(5)
+        )
+
+        result: list[dict[str, Any]] = []
+        for row in player_rows.iter_rows(named=True):
+            p1_uid: int = row["player_1_discord_uid"]
+            p2_uid: int = row["player_2_discord_uid"]
+            if p1_uid == discord_uid:
+                partner_discord_uid = p2_uid
+                partner_player_name: str = row["player_2_name"]
+            else:
+                partner_discord_uid = p1_uid
+                partner_player_name = row["player_1_name"]
+            result.append(
+                {
+                    "partner_discord_uid": partner_discord_uid,
+                    "partner_player_name": partner_player_name,
+                    "mmr": row["mmr"],
+                    "games_played": row["games_played"],
+                    "games_won": row["games_won"],
+                    "games_lost": row["games_lost"],
+                    "games_drawn": row["games_drawn"],
+                    "last_played_at": row["last_played_at"],
+                    "recent": self.get_recent_period_stats_2v2(
+                        discord_uid, partner_discord_uid
+                    ),
+                }
+            )
         return result
 
     # ------------------------------------------------------------------

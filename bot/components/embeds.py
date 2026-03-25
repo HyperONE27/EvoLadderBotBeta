@@ -2068,6 +2068,284 @@ class ProfileEmbed(discord.Embed):
 
 
 # =========================================================================
+# Profile — paged embeds (Info / 1v1 / 2v2)
+# =========================================================================
+
+
+class ProfileInfoEmbed(discord.Embed):
+    """Page 1: basic info, location, and notification settings."""
+
+    def __init__(
+        self,
+        user: discord.User | discord.Member,
+        player: dict,
+        notifications: dict | None,
+        locale: str = "enUS",
+    ) -> None:
+        completed = player.get("completed_setup", False)
+        color = discord.Color.green() if completed else discord.Color.orange()
+        status_icon = "✅" if completed else "⚠️"
+        title_name = player.get("player_name") or user.name
+
+        super().__init__(
+            title=t(
+                "profile_embed.title.1",
+                locale,
+                status_icon=status_icon,
+                title_name=title_name,
+            ),
+            color=color,
+        )
+
+        if user.display_avatar:
+            self.set_thumbnail(url=user.display_avatar.url)
+
+        self._add_basic_info(player, locale)
+        self._add_location(player, locale)
+        self._add_notifications(notifications, locale)
+
+        self.set_footer(
+            text=t(
+                "profile_embed.footer.1", locale, username=user.name, uid=str(user.id)
+            )
+        )
+        apply_default_embed_footer(self, locale=locale)
+
+    def _add_basic_info(self, player: dict, locale: str) -> None:
+        not_set = t("shared.not_set", locale)
+        parts = [
+            t(
+                "profile_embed.player_name_label.1",
+                locale,
+                name=player.get("player_name") or not_set,
+            ),
+            t(
+                "profile_embed.battletag_label.1",
+                locale,
+                battletag=player.get("battletag") or not_set,
+            ),
+        ]
+        alt_ids: list[str] = player.get("alt_player_names") or []
+        if alt_ids:
+            parts.append(
+                t("profile_embed.alt_ids_label.1", locale, alt_ids=", ".join(alt_ids))
+            )
+        self.add_field(
+            name=t("profile_embed.field_name.1", locale),
+            value="\n".join(parts),
+            inline=False,
+        )
+
+    def _add_location(self, player: dict, locale: str) -> None:
+        parts: list[str] = []
+        nationality = player.get("nationality")
+        if nationality:
+            country = get_country_by_code(nationality)
+            if country:
+                flag = get_flag_emote(nationality)
+                parts.append(
+                    t(
+                        "profile_embed.nationality_label.1",
+                        locale,
+                        flag=str(flag),
+                        name=_localized_country(nationality, locale),
+                    )
+                )
+        location = player.get("location")
+        if location:
+            region = get_geographic_region_by_code(location)
+            if region:
+                globe = get_globe_emote(region["globe_emote_code"])
+                parts.append(
+                    t(
+                        "profile_embed.location_label.1",
+                        locale,
+                        globe=str(globe),
+                        name=_localized_region(location, locale),
+                    )
+                )
+        language = player.get("language")
+        if language:
+            entry = LOCALE_DISPLAY_NAMES.get(language)
+            flag = entry[1] if entry else ""
+            parts.append(
+                t(
+                    "profile_embed.language_label.1",
+                    locale,
+                    flag=flag,
+                    name=_localized_language(language),
+                )
+            )
+        if parts:
+            self.add_field(
+                name=t("profile_embed.field_name.2", locale),
+                value="\n".join(parts),
+                inline=False,
+            )
+
+    def _add_notifications(self, notifications: dict | None, locale: str) -> None:
+        if notifications is None:
+            return
+        parts: list[str] = []
+        if notifications.get("notify_queue_1v1"):
+            parts.append(
+                t(
+                    "profile_embed.notifications_1v1.1",
+                    locale,
+                    minutes=str(notifications.get("notify_queue_1v1_cooldown", 15)),
+                )
+            )
+        else:
+            parts.append(t("profile_embed.notifications_off_1v1.1", locale))
+        if notifications.get("notify_queue_2v2"):
+            parts.append(
+                t(
+                    "profile_embed.notifications_2v2.1",
+                    locale,
+                    minutes=str(notifications.get("notify_queue_2v2_cooldown", 15)),
+                )
+            )
+        else:
+            parts.append(t("profile_embed.notifications_off_2v2.1", locale))
+        self.add_field(
+            name=t("profile_embed.notifications_field_name.1", locale),
+            value="\n".join(parts),
+            inline=False,
+        )
+
+
+class Profile1v1Embed(discord.Embed):
+    """Page 2: 1v1 MMR and per-race stats with 7d/30d recent windows."""
+
+    def __init__(
+        self,
+        user: discord.User | discord.Member,
+        player: dict,
+        mmrs: list[dict],
+        locale: str = "enUS",
+    ) -> None:
+        title_name = player.get("player_name") or user.name
+        super().__init__(
+            title=t("profile_embed.1v1_title.1", locale, title_name=title_name),
+            color=discord.Color.blue(),
+        )
+        if user.display_avatar:
+            self.set_thumbnail(url=user.display_avatar.url)
+        self._add_mmrs(mmrs, locale)
+        apply_default_embed_footer(self, locale=locale)
+
+    def _add_mmrs(self, mmrs: list[dict], locale: str) -> None:
+        if not mmrs:
+            self.add_field(
+                name=t("profile_embed.mmr_field_name.1", locale),
+                value=t("profile_embed.no_mmr.1", locale),
+                inline=False,
+            )
+            return
+        bw_mmrs = _sort_profile_mmrs(
+            [m for m in mmrs if m.get("race", "").startswith("bw_")],
+            get_bw_race_codes(),
+        )
+        sc2_mmrs = _sort_profile_mmrs(
+            [m for m in mmrs if m.get("race", "").startswith("sc2_")],
+            get_sc2_race_codes(),
+        )
+        bw_emote = get_game_emote("bw")
+        sc2_emote = get_game_emote("sc2")
+        if bw_mmrs:
+            self.add_field(
+                name=t(
+                    "profile_embed.bw_mmr_field_name.1", locale, bw_emote=str(bw_emote)
+                ),
+                value=_format_mmr_rows(bw_mmrs, locale),
+                inline=False,
+            )
+        if sc2_mmrs:
+            self.add_field(
+                name=t(
+                    "profile_embed.sc2_mmr_field_name.1",
+                    locale,
+                    sc2_emote=str(sc2_emote),
+                ),
+                value=_format_mmr_rows(sc2_mmrs, locale),
+                inline=False,
+            )
+
+
+class Profile2v2Embed(discord.Embed):
+    """Page 3: top-5 2v2 partners by most recently played, with 7d/30d recent stats."""
+
+    def __init__(
+        self,
+        user: discord.User | discord.Member,
+        player: dict,
+        partners: list[dict],
+        locale: str = "enUS",
+    ) -> None:
+        title_name = player.get("player_name") or user.name
+        super().__init__(
+            title=t("profile_embed.2v2_title.1", locale, title_name=title_name),
+            color=discord.Color.purple(),
+        )
+        if user.display_avatar:
+            self.set_thumbnail(url=user.display_avatar.url)
+        self._add_partners(partners, locale)
+        apply_default_embed_footer(self, locale=locale)
+
+    def _add_partners(self, partners: list[dict], locale: str) -> None:
+        if not partners:
+            self.add_field(
+                name=t("profile_embed.2v2_partner_field_name.1", locale),
+                value=t("profile_embed.2v2_no_partners.1", locale),
+                inline=False,
+            )
+            return
+        lines: list[str] = []
+        for p in partners:
+            gp: int = p.get("games_played") or 0
+            gw: int = p.get("games_won") or 0
+            gl: int = p.get("games_lost") or 0
+            gd: int = p.get("games_drawn") or 0
+            mmr_val: int = p.get("mmr") or 0
+            wr = (gw / gp * 100) if gp > 0 else 0.0
+            line = t(
+                "profile_embed.2v2_partner_row.1",
+                locale,
+                name=p.get("partner_player_name") or "?",
+                mmr=str(mmr_val),
+                gw=str(gw),
+                gl=str(gl),
+                gd=str(gd),
+                wr=f"{wr:.1f}",
+            )
+            recent: dict = p.get("recent") or {}
+            for period_key, tr_key in (
+                ("7d", "profile_embed.recent_stats_7d.1"),
+                ("30d", "profile_embed.recent_stats_30d.1"),
+            ):
+                st: dict = recent.get(period_key) or {}
+                w = int(st.get("games_won", 0))
+                lo = int(st.get("games_lost", 0))
+                d = int(st.get("games_drawn", 0))
+                tot = int(st.get("games_played", w + lo + d))
+                wr_p = (w / tot * 100) if tot > 0 else 0.0
+                line += "\n" + t(
+                    tr_key, locale, w=str(w), l=str(lo), d=str(d), wr=f"{wr_p:.1f}"
+                )
+            last_played = p.get("last_played_at")
+            if last_played and gp > 0:
+                ts = to_discord_timestamp(raw=last_played, style="f")
+                if ts != "—":
+                    line += "\n" + t("profile_embed.last_played.1", locale, ts=ts)
+            lines.append(line)
+        self.add_field(
+            name=t("profile_embed.2v2_partner_field_name.1", locale),
+            value="\n".join(lines),
+            inline=False,
+        )
+
+
+# =========================================================================
 # Terms of Service
 # =========================================================================
 

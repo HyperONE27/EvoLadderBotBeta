@@ -79,6 +79,7 @@ from backend.api.models import (
     Preferences2v2UpsertResponse,
     PreferencesUpsertRequest,
     PreferencesUpsertResponse,
+    Profile2v2PartnerEntry,
     ProfileMmrEntry,
     ProfileResponse,
     Queue2v2JoinRequest,
@@ -702,8 +703,14 @@ async def profile(
     discord_uid: int,
     app: Backend = Depends(get_backend),
 ) -> ProfileResponse:
-    player, mmrs_raw = app.orchestrator.get_profile(discord_uid)
-    mmrs = [ProfileMmrEntry.model_validate(r) for r in mmrs_raw]
+    player, mmrs_1v1_raw, mmrs_2v2_raw, notifications_row = (
+        app.orchestrator.get_profile(discord_uid)
+    )
+    mmrs_1v1 = [ProfileMmrEntry.model_validate(r) for r in mmrs_1v1_raw]
+    mmrs_2v2 = [Profile2v2PartnerEntry.model_validate(r) for r in mmrs_2v2_raw]
+    notifications = (
+        _notification_row_to_out(dict(notifications_row)) if notifications_row else None
+    )
     app.orchestrator.log_event(
         {
             "discord_uid": discord_uid,
@@ -712,7 +719,9 @@ async def profile(
             "event_data": {},
         }
     )
-    return ProfileResponse(player=player, mmrs_1v1=mmrs)
+    return ProfileResponse(
+        player=player, mmrs_1v1=mmrs_1v1, mmrs_2v2=mmrs_2v2, notifications=notifications
+    )
 
 
 # --- /prune ---

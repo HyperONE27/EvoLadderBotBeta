@@ -18,6 +18,9 @@ import structlog
 from bot.components.queue_activity_chart import render_queue_join_chart_png
 from bot.components.embeds import (
     AdminResolution2v2Embed,
+    Profile1v1Embed,
+    Profile2v2Embed,
+    ProfileInfoEmbed,
     AdminResolutionEmbed,
     BanSuccessEmbed,
     ErrorEmbed,
@@ -2246,6 +2249,80 @@ _ACTIVITY_RANGE_TO_TD = {
     "7d": timedelta(days=7),
     "30d": timedelta(days=30),
 }
+
+
+class ProfilePageView(discord.ui.View):
+    """Three-page profile view: Info / 1v1 / 2v2.
+
+    All data is stored on construction; page switches are instant with no
+    re-fetch.
+    """
+
+    _PAGES = ("info", "1v1", "2v2")
+
+    def __init__(
+        self,
+        user: discord.User | discord.Member,
+        player: dict,
+        mmrs_1v1: list[dict],
+        mmrs_2v2: list[dict],
+        notifications: dict | None,
+        locale: str = "enUS",
+        current_page: str = "info",
+    ) -> None:
+        super().__init__(timeout=300)
+        self._user = user
+        self._player = player
+        self._mmrs_1v1 = mmrs_1v1
+        self._mmrs_2v2 = mmrs_2v2
+        self._notifications = notifications
+        self._locale = locale
+        self._current_page = current_page
+
+        for page in self._PAGES:
+            label = t(f"button.profile_{page}", locale)
+            style = (
+                discord.ButtonStyle.primary
+                if page == current_page
+                else discord.ButtonStyle.secondary
+            )
+            btn: discord.ui.Button = discord.ui.Button(
+                label=label, style=style, custom_id=f"profile_page_{page}"
+            )
+            btn.callback = self._make_callback(page)  # type: ignore[method-assign]
+            self.add_item(btn)
+
+    def _make_callback(self, page: str):  # noqa: ANN202
+        async def callback(interaction: discord.Interaction) -> None:
+            locale = get_player_locale(interaction.user.id)
+            fresh = ProfilePageView(
+                self._user,
+                self._player,
+                self._mmrs_1v1,
+                self._mmrs_2v2,
+                self._notifications,
+                locale=locale,
+                current_page=page,
+            )
+            await interaction.response.edit_message(
+                embed=fresh._build_embed(), view=fresh
+            )
+
+        return callback
+
+    def _build_embed(self) -> discord.Embed:
+        locale = self._locale
+        if self._current_page == "1v1":
+            return Profile1v1Embed(
+                self._user, self._player, self._mmrs_1v1, locale=locale
+            )
+        if self._current_page == "2v2":
+            return Profile2v2Embed(
+                self._user, self._player, self._mmrs_2v2, locale=locale
+            )
+        return ProfileInfoEmbed(
+            self._user, self._player, self._notifications, locale=locale
+        )
 
 
 class ActivityChartView(discord.ui.View):

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 
 from pydantic import BaseModel, Field
@@ -284,9 +286,23 @@ class ProfileMmrEntry(BaseModel):
     recent: dict[str, ProfilePeriodStats] = Field(default_factory=dict)
 
 
+class Profile2v2PartnerEntry(BaseModel):
+    partner_discord_uid: int
+    partner_player_name: str
+    mmr: int
+    games_played: int
+    games_won: int
+    games_lost: int
+    games_drawn: int
+    last_played_at: datetime | None = None
+    recent: dict[str, ProfilePeriodStats] = Field(default_factory=dict)
+
+
 class ProfileResponse(BaseModel):
     player: PlayersRow | None
     mmrs_1v1: list[ProfileMmrEntry]
+    mmrs_2v2: list[Profile2v2PartnerEntry] = Field(default_factory=list)
+    notifications: NotificationsOut | None = None
 
 
 # --- /prune ---

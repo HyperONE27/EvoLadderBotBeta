@@ -115,6 +115,37 @@ def count_game_stats_2v2(
     }
 
 
+def count_game_stats_2v2_in_completed_window(
+    matches_df: pl.DataFrame,
+    p1_discord_uid: int,
+    p2_discord_uid: int,
+    since: datetime,
+    until: datetime | None = None,
+) -> dict[str, int]:
+    """Like ``count_game_stats_2v2`` but only matches with ``completed_at`` in
+    ``[since, until]`` (UTC-aware). Countable outcomes only."""
+
+    if until is None:
+        until = utc_now()
+    since_utc = ensure_utc(since)
+    until_utc = ensure_utc(until)
+    if since_utc is None or until_utc is None:
+        return {
+            "games_played": 0,
+            "games_won": 0,
+            "games_lost": 0,
+            "games_drawn": 0,
+        }
+
+    windowed = matches_df.filter(
+        pl.col("match_result").is_in(list(COUNTABLE_MATCH_RESULTS_2V2))
+        & pl.col("completed_at").is_not_null()
+        & (pl.col("completed_at") >= since_utc)
+        & (pl.col("completed_at") <= until_utc)
+    )
+    return count_game_stats_2v2(windowed, p1_discord_uid, p2_discord_uid)
+
+
 def count_game_stats_in_completed_window(
     matches_df: pl.DataFrame,
     discord_uid: int,
