@@ -4,7 +4,9 @@ from discord import app_commands
 
 from bot.components.embeds import LocaleSetupEmbed
 from bot.components.views import LocaleSetupView
+from bot.core.config import BACKEND_URL
 from bot.core.dependencies import get_cache, get_player_locale
+from bot.core.http import get_session
 from bot.helpers.checks import check_if_banned, check_if_dm
 
 logger = structlog.get_logger(__name__)
@@ -28,12 +30,24 @@ def register_setup_command(tree: app_commands.CommandTree) -> None:
         discord_uid = interaction.user.id
         discord_username = interaction.user.name
 
+        cache = get_cache()
+
         # Pre-select the locale dropdown only for returning players who have
         # a persisted language preference. New players (no preset) start with
         # an empty dropdown so they must actively choose.
-        preset = get_cache().player_presets.get(discord_uid)
+        preset = cache.player_presets.get(discord_uid)
         preselected_locale = (preset.get("language") if preset else None) or None
         show_cancel = bool(preset and preset.get("completed_setup"))
+
+        # Fetch notification preferences upfront so the notification step can
+        # pre-select existing values without an HTTP call mid-flow.
+        try:
+            async with get_session().get(
+                f"{BACKEND_URL}/notifications/{discord_uid}"
+            ) as resp:
+                cache.notification_presets[discord_uid] = await resp.json()
+        except Exception:
+            logger.exception("Failed to prefetch notifications for setup")
 
         locale = get_player_locale(discord_uid)
         await interaction.followup.send(

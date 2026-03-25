@@ -104,6 +104,11 @@ class Cache:
         # backend round-trip.
         self.player_presets: dict[int, dict[str, Any]] = {}
 
+        # Per-player notification preset data (discord_uid → NotificationsOut dict).
+        # Populated at the start of /setup so the notification step can pre-select
+        # existing preferences without an HTTP call mid-flow.
+        self.notification_presets: dict[int, dict[str, Any]] = {}
+
         self._populate_json_data()
         self._populate_locale_data()
 
