@@ -11,26 +11,11 @@ from common.i18n import t
 
 logger = structlog.get_logger(__name__)
 
-RESULT_CHOICES_1V1 = [
-    app_commands.Choice(name="Player 1 Wins", value="player_1_win"),
-    app_commands.Choice(name="Player 2 Wins", value="player_2_win"),
-    app_commands.Choice(name="Draw", value="draw"),
-    app_commands.Choice(name="Invalidate", value="invalidated"),
-]
-
-RESULT_CHOICES_2V2 = [
-    app_commands.Choice(name="Team 1 Wins", value="team_1_win"),
-    app_commands.Choice(name="Team 2 Wins", value="team_2_win"),
-    app_commands.Choice(name="Draw", value="draw"),
-    app_commands.Choice(name="Invalidate", value="invalidated"),
-]
-
-# Combined set for autocomplete — includes all possible values.
-ALL_RESULT_CHOICES = [
+# Single choice list: values are player_1_win / player_2_win and are mapped to
+# team_1_win / team_2_win at runtime when game_mode == "2v2".
+RESULT_CHOICES = [
     app_commands.Choice(name="Player 1 / Team 1 Wins", value="player_1_win"),
     app_commands.Choice(name="Player 2 / Team 2 Wins", value="player_2_win"),
-    app_commands.Choice(name="Team 1 Wins", value="team_1_win"),
-    app_commands.Choice(name="Team 2 Wins", value="team_2_win"),
     app_commands.Choice(name="Draw", value="draw"),
     app_commands.Choice(name="Invalidate", value="invalidated"),
 ]
@@ -44,20 +29,20 @@ ALL_RESULT_CHOICES = [
 def register_admin_resolve_command(tree: app_commands.CommandTree) -> None:
     @tree.command(name="resolve", description="[Admin] Manually resolve a match result")
     @app_commands.check(check_if_admin)
-    @app_commands.choices(game_mode=GAME_MODE_CHOICES, result=ALL_RESULT_CHOICES)
+    @app_commands.choices(game_mode=GAME_MODE_CHOICES, result=RESULT_CHOICES)
     async def resolve_command(
         interaction: discord.Interaction,
+        game_mode: app_commands.Choice[str],
         match_id: int,
         result: app_commands.Choice[str],
-        game_mode: app_commands.Choice[str] = None,  # type: ignore[assignment]
         reason: str | None = None,
     ) -> None:
         await interaction.response.defer()
 
-        mode = game_mode.value if game_mode else "1v1"
+        mode = game_mode.value
         locale = get_player_locale(interaction.user.id)
 
-        # Map 1v1-style result codes to 2v2-style when mode is 2v2.
+        # Map player_#_win → team_#_win for 2v2.
         result_value = result.value
         if mode == "2v2":
             if result_value == "player_1_win":
@@ -73,7 +58,7 @@ def register_admin_resolve_command(tree: app_commands.CommandTree) -> None:
         result_display = t(f"resolve_result_display.{result_value}", locale)
         await interaction.followup.send(
             embed=ResolvePreviewEmbed(
-                match_id, result_value, result_display, reason, locale=locale
+                match_id, result_value, result_display, mode, reason, locale=locale
             ),
             view=(
                 ResolveConfirmView2v2(

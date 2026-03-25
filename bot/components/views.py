@@ -19,7 +19,6 @@ from bot.components.queue_activity_chart import render_queue_join_chart_png
 from bot.components.embeds import (
     AdminResolution2v2Embed,
     AdminResolutionEmbed,
-    MatchFinalizedEmbed2v2,
     BanSuccessEmbed,
     ErrorEmbed,
     MatchAbortAckEmbed,
@@ -1774,7 +1773,7 @@ async def _notify_players_2v2(
     reason: str | None,
     admin_name: str,
 ) -> None:
-    """DM all four players with the MatchFinalizedEmbed2v2 layout."""
+    """DM all four players with the AdminResolution2v2Embed."""
     uids: list[int] = []
     for team_num in (1, 2):
         for p_num in (1, 2):
@@ -1788,8 +1787,13 @@ async def _notify_players_2v2(
             user = await interaction.client.fetch_user(uid)
             await queue_user_send_low(
                 user,
-                embed=MatchFinalizedEmbed2v2(
-                    data, player_infos=player_infos, locale=locale
+                embed=AdminResolution2v2Embed(
+                    data,
+                    reason=reason,
+                    admin_name=admin_name,
+                    player_infos=player_infos,
+                    is_admin_confirm=False,
+                    locale=locale,
                 ),
             )
         except Exception:
@@ -1803,14 +1807,19 @@ async def _send_to_match_log_2v2(
     reason: str | None,
     admin_name: str,
 ) -> None:
-    """Send the MatchFinalizedEmbed2v2 to the match log channel."""
+    """Send the AdminResolution2v2Embed to the match log channel."""
     try:
         channel = interaction.client.get_channel(MATCH_LOG_CHANNEL_ID)
         if channel is None:
             channel = await interaction.client.fetch_channel(MATCH_LOG_CHANNEL_ID)
         if channel is not None and isinstance(channel, discord.TextChannel):
-            embed = MatchFinalizedEmbed2v2(
-                data, player_infos=player_infos, locale="enUS"
+            embed = AdminResolution2v2Embed(
+                data,
+                reason=reason,
+                admin_name=admin_name,
+                player_infos=player_infos,
+                is_admin_confirm=False,
+                locale="enUS",
             )
             await queue_channel_send_low(channel, embed=embed)
     except Exception:
@@ -3093,7 +3102,7 @@ class QueueSetupView2v2(discord.ui.View):
             )
 
         join_btn: discord.ui.Button[QueueSetupView2v2] = discord.ui.Button(
-            label=t("button.join_queue_2v2", _locale),
+            label=t("button.join_queue", _locale),
             emoji="🚀",
             style=discord.ButtonStyle.secondary,
             row=0,
@@ -3257,6 +3266,7 @@ class MatchReportView2v2(discord.ui.View):
         match_data: dict | None = None,
         player_infos: dict | None = None,
         *,
+        report_locked: bool = False,
         locale: str = "enUS",
     ) -> None:
         super().__init__(timeout=None)
@@ -3265,6 +3275,7 @@ class MatchReportView2v2(discord.ui.View):
         self._player_infos = player_infos or {}
         self._locale = locale
         self.report_select = MatchReportSelect2v2(match_id, locale=locale)
+        self.report_select.disabled = report_locked
         self.add_item(self.report_select)
 
     async def submit_report(

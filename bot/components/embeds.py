@@ -365,18 +365,18 @@ class QueueSearchingEmbed2v2(discord.Embed):
             bw_sc2 = stats.get("bw_sc2", 0) if stats else 0
             mixed_sc2 = stats.get("mixed_sc2", 0) if stats else 0
             all_three = stats.get("all_three", 0) if stats else 0
-            description = (
-                "The queue is searching for a 2v2 game.\n\n"
-                f"- Next search: <t:{next_search}:R>\n"
-                "- Search interval: 60 seconds\n"
-                f"- Teams queueing: **{total}**\n"
-                f"  - BW only: {bw_only}\n"
-                f"  - Mixed only: {mixed_only}\n"
-                f"  - SC2 only: {sc2_only}\n"
-                f"  - BW + Mixed: {bw_mixed}\n"
-                f"  - BW + SC2: {bw_sc2}\n"
-                f"  - Mixed + SC2: {mixed_sc2}\n"
-                f"  - All: {all_three}"
+            description = t(
+                "queue_searching_embed_2v2.description.1",
+                locale,
+                next_search_ts=f"<t:{next_search}:R>",
+                total=str(total),
+                bw_only=str(bw_only),
+                mixed_only=str(mixed_only),
+                sc2_only=str(sc2_only),
+                bw_mixed=str(bw_mixed),
+                bw_sc2=str(bw_sc2),
+                mixed_sc2=str(mixed_sc2),
+                all_three=str(all_three),
             )
 
         super().__init__(
@@ -3214,6 +3214,7 @@ class ResolvePreviewEmbed(discord.Embed):
         match_id: int,
         result: str,
         result_display: str,
+        game_mode: str,
         reason: str | None,
         locale: str = "enUS",
     ) -> None:
@@ -3221,6 +3222,7 @@ class ResolvePreviewEmbed(discord.Embed):
             "resolve_preview_embed.description.1",
             locale,
             match_id=str(match_id),
+            game_mode=game_mode,
             result_display=result_display,
             result=result,
         )

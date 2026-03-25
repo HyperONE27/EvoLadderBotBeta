@@ -471,7 +471,13 @@ async def _on_all_confirmed_2v2(client: discord.Client, match_data: dict) -> Non
                 queue_user_send_high(
                     user,
                     embeds=MatchInfoEmbeds2v2(match_data, infos, locale=locale),
-                    view=MatchReportView2v2(match_id, match_data, infos, locale=locale),
+                    view=MatchReportView2v2(
+                        match_id,
+                        match_data,
+                        infos,
+                        report_locked=ENABLE_REPLAY_VALIDATION,
+                        locale=locale,
+                    ),
                 )
             )
             dm_uids.append(uid)
