@@ -7,8 +7,8 @@ What remains?
 - ✅ Write pre-beta feature announcement
 - ⏰ Write pre-beta launch announcement
 - ⏰ Re-write Terms of Service
-- ⏰ Apparently /setup is still not intuitive
-    - ⏰ Add some descriptions explaining what User ID, BattleTag, alternative IDs, nationality, location are
+- ✅ Apparently /setup is still not intuitive
+    - ✅ Add some descriptions explaining what User ID, BattleTag, alternative IDs, nationality, location are
 - ✅ Add instructions under MatchInfoEmbed (in a new embed):
     - ✅ How to change servers
     - ✅ How to join a channel
@@ -28,7 +28,7 @@ What remains?
 - ⏰ `/profile` stats could be better
     - ⏰ Improve overall look and feel
     - ⏰ Add 2v2 stats...but how? Just sum across all partners?
-    - Probably just figure this out later
+    - ⏰ Probably just figure this out later, who even cares right now?
 - ✅ Set global cooldown on bot stuff?
     - ❌ Do I even need to set this?
         - Most views use a default of 180s
