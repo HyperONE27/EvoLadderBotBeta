@@ -6,7 +6,8 @@ What remains?
 
 - ⏰ Write pre-beta feature announcement
 - ⏰ Re-write Terms of Service
-- ⏰ Store canonical copies of migrated old database so I can easily launch the pre-beta
+- ✅ Store canonical copies of migrated old database so I can easily launch the pre-beta
+- ⏰ Zip up the replays too?
 - ✅ Combine /termsofservice and /setup:
     - /termsofservice embed should become the first step in /setup
     - ✅ locale selection now comes earlier in the /setup
@@ -41,6 +42,7 @@ What remains?
     - Letters only...
     - How do I tackle this for many languages and scripts?
 - ⏰ Apparently /setup is still not intuitive
+    - ⏰ Add some descriptions explaining what User ID, BattleTag, alternative IDs, nationality, location are
 - ⏰ Make sure visibility is solid
     - Maybe some more admin/owner commands
         - Directly reading DataFrame rows
@@ -107,6 +109,7 @@ What remains?
     - ⏰ Localizers will do this slowly
 - ⏰ Add 2v2 and FFA gamemodes
     - ✅ Added 2v2
+    - ⏰ FFA TBD...
 
 # FINISH BY FULL BETA
 
