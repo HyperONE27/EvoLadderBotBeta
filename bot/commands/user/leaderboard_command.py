@@ -29,6 +29,7 @@ logger = structlog.get_logger(__name__)
 # ---------------------------------------------------------------------------
 
 _PAGE_SIZE = 40
+_PAGE_SIZE_2V2 = 20
 _PLAYERS_PER_FIELD = 5
 
 _RANKED_ONLY = "_ranked"  # Sentinel: show all players with a letter rank (not U)
@@ -257,6 +258,7 @@ class Leaderboard2v2Embed(discord.Embed):
         total_pages: int,
         total_teams: int,
         *,
+        nationality_filter: list[str] | None = None,
         rank_filter: str | None = None,
         locale: str = "enUS",
     ) -> None:
@@ -266,6 +268,14 @@ class Leaderboard2v2Embed(discord.Embed):
         )
 
         all_label = t("leaderboard_embed.label_all.1", locale)
+        sorted_nats = sorted(
+            nationality_filter or [], key=lambda c: _country_display(c, locale)
+        )
+        nat_label = (
+            ", ".join(_country_display(c, locale) for c in sorted_nats)
+            if sorted_nats
+            else all_label
+        )
         if rank_filter is None:
             rank_label = all_label
         elif rank_filter == _RANKED_ONLY:
@@ -274,12 +284,21 @@ class Leaderboard2v2Embed(discord.Embed):
             rank_label = rank_filter
         self.add_field(
             name="",
-            value=t("leaderboard_embed.filter_rank.1", locale, rank_label=rank_label),
+            value="\n".join(
+                [
+                    t(
+                        "leaderboard_embed.filter_nationality.1",
+                        locale,
+                        nat_label=nat_label,
+                    ),
+                    t("leaderboard_embed.filter_rank.1", locale, rank_label=rank_label),
+                ]
+            ),
             inline=False,
         )
 
-        start = (page - 1) * _PAGE_SIZE
-        page_entries = entries[start : start + _PAGE_SIZE]
+        start = (page - 1) * _PAGE_SIZE_2V2
+        page_entries = entries[start : start + _PAGE_SIZE_2V2]
 
         if not page_entries:
             self.add_field(
@@ -299,32 +318,29 @@ class Leaderboard2v2Embed(discord.Embed):
                         ordinal = f"{active_rank:>4d}" if active_rank > 0 else "   -"
                     else:
                         ordinal = f"{entry['ordinal_rank']:>4d}"
-                    p1 = entry.get("player_1_name", "?")[:10]
-                    p2 = entry.get("player_2_name", "?")[:10]
-                    mmr = entry["mmr"]
+                    p1_flag = get_flag_emote(entry.get("player_1_nationality") or "XX")
+                    p2_flag = get_flag_emote(entry.get("player_2_nationality") or "XX")
+                    p1 = f"{entry.get('player_1_name', '?')[:12]:<12}"
+                    p2 = f"{entry.get('player_2_name', '?')[:12]:<12}"
+                    mmr = f"{entry['mmr']:>4}"
                     lines.append(
-                        f"`{ordinal}.` {rank_emote} `{p1:<10}` + `{p2:<10}` `{mmr}`"
+                        f"`{ordinal}.` {rank_emote} {p1_flag} `{p1}` + {p2_flag} `{p2}` `{mmr}`"
                     )
                 chunks.append("\n".join(lines))
 
-            for i in range(0, len(chunks), 2):
-                pair_idx = i // 2
-                pair_start = start + pair_idx * 10 + 1
-                pair_end = pair_start + 9
+            for i, chunk_text in enumerate(chunks):
+                section_start = start + i * _PLAYERS_PER_FIELD + 1
+                section_end = section_start + _PLAYERS_PER_FIELD - 1
                 self.add_field(
                     name=t(
                         "leaderboard_embed.field_name.1",
                         locale,
-                        start=str(pair_start),
-                        end=str(pair_end),
+                        start=str(section_start),
+                        end=str(section_end),
                     ),
-                    value=chunks[i],
-                    inline=True,
+                    value=chunk_text,
+                    inline=False,
                 )
-                if i + 1 < len(chunks):
-                    self.add_field(name="\u200b", value=chunks[i + 1], inline=True)
-                if i + 2 < len(chunks):
-                    self.add_field(name=" ", value=" ", inline=False)
 
         self.set_footer(
             text=t(
@@ -671,6 +687,15 @@ class Leaderboard2v2View(discord.ui.View):
 
     def _filtered(self) -> list[dict]:
         result = self._all_entries
+        nat = self.nationality_filter
+        if nat:
+            nat_set = set(nat)
+            result = [
+                e
+                for e in result
+                if (e.get("player_1_nationality") or "") in nat_set
+                or (e.get("player_2_nationality") or "") in nat_set
+            ]
         if self.rank_filter == _RANKED_ONLY:
             result = [e for e in result if e["letter_rank"] != "U"]
         elif self.rank_filter:
@@ -678,7 +703,7 @@ class Leaderboard2v2View(discord.ui.View):
         return result
 
     def _total_pages(self, total: int) -> int:
-        pages = max(1, (total + _PAGE_SIZE - 1) // _PAGE_SIZE)
+        pages = max(1, (total + _PAGE_SIZE_2V2 - 1) // _PAGE_SIZE_2V2)
         return min(pages, 25)
 
     def _rebuild_components(self) -> None:
@@ -709,6 +734,7 @@ class Leaderboard2v2View(discord.ui.View):
             self.current_page,
             total_pages,
             len(filtered),
+            nationality_filter=self.nationality_filter,
             rank_filter=self.rank_filter,
             locale=self.locale,
         )

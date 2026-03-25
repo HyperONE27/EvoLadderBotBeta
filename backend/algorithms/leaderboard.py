@@ -73,23 +73,32 @@ def build_leaderboard_2v2(
     if df.is_empty():
         return []
 
-    # Join player names from players_df (authoritative source) for both members.
-    name_map = players_df.select(
+    # Join player names and nationalities from players_df for both members.
+    player_map = players_df.select(
         pl.col("discord_uid"),
         pl.col("player_name").alias("_pname"),
+        pl.col("nationality").alias("_nationality"),
     )
     df = (
         df.drop("player_1_name", "player_2_name")
         .join(
-            name_map.rename(
-                {"discord_uid": "player_1_discord_uid", "_pname": "player_1_name"}
+            player_map.rename(
+                {
+                    "discord_uid": "player_1_discord_uid",
+                    "_pname": "player_1_name",
+                    "_nationality": "player_1_nationality",
+                }
             ),
             on="player_1_discord_uid",
             how="left",
         )
         .join(
-            name_map.rename(
-                {"discord_uid": "player_2_discord_uid", "_pname": "player_2_name"}
+            player_map.rename(
+                {
+                    "discord_uid": "player_2_discord_uid",
+                    "_pname": "player_2_name",
+                    "_nationality": "player_2_nationality",
+                }
             ),
             on="player_2_discord_uid",
             how="left",
@@ -123,6 +132,8 @@ def build_leaderboard_2v2(
         "player_2_discord_uid",
         "player_1_name",
         "player_2_name",
+        "player_1_nationality",
+        "player_2_nationality",
         "mmr",
         "games_played",
         "games_won",
@@ -191,6 +202,8 @@ def build_leaderboard_2v2(
                 player_2_discord_uid=row["player_2_discord_uid"],
                 player_1_name=row["player_1_name"],
                 player_2_name=row["player_2_name"],
+                player_1_nationality=row["player_1_nationality"] or "",
+                player_2_nationality=row["player_2_nationality"] or "",
                 ordinal_rank=ordinal_ranks[idx],
                 active_ordinal_rank=active_ordinal_map.get(idx, -1),
                 letter_rank=letter_rank_map.get(idx, "U"),

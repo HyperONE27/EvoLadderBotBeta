@@ -180,6 +180,8 @@ class LeaderboardEntry2v2(TypedDict):
     player_2_discord_uid: int  # larger UID (normalized)
     player_1_name: str
     player_2_name: str
+    player_1_nationality: str
+    player_2_nationality: str
     ordinal_rank: int
     active_ordinal_rank: int
     letter_rank: str

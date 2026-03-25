@@ -141,6 +141,8 @@ def _entry_to_model_2v2(e: LeaderboardEntry2v2) -> LeaderboardEntry2v2Model:
         player_2_discord_uid=e["player_2_discord_uid"],
         player_1_name=e["player_1_name"],
         player_2_name=e["player_2_name"],
+        player_1_nationality=e["player_1_nationality"],
+        player_2_nationality=e["player_2_nationality"],
         ordinal_rank=e["ordinal_rank"],
         active_ordinal_rank=e["active_ordinal_rank"],
         letter_rank=e["letter_rank"],

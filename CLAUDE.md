@@ -238,7 +238,7 @@ Locale strings live in `data/locales/`. When adding or updating keys in any loca
 - The `common/` package is shared between backend and bot — changes here affect both processes.
 - Both matchmakers are stateless and pure — they can be unit-tested with synthetic queue entries without any I/O.
 - Replay parsing runs in a subprocess pool — avoid async or event-loop-dependent code in `replay_parser.py`.
-- You should use/add to the datetime helpers in common/ instead of spinning your own implementations when working with datetimes — ESPECIALLY when JSON-serializing.
+- You should use/add to the datetime helpers in common/ or the serialization helpers in backend/database/database.py instead of spinning your own implementations when working with datetimes — ESPECIALLY when JSON-serializing.
 
 ## Testing
 
