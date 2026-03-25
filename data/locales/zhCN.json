@@ -458,7 +458,7 @@
   "lobby_guide_embed.description.1": "创建大厅**未自动化**。您需要在游戏内与对手在上述指定地区的 `SCEvoLadder` 频道中会面。\n\n[**点击此处查看这些步骤的图解示例。**](https://imgur.com/a/b8bznwO)\n\n**如何更改地区：**\n- 1. 在主界面按 F10 打开菜单，然后单击菜单右上角的地球图标。选择所需地区：`{game_region}`。\n- 2. 在游戏外：单击「游戏版本：星际争霸 II」下拉菜单旁边和蓝色齿轮图标上方的地球图标。选择所需地区（`{game_region}`），然后选择「开始游戏」。\n\n**如何加入频道：**\n- 1. 在主界面按 ENTER 键或单击右下角的聊天栏。\n- 2. 输入 \"/join `SCEvoLadder`\" 并按 Enter。\n- 3. 成功完成第 2 步后，系统将发送「已加入频道：[#. `SCEvoLadder`]」提示。\n\n**如何创建大厅：**\n- 1. 将分配给您的地图链接粘贴到聊天中，然后按 ENTER 键。\n- 2. 单击第 1 步发送的消息中的链接。这将加载地图信息界面。\n- 3. 单击蓝色「使用模组创建」按钮。\n- 4. 搜索「SC: Evo Complete」，并确保模组作者列为「SCEvoDev」。（无需关注版本号。）\n- 5. 单击金色「创建大厅」按钮。\n- 6. 单击下拉菜单，选择分配给您的服务器（`{game_server}`），然后选择「确认」。\n    - （如果看不到正确的服务器，您可能登录了错误的地区。请返回上方「如何更改地区」中的步骤。）\n- 7. 成功完成第 1-6 步后，您将成为新大厅中的主机。\n- 8. 您可以通过右键单击频道用户列表中的名称，然后选择「邀请到大厅」来邀请他人。\n    - 或者，您可以在 SCEvoLadder 频道中输入「[lobby]」，发送一个可单击的链接供他人加入您的大厅。\n\n请注意，加载地图和模组需要下载大量数据，具体时间视您的网络连接情况可能需要几秒到几分钟不等。如果遇到加载问题，请考虑重启游戏或重启计算机。",
   "lobby_guide_embed.description_hidden.1": "(根据您的设置，此信息当前已隐藏。点击\"展开大厅指南\"按钮以查看。)",
   "lobby_guide_embed.title.1": "🗒️ 如何加入您的对局",
-  "locale_setup_embed.description.1": "欢迎来到 SC: Evo Complete 天梯设置！请选择您的首选语言。",
+  "locale_setup_embed.description.1": "欢迎来到 SC: Evo Complete 天梯设置！\n请选择您的首选语言。",
   "locale_setup_embed.title.1": "Language / Idioma / 언어 / Язык / 言語",
   "locale_setup_view.placeholder.language": "Language / Idioma / 언어 / Язык / 言語",
   "match_abandoned_embed.field_value.1": "- {p1_name}: `+0 ({p1_mmr})`\n- {p2_name}: `+0 ({p2_mmr})`",

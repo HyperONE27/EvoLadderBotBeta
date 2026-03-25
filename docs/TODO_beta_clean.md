@@ -9,11 +9,13 @@ What remains?
 - ⏰ Re-write Terms of Service
 - ⏰ Apparently /setup is still not intuitive
     - ⏰ Add some descriptions explaining what User ID, BattleTag, alternative IDs, nationality, location are
-- ⏰ Add instructions under MatchInfoEmbed (in a new embed):
-    - How to change servers
-    - How to join a channel
-    - How to find opponents
-    - How to host a lobby or join a lobby your opponent hosted
+- ✅ Add instructions under MatchInfoEmbed (in a new embed):
+    - ✅ How to change servers
+    - ✅ How to join a channel
+    - ✅ How to find opponents
+    - ✅ How to host a lobby or join a lobby your opponent hosted
+    - ✅ Lobby guide can be toggled
+        - ✅ New players table column
 - ⏰ Update untranslated keys
     - ⏰ Send to localizers:
         - ⏰ koKR: Vanya
@@ -26,6 +28,7 @@ What remains?
 - ⏰ `/profile` stats could be better
     - ⏰ Improve overall look and feel
     - ⏰ Add 2v2 stats...but how? Just sum across all partners?
+    - Probably just figure this out later
 - ✅ Set global cooldown on bot stuff?
     - ❌ Do I even need to set this?
         - Most views use a default of 180s
