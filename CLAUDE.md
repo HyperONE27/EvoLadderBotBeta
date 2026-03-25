@@ -18,14 +18,8 @@ EvoLadderBotBeta is a Discord-based ladder (ranked matchmaking) system for the S
 # Activate the venv first
 source .venv/bin/activate
 
-# Run the backend (FastAPI)
-uvicorn backend.api.app:app --reload
-
-# Run the bot (in a separate terminal)
-python -m bot.core.app
-
-# Run the channel manager (optional, in a separate terminal)
-python -m channel_manager.app
+# Run the local run script
+make run
 ```
 
 ## Linting / Type Checking
@@ -278,4 +272,3 @@ python -m pytest tests/ -v
 
 - 3v3, FFA modes
 - `/help` and `/prune` commands (stub files exist but are not registered)
-- 2v2 admin tools (`/admin match`, `/admin resolve` for 2v2 matches)
