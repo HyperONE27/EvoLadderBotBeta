@@ -3,8 +3,8 @@ import discord
 import structlog
 from discord import app_commands
 
-from bot.components.embeds import ErrorEmbed, TermsOfServiceEmbed
-from bot.components.views import TermsOfServiceSetupView
+from bot.components.embeds import ErrorEmbed, LocaleSetupEmbed
+from bot.components.views import LocaleSetupView
 from bot.core.bootstrap import Bot
 from bot.core.config import BACKEND_URL, BOT_TOKEN
 from bot.core.dependencies import get_player_locale, set_bot
@@ -101,11 +101,12 @@ async def on_message(message: discord.Message) -> None:
             ) as response:
                 data = await response.json()
                 if response.status < 400 and data.get("created"):
-                    locale = get_player_locale(message.author.id)
                     await message.channel.send(
-                        embed=TermsOfServiceEmbed(locale=locale),
-                        view=TermsOfServiceSetupView(
-                            message.author.id, message.author.name
+                        embed=LocaleSetupEmbed(),
+                        view=LocaleSetupView(
+                            message.author.id,
+                            message.author.name,
+                            show_cancel=False,
                         ),
                     )
         except Exception:
