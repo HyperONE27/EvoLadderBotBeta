@@ -1858,9 +1858,8 @@ def _format_mmr_rows(mmrs: list[dict], locale: str = "enUS") -> str:
 
         recent: dict = m.get("recent") or {}
         for period_key, tr_key in (
-            ("14d", "profile_embed.recent_stats_14d.1"),
+            ("7d", "profile_embed.recent_stats_7d.1"),
             ("30d", "profile_embed.recent_stats_30d.1"),
-            ("90d", "profile_embed.recent_stats_90d.1"),
         ):
             st: dict = recent.get(period_key) or {}
             w = int(st.get("games_won", 0))
