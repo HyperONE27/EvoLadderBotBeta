@@ -16,6 +16,7 @@ What remains?
         - ⏰ esMX: Kat
         - ⏰ zhCN: Sprite, DragonVector
         - ⏰ ruRU: Rake, ZaRDieNT, ShadowDragon
+- ✅ Made `/activity` charts slightly more appropriately-sized (image width, labels/label spacing, line chart granularity)
 - ✅ Need some way for players to see who is online
     - ✅ Activity notifier when someone queues
     - ✅ Analytics charts showing when are peak hours
