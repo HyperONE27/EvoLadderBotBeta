@@ -24,3 +24,6 @@ jobs:
 
       - name: mypy
         run: mypy backend bot channel_manager common
+
+      - name: pytest
+        run: python -m pytest tests/ -v

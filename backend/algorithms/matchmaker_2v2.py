@@ -269,6 +269,11 @@ def _resolve_to_candidate(
             )
         )
 
+    if not options:
+        raise ValueError(
+            f"No valid composition for teams {a['discord_uid']} and {b['discord_uid']}: "
+            "None races in one or more declared slots"
+        )
     team_1, team_2, t1_p1_race, t1_p2_race, t2_p1_race, t2_p2_race = random.choice(
         options
     )
