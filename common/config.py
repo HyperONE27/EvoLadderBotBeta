@@ -72,7 +72,7 @@ ACTIVITY_CHART_X_TICK_INTERVAL_HOURS: dict[str, int] = {
 # Backend bucket size (minutes) requested per chart time range.
 ACTIVITY_CHART_BUCKET_MINUTES: dict[str, int] = {
     "24h": 60,
-    "7d": 60,
+    "7d": 120,
     "30d": 720,
 }
 

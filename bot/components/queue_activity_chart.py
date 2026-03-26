@@ -108,6 +108,7 @@ def render_queue_join_chart_png(
 
     fig, ax = plt.subplots(figsize=(12, 5))
     _apply_style(fig, ax)
+    ax.tick_params(axis="x", length=4, color=_SPINE_COLOR)
 
     # date2num satisfies matplotlib stubs; plain datetime lists trip mypy on some stubs.
     x_nums = mdates.date2num(times)
