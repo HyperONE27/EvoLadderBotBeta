@@ -1499,7 +1499,7 @@ async def upload_replay(
     uploaded_at = utc_now()
     replay_hash = parsed["replay_hash"]
     filename = f"{uploaded_at.strftime('%Y-%m-%d_%H-%M-%S-%f')}_{replay_hash}.SC2Replay"
-    storage_path = f"replays/1v1/{match_id}/{discord_uid}/{filename}"
+    storage_path = f"1v1/{match_id}/{discord_uid}/{filename}"
 
     created = app.orchestrator.insert_replay_1v1_pending(
         match_id=match_id,
@@ -1730,7 +1730,7 @@ async def upload_replay_2v2(
     uploaded_at = utc_now()
     replay_hash = parsed["replay_hash"]
     filename = f"{uploaded_at.strftime('%Y-%m-%d_%H-%M-%S-%f')}_{replay_hash}.SC2Replay"
-    storage_path = f"replays/2v2/{match_id}/{discord_uid}/{filename}"
+    storage_path = f"2v2/{match_id}/{discord_uid}/{filename}"
 
     created = app.orchestrator.insert_replay_2v2_pending(
         match_id=match_id,
