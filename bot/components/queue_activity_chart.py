@@ -35,9 +35,6 @@ _SPINE_COLOR = "#444444"
 _PEAK_COLOR = "#ff4444"
 _MARKER_COLOR = "#7aa8ff"
 
-# Hardcoded English — see module docstring.
-_DAY_ABBREVS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-
 
 def _apply_style(fig: plt.Figure, ax: plt.Axes) -> None:
     fig.patch.set_facecolor(_BG)
@@ -58,9 +55,9 @@ def _tick_label_short(x: float, _pos: int) -> str:
 
 
 def _tick_label_long(x: float, _pos: int) -> str:
-    """Format an x-axis tick as 'Mon 14:00' (for multi-day ranges)."""
+    """Format an x-axis tick as 'MM-DD\nHH:00' (for multi-day ranges)."""
     dt = mdates.num2date(x)
-    return f"{_DAY_ABBREVS[dt.weekday()]} {dt.strftime('%H:00')}"
+    return str(dt.strftime("%m-%d\n%H:00"))
 
 
 def render_queue_join_chart_png(
@@ -173,7 +170,7 @@ def render_queue_join_chart_png(
     ax.xaxis.set_major_locator(mdates.HourLocator(interval=tick_hours))
     tick_formatter = _tick_label_short if time_range == "24h" else _tick_label_long
     ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(tick_formatter))
-    plt.setp(ax.get_xticklabels(), rotation=90, ha="center", fontsize=7)
+    plt.setp(ax.get_xticklabels(), rotation=0, ha="center", fontsize=6)
 
     # Discreet UTC label at the bottom-right of the plot area.
     ax.text(
