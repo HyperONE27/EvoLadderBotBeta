@@ -56,12 +56,12 @@ def register_admin_match_command(tree: app_commands.CommandTree) -> None:
     @app_commands.choices(game_mode=GAME_MODE_CHOICES)
     async def match_command(
         interaction: discord.Interaction,
+        game_mode: app_commands.Choice[str],
         match_id: int,
-        game_mode: app_commands.Choice[str] = None,  # type: ignore[assignment]
     ) -> None:
         await interaction.response.defer()
 
-        mode = game_mode.value if game_mode else "1v1"
+        mode = game_mode.value
         locale = get_player_locale(interaction.user.id)
 
         logger.info(
