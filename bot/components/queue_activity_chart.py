@@ -35,6 +35,9 @@ _SPINE_COLOR = "#444444"
 _PEAK_COLOR = "#ff4444"
 _MARKER_COLOR = "#7aa8ff"
 
+# Hardcoded English — see module docstring.
+# _DAY_ABBREVS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
 
 def _apply_style(fig: plt.Figure, ax: plt.Axes) -> None:
     fig.patch.set_facecolor(_BG)
