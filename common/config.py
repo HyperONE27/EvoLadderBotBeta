@@ -5,6 +5,23 @@ Backend modules should import these values via ``backend.core.config``,
 and bot modules via ``bot.core.config`` — never directly from this module.
 """
 
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+# ----------------
+# Internal helpers
+# ----------------
+
+def _get_bool_env(key: str) -> bool:
+    value = os.getenv(key)
+    if not value:
+        raise ValueError(f"Required environment variable {key} not set")
+    return bool(value)
+
 # ---------------------------------------------------------------------------
 # Season
 # ---------------------------------------------------------------------------
@@ -51,9 +68,9 @@ ENABLE_REPLAY_VALIDATION: bool = True
 
 EXCLUDE_INACTIVE_PLAYERS_FROM_LETTER_RANK: bool = True
 
-ALLOW_AI_PLAYERS: bool = True
+ALLOW_AI_PLAYERS: bool = _get_bool_env("ALLOW_AI_PLAYERS")
 
-COERCE_INDETERMINATE_AS_LOSS: bool = True
+COERCE_INDETERMINATE_AS_LOSS: bool = _get_bool_env("COERCE_INDETERMINATE_AS_LOSS")
 
 # ---------------------------------------------------------------------------
 # Queue activity charts (/activity)
