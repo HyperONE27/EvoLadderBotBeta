@@ -7,6 +7,7 @@ What remains?
 - ✅ Write pre-beta feature announcement
 - ⏰ Write pre-beta launch announcement
 - ⏰ Need to re-apply the locale strings changes in commit `2a683fda7eff0676d1e84f76830f85ae4a777a60` when the localizers get their strings back to me
+    - ⏰ also need to re-apply "queue_searching_embed.description.1" from commit `25172c41376222f194e0812ac414a3315ad79c1c`
 - ⏰ Write a /help command
 - ✅ Re-write Terms of Service for the pre-beta
     - ⏰ Now wait for localizers

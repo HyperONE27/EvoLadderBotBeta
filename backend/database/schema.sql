@@ -68,15 +68,16 @@ CREATE TABLE IF NOT EXISTS notifications (
     updated_at                      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_notifications_notify_1v1
-    ON notifications (notify_queue_1v1)
-    WHERE notify_queue_1v1 = TRUE;
-CREATE INDEX IF NOT EXISTS idx_notifications_notify_2v2
-    ON notifications (notify_queue_2v2)
-    WHERE notify_queue_2v2 = TRUE;
-CREATE INDEX IF NOT EXISTS idx_notifications_notify_ffa
-    ON notifications (notify_queue_ffa)
-    WHERE notify_queue_ffa = TRUE;
+-- probably don't need these if writes are infrequent and reads are done in Polars
+-- CREATE INDEX IF NOT EXISTS idx_notifications_notify_1v1
+--     ON notifications (notify_queue_1v1)
+--     WHERE notify_queue_1v1 = TRUE;
+-- CREATE INDEX IF NOT EXISTS idx_notifications_notify_2v2
+--     ON notifications (notify_queue_2v2)
+--     WHERE notify_queue_2v2 = TRUE;
+-- CREATE INDEX IF NOT EXISTS idx_notifications_notify_ffa
+--     ON notifications (notify_queue_ffa)
+--     WHERE notify_queue_ffa = TRUE;
 
 CREATE TABLE IF NOT EXISTS events (
     id                      BIGSERIAL PRIMARY KEY,
