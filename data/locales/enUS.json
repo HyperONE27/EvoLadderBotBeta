@@ -434,6 +434,8 @@
   "get_result_display.invalidated.1": "❌ **Match Invalidated**",
   "get_result_display.player_1_win.1": "🏆 **{p1_emote} {p1_name}**",
   "get_result_display.player_2_win.1": "🏆 **{p2_emote} {p2_name}**",
+  "help_embed.description.1": "All commands must be used in **DMs with the bot.**\n\n**Getting Started**\n- `/setup` — First-time registration: language, Terms of Service, player name, BattleTag, nationality, location, and notification preferences.\n  - You must complete this to access the rest of the bot.\n  - You can return to this command at any time to revoke consent to the Terms of Service, or to change your settings.\n- `/setcountry {country}` — Select your country here if it is not listed in `/setup`.\n\n**Playing**\n- `/queue {game_mode}` — Join the matchmaking queue. Configure race selections and map vetoes. 2v2 requires an active party.\n- `/party invite {player}` — Invite a registered player to your 2v2 party. Find them by player name, Discord username, or Discord ID.\n- `/party leave` — Leave your current 2v2 party.\n- `/party status` — Check your current 2v2 party and whether your partner has accepted.\n\n**Stats & Leaderboard**\n- `/profile` — View your MMR by gamemode, rank, and match history statistics.\n- `/leaderboard {game_mode}` — View the ranked MMR leaderboard.\n- `/activity {game_mode}` — View a chart of recent queue join attempts.",
+  "help_embed.title.1": "ℹ️ SC: Evo Complete Ladder Bot • Command Reference",
   "leaderboard.button.all_ranks": "All Ranks",
   "leaderboard.button.best_race_only": "Best Race Only",
   "leaderboard.button.clear_filters": "Clear All Filters",

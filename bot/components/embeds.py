@@ -4537,3 +4537,13 @@ def format_verification(
         lines.append(t("format_verification.summary_issues_locked.1", locale))
 
     return "\n".join(lines)
+
+
+class HelpEmbed(discord.Embed):
+    def __init__(self, locale: str = "enUS") -> None:
+        super().__init__(
+            title=t("help_embed.title.1", locale),
+            description=t("help_embed.description.1", locale),
+            color=discord.Color.blue(),
+        )
+        apply_default_embed_footer(self, locale=locale)

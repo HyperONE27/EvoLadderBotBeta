@@ -20,7 +20,7 @@ from bot.commands.admin.statusreset_command import register_admin_statusreset_co
 from bot.commands.owner.admin_command import register_owner_admin_command
 from bot.commands.owner.mmr_command import register_owner_mmr_command
 from bot.commands.user.activity_command import register_activity_command
-from bot.commands.user.greeting_command import register_greeting_command
+from bot.commands.user.help_command import register_help_command
 from bot.commands.user.leaderboard_command import register_leaderboard_command
 from bot.commands.user.party_command import register_party_command
 from bot.commands.user.profile_command import register_profile_command
@@ -28,7 +28,6 @@ from bot.commands.user.queue_command import register_queue_command
 from bot.commands.user.setcountry_command import register_setcountry_command
 from bot.commands.user.setup_command import register_setup_command
 from bot.core.ws_listener import start_ws_listener
-from bot.helpers.message_helpers import queue_channel_send_low
 from bot.helpers.replay_handler import handle_replay_upload
 from common.logging.config import configure_structlog
 
@@ -60,8 +59,7 @@ def _register_commands(client: discord.Client) -> None:
     register_owner_admin_command(tree)
     register_owner_mmr_command(tree)
     register_activity_command(tree)
-    register_greeting_command(tree)
-    # register_help_command(tree)
+    register_help_command(tree)
     register_leaderboard_command(tree)
     # register_notifyme_command(tree)   # Deprecated(?): merged into /setup
     register_party_command(tree)
@@ -82,10 +80,6 @@ def _register_commands(client: discord.Client) -> None:
 async def on_message(message: discord.Message) -> None:
     if message.author == client.user:
         return
-
-    # Remove this when we have actual things to do here
-    if message.content.startswith("!"):
-        await queue_channel_send_low(message.channel, content="🌎 Hello, world!")
 
     if isinstance(message.channel, discord.DMChannel):
         # Register the player if this is their first interaction with the bot.
