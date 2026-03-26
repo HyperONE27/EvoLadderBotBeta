@@ -563,7 +563,7 @@ class SetupSelectionView(discord.ui.View):
 def _notification_select_options(
     selected_value: str | None, locale: str
 ) -> list[discord.SelectOption]:
-    """Build the 6 notification frequency options for a single mode select."""
+    """Build the 9 notification frequency options for a single mode select."""
     entries = [
         ("off", t("setup_notification_view.option.off", locale)),
         ("5", t("setup_notification_view.option.5min", locale)),
@@ -571,6 +571,9 @@ def _notification_select_options(
         ("30", t("setup_notification_view.option.30min", locale)),
         ("60", t("setup_notification_view.option.1hr", locale)),
         ("180", t("setup_notification_view.option.3hr", locale)),
+        ("360", t("setup_notification_view.option.6hr", locale)),
+        ("720", t("setup_notification_view.option.12hr", locale)),
+        ("1440", t("setup_notification_view.option.24hr", locale)),
     ]
     return [
         discord.SelectOption(
