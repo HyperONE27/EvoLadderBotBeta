@@ -124,7 +124,7 @@ DISCORD_MESSAGE_RATE_LIMIT: int = 40
 # Queue heartbeat
 # ---------------------
 
-QUEUE_SEARCHING_HEARTBEAT_SECONDS: int = 45
+QUEUE_SEARCHING_HEARTBEAT_SECONDS: int = 30
 
 # ---------------------
 # Admin /snapshot display limits

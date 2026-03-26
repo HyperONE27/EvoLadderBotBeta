@@ -2596,14 +2596,17 @@ class QueueSearchingView(discord.ui.View):
         self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
 
     async def _heartbeat_loop(self) -> None:
-        """Update the searching embed's timestamp at the 15th second of every minute."""
+        """Update the searching embed at :15 and :45 of every minute."""
         while True:
             try:
                 now = time.time()
                 current_minute_start = (now // 60) * 60
-                next_beat = current_minute_start + 15
-                if next_beat <= now:
-                    next_beat += 60
+                candidates = [
+                    current_minute_start + 15,
+                    current_minute_start + 45,
+                    current_minute_start + 75,
+                ]
+                next_beat = next(t for t in candidates if t > now)
                 await asyncio.sleep(next_beat - now)
 
                 stats: dict | None = None
@@ -3601,14 +3604,17 @@ class QueueSearchingView2v2(discord.ui.View):
         self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
 
     async def _heartbeat_loop(self) -> None:
-        """Update the searching embed at the 15th second of every minute."""
+        """Update the searching embed at :15 and :45 of every minute."""
         while True:
             try:
                 now = time.time()
                 current_minute_start = (now // 60) * 60
-                next_beat = current_minute_start + 15
-                if next_beat <= now:
-                    next_beat += 60
+                candidates = [
+                    current_minute_start + 15,
+                    current_minute_start + 45,
+                    current_minute_start + 75,
+                ]
+                next_beat = next(t for t in candidates if t > now)
                 await asyncio.sleep(next_beat - now)
 
                 stats: dict | None = None
