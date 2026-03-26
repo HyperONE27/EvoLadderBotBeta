@@ -503,7 +503,6 @@ class QueueJoinAnalyticsBucket(BaseModel):
 class QueueJoinAnalyticsResponse(BaseModel):
     game_mode: str
     bucket_minutes: int
-    dedupe: bool
     buckets: list[QueueJoinAnalyticsBucket]
 
 

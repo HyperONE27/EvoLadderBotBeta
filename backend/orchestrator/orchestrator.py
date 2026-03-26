@@ -3,11 +3,10 @@ from typing import Any
 
 from backend.algorithms.queue_join_analytics import (
     bucket_deduped_queue_join_counts,
-    bucket_queue_join_counts,
 )
 from backend.core.config import (
     ACTIVITY_QUEUE_JOIN_CHART_BUCKET_MINUTES,
-    ACTIVITY_QUEUE_JOIN_DEDUPE_SECONDS,
+    ACTIVITY_QUEUE_JOIN_DEDUPE_WINDOW_MINUTES,
 )
 from backend.database.database import DatabaseReader, DatabaseWriter
 from backend.domain_types.dataframes import (
@@ -690,28 +689,19 @@ class Orchestrator:
         game_mode: str,
         *,
         bucket_minutes: int | None = None,
-        dedupe: bool = False,
     ) -> tuple[int, list[dict[str, Any]]]:
         """Return ``(bucket_minutes, [{ "t": iso, "count": int }, ...])``."""
 
         bucket = bucket_minutes or ACTIVITY_QUEUE_JOIN_CHART_BUCKET_MINUTES
         reader = DatabaseReader()
         events = reader.fetch_queue_join_events(start, end, game_mode)
-        if dedupe:
-            buckets = bucket_deduped_queue_join_counts(
-                events,
-                start,
-                end,
-                bucket,
-                ACTIVITY_QUEUE_JOIN_DEDUPE_SECONDS,
-            )
-        else:
-            buckets = bucket_queue_join_counts(
-                (t for t, _ in events),
-                start,
-                end,
-                bucket,
-            )
+        buckets = bucket_deduped_queue_join_counts(
+            events,
+            start,
+            end,
+            bucket,
+            ACTIVITY_QUEUE_JOIN_DEDUPE_WINDOW_MINUTES,
+        )
         rows: list[dict[str, Any]] = [
             {"t": bt.isoformat(), "count": c} for bt, c in buckets
         ]

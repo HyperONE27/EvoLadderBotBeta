@@ -757,7 +757,6 @@ async def analytics_queue_joins(
     start: str = Query(..., description="ISO 8601 range start (UTC)"),
     end: str = Query(..., description="ISO 8601 range end (UTC)"),
     game_mode: str = Query("1v1"),
-    dedupe: bool = Query(False),
     bucket_minutes: int | None = Query(None, ge=1, le=1440),
     app: Backend = Depends(get_backend),
 ) -> QueueJoinAnalyticsResponse:
@@ -781,12 +780,10 @@ async def analytics_queue_joins(
         en,
         game_mode,
         bucket_minutes=bucket_minutes,
-        dedupe=dedupe,
     )
     return QueueJoinAnalyticsResponse(
         game_mode=game_mode,
         bucket_minutes=bucket_m,
-        dedupe=dedupe,
         buckets=[QueueJoinAnalyticsBucket(**b) for b in buckets],
     )
 

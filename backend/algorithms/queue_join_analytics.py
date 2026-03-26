@@ -62,32 +62,30 @@ def bucket_queue_join_counts(
     return out
 
 
-def dedupe_join_timestamps(
+def dedupe_per_fixed_window(
     events: list[tuple[datetime, int]],
-    dedupe_seconds: int,
+    window_minutes: int,
 ) -> list[datetime]:
-    """Per *discord_uid*, drop a join if the previous counted join was < *dedupe_seconds* ago.
+    """Per *discord_uid*, keep at most one join per clock-aligned *window_minutes* slot.
 
-    *events* must be sorted by (performed_at, discord_uid). Returns timestamps that count
-    toward a deduped series (order preserved).
+    E.g. with ``window_minutes=5``: slots are HH:00–HH:05, HH:05–HH:10, …
+    The first event seen in each (uid, slot) is kept; later ones are dropped.
+    Returns the kept timestamps in ascending order.
     """
 
-    if dedupe_seconds <= 0:
-        return [t for t, _ in events]
-
-    last_kept: dict[int, datetime] = {}
+    seen: set[tuple[int, datetime]] = set()
     result: list[datetime] = []
-    gap = timedelta(seconds=dedupe_seconds)
 
     for t, uid in sorted(events, key=lambda e: (e[0], e[1])):
         if t.tzinfo is None:
             t = t.replace(tzinfo=timezone.utc)
         else:
             t = t.astimezone(timezone.utc)
-        prev = last_kept.get(uid)
-        if prev is not None and (t - prev) < gap:
+        slot = floor_to_bucket(t, window_minutes)
+        key = (uid, slot)
+        if key in seen:
             continue
-        last_kept[uid] = t
+        seen.add(key)
         result.append(t)
     return result
 
@@ -97,9 +95,9 @@ def bucket_deduped_queue_join_counts(
     range_start: datetime,
     range_end: datetime,
     bucket_minutes: int,
-    dedupe_seconds: int,
+    dedupe_window_minutes: int,
 ) -> list[BucketRow]:
-    """Bucket *events* after applying :func:`dedupe_join_timestamps`."""
+    """Bucket *events* after applying :func:`dedupe_per_fixed_window`."""
 
-    kept_times = dedupe_join_timestamps(events, dedupe_seconds)
+    kept_times = dedupe_per_fixed_window(events, dedupe_window_minutes)
     return bucket_queue_join_counts(kept_times, range_start, range_end, bucket_minutes)

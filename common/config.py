@@ -16,11 +16,13 @@ load_dotenv()
 # Internal helpers
 # ----------------
 
+
 def _get_bool_env(key: str) -> bool:
     value = os.getenv(key)
     if not value:
         raise ValueError(f"Required environment variable {key} not set")
     return bool(value)
+
 
 # ---------------------------------------------------------------------------
 # Season
@@ -93,10 +95,10 @@ ACTIVITY_CHART_BUCKET_MINUTES: dict[str, int] = {
     "30d": 720,
 }
 
-# For future “deduped join attempt” series: minimum seconds between counted
-# ``queue_join`` events per (discord_uid, game_mode) unless interrupted by
-# ``queue_leave``, match pairing, etc. Raw join counts use no deduplication.
-ACTIVITY_QUEUE_JOIN_DEDUPE_SECONDS: int = 60
+# Fixed-window deduplication for /activity charts: each player contributes at
+# most one join per (discord_uid, game_mode) per N-minute clock-aligned window
+# (e.g. HH:00-HH:05, HH:05-HH:10, …).
+ACTIVITY_QUEUE_JOIN_DEDUPE_WINDOW_MINUTES: int = 5
 
 # Maximum (end - start) for GET /analytics/queue_joins.
 ACTIVITY_ANALYTICS_MAX_RANGE_DAYS: int = 90

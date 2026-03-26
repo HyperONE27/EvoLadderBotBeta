@@ -28,14 +28,12 @@ async def fetch_queue_join_analytics(
     start: datetime,
     end: datetime,
     *,
-    dedupe: bool = False,
     bucket_minutes: int | None = None,
 ) -> dict[str, Any]:
     params: dict[str, str] = {
         "start": to_iso(dt=start) or "",
         "end": to_iso(dt=end) or "",
         "game_mode": game_mode,
-        "dedupe": str(dedupe).lower(),
     }
     if bucket_minutes is not None:
         params["bucket_minutes"] = str(bucket_minutes)
