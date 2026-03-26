@@ -6,7 +6,19 @@ What remains?
 
 - ✅ Write pre-beta feature announcement
 - ⏰ Write pre-beta launch announcement
-- ⏰ Re-write Terms of Service
+- ✅ Re-write Terms of Service for the pre-beta
+    - ⏰ Now wait for localizers
+- ✅ Fill out localization strings
+    - ⏰ Localizers will do this slowly
+- ✅ Update untranslated keys
+    - ✅ Send to localizers:
+        - ⏰ koKR: Vanya
+        - ⏰ esMX: Kat
+        - ⏰ zhCN: Sprite, DragonVector
+        - ⏰ ruRU: Rake, ZaRDieNT, ShadowDragon
+- ✅ Need some way for players to see who is online
+    - ✅ Activity notifier when someone queues
+    - ✅ Analytics charts showing when are peak hours
 - ✅ /activity stuff
     - ✅ `/activity` should not use Korean inside the chart
     - ✅ Implement `/activity 2v2`
@@ -19,19 +31,15 @@ What remains?
     - ✅ How to host a lobby or join a lobby your opponent hosted
     - ✅ Lobby guide can be toggled
         - ✅ New players table column
-- ⏰ Update untranslated keys
-    - ⏰ Send to localizers:
-        - ⏰ koKR: Vanya
-        - ⏰ esMX: Kat
-        - ⏰ zhCN: Sprite, DragonVector
-        - ⏰ ruRU: Rake, ZaRDieNT, ShadowDragon
 - ✅ `/snapshot 2v2` needs to include flags and races
     - ✅ Come up with letter-grid-style display
     - ✅ Fixed the display to look much more like `/snapshot 1v1` across all embeds
-- ⏰ `/profile` stats could be better
-    - ⏰ Improve overall look and feel
-    - ⏰ Add 2v2 stats...but how? Just sum across all partners?
-    - ⏰ Probably just figure this out later, who even cares right now?
+- ✅ `/profile` stats could be better
+    - ✅ Improve overall look and feel
+    - ✅ Add 2v2 stats...but how? Just sum across all partners?
+    - ✅ Probably just figure this out later, who even cares right now?
+    - ✅ Split `/profile` embed into User Info/1v1 stats/2v2 stats pages
+        - 2v2 stats displays the last 5 partners played with
 - ✅ Set global cooldown on bot stuff?
     - ❌ Do I even need to set this?
         - Most views use a default of 180s
@@ -136,14 +144,11 @@ What remains?
 
 # FINISH DURING PRE-BETA
 
-- ✅ Need some way for players to see who is online
-    - ✅ Activity notifier when someone queues
-    - ✅ Analytics charts showing when are peak hours
-- ✅ Fill out localization strings
-    - ⏰ Localizers will do this slowly
 - ⏰ Add 2v2 and FFA gamemodes
     - ✅ Added 2v2
     - ⏰ FFA TBD...
+- ⏰ Collect time zones?
+    - ⏰ Figure out if this is even worth it and how the hell I deal with Daylight Savings
 
 # FINISH BY FULL BETA
 
