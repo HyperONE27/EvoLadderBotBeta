@@ -2389,7 +2389,11 @@ class ActivityRangeSelect(discord.ui.Select):
             buckets = data.get("buckets") or []
             title = activity_chart_title(view.locale, view.game_mode, key)
             png = render_queue_join_chart_png(
-                buckets, title=title, locale=view.locale, game_mode=view.game_mode
+                buckets,
+                title=title,
+                locale=view.locale,
+                game_mode=view.game_mode,
+                time_range=key,
             )
             file = discord.File(png, filename="activity.png")
             embed = discord.Embed(

@@ -23,6 +23,7 @@ from matplotlib.colors import to_rgba
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path
 
+from common.config import ACTIVITY_CHART_X_TICK_INTERVAL_HOURS
 from common.i18n import t
 
 _BG = "#18191c"
@@ -51,8 +52,13 @@ def _apply_style(fig: plt.Figure, ax: plt.Axes) -> None:
     ax.tick_params(axis="both", length=0, pad=8, colors=_LABEL_COLOR)
 
 
-def _tick_label(x: float, _pos: int) -> str:
-    """Format an x-axis tick as 'Mon 14:00'."""
+def _tick_label_short(x: float, _pos: int) -> str:
+    """Format an x-axis tick as 'HH:00' (for 24h range)."""
+    return str(mdates.num2date(x).strftime("%H:00"))
+
+
+def _tick_label_long(x: float, _pos: int) -> str:
+    """Format an x-axis tick as 'Mon 14:00' (for multi-day ranges)."""
     dt = mdates.num2date(x)
     return f"{_DAY_ABBREVS[dt.weekday()]} {dt.strftime('%H:00')}"
 
@@ -64,6 +70,7 @@ def render_queue_join_chart_png(
     locale: str = "enUS",
     y_label: str | None = None,
     game_mode: str | None = None,
+    time_range: str = "24h",
 ) -> io.BytesIO:
     """Build a PNG line chart; *buckets* items have ``t`` (ISO) and ``count`` (int)."""
 
@@ -72,7 +79,7 @@ def render_queue_join_chart_png(
     chart_title = f"Queue Activity · {game_mode}" if game_mode else title
 
     if not buckets:
-        fig, ax = plt.subplots(figsize=(10, 5))
+        fig, ax = plt.subplots(figsize=(12, 5))
         _apply_style(fig, ax)
         empty_msg = t("activity_chart.empty.1", "enUS")
         ax.text(0.5, 0.5, empty_msg, ha="center", va="center", color=_TEXT_COLOR)
@@ -99,7 +106,7 @@ def render_queue_join_chart_png(
         times.append(dt)
         counts.append(int(b["count"]))
 
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(12, 5))
     _apply_style(fig, ax)
 
     # date2num satisfies matplotlib stubs; plain datetime lists trip mypy on some stubs.
@@ -162,9 +169,11 @@ def render_queue_join_chart_png(
     ax.set_ylim(bottom=0)
     ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(integer=True))
 
-    locator = mdates.AutoDateLocator()
-    ax.xaxis.set_major_locator(locator)
-    ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(_tick_label))
+    tick_hours = ACTIVITY_CHART_X_TICK_INTERVAL_HOURS.get(time_range, 3)
+    ax.xaxis.set_major_locator(mdates.HourLocator(interval=tick_hours))
+    tick_formatter = _tick_label_short if time_range == "24h" else _tick_label_long
+    ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(tick_formatter))
+    plt.setp(ax.get_xticklabels(), rotation=90, ha="center", fontsize=7)
 
     # Discreet UTC label at the bottom-right of the plot area.
     ax.text(
@@ -178,8 +187,6 @@ def render_queue_join_chart_png(
         color=_LABEL_COLOR,
         alpha=0.6,
     )
-
-    fig.autofmt_xdate()
     fig.tight_layout()
     fig.savefig(
         buf, format="png", bbox_inches="tight", dpi=150, facecolor=fig.get_facecolor()

@@ -77,7 +77,11 @@ def register_activity_command(tree: app_commands.CommandTree) -> None:
             buckets = data.get("buckets") or []
             title = activity_chart_title(locale, game_mode, "24h")
             png = render_queue_join_chart_png(
-                buckets, title=title, locale=locale, game_mode=game_mode
+                buckets,
+                title=title,
+                locale=locale,
+                game_mode=game_mode,
+                time_range="24h",
             )
             file = discord.File(png, filename="activity.png")
             embed = discord.Embed(

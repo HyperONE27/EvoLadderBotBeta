@@ -2082,7 +2082,6 @@ class ProfileInfoEmbed(discord.Embed):
         locale: str = "enUS",
     ) -> None:
         title_name = player.get("player_name") or user.name
-        completed = player.get("completed_setup", False)
         color = discord.Color.blurple()
 
         super().__init__(
@@ -2222,7 +2221,7 @@ class Profile1v1Embed(discord.Embed):
         title_name = player.get("player_name") or user.name
         super().__init__(
             title=t("profile_embed.1v1_title.1", locale, title_name=title_name),
-            color=discord.Color.blurple()
+            color=discord.Color.blurple(),
         )
         if user.display_avatar:
             self.set_thumbnail(url=user.display_avatar.url)
@@ -2280,7 +2279,7 @@ class Profile2v2Embed(discord.Embed):
         title_name = player.get("player_name") or user.name
         super().__init__(
             title=t("profile_embed.2v2_title.1", locale, title_name=title_name),
-            color=discord.Color.blurple()
+            color=discord.Color.blurple(),
         )
         if user.display_avatar:
             self.set_thumbnail(url=user.display_avatar.url)

@@ -62,6 +62,13 @@ COERCE_INDETERMINATE_AS_LOSS: bool = True
 # X-axis bin width for join-attempt line charts (matplotlib / Discord attachment).
 ACTIVITY_QUEUE_JOIN_CHART_BUCKET_MINUTES: int = 60
 
+# Hours between x-axis tick marks per chart time range.
+ACTIVITY_CHART_X_TICK_INTERVAL_HOURS: dict[str, int] = {
+    "24h": 3,
+    "7d": 6,
+    "30d": 24,
+}
+
 # For future “deduped join attempt” series: minimum seconds between counted
 # ``queue_join`` events per (discord_uid, game_mode) unless interrupted by
 # ``queue_leave``, match pairing, etc. Raw join counts use no deduplication.
