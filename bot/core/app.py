@@ -3,15 +3,6 @@ import discord
 import structlog
 from discord import app_commands
 
-from bot.components.embeds import ErrorEmbed, LocaleSetupEmbed
-from bot.components.views import LocaleSetupView
-from bot.core.bootstrap import Bot
-from bot.core.config import BACKEND_URL, BOT_TOKEN
-from bot.core.dependencies import get_player_locale, set_bot
-from common.i18n import t
-from bot.core.http import get_session, init_session, close_session
-from bot.core.message_queue import get_message_queue, initialize_message_queue
-
 from bot.commands.admin.ban_command import register_admin_ban_command
 from bot.commands.admin.match_command import register_admin_match_command
 from bot.commands.admin.resolve_command import register_admin_resolve_command
@@ -27,8 +18,16 @@ from bot.commands.user.profile_command import register_profile_command
 from bot.commands.user.queue_command import register_queue_command
 from bot.commands.user.setcountry_command import register_setcountry_command
 from bot.commands.user.setup_command import register_setup_command
+from bot.components.embeds import ErrorEmbed, LocaleSetupEmbed
+from bot.components.views import LocaleSetupView
+from bot.core.bootstrap import Bot
+from bot.core.config import BACKEND_URL, BOT_TOKEN
+from bot.core.dependencies import get_player_locale, set_bot
+from bot.core.http import get_session, init_session, close_session
+from bot.core.message_queue import get_message_queue, initialize_message_queue
 from bot.core.ws_listener import start_ws_listener
 from bot.helpers.replay_handler import handle_replay_upload
+from common.i18n import t
 from common.logging.config import configure_structlog
 
 logger = structlog.get_logger(__name__)
@@ -64,7 +63,7 @@ def _register_commands(client: discord.Client) -> None:
     # register_notifyme_command(tree)   # Deprecated(?): merged into /setup
     register_party_command(tree)
     register_profile_command(tree)
-    # register_prune_command(tree)
+    # register_prune_command(tree)      # Deprecated: abandoned from alpha
     register_queue_command(tree)
     register_setcountry_command(tree)
     register_setup_command(tree)

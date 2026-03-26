@@ -8,6 +8,7 @@ What remains?
 - ⏰ Write pre-beta launch announcement
 - ⏰ Need to re-apply the locale strings changes in commit `2a683fda7eff0676d1e84f76830f85ae4a777a60` when the localizers get their strings back to me
     - ⏰ also need to re-apply "queue_searching_embed.description.1" from commit `25172c41376222f194e0812ac414a3315ad79c1c`
+    - ⏰ also need to insert "help_embed.title.1" and "help_embed.description.1" from commit `6c129d5b86fc684a488f19e7075d39e1ed0aee24`
 - ⏰ Write a /help command
 - ✅ Re-write Terms of Service for the pre-beta
     - ⏰ Now wait for localizers
@@ -288,3 +289,13 @@ Paid tiers and features will be introduced in the beta. I will do my best to ens
 There will be more to look forward to in the pre-beta and beyond, not just ladder features but also the wider SC: Evo Complete multiplayer ecosystem. In particular, let's just say that it might be a good idea to start climbing the 1v1 leaderboard as soon as the pre-beta launches...
 
 I look forward to releasing the pre-beta. See you soon!
+
+===
+
+Hi @everyone,
+
+The SC: Evo Complete ladder pre-beta is now live!
+
+Please note there are some new settings, and to make sure everyone has a chance to see them, we are requiring all users to run `/setup` again.
+
+- 
