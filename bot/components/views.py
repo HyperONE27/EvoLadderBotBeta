@@ -48,6 +48,7 @@ from bot.components.embeds import (
     ToggleAdminSuccessEmbed,
 )
 from bot.core.config import (
+    ACTIVITY_CHART_BUCKET_MINUTES,
     BACKEND_URL,
     CONFIRMATION_TIMEOUT,
     CURRENT_SEASON,
@@ -2385,7 +2386,12 @@ class ActivityRangeSelect(discord.ui.Select):
         start = end - delta
         await interaction.response.defer()
         try:
-            data = await fetch_queue_join_analytics(view.game_mode, start, end)
+            data = await fetch_queue_join_analytics(
+                view.game_mode,
+                start,
+                end,
+                bucket_minutes=ACTIVITY_CHART_BUCKET_MINUTES[key],
+            )
             buckets = data.get("buckets") or []
             title = activity_chart_title(view.locale, view.game_mode, key)
             png = render_queue_join_chart_png(

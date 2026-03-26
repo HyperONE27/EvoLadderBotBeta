@@ -69,6 +69,13 @@ ACTIVITY_CHART_X_TICK_INTERVAL_HOURS: dict[str, int] = {
     "30d": 24,
 }
 
+# Backend bucket size (minutes) requested per chart time range.
+ACTIVITY_CHART_BUCKET_MINUTES: dict[str, int] = {
+    "24h": 60,
+    "7d": 60,
+    "30d": 720,
+}
+
 # For future “deduped join attempt” series: minimum seconds between counted
 # ``queue_join`` events per (discord_uid, game_mode) unless interrupted by
 # ``queue_leave``, match pairing, etc. Raw join counts use no deduplication.

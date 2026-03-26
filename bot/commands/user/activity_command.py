@@ -15,6 +15,7 @@ from bot.helpers.activity_analytics import (
     activity_chart_title,
     fetch_queue_join_analytics,
 )
+from bot.core.config import ACTIVITY_CHART_BUCKET_MINUTES
 from bot.helpers.activity_stats import build_activity_embed_fields
 from bot.helpers.checks import (
     check_if_accepted_tos,
@@ -73,7 +74,12 @@ def register_activity_command(tree: app_commands.CommandTree) -> None:
         end = utc_now()
         start = end - timedelta(hours=24)
         try:
-            data = await fetch_queue_join_analytics(game_mode, start, end)
+            data = await fetch_queue_join_analytics(
+                game_mode,
+                start,
+                end,
+                bucket_minutes=ACTIVITY_CHART_BUCKET_MINUTES["24h"],
+            )
             buckets = data.get("buckets") or []
             title = activity_chart_title(locale, game_mode, "24h")
             png = render_queue_join_chart_png(
