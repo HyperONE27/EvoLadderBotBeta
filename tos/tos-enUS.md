@@ -107,6 +107,7 @@ Data is used to:
 - Power matchmaking, rankings, and leaderboards
 - Maintain system integrity and prevent abuse
 - Ensure the proper functioning of new features in testing and development
+- Analyze the state of multiplayer game balance and design new patches
 
 ### 3. Data Sharing
 We do not sell or share user data. Limited third-party processing occurs through:

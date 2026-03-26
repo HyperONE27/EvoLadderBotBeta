@@ -107,6 +107,7 @@ Los datos se utilizan para:
 - Impulsar el emparejamiento, las clasificaciones y las tablas de líderes
 - Mantener la integridad del sistema y prevenir el abuso
 - Garantizar el correcto funcionamiento de las nuevas funciones durante las pruebas y el desarrollo
+- Analizar el estado del balance del juego multijugador y diseñar nuevos parches
 
 ### 3. Compartición de Datos
 No vendemos ni compartimos datos de usuarios. El procesamiento limitado por terceros se realiza a través de:
