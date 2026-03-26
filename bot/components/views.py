@@ -1429,6 +1429,8 @@ class LocaleSetupView(discord.ui.View):
 
         self.add_item(language_select)
         self.add_item(_continue_button)
+        if show_cancel:
+            self.add_item(CancelButton(row=1, locale="enUS"))
 
 
 # =========================================================================
