@@ -199,6 +199,7 @@ class Orchestrator:
             "bw_only": bw_only,
             "sc2_only": sc2_only,
             "both": both,
+            "active_matches": len(self._transition_manager.get_active_matches_1v1()),
         }
 
     def get_queue_stats_2v2(self) -> dict[str, int]:
@@ -247,6 +248,7 @@ class Orchestrator:
             "bw_sc2": bw_sc2,
             "mixed_sc2": mixed_sc2,
             "all_three": all_three,
+            "active_matches": len(self._transition_manager.get_active_matches_2v2()),
         }
 
     # ------------------------------------------------------------------

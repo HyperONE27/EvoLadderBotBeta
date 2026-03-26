@@ -310,6 +310,7 @@ class QueueSearchingEmbed(discord.Embed):
         bw_only = stats.get("bw_only", 0) if stats else 0
         sc2_only = stats.get("sc2_only", 0) if stats else 0
         both = stats.get("both", 0) if stats else 0
+        active_matches = stats.get("active_matches", 0) if stats else 0
         now = time.time()
         next_search = int((now // 60 + 1) * 60)
 
@@ -320,6 +321,7 @@ class QueueSearchingEmbed(discord.Embed):
                 "queue_searching_embed.description.1",
                 locale,
                 next_search_ts=f"<t:{next_search}:R>",
+                active_matches=str(active_matches),
                 bw_only=str(bw_only),
                 sc2_only=str(sc2_only),
                 both=str(both),
@@ -365,10 +367,12 @@ class QueueSearchingEmbed2v2(discord.Embed):
             bw_sc2 = stats.get("bw_sc2", 0) if stats else 0
             mixed_sc2 = stats.get("mixed_sc2", 0) if stats else 0
             all_three = stats.get("all_three", 0) if stats else 0
+            active_matches = stats.get("active_matches", 0) if stats else 0
             description = t(
                 "queue_searching_embed_2v2.description.1",
                 locale,
                 next_search_ts=f"<t:{next_search}:R>",
+                active_matches=str(active_matches),
                 total=str(total),
                 bw_only=str(bw_only),
                 mixed_only=str(mixed_only),

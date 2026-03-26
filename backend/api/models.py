@@ -477,6 +477,7 @@ class QueueStatsResponse(BaseModel):
     bw_only: int
     sc2_only: int
     both: int
+    active_matches: int
 
 
 class Queue2v2StatsResponse(BaseModel):
@@ -488,6 +489,7 @@ class Queue2v2StatsResponse(BaseModel):
     bw_sc2: int
     mixed_sc2: int
     all_three: int
+    active_matches: int
 
 
 # --- /analytics/queue_joins ---
