@@ -81,14 +81,42 @@ def _make_client(db: ChannelDatabase) -> discord.Client:
     return client
 
 
+_BACKOFF_BASE = 5.0
+_BACKOFF_BASE_RATELIMIT = 60.0
+_BACKOFF_MAX = 300.0
+
+
 async def start_gateway(db: ChannelDatabase, token: str) -> None:
-    """Run the Discord gateway client, reconnecting automatically on failure."""
+    """Run the Discord gateway client, reconnecting with exponential backoff on failure.
+
+    429 rate-limit errors use a longer initial backoff (60s) to avoid hammering
+    the login endpoint while a global rate limit is active.
+    """
     client = _make_client(db)
+    backoff = _BACKOFF_BASE
     while True:
         try:
             await client.start(token, reconnect=True)
+            backoff = _BACKOFF_BASE  # reset on clean exit
+        except discord.HTTPException as exc:
+            if exc.status == 429:
+                wait = max(_BACKOFF_BASE_RATELIMIT, backoff)
+                logger.warning(
+                    "[ChannelManager Gateway] Rate limited (429), retrying",
+                    wait=wait,
+                )
+                await asyncio.sleep(wait)
+            else:
+                logger.exception(
+                    "[ChannelManager Gateway] Fatal error, reconnecting", wait=backoff
+                )
+                await asyncio.sleep(backoff)
+            backoff = min(backoff * 2, _BACKOFF_MAX)
+            client = _make_client(db)
         except Exception:
-            logger.exception("[ChannelManager Gateway] Fatal error, reconnecting in 5s")
-            await asyncio.sleep(5)
-            # Recreate client after a fatal error — the old one may be in a broken state.
+            logger.exception(
+                "[ChannelManager Gateway] Fatal error, reconnecting", wait=backoff
+            )
+            await asyncio.sleep(backoff)
+            backoff = min(backoff * 2, _BACKOFF_MAX)
             client = _make_client(db)
