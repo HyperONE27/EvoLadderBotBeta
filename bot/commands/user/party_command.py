@@ -7,6 +7,7 @@ from discord import app_commands
 from bot.core.config import BACKEND_URL
 from bot.core.dependencies import get_player_locale
 from bot.core.http import get_session
+from bot.core.player_lookup import resolve_player_by_string
 from bot.helpers.checks import (
     check_if_accepted_tos,
     check_if_banned,
@@ -90,23 +91,7 @@ async def party_invite_command(
     inviter_name: str = inviter_player.get("player_name", interaction.user.name)
 
     # Resolve invitee by string.
-    try:
-        async with get_session().get(f"{BACKEND_URL}/players/by_name/{player}") as resp:
-            if resp.status == 404:
-                await interaction.followup.send(
-                    embed=_error_embed(
-                        "party.error.player_not_found", locale, player=player
-                    )
-                )
-                return
-            data = await resp.json()
-    except Exception:
-        await interaction.followup.send(
-            embed=_error_embed("party.error.backend_unavailable", locale)
-        )
-        return
-
-    invitee_player = data.get("player")
+    invitee_player = await resolve_player_by_string(player)
     if invitee_player is None:
         await interaction.followup.send(
             embed=_error_embed("party.error.player_not_found", locale, player=player)

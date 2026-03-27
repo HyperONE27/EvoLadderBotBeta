@@ -8,9 +8,9 @@ from bot.components.embeds import (
     UnsupportedGameModeEmbed,
 )
 from bot.components.views import SetMMRConfirmView
-from bot.core.config import BACKEND_URL, GAME_MODE_CHOICES
+from bot.core.config import GAME_MODE_CHOICES
 from bot.core.dependencies import get_player_locale
-from bot.core.http import get_session
+from bot.core.player_lookup import resolve_player_by_string
 from bot.helpers.checks import check_if_owner
 from common.i18n import t
 from common.lookups.race_lookups import get_races
@@ -66,19 +66,7 @@ def register_owner_mmr_command(tree: app_commands.CommandTree) -> None:
             )
             return
 
-        async with get_session().get(f"{BACKEND_URL}/players/by_name/{player}") as resp:
-            if resp.status == 404:
-                await interaction.followup.send(
-                    embed=ErrorEmbed(
-                        title=t("error_embed.title.generic", locale),
-                        description=t("error.player_not_found", locale, player=player),
-                        locale=locale,
-                    )
-                )
-                return
-            data = await resp.json()
-
-        target = data.get("player")
+        target = await resolve_player_by_string(player)
         if target is None:
             await interaction.followup.send(
                 embed=ErrorEmbed(
