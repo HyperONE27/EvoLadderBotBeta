@@ -36,7 +36,6 @@ from bot.helpers.emotes import (
     get_globe_emote,
     get_race_emote,
     get_rank_emote,
-    get_wraith_emote,
 )
 from common.i18n import LOCALE_DISPLAY_NAMES, t
 from common.datetime_helpers import (
@@ -4716,9 +4715,8 @@ class ReferralPitchEmbed(discord.Embed):
         active_player_count: int,
         locale: str = "enUS",
     ) -> None:
-        wraith = get_wraith_emote()
         description = t("referral_pitch_embed.description.1", locale).format(
-            wraith_emote=wraith,
+            s_rank_emote=get_rank_emote("S"),
             player_name=player_name,
             active_player_count=active_player_count,
             referral_code=referral_code,
