@@ -4715,16 +4715,16 @@ class ReferralPitchEmbed(discord.Embed):
         active_player_count: int,
         locale: str = "enUS",
     ) -> None:
-        description = t("referral_pitch_embed.description.1", locale).format(
-            s_rank_emote=get_rank_emote("S"),
-            player_name=player_name,
-            active_player_count=active_player_count,
-            referral_code=referral_code,
-            discord_invite_url=DISCORD_INVITE_URL,
-            bot_mention=f"<@{BOT_USER_ID}>",
-        )
+        s_rank = get_rank_emote("S")
         super().__init__(
-            description=description,
+            title=t("referral_pitch_embed.title.1", locale).format(s_rank_emote=s_rank),
+            description=t("referral_pitch_embed.description.1", locale).format(
+                player_name=player_name,
+                active_player_count=active_player_count,
+                referral_code=referral_code,
+                discord_invite_url=DISCORD_INVITE_URL,
+                bot_mention=f"<@{BOT_USER_ID}>",
+            ),
             color=discord.Color.gold(),
         )
         self.set_thumbnail(url=WRAITH_TRANSPARENT_IMAGE_LINK)
