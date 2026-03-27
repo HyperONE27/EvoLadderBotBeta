@@ -1611,6 +1611,126 @@ class SetupNotificationEmbed(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
+# -- survey slug → i18n option key mapping --------------------------------
+
+_SURVEY_Q1_SLUGS = [
+    "friend_or_community",
+    "live_broadcast",
+    "recorded_video",
+    "evo_discord",
+    "other_discord",
+    "social_media",
+    "in_game",
+    "other",
+]
+_SURVEY_Q2_SLUGS = ["lt_1mo", "1_3mo", "3_6mo", "6_12mo", "gt_1yr"]
+_SURVEY_Q3_SLUGS = [
+    "casual",
+    "find_opponents",
+    "improve_rank",
+    "tournament",
+    "avoid_cheaters",
+    "other",
+]
+_SURVEY_Q4_SLUGS = [
+    "no_placement",
+    "bw_s",
+    "bw_a",
+    "bw_b",
+    "bw_c",
+    "sc2_grandmaster",
+    "sc2_master",
+    "sc2_diamond",
+    "sc2_platinum",
+]
+
+
+def _survey_answer_label(q_num: int, slug: str | None, locale: str) -> str | None:
+    """Map a stored survey slug to its human-readable i18n label."""
+    if slug is None:
+        return None
+    slugs = {
+        1: _SURVEY_Q1_SLUGS,
+        2: _SURVEY_Q2_SLUGS,
+        3: _SURVEY_Q3_SLUGS,
+        4: _SURVEY_Q4_SLUGS,
+    }
+    slug_list = slugs.get(q_num, [])
+    if slug in slug_list:
+        idx = slug_list.index(slug) + 1
+        return t(f"setup_survey_view.q{q_num}.option_{idx}", locale)
+    return slug
+
+
+def _survey_q4_answer_labels(selections: list[str] | None, locale: str) -> str | None:
+    """Format Q4 multi-select answer for display."""
+    if not selections:
+        return None
+    labels = [_survey_answer_label(4, s, locale) or s for s in selections]
+    return ", ".join(labels)
+
+
+class SetupSurveyEmbed(discord.Embed):
+    def __init__(
+        self,
+        q1: str | None = None,
+        q2: str | None = None,
+        q3: str | None = None,
+        q4: list[str] | None = None,
+        locale: str = "enUS",
+    ) -> None:
+        super().__init__(
+            title=t("setup_survey_embed.title.1", locale),
+            color=discord.Color.blurple(),
+        )
+
+        lines: list[str] = []
+        questions = [
+            (1, q1),
+            (2, q2),
+            (3, q3),
+        ]
+        for q_num, answer in questions:
+            label = t(f"setup_survey_view.q{q_num}.label", locale)
+            if answer is not None:
+                answer_text = _survey_answer_label(q_num, answer, locale) or answer
+                lines.append(
+                    t(
+                        "setup_survey_embed.q1.answered",
+                        locale,
+                        question=label,
+                        answer=answer_text,
+                    )
+                )
+            else:
+                lines.append(
+                    t("setup_survey_embed.q1.unanswered", locale, question=label)
+                )
+
+        # Q4 (multi-select)
+        q4_label = t("setup_survey_view.q4.label", locale)
+        if q4 is not None:
+            q4_text = _survey_q4_answer_labels(q4, locale) or ""
+            lines.append(
+                t(
+                    "setup_survey_embed.q1.answered",
+                    locale,
+                    question=q4_label,
+                    answer=q4_text,
+                )
+            )
+        else:
+            lines.append(
+                t("setup_survey_embed.q1.unanswered", locale, question=q4_label)
+            )
+
+        self.description = (
+            t("setup_survey_embed.description.1", locale) + "\n\n" + "\n".join(lines)
+        )
+
+        apply_default_embed_footer(self, locale=locale)
+
+
 class SetupPreviewEmbed(discord.Embed):
     def __init__(
         self,
@@ -1791,6 +1911,16 @@ class SetupSuccessEmbed(discord.Embed):
             inline=False,
         )
 
+        apply_default_embed_footer(self, locale=locale)
+
+
+class SetupNextStepsEmbed(discord.Embed):
+    def __init__(self, locale: str = "enUS") -> None:
+        super().__init__(
+            title=t("setup_next_steps_embed.title.1", locale),
+            description=t("setup_next_steps_embed.description.1", locale),
+            color=discord.Color.blurple(),
+        )
         apply_default_embed_footer(self, locale=locale)
 
 

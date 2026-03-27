@@ -40,7 +40,9 @@ from bot.components.embeds import (
     SetupNotificationEmbed,
     SetupPreviewEmbed,
     SetupSelectionEmbed,
+    SetupNextStepsEmbed,
     SetupSuccessEmbed,
+    SetupSurveyEmbed,
     SetupValidationErrorEmbed,
     StatusResetSuccessEmbed,
     TermsOfServiceDeclinedEmbed,
@@ -71,6 +73,7 @@ from bot.helpers.checks import (
 )
 from bot.helpers.embed_branding import apply_default_embed_footer
 from bot.helpers.emotes import (
+    get_emote_as_partial_emoji,
     get_flag_emote,
     get_game_emote,
     get_globe_emote,
@@ -626,32 +629,52 @@ class SetupNotificationView(discord.ui.View):
             notification_2v2 = (
                 None if preselected_2v2 == "off" else int(preselected_2v2)
             )
-            await interaction.response.edit_message(
-                embed=SetupPreviewEmbed(
-                    player_name,
-                    battletag,
-                    alt_ids,
-                    country,
-                    region,
-                    language,
-                    notification_1v1,
-                    notification_2v2,
-                    locale=_locale,
-                ),
-                view=SetupPreviewView(
-                    player_name=player_name,
-                    battletag=battletag,
-                    alt_ids=alt_ids,
-                    message=message,
-                    country=country,
-                    region=region,
-                    language=language,
-                    notification_1v1=notification_1v1,
-                    notification_2v2=notification_2v2,
-                    locale=_locale,
-                    show_cancel=show_cancel,
-                ),
-            )
+
+            # First-time users see the survey; returning users skip to preview.
+            if not show_cancel:
+                await interaction.response.edit_message(
+                    embed=SetupSurveyEmbed(locale=_locale),
+                    view=SetupSurveyView(
+                        player_name=player_name,
+                        battletag=battletag,
+                        alt_ids=alt_ids,
+                        message=message,
+                        country=country,
+                        region=region,
+                        language=language,
+                        notification_1v1=notification_1v1,
+                        notification_2v2=notification_2v2,
+                        locale=_locale,
+                        show_cancel=show_cancel,
+                    ),
+                )
+            else:
+                await interaction.response.edit_message(
+                    embed=SetupPreviewEmbed(
+                        player_name,
+                        battletag,
+                        alt_ids,
+                        country,
+                        region,
+                        language,
+                        notification_1v1,
+                        notification_2v2,
+                        locale=_locale,
+                    ),
+                    view=SetupPreviewView(
+                        player_name=player_name,
+                        battletag=battletag,
+                        alt_ids=alt_ids,
+                        message=message,
+                        country=country,
+                        region=region,
+                        language=language,
+                        notification_1v1=notification_1v1,
+                        notification_2v2=notification_2v2,
+                        locale=_locale,
+                        show_cancel=show_cancel,
+                    ),
+                )
 
         async def on_restart(interaction: discord.Interaction) -> None:
             _locale = get_player_locale(interaction.user.id)
@@ -741,6 +764,314 @@ class SetupNotificationView(discord.ui.View):
             self.add_item(CancelButton(row=2, locale=locale))
 
 
+# =========================================================================
+# Setup — Survey (between notifications and preview, first-time only)
+# =========================================================================
+
+_NUMBER_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣"]
+
+_SURVEY_Q1_SLUGS = [
+    "friend_or_community",
+    "live_broadcast",
+    "recorded_video",
+    "evo_discord",
+    "other_discord",
+    "social_media",
+    "in_game",
+    "other",
+]
+_SURVEY_Q2_SLUGS = ["lt_1mo", "1_3mo", "3_6mo", "6_12mo", "gt_1yr"]
+_SURVEY_Q3_SLUGS = [
+    "casual",
+    "find_opponents",
+    "improve_rank",
+    "tournament",
+    "avoid_cheaters",
+    "other",
+]
+_SURVEY_Q4_SLUGS = [
+    "no_placement",
+    "bw_s",
+    "bw_a",
+    "bw_b",
+    "bw_c",
+    "sc2_grandmaster",
+    "sc2_master",
+    "sc2_diamond",
+    "sc2_platinum",
+]
+
+_SURVEY_Q4_EMOTE_NAMES = [
+    "u_rank",
+    "s_rank",
+    "a_rank",
+    "b_rank",
+    "c_rank",
+    "grandmaster_league",
+    "master_league",
+    "diamond_league",
+    "platinum_league",
+]
+
+
+def _survey_numbered_options(
+    slugs: list[str],
+    q_num: int,
+    selected: str | None,
+    locale: str,
+) -> list[discord.SelectOption]:
+    return [
+        discord.SelectOption(
+            label=t(f"setup_survey_view.q{q_num}.option_{i + 1}", locale),
+            value=slug,
+            emoji=_NUMBER_EMOJIS[i],
+            default=(slug == selected),
+        )
+        for i, slug in enumerate(slugs)
+    ]
+
+
+def _survey_q4_options(
+    selected: list[str] | None, locale: str
+) -> list[discord.SelectOption]:
+    sel = selected or []
+    return [
+        discord.SelectOption(
+            label=t(f"setup_survey_view.q4.option_{i + 1}", locale),
+            value=slug,
+            emoji=get_emote_as_partial_emoji(emote_name),
+            default=(slug in sel),
+        )
+        for i, (slug, emote_name) in enumerate(
+            zip(_SURVEY_Q4_SLUGS, _SURVEY_Q4_EMOTE_NAMES, strict=True)
+        )
+    ]
+
+
+def _validate_q4_selection(values: list[str]) -> bool:
+    """Return True if the Q4 multi-select combination is valid."""
+    if "no_placement" in values and len(values) > 1:
+        return False
+    bw_count = sum(1 for v in values if v.startswith("bw_"))
+    sc2_count = sum(1 for v in values if v.startswith("sc2_"))
+    if bw_count > 1 or sc2_count > 1:
+        return False
+    return True
+
+
+class SetupSurveyView(discord.ui.View):
+    """Survey step of /setup (first-time users only).
+
+    Four questions, each backed by a Select. Q1-Q3 are single-select,
+    Q4 is multi-select (1-2 answers). Confirm is disabled until all
+    four questions are answered.
+    """
+
+    def __init__(
+        self,
+        player_name: str,
+        battletag: str,
+        alt_ids: list[str],
+        message: discord.Message,
+        country: Country,
+        region: GeographicRegion,
+        language: str,
+        notification_1v1: int | None,
+        notification_2v2: int | None,
+        preselected_q1: str | None = None,
+        preselected_q2: str | None = None,
+        preselected_q3: str | None = None,
+        preselected_q4: list[str] | None = None,
+        locale: str = "enUS",
+        show_cancel: bool = True,
+    ) -> None:
+        super().__init__()
+
+        _confirm_disabled = (
+            preselected_q1 is None
+            or preselected_q2 is None
+            or preselected_q3 is None
+            or preselected_q4 is None
+        )
+
+        def _rebuild(
+            interaction: discord.Interaction,
+            *,
+            q1: str | None = preselected_q1,
+            q2: str | None = preselected_q2,
+            q3: str | None = preselected_q3,
+            q4: list[str] | None = preselected_q4,
+        ) -> tuple[SetupSurveyEmbed, "SetupSurveyView"]:
+            _locale = get_player_locale(interaction.user.id)
+            embed = SetupSurveyEmbed(q1=q1, q2=q2, q3=q3, q4=q4, locale=_locale)
+            view = SetupSurveyView(
+                player_name=player_name,
+                battletag=battletag,
+                alt_ids=alt_ids,
+                message=message,
+                country=country,
+                region=region,
+                language=language,
+                notification_1v1=notification_1v1,
+                notification_2v2=notification_2v2,
+                preselected_q1=q1,
+                preselected_q2=q2,
+                preselected_q3=q3,
+                preselected_q4=q4,
+                locale=_locale,
+                show_cancel=show_cancel,
+            )
+            return embed, view
+
+        # -- Q1 select (row 0) ------------------------------------------------
+        select_q1: discord.ui.Select[SetupSurveyView] = discord.ui.Select(
+            placeholder=t("setup_survey_view.placeholder.q1", locale),
+            min_values=1,
+            max_values=1,
+            options=_survey_numbered_options(
+                _SURVEY_Q1_SLUGS, 1, preselected_q1, locale
+            ),
+            row=0,
+        )
+
+        async def on_select_q1(interaction: discord.Interaction) -> None:
+            embed, view = _rebuild(interaction, q1=select_q1.values[0])
+            await interaction.response.edit_message(embed=embed, view=view)
+
+        select_q1.callback = on_select_q1  # type: ignore[method-assign]
+
+        # -- Q2 select (row 1) ------------------------------------------------
+        select_q2: discord.ui.Select[SetupSurveyView] = discord.ui.Select(
+            placeholder=t("setup_survey_view.placeholder.q2", locale),
+            min_values=1,
+            max_values=1,
+            options=_survey_numbered_options(
+                _SURVEY_Q2_SLUGS, 2, preselected_q2, locale
+            ),
+            row=1,
+        )
+
+        async def on_select_q2(interaction: discord.Interaction) -> None:
+            embed, view = _rebuild(interaction, q2=select_q2.values[0])
+            await interaction.response.edit_message(embed=embed, view=view)
+
+        select_q2.callback = on_select_q2  # type: ignore[method-assign]
+
+        # -- Q3 select (row 2) ------------------------------------------------
+        select_q3: discord.ui.Select[SetupSurveyView] = discord.ui.Select(
+            placeholder=t("setup_survey_view.placeholder.q3", locale),
+            min_values=1,
+            max_values=1,
+            options=_survey_numbered_options(
+                _SURVEY_Q3_SLUGS, 3, preselected_q3, locale
+            ),
+            row=2,
+        )
+
+        async def on_select_q3(interaction: discord.Interaction) -> None:
+            embed, view = _rebuild(interaction, q3=select_q3.values[0])
+            await interaction.response.edit_message(embed=embed, view=view)
+
+        select_q3.callback = on_select_q3  # type: ignore[method-assign]
+
+        # -- Q4 select (row 3, multi-select) ----------------------------------
+        select_q4: discord.ui.Select[SetupSurveyView] = discord.ui.Select(
+            placeholder=t("setup_survey_view.placeholder.q4", locale),
+            min_values=1,
+            max_values=2,
+            options=_survey_q4_options(preselected_q4, locale),
+            row=3,
+        )
+
+        async def on_select_q4(interaction: discord.Interaction) -> None:
+            values = select_q4.values
+            if not _validate_q4_selection(values):
+                # Invalid combo — purge Q4 and rebuild so the select resets.
+                embed, view = _rebuild(interaction, q4=None)
+                await interaction.response.edit_message(embed=embed, view=view)
+                return
+            embed, view = _rebuild(interaction, q4=values)
+            await interaction.response.edit_message(embed=embed, view=view)
+
+        select_q4.callback = on_select_q4  # type: ignore[method-assign]
+
+        # -- Confirm / Restart / Cancel (row 4) -------------------------------
+        async def on_confirm(interaction: discord.Interaction) -> None:
+            if _confirm_disabled:
+                await interaction.response.defer()
+                return
+            _locale = get_player_locale(interaction.user.id)
+            await interaction.response.edit_message(
+                embed=SetupPreviewEmbed(
+                    player_name,
+                    battletag,
+                    alt_ids,
+                    country,
+                    region,
+                    language,
+                    notification_1v1,
+                    notification_2v2,
+                    locale=_locale,
+                ),
+                view=SetupPreviewView(
+                    player_name=player_name,
+                    battletag=battletag,
+                    alt_ids=alt_ids,
+                    message=message,
+                    country=country,
+                    region=region,
+                    language=language,
+                    notification_1v1=notification_1v1,
+                    notification_2v2=notification_2v2,
+                    survey_q1=preselected_q1,
+                    survey_q2=preselected_q2,
+                    survey_q3=preselected_q3,
+                    survey_q4=preselected_q4,
+                    locale=_locale,
+                    show_cancel=show_cancel,
+                ),
+            )
+
+        async def on_restart(interaction: discord.Interaction) -> None:
+            _locale = get_player_locale(interaction.user.id)
+            await interaction.response.edit_message(
+                embed=SetupIntroEmbed(locale=_locale),
+                view=SetupIntroView(
+                    modal_presets={
+                        "player_name": player_name,
+                        "battletag": battletag,
+                        "alt_ids": " ".join(alt_ids),
+                    },
+                    preselected_nationality=country["code"],
+                    preselected_location=region["code"],
+                    locale=_locale,
+                    show_cancel=show_cancel,
+                ),
+            )
+
+        self.add_item(select_q1)
+        self.add_item(select_q2)
+        self.add_item(select_q3)
+        self.add_item(select_q4)
+        self.add_item(
+            ConfirmButton(
+                label=t("button.confirm", locale),
+                callback=on_confirm,
+                row=4,
+                disabled=_confirm_disabled,
+            )
+        )
+        self.add_item(
+            RestartButton(
+                callback=on_restart,
+                label=t("button.restart", locale),
+                row=4,
+            )
+        )
+        if show_cancel:
+            self.add_item(CancelButton(row=4, locale=locale))
+
+
 class SetupPreviewView(discord.ui.View):
     def __init__(
         self,
@@ -753,6 +1084,10 @@ class SetupPreviewView(discord.ui.View):
         language: str,
         notification_1v1: int | None,
         notification_2v2: int | None,
+        survey_q1: str | None = None,
+        survey_q2: str | None = None,
+        survey_q3: str | None = None,
+        survey_q4: list[str] | None = None,
         locale: str = "enUS",
         show_cancel: bool = True,
     ) -> None:
@@ -769,6 +1104,11 @@ class SetupPreviewView(discord.ui.View):
                 language,
                 notification_1v1,
                 notification_2v2,
+                already_setup=show_cancel,
+                survey_q1=survey_q1,
+                survey_q2=survey_q2,
+                survey_q3=survey_q3,
+                survey_q4=survey_q4,
             )
 
         async def on_restart(interaction: discord.Interaction) -> None:
@@ -1119,6 +1459,12 @@ async def _send_setup_request(
     language: str,
     notification_1v1: int | None,
     notification_2v2: int | None,
+    *,
+    already_setup: bool = False,
+    survey_q1: str | None = None,
+    survey_q2: str | None = None,
+    survey_q3: str | None = None,
+    survey_q4: list[str] | None = None,
 ) -> None:
     logger.info(
         f"_send_setup_request: user={interaction.user.id} player_name={player_name!r} "
@@ -1184,18 +1530,50 @@ async def _send_setup_request(
             exc_info=True,
         )
 
+    # After notifications, persist survey responses if present.
+    if (
+        survey_q1 is not None
+        and survey_q2 is not None
+        and survey_q3 is not None
+        and survey_q4 is not None
+    ):
+        try:
+            async with get_session().put(
+                f"{BACKEND_URL}/surveys/setup",
+                json={
+                    "discord_uid": interaction.user.id,
+                    "setup_q1_response": survey_q1,
+                    "setup_q2_response": survey_q2,
+                    "setup_q3_response": survey_q3,
+                    "setup_q4_response": survey_q4,
+                },
+            ) as survey_response:
+                if survey_response.status >= 400:
+                    logger.warning(
+                        f"_send_setup_request: survey upsert failed for user={interaction.user.id}, status={survey_response.status}"
+                    )
+        except Exception:
+            logger.warning(
+                f"_send_setup_request: survey upsert request failed for user={interaction.user.id}",
+                exc_info=True,
+            )
+
+    success_embed = SetupSuccessEmbed(
+        player_name,
+        battletag,
+        alt_ids,
+        country,
+        region,
+        language,
+        notification_1v1=notification_1v1,
+        notification_2v2=notification_2v2,
+        locale=language,
+    )
+    embeds: list[discord.Embed] = [success_embed]
+    if not already_setup:
+        embeds.append(SetupNextStepsEmbed(locale=language))
     await interaction.response.edit_message(
-        embed=SetupSuccessEmbed(
-            player_name,
-            battletag,
-            alt_ids,
-            country,
-            region,
-            language,
-            notification_1v1=notification_1v1,
-            notification_2v2=notification_2v2,
-            locale=language,
-        ),
+        embeds=embeds,
         view=None,
     )
 
