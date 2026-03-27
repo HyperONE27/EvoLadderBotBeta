@@ -679,3 +679,13 @@ class PartyInfoResponse(BaseModel):
     member_discord_uid: int | None = None
     member_player_name: str | None = None
     created_at: datetime | None = None
+
+
+class GuildMemberJoinRequest(BaseModel):
+    discord_uid: int
+    discord_username: str
+    account_age_days: int
+
+
+class GuildMemberJoinResponse(BaseModel):
+    ok: bool

@@ -21,12 +21,13 @@ from bot.commands.user.setup_command import register_setup_command
 from bot.components.embeds import ErrorEmbed, LocaleSetupEmbed
 from bot.components.views import LocaleSetupView
 from bot.core.bootstrap import Bot
-from bot.core.config import BACKEND_URL, BOT_TOKEN
+from bot.core.config import BACKEND_URL, BOT_TOKEN, SERVER_GUILD_ID
 from bot.core.dependencies import get_player_locale, set_bot
 from bot.core.http import get_session, init_session, close_session
 from bot.core.message_queue import get_message_queue, initialize_message_queue
 from bot.core.ws_listener import start_ws_listener
 from bot.helpers.replay_handler import handle_replay_upload
+from common.datetime_helpers import utc_now
 from common.i18n import t
 from common.logging.config import configure_structlog
 
@@ -110,6 +111,30 @@ async def on_message(message: discord.Message) -> None:
         # Replay upload handler — only fires for DM messages with attachments.
         if message.attachments:
             await handle_replay_upload(client, message)
+
+
+@client.event
+async def on_member_join(member: discord.Member) -> None:
+    if member.guild.id != SERVER_GUILD_ID:
+        return
+    try:
+        async with get_session().post(
+            f"{BACKEND_URL}/events/guild_member_join",
+            json={
+                "discord_uid": member.id,
+                "discord_username": member.name,
+                "account_age_days": (utc_now() - member.created_at).days,
+            },
+        ) as resp:
+            if resp.status >= 400:
+                logger.warning(
+                    f"on_member_join: backend returned {resp.status} for user={member.id}"
+                )
+    except Exception:
+        logger.warning(
+            f"on_member_join: failed to log join for user={member.id}",
+            exc_info=True,
+        )
 
 
 @client.event

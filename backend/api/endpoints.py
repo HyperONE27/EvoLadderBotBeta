@@ -40,6 +40,8 @@ from backend.api.models import (
     LeaderboardResponse,
     LeaderboardResponse2v2,
     GreetingResponse,
+    GuildMemberJoinRequest,
+    GuildMemberJoinResponse,
     Match2v2AbortRequest,
     Match2v2AbortResponse,
     Match2v2ConfirmRequest,
@@ -264,6 +266,31 @@ async def greet(
         }
     )
     return GreetingResponse(message=f"👋 Hello, {discord_uid}!")
+
+
+# --- /events/guild_member_join ---
+
+
+@router.post("/events/guild_member_join", response_model=GuildMemberJoinResponse)
+async def guild_member_join(
+    request: GuildMemberJoinRequest,
+    app: Backend = Depends(get_backend),
+) -> GuildMemberJoinResponse:
+    app.orchestrator.log_event(
+        {
+            "discord_uid": 2,  # bot process sentinel
+            "event_type": "system_event",
+            "action": "guild_member_join",
+            "game_mode": None,
+            "match_id": None,
+            "target_discord_uid": request.discord_uid,
+            "event_data": {
+                "discord_username": request.discord_username,
+                "account_age_days": request.account_age_days,
+            },
+        }
+    )
+    return GuildMemberJoinResponse(ok=True)
 
 
 # --- /admins/{discord_uid} ---

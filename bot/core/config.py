@@ -75,6 +75,8 @@ BOT_TOKEN: str = _get_str_env("BOT_TOKEN")
 
 MATCH_LOG_CHANNEL_ID: int = _get_int_env("MATCH_LOG_CHANNEL_ID")
 
+SERVER_GUILD_ID: int = _get_int_env("SERVER_GUILD_ID")
+
 # ---------------------
 # Game rules
 # ---------------------
