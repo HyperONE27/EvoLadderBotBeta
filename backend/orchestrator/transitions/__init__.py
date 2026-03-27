@@ -45,6 +45,7 @@ class TransitionManager:
 
     # -- player transitions (_player.py) -------------------------------------
     register_player = _player.register_player
+    submit_referral = _player.submit_referral
     set_country_for_player = _player.set_country_for_player
     setup_player = _player.setup_player
     set_tos_for_player = _player.set_tos_for_player

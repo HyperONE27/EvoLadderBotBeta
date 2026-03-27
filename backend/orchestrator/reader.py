@@ -1,6 +1,8 @@
 from datetime import timedelta
 from typing import Any
 
+import polars as pl
+
 from backend.algorithms.game_stats import (
     count_game_stats_2v2_in_completed_window,
     count_game_stats_in_completed_window,
@@ -69,6 +71,42 @@ class StateReader:
     ) -> bool:
         """True if no other player row uses this exact player_name."""
         return not is_player_name_taken(player_name, exclude_discord_uid)
+
+    def get_referral_count(self, discord_uid: int, has_played: bool = True) -> int:
+        """Count players referred by discord_uid.
+
+        When has_played=True (default), only counts referees who have at least
+        one game across mmrs_1v1 or mmrs_2v2. When False, counts all referrals
+        regardless of play history.
+        """
+        players_df = self._state_manager.players_df
+        referred = players_df.filter(pl.col("referred_by") == discord_uid)
+        if referred.is_empty():
+            return 0
+        if not has_played:
+            return len(referred)
+        referred_uids = set(referred["discord_uid"].to_list())
+        active_uids = self._active_player_uids()
+        return len(referred_uids & active_uids)
+
+    def get_active_player_count(self) -> int:
+        """Count unique players who have played at least one game across 1v1 or 2v2."""
+        return len(self._active_player_uids())
+
+    def _active_player_uids(self) -> set[int]:
+        """Return the set of discord_uids with at least one game in mmrs_1v1 or mmrs_2v2."""
+        mmr_1v1 = self._state_manager.mmrs_1v1_df
+        mmr_2v2 = self._state_manager.mmrs_2v2_df
+        uids: set[int] = set()
+        if not mmr_1v1.is_empty():
+            uids |= set(
+                mmr_1v1.filter(pl.col("games_played") >= 1)["discord_uid"].to_list()
+            )
+        if not mmr_2v2.is_empty():
+            played_2v2 = mmr_2v2.filter(pl.col("games_played") >= 1)
+            uids |= set(played_2v2["player_1_discord_uid"].to_list())
+            uids |= set(played_2v2["player_2_discord_uid"].to_list())
+        return uids
 
     # ------------------------------------------------------------------
     # MMR

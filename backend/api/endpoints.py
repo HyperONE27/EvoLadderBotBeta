@@ -104,6 +104,9 @@ from backend.api.models import (
     SetupConfirmResponse,
     TermsOfServiceConfirmRequest,
     TermsOfServiceConfirmResponse,
+    ActivePlayersResponse,
+    ReferralRequest,
+    ReferralResponse,
 )
 from backend.core.bootstrap import Backend
 from backend.domain_types.ephemeral import LeaderboardEntry1v1, LeaderboardEntry2v2
@@ -813,6 +816,31 @@ async def analytics_queue_joins(
         game_mode=game_mode,
         bucket_minutes=bucket_m,
         buckets=[QueueJoinAnalyticsBucket(**b) for b in buckets],
+    )
+
+
+# --- /referral ---
+
+
+@router.post("/referral", response_model=ReferralResponse)
+async def submit_referral(
+    req: ReferralRequest,
+    app: Backend = Depends(get_backend),
+) -> ReferralResponse:
+    success, payload = app.orchestrator.submit_referral(
+        req.discord_uid, req.referral_code
+    )
+    if success:
+        return ReferralResponse(success=True, referrer_player_name=payload)
+    return ReferralResponse(success=False, error=payload)
+
+
+@router.get("/stats/active_players", response_model=ActivePlayersResponse)
+async def stats_active_players(
+    app: Backend = Depends(get_backend),
+) -> ActivePlayersResponse:
+    return ActivePlayersResponse(
+        active_player_count=app.orchestrator.get_active_player_count()
     )
 
 

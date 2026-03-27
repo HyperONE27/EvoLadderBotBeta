@@ -67,6 +67,10 @@ def get_league_emote(league: str) -> str:
     return _get_emote(f"{league}_league")["markdown"]
 
 
+def get_wraith_emote() -> str:
+    return _get_emote("wraith")["markdown"]
+
+
 def get_emote_as_partial_emoji(name: str) -> discord.PartialEmoji:
     """Convert a named custom emote to a PartialEmoji for SelectOption use."""
     emote = _get_emote(name)

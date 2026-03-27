@@ -49,6 +49,8 @@ PLAYERS_SCHEMA: dict[str, pl.DataType] = {
     "current_match_mode": pl.String,
     "current_match_id": pl.Int64,
     "read_lobby_guide": pl.Boolean,
+    "referred_by": pl.Int64,
+    "referred_at": pl.Datetime("us", "utc"),
 }
 
 NOTIFICATIONS_SCHEMA: dict[str, pl.DataType] = {
@@ -305,6 +307,8 @@ class PlayersRow(TypedDict):
     current_match_mode: str | None
     current_match_id: int | None
     read_lobby_guide: bool
+    referred_by: int | None
+    referred_at: datetime | None
 
 
 class NotificationsRow(TypedDict):

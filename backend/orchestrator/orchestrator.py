@@ -85,6 +85,22 @@ class Orchestrator:
             player_name, exclude_discord_uid
         )
 
+    def submit_referral(
+        self, referee_discord_uid: int, referral_code: str
+    ) -> tuple[bool, str | None]:
+        """Validate and record a referral. Returns (success, referrer_player_name_or_error)."""
+        return self._transition_manager.submit_referral(
+            referee_discord_uid, referral_code
+        )
+
+    def get_referral_count(self, discord_uid: int, has_played: bool = True) -> int:
+        """Count players referred by discord_uid (optionally requiring at least one game played)."""
+        return self._state_reader.get_referral_count(discord_uid, has_played)
+
+    def get_active_player_count(self) -> int:
+        """Count unique players who have played at least one game across 1v1 or 2v2."""
+        return self._state_reader.get_active_player_count()
+
     def get_preferences_1v1(self, discord_uid: int) -> Preferences1v1Row | None:
         """Get a player's 1v1 preferences by their Discord UID."""
         return self._state_reader.get_preferences_1v1(discord_uid)

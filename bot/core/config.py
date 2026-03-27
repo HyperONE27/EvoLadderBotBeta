@@ -33,6 +33,7 @@ from common.config import MAX_MAP_VETOES as MAX_MAP_VETOES
 from common.config import (
     QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT as QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT,
 )
+from common.urls import DISCORD_INVITE_URL as DISCORD_INVITE_URL
 from common.urls import QUICKSTART_URL as QUICKSTART_URL
 from common.urls import TOS_MIRROR_URL as TOS_MIRROR_URL
 from common.urls import TOS_URL as TOS_URL
@@ -72,6 +73,8 @@ def _get_str_env(key: str) -> str:
 BACKEND_URL: str = _get_str_env("BACKEND_URL")
 
 BOT_TOKEN: str = _get_str_env("BOT_TOKEN")
+
+BOT_USER_ID: int = _get_int_env("BOT_USER_ID")
 
 MATCH_LOG_CHANNEL_ID: int = _get_int_env("MATCH_LOG_CHANNEL_ID")
 
@@ -119,6 +122,12 @@ SERVER_GUILD_ID: int = _get_int_env("SERVER_GUILD_ID")
 
 # Optional public URL for the footer icon on branded embeds (see embed_branding).
 BOT_ICON_URL: str = (os.getenv("BOT_ICON_URL") or "").strip()
+
+# Wraith transparent image used as thumbnail in the referral pitch embed.
+WRAITH_TRANSPARENT_IMAGE_LINK: str = (
+    "https://cdn.discordapp.com/attachments/1483604780231426291/1487224011216785560/"
+    "wraith-transparent.png?ex=69c85ccb&is=69c70b4b&hm=06a49c0c8ea21c513de6f747f585374155a45226c1f4e2b3e4e03ee0fe482297"
+)
 
 DISCORD_MESSAGE_RATE_LIMIT: int = 40
 

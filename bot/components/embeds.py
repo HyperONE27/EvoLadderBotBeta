@@ -14,9 +14,11 @@ import discord
 
 from bot.core.config import (
     ALLOW_AI_PLAYERS,
+    BOT_USER_ID,
     COERCE_INDETERMINATE_AS_LOSS,
     CONFIRMATION_TIMEOUT,
     CURRENT_SEASON,
+    DISCORD_INVITE_URL,
     ENABLE_REPLAY_VALIDATION,
     EXPECTED_LOBBY_SETTINGS,
     MAX_MAP_VETOES,
@@ -25,6 +27,7 @@ from bot.core.config import (
     QUICKSTART_URL,
     TOS_MIRROR_URL,
     TOS_URL,
+    WRAITH_TRANSPARENT_IMAGE_LINK,
 )
 from bot.helpers.embed_branding import apply_default_embed_footer
 from bot.helpers.emotes import (
@@ -33,6 +36,7 @@ from bot.helpers.emotes import (
     get_globe_emote,
     get_race_emote,
     get_rank_emote,
+    get_wraith_emote,
 )
 from common.i18n import LOCALE_DISPLAY_NAMES, t
 from common.datetime_helpers import (
@@ -4675,5 +4679,77 @@ class HelpEmbed(discord.Embed):
             title=t("help_embed.title.1", locale),
             description=t("help_embed.description.1", locale),
             color=discord.Color.blue(),
+        )
+        apply_default_embed_footer(self, locale=locale)
+
+
+# =========================================================================
+# Referral embeds
+# =========================================================================
+
+
+class ReferralInitialEmbed(discord.Embed):
+    def __init__(self, locale: str = "enUS") -> None:
+        super().__init__(
+            title=t("referral_initial_embed.title.1", locale),
+            description=t("referral_initial_embed.description.1", locale),
+            color=discord.Color.blue(),
+        )
+        apply_default_embed_footer(self, locale=locale)
+
+
+class ReferralInstructionsEmbed(discord.Embed):
+    def __init__(self, locale: str = "enUS") -> None:
+        super().__init__(
+            title=t("referral_instructions_embed.title.1", locale),
+            description=t("referral_instructions_embed.description.1", locale),
+            color=discord.Color.blue(),
+        )
+        apply_default_embed_footer(self, locale=locale)
+
+
+class ReferralPitchEmbed(discord.Embed):
+    def __init__(
+        self,
+        player_name: str,
+        referral_code: str,
+        active_player_count: int,
+        locale: str = "enUS",
+    ) -> None:
+        wraith = get_wraith_emote()
+        description = t("referral_pitch_embed.description.1", locale).format(
+            wraith_emote=wraith,
+            player_name=player_name,
+            active_player_count=active_player_count,
+            referral_code=referral_code,
+            discord_invite_url=DISCORD_INVITE_URL,
+            bot_mention=f"<@{BOT_USER_ID}>",
+        )
+        super().__init__(
+            description=description,
+            color=discord.Color.gold(),
+        )
+        self.set_thumbnail(url=WRAITH_TRANSPARENT_IMAGE_LINK)
+        apply_default_embed_footer(self, locale=locale)
+
+
+class ReferralSuccessEmbed(discord.Embed):
+    def __init__(self, referrer_player_name: str, locale: str = "enUS") -> None:
+        super().__init__(
+            title=t("referral_success_embed.title.1", locale),
+            description=t("referral_success_embed.description.1", locale).format(
+                player_name=referrer_player_name
+            ),
+            color=discord.Color.green(),
+        )
+        apply_default_embed_footer(self, locale=locale)
+
+
+class ReferralFailureEmbed(discord.Embed):
+    def __init__(self, locale: str = "enUS") -> None:
+        super().__init__(
+            title=t("referral_failure_embed.title.1", locale),
+            description=t("referral_failure_embed.description.1", locale),
+            color=discord.Color.red(),
         )
         apply_default_embed_footer(self, locale=locale)

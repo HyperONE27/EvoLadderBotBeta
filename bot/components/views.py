@@ -34,6 +34,10 @@ from bot.components.embeds import (
     QueueSetupEmbed2v2,
     QueueSearchingEmbed,
     QueueSearchingEmbed2v2,
+    ReferralFailureEmbed,
+    ReferralInstructionsEmbed,
+    ReferralPitchEmbed,
+    ReferralSuccessEmbed,
     SetCountryConfirmEmbed,
     SetMMRSuccessEmbed,
     SetupIntroEmbed,
@@ -58,6 +62,7 @@ from bot.core.config import (
     MAX_MAP_VETOES,
     QUEUE_SEARCHING_HEARTBEAT_SECONDS,
 )
+from common.referral import uid_to_code
 from bot.core.dependencies import get_cache, get_player_locale
 from bot.core.http import get_session
 from bot.helpers.activity_analytics import (
@@ -4334,3 +4339,112 @@ async def _abort_match_2v2(interaction: discord.Interaction, match_id: int) -> N
             embed=QueueErrorEmbed(t("error.unexpected_error", _locale), locale=_locale),
             ephemeral=True,
         )
+
+
+# =============================================================================
+# Referral
+# =============================================================================
+
+
+class ReferralCodeModal(discord.ui.Modal):
+    referral_code_input: discord.ui.TextInput
+
+    def __init__(self, locale: str = "enUS") -> None:
+        super().__init__(title=t("referral_code_modal.title.1", locale))
+        self._locale = locale
+        self.referral_code_input = discord.ui.TextInput(
+            label=t("referral_code_modal.field_label.1", locale),
+            placeholder="XXXX-XXXX-XXXX-XXXX",
+            min_length=16,
+            max_length=19,
+            required=True,
+        )
+        self.add_item(self.referral_code_input)
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        locale = self._locale
+        code = self.referral_code_input.value.strip()
+        try:
+            async with get_session().post(
+                f"{BACKEND_URL}/referral",
+                json={"discord_uid": interaction.user.id, "referral_code": code},
+            ) as resp:
+                data = await resp.json()
+                if data.get("success"):
+                    referrer_name = data.get("referrer_player_name") or "?"
+                    await interaction.response.edit_message(
+                        embed=ReferralSuccessEmbed(referrer_name, locale=locale),
+                        view=None,
+                    )
+                else:
+                    await interaction.response.edit_message(
+                        embed=ReferralFailureEmbed(locale=locale),
+                        view=None,
+                    )
+        except Exception:
+            logger.exception("ReferralCodeModal submission failed")
+            await interaction.response.edit_message(
+                embed=ReferralFailureEmbed(locale=locale),
+                view=None,
+            )
+
+
+class ReferralView(discord.ui.View):
+    def __init__(self, already_referred: bool, locale: str = "enUS") -> None:
+        super().__init__(timeout=180)
+        self._locale = locale
+        self._already_referred = already_referred
+
+        create_btn: discord.ui.Button = discord.ui.Button(
+            label=t("referral_view.button.create.1", locale),
+            emoji="🎫",
+            style=discord.ButtonStyle.blurple,
+            custom_id="referral_create",
+        )
+        create_btn.callback = self._on_create  # type: ignore[method-assign]
+
+        enter_btn: discord.ui.Button = discord.ui.Button(
+            label=t("referral_view.button.enter.1", locale),
+            emoji="🎟️",
+            style=discord.ButtonStyle.secondary,
+            custom_id="referral_enter",
+            disabled=already_referred,
+        )
+        enter_btn.callback = self._on_enter  # type: ignore[method-assign]
+
+        self.add_item(create_btn)
+        self.add_item(enter_btn)
+
+    async def _on_create(self, interaction: discord.Interaction) -> None:
+        locale = self._locale
+        cache = get_cache()
+        player = cache.player_presets.get(interaction.user.id)
+        player_name: str = (player or {}).get("player_name") or str(interaction.user.id)
+        referral_code = uid_to_code(interaction.user.id)
+
+        try:
+            async with get_session().get(
+                f"{BACKEND_URL}/stats/active_players",
+            ) as resp:
+                data = await resp.json()
+                active_count: int = data.get("active_player_count", 0)
+        except Exception:
+            logger.exception("Failed to fetch active player count for referral pitch")
+            active_count = 0
+
+        await interaction.response.edit_message(
+            embed=ReferralInstructionsEmbed(locale=locale),
+            view=None,
+        )
+        await interaction.followup.send(
+            embed=ReferralPitchEmbed(
+                player_name=player_name,
+                referral_code=referral_code,
+                active_player_count=active_count,
+                locale=locale,
+            ),
+        )
+
+    async def _on_enter(self, interaction: discord.Interaction) -> None:
+        locale = self._locale
+        await interaction.response.send_modal(ReferralCodeModal(locale=locale))

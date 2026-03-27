@@ -277,6 +277,20 @@ class DatabaseWriter:
 
     # -- players -------------------------------------------------------------
 
+    def update_player_referral(
+        self,
+        discord_uid: int,
+        referred_by: int,
+        referred_at: datetime,
+    ) -> None:
+        """Record the referrer UID and timestamp on a player row."""
+        self.client.table("players").update(
+            {
+                "referred_by": referred_by,
+                "referred_at": referred_at.isoformat(),
+            }
+        ).eq("discord_uid", discord_uid).execute()
+
     def update_player_nationality(self, player_id: int, country_code: str) -> None:
         """Update the nationality field for a player row."""
         self.client.table("players").update({"nationality": country_code}).eq(

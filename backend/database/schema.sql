@@ -42,7 +42,9 @@ CREATE TABLE IF NOT EXISTS players (
             ('1v1', '2v2', 'FFA')
         ),
     current_match_id        BIGINT DEFAULT NULL,
-    read_lobby_guide        BOOLEAN NOT NULL DEFAULT FALSE
+    read_lobby_guide        BOOLEAN NOT NULL DEFAULT FALSE,
+    referred_by             BIGINT,
+    referred_at             TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS notifications (

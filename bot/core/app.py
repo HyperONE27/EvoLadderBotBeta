@@ -11,6 +11,7 @@ from bot.commands.admin.statusreset_command import register_admin_statusreset_co
 from bot.commands.owner.admin_command import register_owner_admin_command
 from bot.commands.owner.mmr_command import register_owner_mmr_command
 from bot.commands.user.activity_command import register_activity_command
+from bot.commands.user.referral_command import register_referral_command
 from bot.commands.user.help_command import register_help_command
 from bot.commands.user.leaderboard_command import register_leaderboard_command
 from bot.commands.user.party_command import register_party_command
@@ -66,6 +67,7 @@ def _register_commands(client: discord.Client) -> None:
     register_profile_command(tree)
     # register_prune_command(tree)      # Deprecated: abandoned from alpha
     register_queue_command(tree)
+    register_referral_command(tree)
     register_setcountry_command(tree)
     register_setup_command(tree)
     # register_termsofservice_command(tree)  # Deprecated: merged into /setup

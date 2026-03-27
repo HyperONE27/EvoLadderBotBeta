@@ -21,6 +21,27 @@ class GreetingResponse(BaseModel):
     message: str
 
 
+# --- /referral ---
+
+
+class ReferralRequest(BaseModel):
+    discord_uid: int
+    referral_code: str
+
+
+class ReferralResponse(BaseModel):
+    success: bool
+    referrer_player_name: str | None = None
+    error: str | None = None
+
+
+# --- /stats/active_players ---
+
+
+class ActivePlayersResponse(BaseModel):
+    active_player_count: int
+
+
 # --- /admins/{discord_uid} ---
 
 

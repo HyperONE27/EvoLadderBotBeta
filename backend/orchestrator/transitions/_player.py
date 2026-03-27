@@ -9,11 +9,82 @@ import structlog
 
 from common.datetime_helpers import utc_now
 from common.lookups.country_lookups import get_country_by_code
+from common.referral import code_to_uid
 
 if TYPE_CHECKING:
     from backend.orchestrator.transitions import TransitionManager
 
 logger = structlog.get_logger(__name__)
+
+
+def submit_referral(
+    self: TransitionManager,
+    referee_discord_uid: int,
+    referral_code: str,
+) -> tuple[bool, str | None]:
+    """Validate a referral code and record the referral relationship.
+
+    Returns (success, referrer_player_name_or_error).
+    On success the second element is the referrer's player_name.
+    On failure the second element is an error detail string.
+    """
+    referrer_uid = code_to_uid(referral_code)
+    if referrer_uid is None:
+        return False, "invalid_code"
+
+    if referrer_uid == referee_discord_uid:
+        return False, "self_referral"
+
+    df = self._state_manager.players_df
+
+    # Look up referee to ensure they exist and haven't already been referred.
+    referee_rows = df.filter(pl.col("discord_uid") == referee_discord_uid)
+    if referee_rows.is_empty():
+        return False, "referee_not_found"
+    referee = referee_rows.row(0, named=True)
+    if referee.get("referred_by") is not None:
+        return False, "already_referred"
+
+    # Look up referrer — must exist and have completed setup.
+    referrer_rows = df.filter(pl.col("discord_uid") == referrer_uid)
+    if referrer_rows.is_empty():
+        return False, "referrer_not_found"
+    referrer = referrer_rows.row(0, named=True)
+    if not referrer.get("completed_setup"):
+        return False, "referrer_not_found"
+
+    referrer_player_name: str = referrer.get("player_name") or str(referrer_uid)
+    referred_at = utc_now()
+
+    # Writethrough: DB first, then in-memory.
+    self._db_writer.update_player_referral(
+        referee_discord_uid, referrer_uid, referred_at
+    )
+
+    updated = referee_rows.row(0, named=True)
+    updated["referred_by"] = referrer_uid
+    updated["referred_at"] = referred_at
+    self._state_manager.players_df = df.filter(
+        pl.col("discord_uid") != referee_discord_uid
+    ).vstack(pl.DataFrame([updated]).cast(df.schema))
+
+    self._db_writer.insert_event(
+        {
+            "discord_uid": referee_discord_uid,
+            "event_type": "player_update",
+            "action": "referral",
+            "target_discord_uid": referrer_uid,
+            "event_data": {
+                "referred_by": referrer_uid,
+                "referred_at": referred_at.isoformat(),
+            },
+        }
+    )
+
+    logger.info(
+        f"Player {referee_discord_uid} referred by {referrer_uid} ({referrer_player_name})"
+    )
+    return True, referrer_player_name
 
 
 def set_country_for_player(
