@@ -22,9 +22,11 @@ What remains?
     - ✅ Reorganize channel categories
     - ⏰ Add clear signals directing players to their places
     - ⏰ Add a bot that sends a welcome message to new users
-- ⏰ Add a line to the end of /setup directing users to /queue and /help.
-- ⏰ Ask "how did you find us?" in /setup
+- ✅ Add a line to the end of /setup directing users to /queue and /help.
+- ✅ Ask "how did you find us?" in /setup
 - ⏰ Create some kind of referral mechanism
+    - ⏰ Verify referral implementation
+- ⏰ Add events table logging for survey submission and referral creation/referral code entering
 - ✅ Collect data about when people join the server
 - ✅ Deduplicate /queue joins
     - ✅ No more than once per 5 minutes

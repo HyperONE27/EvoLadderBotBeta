@@ -128,5 +128,10 @@
         "name": "bronze_league",
         "short_name": "bl",
         "markdown": "<:bl:1487174742736634086>"
+    },
+    "wraith": {
+        "name": "wraith",
+        "short_name": "wr",
+        "markdown": "<:wr:1487226291072663602>"
     }
 }
