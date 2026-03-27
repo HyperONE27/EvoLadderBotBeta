@@ -110,6 +110,69 @@ CREATE TABLE IF NOT EXISTS events (
 -- CREATE INDEX IF NOT EXISTS idx_events_event_type   ON events(event_type);
 -- CREATE INDEX IF NOT EXISTS idx_events_performed_at ON events(performed_at DESC);
 
+CREATE TABLE IF NOT EXISTS surveys (
+    id                          BIGSERIAL PRIMARY KEY,
+    discord_uid                 BIGINT NOT NULL UNIQUE,
+
+    -- Setup survey (asked during /setup for first-time users only)
+    setup_completed             BOOLEAN NOT NULL DEFAULT FALSE,
+    setup_completed_at          TIMESTAMPTZ,
+
+    -- Q1: "How did you learn about the SC: Evo Complete ladder?"
+    setup_q1_response           TEXT
+        CHECK (setup_q1_response IN (
+            'friend_or_community',  'live_broadcast',
+            'recorded_video',       'evo_discord',
+            'other_discord',        'social_media',
+            'in_game',              'other'
+        )),
+    -- Q2: "How long have you been playing SC: Evo Complete?"
+    setup_q2_response           TEXT
+        CHECK (setup_q2_response IN (
+            'lt_1mo', '1_3mo', '3_6mo', '6_12mo', 'gt_1yr'
+        )),
+    -- Q3: "Which of the following best describes you?"
+    setup_q3_response           TEXT
+        CHECK (setup_q3_response IN (
+            'casual',       'find_opponents',
+            'improve_rank', 'tournament',
+            'avoid_cheaters', 'other'
+        )),
+    -- Q4: "Best ladder placement (BW / SC2)?" — 1-2 selections, max 1 per game
+    setup_q4_response           TEXT[]
+        CHECK (setup_q4_response <@ ARRAY[
+            'no_placement',
+            'bw_s', 'bw_a', 'bw_b', 'bw_c',
+            'sc2_grandmaster', 'sc2_master', 'sc2_diamond', 'sc2_platinum'
+        ]::text[]),
+
+    -- 14-day survey (stub — questions TBD)
+    d14_completed               BOOLEAN NOT NULL DEFAULT FALSE,
+    d14_completed_at            TIMESTAMPTZ,
+    d14_q1_response             TEXT,
+    d14_q2_response             TEXT,
+    d14_q3_response             TEXT,
+    d14_q4_response             TEXT,
+
+    -- 30-day survey (stub — questions TBD)
+    d30_completed               BOOLEAN NOT NULL DEFAULT FALSE,
+    d30_completed_at            TIMESTAMPTZ,
+    d30_q1_response             TEXT,
+    d30_q2_response             TEXT,
+    d30_q3_response             TEXT,
+    d30_q4_response             TEXT,
+
+    -- Post-match survey (stub — one per player for now; questions TBD)
+    post_match_completed        BOOLEAN NOT NULL DEFAULT FALSE,
+    post_match_completed_at     TIMESTAMPTZ,
+    post_match_q1_response      TEXT,
+    post_match_q2_response      TEXT,
+    post_match_q3_response      TEXT,
+    post_match_q4_response      TEXT,
+
+    updated_at                  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS matches_1v1 (
     id                      BIGSERIAL PRIMARY KEY,
     player_1_discord_uid    BIGINT NOT NULL,

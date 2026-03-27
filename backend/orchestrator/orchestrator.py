@@ -679,6 +679,16 @@ class Orchestrator:
         self._transition_manager.log_event(row)
 
     # ------------------------------------------------------------------
+    # Survey writes
+    # ------------------------------------------------------------------
+
+    def save_setup_survey(
+        self, discord_uid: int, q1: str, q2: str, q3: str, q4: list[str]
+    ) -> None:
+        """Persist setup survey responses. Write-only — no in-memory state."""
+        self._transition_manager.save_setup_survey(discord_uid, q1, q2, q3, q4)
+
+    # ------------------------------------------------------------------
     # Queue join analytics (/activity)
     # ------------------------------------------------------------------
 

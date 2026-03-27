@@ -250,6 +250,33 @@ class DatabaseWriter:
             return None
         return cast(dict[str, Any], response.data[0])
 
+    # -- surveys -------------------------------------------------------------
+
+    def upsert_setup_survey(
+        self,
+        discord_uid: int,
+        q1: str,
+        q2: str,
+        q3: str,
+        q4: list[str],
+    ) -> None:
+        """Upsert setup survey responses for a player."""
+        payload: dict[str, Any] = {
+            "discord_uid": discord_uid,
+            "setup_completed": True,
+            "setup_completed_at": utc_now().isoformat(),
+            "setup_q1_response": q1,
+            "setup_q2_response": q2,
+            "setup_q3_response": q3,
+            "setup_q4_response": q4,
+            "updated_at": utc_now().isoformat(),
+        }
+        self.client.table("surveys").upsert(
+            payload, on_conflict="discord_uid"
+        ).execute()
+
+    # -- players -------------------------------------------------------------
+
     def update_player_nationality(self, player_id: int, country_code: str) -> None:
         """Update the nationality field for a player row."""
         self.client.table("players").update({"nationality": country_code}).eq(

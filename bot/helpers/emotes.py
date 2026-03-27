@@ -57,3 +57,19 @@ def get_rank_emote(rank: str) -> str:
     if len(rank) != 1:
         raise ValueError(f"Invalid rank: {rank!r}, expected a single character")
     return _get_emote(f"{rank.lower()}_rank")["markdown"]
+
+
+def get_league_emote(league: str) -> str:
+    league = league.lower()
+    valid = {"grandmaster", "master", "diamond", "platinum", "gold", "silver", "bronze"}
+    if league not in valid:
+        raise ValueError(f"Invalid league: {league!r}")
+    return _get_emote(f"{league}_league")["markdown"]
+
+
+def get_emote_as_partial_emoji(name: str) -> discord.PartialEmoji:
+    """Convert a named custom emote to a PartialEmoji for SelectOption use."""
+    emote = _get_emote(name)
+    md = emote["markdown"]  # e.g. "<:s_:1427477795843473521>"
+    parts = md.strip("<>").split(":")
+    return discord.PartialEmoji(name=parts[1], id=int(parts[2]))

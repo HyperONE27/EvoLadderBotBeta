@@ -100,6 +100,7 @@ from backend.api.models import (
     SetCountryConfirmRequest,
     SetCountryConfirmResponse,
     SetupConfirmRequest,
+    SetupSurveyRequest,
     SetupConfirmResponse,
     TermsOfServiceConfirmRequest,
     TermsOfServiceConfirmResponse,
@@ -849,6 +850,20 @@ async def put_notifications(
         notify_queue_ffa_cooldown=request.notify_queue_ffa_cooldown,
     )
     return _notification_row_to_out(row)
+
+
+@router.put("/surveys/setup", status_code=204)
+async def put_setup_survey(
+    request: SetupSurveyRequest,
+    app: Backend = Depends(get_backend),
+) -> None:
+    app.orchestrator.save_setup_survey(
+        request.discord_uid,
+        q1=request.setup_q1_response,
+        q2=request.setup_q2_response,
+        q3=request.setup_q3_response,
+        q4=request.setup_q4_response,
+    )
 
 
 @router.post("/queue_1v1/join", response_model=QueueJoinResponse)

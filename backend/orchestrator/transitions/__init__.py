@@ -117,6 +117,13 @@ class TransitionManager:
         """Insert a single event row. Non-critical — failures are swallowed."""
         self._db_writer.insert_event(row)
 
+    # -- survey writes -------------------------------------------------------
+    def save_setup_survey(
+        self, discord_uid: int, q1: str, q2: str, q3: str, q4: list[str]
+    ) -> None:
+        """Persist setup survey responses. Write-only — no in-memory state."""
+        self._db_writer.upsert_setup_survey(discord_uid, q1, q2, q3, q4)
+
     # -- admin / owner (_admin.py) -------------------------------------------
     reset_player_status = _admin.reset_player_status
     toggle_ban = _admin.toggle_ban

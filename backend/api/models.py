@@ -535,6 +535,17 @@ class NotificationsUpsertRequest(BaseModel):
     notify_queue_ffa_cooldown: int | None = Field(None, ge=5, le=1440)
 
 
+# --- /surveys ---
+
+
+class SetupSurveyRequest(BaseModel):
+    discord_uid: int
+    setup_q1_response: str
+    setup_q2_response: str
+    setup_q3_response: str
+    setup_q4_response: list[str]
+
+
 # --- /setcountry ---
 
 
