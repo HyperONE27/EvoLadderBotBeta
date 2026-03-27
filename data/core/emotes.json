@@ -93,5 +93,40 @@
         "name": "l_rank",
         "short_name": "l_",
         "markdown": "<:l_:1484042406973145260>"
+    },
+    "grandmaster_league": {
+        "name": "grandmaster_league",
+        "short_name": "ol",
+        "markdown": "<:ol:1487174891055878266>"
+    },
+    "master_league": {
+        "name": "master_league",
+        "short_name": "ml",
+        "markdown": "<:ml:1487174865046863952>"
+    },
+    "diamond_league": {
+        "name": "diamond_league",
+        "short_name": "dl",
+        "markdown": "<:dl:1487174844390051924>"
+    },
+    "platinum_league": {
+        "name": "platinum_league",
+        "short_name": "pl",
+        "markdown": "<:pl:1487174820604022947>"
+    },
+    "gold_league": {
+        "name": "gold_league",
+        "short_name": "gl",
+        "markdown": "<:gl:1487174798877396993>"
+    },
+    "silver_league": {
+        "name": "silver_league",
+        "short_name": "sl",
+        "markdown": "<:sl:1487174777650286703>"
+    },
+    "bronze_league": {
+        "name": "bronze_league",
+        "short_name": "bl",
+        "markdown": "<:bl:1487174742736634086>"
     }
 }
