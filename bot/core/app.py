@@ -123,7 +123,9 @@ async def on_member_join(member: discord.Member) -> None:
             json={
                 "discord_uid": member.id,
                 "discord_username": member.name,
-                "account_age_days": (utc_now() - member.created_at).days,
+                "account_age_days": round(
+                    (utc_now() - member.created_at).total_seconds() / 86400
+                ),
             },
         ) as resp:
             if resp.status >= 400:
