@@ -6,11 +6,25 @@ What remains?
 
 - ✅ Write pre-beta feature announcement
 - ⏰ Write pre-beta launch announcement
+- ⏰ Fix the server in preparation for launch
+    - ✅ Make the server description less shit
+    - ✅ Remove redundant or obsolete channels
+    - ✅ Add channel honeypot + onboarding role honeypot
+        - Might need a bot to enforce this
+        - ✅ Bot is online
+    - ✅ Revise the onboarding
+        - ✅ Onboarding revised
+        - ✅ Onboarding options reveal the respective channels/categories
+    - ✅ Reorganize channel categories
+    - ⏰ Add clear signals directing players to their places
+    - ⏰ Add a bot that sends a welcome message to new users
 - ✅ Deduplicate /queue joins
     - ✅ No more than once per 5 minutes
 - ⏰ Need to re-apply the locale strings changes in commit `2a683fda7eff0676d1e84f76830f85ae4a777a60` when the localizers get their strings back to me
     - ⏰ also need to re-apply "queue_searching_embed.description.1" from commit `25172c41376222f194e0812ac414a3315ad79c1c`
     - ⏰ also need to insert "help_embed.title.1" and "help_embed.description.1" from commit `6c129d5b86fc684a488f19e7075d39e1ed0aee24`
+- ⏰ Add a {user} argument to `/profile`
+    - Admins can view other users' profiles
 - ✅ Write a /help command
     - ⏰ Get it localized
 - ✅ Re-write Terms of Service for the pre-beta
@@ -301,4 +315,10 @@ The SC: Evo Complete ladder pre-beta is now live!
 
 Please note there are some new settings, and to make sure everyone has a chance to see them, we are requiring all users to run `/setup` again.
 
-- 
+Player ratings and match history from the alpha testing phase have been retained. Returning users should be aware of the following changes:
+- The 2v2 gamemode is now available.
+  - The 2v2 queue supports both **BW + BW vs SC2 + SC2** and **BW + SC2 vs BW + SC2** games.
+  - /party invite {name/Discord username/Discord UID} to invite a player to join
+  - 
+  - 
+  - 

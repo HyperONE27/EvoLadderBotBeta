@@ -12,7 +12,7 @@ _DUMMY_ENV = {
     "SUPABASE_ANON_KEY": "test-anon-key",
     "SUPABASE_SERVICE_ROLE_KEY": "test-service-role-key",
     "SUPABASE_BUCKET_NAME": "test-bucket",
-    "ALLOW_AI_PLAYERS": "false",       # prod behavior: AI players are rejected
+    "ALLOW_AI_PLAYERS": "false",  # prod behavior: AI players are rejected
     "COERCE_INDETERMINATE_AS_LOSS": "false",  # prod behavior: indeterminate replays fail validation
 }
 

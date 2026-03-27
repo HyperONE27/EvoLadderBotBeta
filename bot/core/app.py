@@ -170,9 +170,11 @@ async def on_tree_error(
     )
 
     locale = get_player_locale(interaction.user.id)
+    ephemeral = False
     if isinstance(error, app_commands.CheckFailure):
         if isinstance(error, NotInDMError):
             description = t("error.not_in_dm", locale)
+            ephemeral = True
         elif isinstance(error, BannedError):
             description = t("error.banned", locale)
         elif isinstance(error, NotAdminError):
@@ -201,9 +203,9 @@ async def on_tree_error(
         )
 
     if interaction.response.is_done():
-        await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
     else:
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
 
 
 # ---------------
