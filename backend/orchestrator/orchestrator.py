@@ -676,7 +676,7 @@ class Orchestrator:
 
     def log_event(self, row: dict) -> None:
         """Insert a single event row. Non-critical — failures are swallowed."""
-        self._transition_manager._db_writer.insert_event(row)
+        self._transition_manager.log_event(row)
 
     # ------------------------------------------------------------------
     # Queue join analytics (/activity)

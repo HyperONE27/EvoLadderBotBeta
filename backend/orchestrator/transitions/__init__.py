@@ -112,6 +112,11 @@ class TransitionManager:
     get_party = _party.get_party
     _purge_party_membership = _party.purge_party_membership
 
+    # -- event logging -------------------------------------------------------
+    def log_event(self, row: dict) -> None:
+        """Insert a single event row. Non-critical — failures are swallowed."""
+        self._db_writer.insert_event(row)
+
     # -- admin / owner (_admin.py) -------------------------------------------
     reset_player_status = _admin.reset_player_status
     toggle_ban = _admin.toggle_ban
