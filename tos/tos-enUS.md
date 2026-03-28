@@ -98,6 +98,7 @@ We collect and store only the information necessary to operate the ladder:
 - Discord user ID and username
 - Match records, timestamps, and MMR/ranking data
 - User settings and preferences, such as races, vetoes, countries, and regions
+- Interaction and usage data, including command usage and feature engagement, to inform platform development and outreach strategy
 
 We do not collect other sensitive Personally Identifiable Information (PII), such as real names, addresses, email addresses, or payment information.
 
@@ -107,10 +108,13 @@ Data is used to:
 - Power matchmaking, rankings, and leaderboards
 - Maintain system integrity and prevent abuse
 - Ensure the proper functioning of new features in testing and development
-- Analyze the state of multiplayer game balance and design new patches
+- Ascertain the state of multiplayer game balance and design new patches
+- Analyze platform usage to guide feature development and community growth
 
 ### 3. Data Sharing
-We do not sell or share user data. Limited third-party processing occurs through:
+User-submitted replays may be featured publicly and distributed for community outreach purposes.
+
+Otherwise, we do not sell or share user data. Limited third-party processing occurs through:
 - **Discord API** — for identity verification and messaging features
 - **Supabase** — for database hosting and related backend services
 

@@ -6,7 +6,7 @@ What remains?
 
 - ✅ Write pre-beta feature announcement
 - ⏰ Write pre-beta launch announcement
-- ⏰ Rewrite the ToS AGAIN to include data collection about:
+- ✅ Rewrite the ToS AGAIN to include data collection about:
     - where users found us
     - when users joined the server
     - how quickly they complete /setup -> go to first ladder game

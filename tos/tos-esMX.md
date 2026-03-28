@@ -98,6 +98,7 @@ Recopilamos y almacenamos únicamente la información necesaria para operar el r
 - ID de Discord y nombre de usuario
 - Registros de partidas, marcas de tiempo y datos de MMR/clasificación
 - Configuración y preferencias del usuario, tales como razas, vetos, países y regiones
+- Datos de interacción y uso, incluyendo el uso de comandos y la participación en funciones, para orientar el desarrollo de la plataforma y la estrategia de difusión
 
 No recopilamos otra Información de Identificación Personal (PII) sensible, como nombres reales, direcciones, correos electrónicos o información de pago.
 
@@ -108,9 +109,12 @@ Los datos se utilizan para:
 - Mantener la integridad del sistema y prevenir el abuso
 - Garantizar el correcto funcionamiento de las nuevas funciones durante las pruebas y el desarrollo
 - Analizar el estado del balance del juego multijugador y diseñar nuevos parches
+- Analizar el uso de la plataforma para orientar el desarrollo de funciones y el crecimiento de la comunidad
 
 ### 3. Compartición de Datos
-No vendemos ni compartimos datos de usuarios. El procesamiento limitado por terceros se realiza a través de:
+Las repeticiones enviadas por los usuarios pueden ser publicadas y distribuidas con fines de difusión comunitaria.
+
+De lo contrario, no vendemos ni compartimos datos de usuarios. El procesamiento limitado por terceros se realiza a través de:
 - **Discord API** — para la verificación de identidad y las funciones de mensajería
 - **Supabase** — para el alojamiento de la base de datos y los servicios de backend relacionados
 
