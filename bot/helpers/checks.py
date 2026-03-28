@@ -99,6 +99,20 @@ async def check_if_admin(interaction: discord.Interaction) -> bool:
     admin = data.get("admin")
     if admin is None or admin.get("role") == "inactive":
         raise NotAdminError()
+
+    # Cache locale so admin commands render in the correct language.
+    if uid not in get_cache().player_locales:
+        try:
+            async with get_session().get(f"{BACKEND_URL}/players/{uid}") as resp:
+                player_data = await resp.json()
+            player = player_data.get("player")
+            if player is not None:
+                language = player.get("language")
+                if language:
+                    get_cache().player_locales[uid] = language
+        except Exception:
+            pass  # fail-open: default to enUS
+
     return True
 
 
@@ -155,6 +169,20 @@ async def check_if_owner(interaction: discord.Interaction) -> bool:
     admin = data.get("admin")
     if admin is None or admin.get("role") != "owner":
         raise NotOwnerError()
+
+    # Cache locale so owner commands render in the correct language.
+    if uid not in get_cache().player_locales:
+        try:
+            async with get_session().get(f"{BACKEND_URL}/players/{uid}") as resp:
+                player_data = await resp.json()
+            player = player_data.get("player")
+            if player is not None:
+                language = player.get("language")
+                if language:
+                    get_cache().player_locales[uid] = language
+        except Exception:
+            pass  # fail-open: default to enUS
+
     return True
 
 
