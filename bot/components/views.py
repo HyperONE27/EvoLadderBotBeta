@@ -1491,6 +1491,7 @@ async def _send_setup_request(
             "notify_queue_1v1_cooldown": notification_1v1,
             "notify_queue_2v2": notification_2v2 is not None,
             "notify_queue_2v2_cooldown": notification_2v2,
+            "first_setup": not already_setup,
         },
     ) as response:
         data = await response.json()

@@ -108,8 +108,8 @@ from backend.api.models import (
     ReferralPitchRequest,
     ReferralRequest,
     ReferralResponse,
-    SetupStartedRequest,
-    SetupStartedResponse,
+    FirstSetupStartedRequest,
+    FirstSetupStartedResponse,
 )
 from backend.core.bootstrap import Backend
 from backend.domain_types.ephemeral import LeaderboardEntry1v1, LeaderboardEntry2v2
@@ -300,25 +300,25 @@ async def guild_member_join(
     return GuildMemberJoinResponse(ok=True)
 
 
-# --- /events/setup_started ---
+# --- /events/first_setup_started ---
 
 
-@router.post("/events/setup_started", response_model=SetupStartedResponse)
-async def setup_started(
-    request: SetupStartedRequest,
+@router.post("/events/first_setup_started", response_model=FirstSetupStartedResponse)
+async def first_setup_started(
+    request: FirstSetupStartedRequest,
     app: Backend = Depends(get_backend),
-) -> SetupStartedResponse:
+) -> FirstSetupStartedResponse:
     app.orchestrator.log_event(
         {
             "discord_uid": request.discord_uid,
             "event_type": "player_command",
-            "action": "setup_started",
+            "action": "first_setup_started",
             "event_data": {
                 "discord_username": request.discord_username,
             },
         }
     )
-    return SetupStartedResponse(ok=True)
+    return FirstSetupStartedResponse(ok=True)
 
 
 # --- /admins/{discord_uid} ---
@@ -1409,24 +1409,34 @@ async def setup(
     )
     if not success:
         raise HTTPException(status_code=400, detail=message)
+    event_data = {
+        "player_name": request.player_name,
+        "battletag": request.battletag,
+        "nationality": request.nationality,
+        "location": request.location,
+        "language": request.language,
+        "notify_queue_1v1": request.notify_queue_1v1,
+        "notify_queue_1v1_cooldown": request.notify_queue_1v1_cooldown,
+        "notify_queue_2v2": request.notify_queue_2v2,
+        "notify_queue_2v2_cooldown": request.notify_queue_2v2_cooldown,
+    }
     app.orchestrator.log_event(
         {
             "discord_uid": request.discord_uid,
             "event_type": "player_command",
             "action": "setup",
-            "event_data": {
-                "player_name": request.player_name,
-                "battletag": request.battletag,
-                "nationality": request.nationality,
-                "location": request.location,
-                "language": request.language,
-                "notify_queue_1v1": request.notify_queue_1v1,
-                "notify_queue_1v1_cooldown": request.notify_queue_1v1_cooldown,
-                "notify_queue_2v2": request.notify_queue_2v2,
-                "notify_queue_2v2_cooldown": request.notify_queue_2v2_cooldown,
-            },
+            "event_data": event_data,
         }
     )
+    if request.first_setup:
+        app.orchestrator.log_event(
+            {
+                "discord_uid": request.discord_uid,
+                "event_type": "player_command",
+                "action": "first_setup_completed",
+                "event_data": event_data,
+            }
+        )
     return SetupConfirmResponse(success=True, message=message)
 
 
