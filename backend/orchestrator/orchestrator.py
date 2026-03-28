@@ -704,6 +704,10 @@ class Orchestrator:
         """Persist setup survey responses. Write-only — no in-memory state."""
         self._transition_manager.save_setup_survey(discord_uid, q1, q2, q3, q4)
 
+    def log_referral_pitch(self, discord_uid: int) -> None:
+        """Log that a player generated their referral pitch embed."""
+        self._transition_manager.log_referral_pitch(discord_uid)
+
     # ------------------------------------------------------------------
     # Queue join analytics (/activity)
     # ------------------------------------------------------------------

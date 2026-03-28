@@ -105,6 +105,7 @@ from backend.api.models import (
     TermsOfServiceConfirmRequest,
     TermsOfServiceConfirmResponse,
     ActivePlayersResponse,
+    ReferralPitchRequest,
     ReferralRequest,
     ReferralResponse,
 )
@@ -833,6 +834,14 @@ async def submit_referral(
     if success:
         return ReferralResponse(success=True, referrer_player_name=payload)
     return ReferralResponse(success=False, error=payload)
+
+
+@router.post("/referral/pitch", status_code=204)
+async def log_referral_pitch(
+    req: ReferralPitchRequest,
+    app: Backend = Depends(get_backend),
+) -> None:
+    app.orchestrator.log_referral_pitch(req.discord_uid)
 
 
 @router.get("/stats/active_players", response_model=ActivePlayersResponse)

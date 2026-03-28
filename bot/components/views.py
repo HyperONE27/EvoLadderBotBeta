@@ -4422,15 +4422,37 @@ class ReferralView(discord.ui.View):
         player_name: str = (player or {}).get("player_name") or str(interaction.user.id)
         referral_code = uid_to_code(interaction.user.id)
 
-        try:
-            async with get_session().get(
-                f"{BACKEND_URL}/stats/active_players",
-            ) as resp:
-                data = await resp.json()
-                active_count: int = data.get("active_player_count", 0)
-        except Exception:
-            logger.exception("Failed to fetch active player count for referral pitch")
-            active_count = 0
+        import asyncio
+
+        async def _fetch_active_count() -> int:
+            try:
+                async with get_session().get(
+                    f"{BACKEND_URL}/stats/active_players",
+                ) as resp:
+                    data = await resp.json()
+                    return int(data.get("active_player_count", 0))
+            except Exception:
+                logger.exception(
+                    "Failed to fetch active player count for referral pitch"
+                )
+                return 0
+
+        async def _log_pitch() -> None:
+            try:
+                async with get_session().post(
+                    f"{BACKEND_URL}/referral/pitch",
+                    json={"discord_uid": interaction.user.id},
+                ) as resp:
+                    if resp.status >= 400:
+                        logger.warning(
+                            f"referral pitch log failed for user={interaction.user.id}, status={resp.status}"
+                        )
+            except Exception:
+                logger.exception(
+                    "Failed to log referral pitch for user=%s", interaction.user.id
+                )
+
+        active_count, _ = await asyncio.gather(_fetch_active_count(), _log_pitch())
 
         await interaction.response.edit_message(
             embed=ReferralInstructionsEmbed(locale=locale),

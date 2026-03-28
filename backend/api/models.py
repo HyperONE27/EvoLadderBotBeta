@@ -35,6 +35,10 @@ class ReferralResponse(BaseModel):
     error: str | None = None
 
 
+class ReferralPitchRequest(BaseModel):
+    discord_uid: int
+
+
 # --- /stats/active_players ---
 
 

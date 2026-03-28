@@ -124,6 +124,34 @@ class TransitionManager:
     ) -> None:
         """Persist setup survey responses. Write-only — no in-memory state."""
         self._db_writer.upsert_setup_survey(discord_uid, q1, q2, q3, q4)
+        self._db_writer.insert_event(
+            {
+                "discord_uid": discord_uid,
+                "event_type": "player_command",
+                "action": "setup_survey_submitted",
+                "event_data": {
+                    "setup_q1_response": q1,
+                    "setup_q2_response": q2,
+                    "setup_q3_response": q3,
+                    "setup_q4_response": q4,
+                },
+            }
+        )
+
+    def log_referral_pitch(self, discord_uid: int) -> None:
+        """Log that a player generated their referral pitch embed."""
+        from common.referral import uid_to_code
+
+        self._db_writer.insert_event(
+            {
+                "discord_uid": discord_uid,
+                "event_type": "player_command",
+                "action": "referral_pitch_generated",
+                "event_data": {
+                    "referral_code": uid_to_code(discord_uid),
+                },
+            }
+        )
 
     # -- admin / owner (_admin.py) -------------------------------------------
     reset_player_status = _admin.reset_player_status

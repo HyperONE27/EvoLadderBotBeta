@@ -30,9 +30,33 @@ def submit_referral(
     """
     referrer_uid = code_to_uid(referral_code)
     if referrer_uid is None:
+        self._db_writer.insert_event(
+            {
+                "discord_uid": referee_discord_uid,
+                "event_type": "player_command",
+                "action": "referral_submission",
+                "event_data": {
+                    "status": "failure",
+                    "error": "invalid_code",
+                    "referral_code": referral_code,
+                },
+            }
+        )
         return False, "invalid_code"
 
     if referrer_uid == referee_discord_uid:
+        self._db_writer.insert_event(
+            {
+                "discord_uid": referee_discord_uid,
+                "event_type": "player_command",
+                "action": "referral_submission",
+                "event_data": {
+                    "status": "failure",
+                    "error": "self_referral",
+                    "referral_code": referral_code,
+                },
+            }
+        )
         return False, "self_referral"
 
     df = self._state_manager.players_df
@@ -40,17 +64,69 @@ def submit_referral(
     # Look up referee to ensure they exist and haven't already been referred.
     referee_rows = df.filter(pl.col("discord_uid") == referee_discord_uid)
     if referee_rows.is_empty():
+        self._db_writer.insert_event(
+            {
+                "discord_uid": referee_discord_uid,
+                "event_type": "player_command",
+                "action": "referral_submission",
+                "target_discord_uid": referrer_uid,
+                "event_data": {
+                    "status": "failure",
+                    "error": "referee_not_found",
+                    "referral_code": referral_code,
+                },
+            }
+        )
         return False, "referee_not_found"
     referee = referee_rows.row(0, named=True)
     if referee.get("referred_by") is not None:
+        self._db_writer.insert_event(
+            {
+                "discord_uid": referee_discord_uid,
+                "event_type": "player_command",
+                "action": "referral_submission",
+                "target_discord_uid": referrer_uid,
+                "event_data": {
+                    "status": "failure",
+                    "error": "already_referred",
+                    "referral_code": referral_code,
+                },
+            }
+        )
         return False, "already_referred"
 
     # Look up referrer — must exist and have completed setup.
     referrer_rows = df.filter(pl.col("discord_uid") == referrer_uid)
     if referrer_rows.is_empty():
+        self._db_writer.insert_event(
+            {
+                "discord_uid": referee_discord_uid,
+                "event_type": "player_command",
+                "action": "referral_submission",
+                "target_discord_uid": referrer_uid,
+                "event_data": {
+                    "status": "failure",
+                    "error": "referrer_not_found",
+                    "referral_code": referral_code,
+                },
+            }
+        )
         return False, "referrer_not_found"
     referrer = referrer_rows.row(0, named=True)
     if not referrer.get("completed_setup"):
+        self._db_writer.insert_event(
+            {
+                "discord_uid": referee_discord_uid,
+                "event_type": "player_command",
+                "action": "referral_submission",
+                "target_discord_uid": referrer_uid,
+                "event_data": {
+                    "status": "failure",
+                    "error": "referrer_not_found",
+                    "referral_code": referral_code,
+                },
+            }
+        )
         return False, "referrer_not_found"
 
     referrer_player_name: str = referrer.get("player_name") or str(referrer_uid)
@@ -72,10 +148,11 @@ def submit_referral(
         {
             "discord_uid": referee_discord_uid,
             "event_type": "player_update",
-            "action": "referral",
+            "action": "referral_submission",
             "target_discord_uid": referrer_uid,
             "event_data": {
-                "referred_by": referrer_uid,
+                "status": "success",
+                "referral_code": referral_code,
                 "referred_at": referred_at.isoformat(),
             },
         }
