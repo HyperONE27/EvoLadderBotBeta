@@ -7,9 +7,9 @@ What remains?
 - ✅ Write pre-beta feature announcement
 - ⏰ Write pre-beta launch announcement
 - ✅ Rewrite the ToS AGAIN to include data collection about:
-    - where users found us
-    - when users joined the server
-    - how quickly they complete /setup -> go to first ladder game
+    - ✅ where users found us
+    - ✅ when users joined the server
+    - ✅ how quickly they complete /setup -> go to first ladder game
 - ⏰ Fix the server in preparation for launch
     - ✅ Make the server description less shit
     - ✅ Remove redundant or obsolete channels
@@ -24,9 +24,9 @@ What remains?
     - ⏰ Add a bot that sends a welcome message to new users
 - ✅ Add a line to the end of /setup directing users to /queue and /help.
 - ✅ Ask "how did you find us?" in /setup
-- ⏰ Create some kind of referral mechanism
-    - ⏰ Verify referral implementation
-- ⏰ Add events table logging for survey submission and referral creation/referral code entering
+- ✅ Create some kind of referral mechanism
+    - ✅ Verify referral implementation
+- ✅ Add events table logging for survey submission and referral creation/referral code entering
 - ✅ Collect data about when people join the server
 - ✅ Deduplicate /queue joins
     - ✅ No more than once per 5 minutes
