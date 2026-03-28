@@ -33,7 +33,6 @@ from common.config import MAX_MAP_VETOES as MAX_MAP_VETOES
 from common.config import (
     QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT as QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT,
 )
-from common.urls import DISCORD_INVITE_URL as DISCORD_INVITE_URL
 from common.urls import QUICKSTART_URL as QUICKSTART_URL
 from common.urls import TOS_MIRROR_URL as TOS_MIRROR_URL
 from common.urls import TOS_URL as TOS_URL
@@ -111,6 +110,8 @@ SERVER_GUILD_ID: int = _get_int_env("SERVER_GUILD_ID")
 # ---------------------
 # URLs
 # ---------------------
+
+DISCORD_INVITE_URL: str = _get_str_env("DISCORD_INVITE_URL")
 
 # QUICKSTART_URL  → common/urls.py
 # TOS_URL         → common/urls.py

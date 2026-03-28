@@ -9,6 +9,35 @@ from common.i18n import t
 
 logger = structlog.get_logger(__name__)
 
+# --- Helpers ---
+
+
+async def _ensure_locale_cached(
+    uid: int, player: dict[str, object] | None = None
+) -> None:
+    """Cache the player's locale if not already present.
+
+    If *player* is provided (already fetched by the caller), extract the
+    language from it directly.  Otherwise fetch ``GET /players/{uid}``
+    on a cache miss.  Fail-open: defaults to ``enUS`` on error.
+    """
+    if uid in get_cache().player_locales:
+        return
+
+    if player is None:
+        try:
+            async with get_session().get(f"{BACKEND_URL}/players/{uid}") as resp:
+                data = await resp.json()
+            player = data.get("player")
+        except Exception:
+            return
+
+    if player is not None:
+        language = player.get("language")
+        if language:
+            get_cache().player_locales[uid] = language  # type: ignore[assignment]
+
+
 # --- Checks ---
 
 
@@ -33,9 +62,7 @@ async def check_if_banned(interaction: discord.Interaction) -> bool:
 
     player = data.get("player")
     if player is not None:
-        language = player.get("language")
-        if language:
-            get_cache().player_locales[uid] = language
+        await _ensure_locale_cached(uid, player)
         get_cache().player_presets[uid] = player
         if player.get("is_banned"):
             raise BannedError()
@@ -100,19 +127,7 @@ async def check_if_admin(interaction: discord.Interaction) -> bool:
     if admin is None or admin.get("role") == "inactive":
         raise NotAdminError()
 
-    # Cache locale so admin commands render in the correct language.
-    if uid not in get_cache().player_locales:
-        try:
-            async with get_session().get(f"{BACKEND_URL}/players/{uid}") as resp:
-                player_data = await resp.json()
-            player = player_data.get("player")
-            if player is not None:
-                language = player.get("language")
-                if language:
-                    get_cache().player_locales[uid] = language
-        except Exception:
-            pass  # fail-open: default to enUS
-
+    await _ensure_locale_cached(uid)
     return True
 
 
@@ -170,19 +185,7 @@ async def check_if_owner(interaction: discord.Interaction) -> bool:
     if admin is None or admin.get("role") != "owner":
         raise NotOwnerError()
 
-    # Cache locale so owner commands render in the correct language.
-    if uid not in get_cache().player_locales:
-        try:
-            async with get_session().get(f"{BACKEND_URL}/players/{uid}") as resp:
-                player_data = await resp.json()
-            player = player_data.get("player")
-            if player is not None:
-                language = player.get("language")
-                if language:
-                    get_cache().player_locales[uid] = language
-        except Exception:
-            pass  # fail-open: default to enUS
-
+    await _ensure_locale_cached(uid)
     return True
 
 
