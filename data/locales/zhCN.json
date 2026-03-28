@@ -662,7 +662,7 @@
   "referral_initial_embed.title.1": "💬 推荐",
   "referral_instructions_embed.description.1": "使用 Discord 的「转发」功能分享下一条消息中的内容。\n\n一旦您的被推荐人在 1v1 或 2v2 天梯上完成至少一场游戏，您将获得该推荐的积分。",
   "referral_instructions_embed.title.1": "🎫 推荐已创建",
-  "referral_pitch_embed.description.1": "**{player_name}** 邀请您加入 **SC: Evo Complete** 的**排位天梯**，这是一款让星际1与星际2对决的热门社区 Mod！\n\n已有 **{active_player_count}** 名玩家完成了第一场游戏。\n\n🎟️ **您的推荐码：**\n`{referral_code}`\n\n**如何加入：**\n- 1. 加入 SC: Evo Complete Discord 服务器：**{discord_invite_url}**\n- 2. 向此机器人发送私信：{bot_mention}（任何消息都可以）\n- 3. 完成新手引导设置\n- 4. 使用 `/referral` 命令并输入上方的代码",
+  "referral_pitch_embed.description.1": "**{player_name}** 邀请您加入 **SC: Evo Complete** 的**排位天梯**，这是一款让星际1与星际2对决的热门社区 Mod！\n\n已有 **{active_player_count}** 名玩家完成了第一场游戏。\n\n🎟️ **您的推荐码：**\n`{referral_code}`\n\n**如何加入：**\n- 1. 加入 SC: Evo Complete Discord 服务器：**{discord_invite_url}**\n- 2. 向此机器人发送私信"你好"：{bot_mention}\n- 3. 完成新手引导设置\n- 4. 使用 `/referral` 命令并输入上方的代码",
   "referral_pitch_embed.title.1": "{s_rank_emote} 加入 SC: Evo Complete 天梯！",
   "referral_success_embed.description.1": "感谢您！来自 **{player_name}** 的推荐已验证。",
   "referral_success_embed.title.1": "✅ 推荐已验证",

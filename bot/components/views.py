@@ -4354,9 +4354,9 @@ class ReferralCodeModal(discord.ui.Modal):
         self._locale = locale
         self.referral_code_input = discord.ui.TextInput(
             label=t("referral_code_modal.field_label.1", locale),
-            placeholder="XXXX-XXXX-XXXX-XXXX",
-            min_length=16,
-            max_length=19,
+            placeholder="a1B2c3D4e5F",
+            min_length=11,
+            max_length=11,
             required=True,
         )
         self.add_item(self.referral_code_input)
