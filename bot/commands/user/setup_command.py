@@ -39,6 +39,22 @@ def register_setup_command(tree: app_commands.CommandTree) -> None:
         preselected_locale = (preset.get("language") if preset else None) or None
         show_cancel = bool(preset and preset.get("completed_setup"))
 
+        # Log a setup_started event for first-time users so we can measure
+        # setup abandonment rates (started but never completed).
+        if not show_cancel:
+            try:
+                async with get_session().post(
+                    f"{BACKEND_URL}/events/setup_started",
+                    json={
+                        "discord_uid": discord_uid,
+                        "discord_username": discord_username,
+                    },
+                ) as resp:
+                    if resp.status >= 400:
+                        logger.warning("setup_started event failed", status=resp.status)
+            except Exception:
+                logger.exception("Failed to log setup_started event")
+
         # Fetch notification preferences upfront so the notification step can
         # pre-select existing values without an HTTP call mid-flow.
         try:

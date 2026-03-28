@@ -108,6 +108,8 @@ from backend.api.models import (
     ReferralPitchRequest,
     ReferralRequest,
     ReferralResponse,
+    SetupStartedRequest,
+    SetupStartedResponse,
 )
 from backend.core.bootstrap import Backend
 from backend.domain_types.ephemeral import LeaderboardEntry1v1, LeaderboardEntry2v2
@@ -296,6 +298,27 @@ async def guild_member_join(
         }
     )
     return GuildMemberJoinResponse(ok=True)
+
+
+# --- /events/setup_started ---
+
+
+@router.post("/events/setup_started", response_model=SetupStartedResponse)
+async def setup_started(
+    request: SetupStartedRequest,
+    app: Backend = Depends(get_backend),
+) -> SetupStartedResponse:
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.discord_uid,
+            "event_type": "player_command",
+            "action": "setup_started",
+            "event_data": {
+                "discord_username": request.discord_username,
+            },
+        }
+    )
+    return SetupStartedResponse(ok=True)
 
 
 # --- /admins/{discord_uid} ---
@@ -1397,6 +1420,10 @@ async def setup(
                 "nationality": request.nationality,
                 "location": request.location,
                 "language": request.language,
+                "notify_queue_1v1": request.notify_queue_1v1,
+                "notify_queue_1v1_cooldown": request.notify_queue_1v1_cooldown,
+                "notify_queue_2v2": request.notify_queue_2v2,
+                "notify_queue_2v2_cooldown": request.notify_queue_2v2_cooldown,
             },
         }
     )

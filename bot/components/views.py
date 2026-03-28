@@ -1487,6 +1487,10 @@ async def _send_setup_request(
             "nationality": country["code"],
             "location": region["code"],
             "language": language,
+            "notify_queue_1v1": notification_1v1 is not None,
+            "notify_queue_1v1_cooldown": notification_1v1,
+            "notify_queue_2v2": notification_2v2 is not None,
+            "notify_queue_2v2_cooldown": notification_2v2,
         },
     ) as response:
         data = await response.json()

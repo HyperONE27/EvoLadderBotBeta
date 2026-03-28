@@ -205,7 +205,7 @@ This section captures decisions for **`/activity`** and **`/notifyme`** so imple
 
 ## Events and “who left the queue”
 
-- **Persist** `queue_join` (and when ready, `queue_leave`) on the existing **`events`** table with consistent `game_mode`, `discord_uid`, `performed_at`, and small `event_data` as needed.
+- **Persist** `queue_join` and `queue_leave` on the existing **`events`** table with consistent `game_mode`, `discord_uid`, `performed_at`, and small `event_data` as needed. Both are implemented for 1v1 and 2v2.
 - **For `/activity` v1**, treat analytics as **queue join attempts only** — no requirement (yet) to pair joins with exits. That keeps the first chart simple and avoids incomplete interval logic.
 - **Ways a player effectively leaves the queue** (for *future* dwell-time / pairing work, not required for the join-attempt chart):
     1. **`queue_leave`** (explicit).

@@ -58,7 +58,8 @@ User-initiated commands and actions. `discord_uid` is the acting player.
 | Action | Trigger | Endpoint / Method | `game_mode` | `match_id` | `event_data` keys |
 |---|---|---|---|---|---|
 | `greeting` | `/greeting` command | `GET /commands/greet/{uid}` | — | — | *(empty)* |
-| `setup` | `/setup` completion | `PUT /commands/setup` | — | — | `player_name`, `battletag`, `nationality`, `location`, `language` |
+| `setup_started` | First-time user opens `/setup` | `POST /events/setup_started` | — | — | `discord_username` |
+| `setup` | `/setup` completion | `PUT /commands/setup` | — | — | `player_name`, `battletag`, `nationality`, `location`, `language`, `notify_queue_1v1`, `notify_queue_1v1_cooldown`, `notify_queue_2v2`, `notify_queue_2v2_cooldown` |
 | `termsofservice` | ToS accept/decline | `PUT /commands/termsofservice` | — | — | `accepted` |
 | `setcountry` | `/setcountry` command | `PUT /commands/setcountry` | — | — | `country_code` |
 | `setup_survey_submitted` | Setup survey answers | `TransitionManager.save_setup_survey()` | — | — | `setup_q1_response`, `setup_q2_response`, `setup_q3_response`, `setup_q4_response` |
@@ -179,7 +180,7 @@ Backend-initiated system operations. `discord_uid` is always a sentinel.
 
 | File | Events written |
 |---|---|
-| `backend/api/endpoints.py` | `greeting`, `setup`, `termsofservice`, `setcountry`, `queue_join`, `queue_leave`, `leaderboard`, `profile`, `match_confirm`, `match_abort`, `match_report`, `replay_upload`, `ban`, `statusreset`, `match_view`, `resolve`, `snapshot`, `snapshot_2v2`, `admin_toggle`, `set_mmr`, `guild_member_join` |
+| `backend/api/endpoints.py` | `greeting`, `setup_started`, `setup`, `termsofservice`, `setcountry`, `queue_join`, `queue_leave`, `leaderboard`, `profile`, `match_confirm`, `match_abort`, `match_report`, `replay_upload`, `ban`, `statusreset`, `match_view`, `resolve`, `snapshot`, `snapshot_2v2`, `admin_toggle`, `set_mmr`, `guild_member_join` |
 | `backend/orchestrator/transitions/__init__.py` | `setup_survey_submitted`, `referral_pitch_generated` |
 | `backend/orchestrator/transitions/_player.py` | `referral_submission` (success + failure), `nationality_update`, `profile_update`, `tos_update` |
 | `backend/orchestrator/transitions/_admin.py` | `ban_toggle`, `match_resolved` (1v1 + 2v2) |

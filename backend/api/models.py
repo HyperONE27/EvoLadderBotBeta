@@ -597,6 +597,10 @@ class SetupConfirmRequest(BaseModel):
     nationality: str
     location: str
     language: str
+    notify_queue_1v1: bool | None = None
+    notify_queue_1v1_cooldown: int | None = None
+    notify_queue_2v2: bool | None = None
+    notify_queue_2v2_cooldown: int | None = None
 
 
 class SetupConfirmResponse(BaseModel):
@@ -724,4 +728,13 @@ class GuildMemberJoinRequest(BaseModel):
 
 
 class GuildMemberJoinResponse(BaseModel):
+    ok: bool
+
+
+class SetupStartedRequest(BaseModel):
+    discord_uid: int
+    discord_username: str
+
+
+class SetupStartedResponse(BaseModel):
     ok: bool
