@@ -96,6 +96,23 @@ async def on_message(message: discord.Message) -> None:
             ) as response:
                 data = await response.json()
                 if response.status < 400 and data.get("created"):
+                    try:
+                        async with get_session().post(
+                            f"{BACKEND_URL}/events/setup_started",
+                            json={
+                                "discord_uid": message.author.id,
+                                "discord_username": message.author.name,
+                            },
+                        ) as ev_resp:
+                            if ev_resp.status >= 400:
+                                logger.warning(
+                                    "setup_started event failed (on_message)",
+                                    status=ev_resp.status,
+                                )
+                    except Exception:
+                        logger.exception(
+                            "Failed to log setup_started event (on_message)"
+                        )
                     await message.channel.send(
                         embed=LocaleSetupEmbed(),
                         view=LocaleSetupView(
