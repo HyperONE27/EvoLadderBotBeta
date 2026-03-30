@@ -101,7 +101,9 @@ def register_activity_command(tree: app_commands.CommandTree) -> None:
                 embed.add_field(name=name, value=value, inline=inline)
             apply_default_embed_footer(embed, locale=locale)
             view = ActivityChartView(game_mode, interaction.user.id, locale)
-            await interaction.followup.send(embed=embed, file=file, view=view)
+            view.message = await interaction.followup.send(  # type: ignore[func-returns-value]
+                embed=embed, file=file, view=view
+            )
         except Exception:
             logger.exception("activity_command failed")
             await interaction.followup.send(

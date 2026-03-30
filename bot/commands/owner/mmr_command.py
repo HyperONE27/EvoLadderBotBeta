@@ -85,15 +85,16 @@ def register_owner_mmr_command(tree: app_commands.CommandTree) -> None:
             f"invoked /mmr for {target_player_name} ({target_discord_uid}): "
             f"race={race}, new_mmr={new_mmr}"
         )
-        await interaction.followup.send(
+        view = SetMMRConfirmView(
+            interaction.user.id,
+            target_discord_uid,
+            target_player_name,
+            race,
+            new_mmr,
+        )
+        view.message = await interaction.followup.send(  # type: ignore[func-returns-value]
             embed=SetMMRPreviewEmbed(
                 target_discord_uid, target_player_name, race, new_mmr, locale=locale
             ),
-            view=SetMMRConfirmView(
-                interaction.user.id,
-                target_discord_uid,
-                target_player_name,
-                race,
-                new_mmr,
-            ),
+            view=view,
         )

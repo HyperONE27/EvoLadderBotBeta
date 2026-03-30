@@ -50,11 +50,12 @@ def register_admin_statusreset_command(tree: app_commands.CommandTree) -> None:
             f"Admin {interaction.user.name} ({interaction.user.id}) "
             f"invoked /statusreset for {target_player_name} ({target_discord_uid})"
         )
-        await interaction.followup.send(
+        view = StatusResetConfirmView(
+            interaction.user.id, target_discord_uid, target_player_name
+        )
+        view.message = await interaction.followup.send(  # type: ignore[func-returns-value]
             embed=StatusResetPreviewEmbed(
                 target_discord_uid, target_player_name, locale=locale
             ),
-            view=StatusResetConfirmView(
-                interaction.user.id, target_discord_uid, target_player_name
-            ),
+            view=view,
         )

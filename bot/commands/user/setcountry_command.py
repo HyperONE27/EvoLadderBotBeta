@@ -50,9 +50,10 @@ async def _send_confirmation(
     country: Country,
 ) -> None:
     locale = get_cache().player_locales.get(interaction.user.id, "enUS")
-    await interaction.followup.send(
+    view = SetCountryView(country, locale=locale)
+    view.message = await interaction.followup.send(  # type: ignore[func-returns-value]
         embed=SetCountryPreviewEmbed(country, locale=locale),
-        view=SetCountryView(country, locale=locale),
+        view=view,
     )
 
 

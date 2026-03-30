@@ -15,6 +15,7 @@ from bot.helpers.checks import (
     check_if_completed_setup,
     check_if_dm,
 )
+from bot.components.views import AutoDisableView
 from bot.helpers.embed_branding import apply_default_embed_footer
 from bot.helpers.emotes import get_flag_emote, get_race_emote, get_rank_emote
 from common.i18n import t
@@ -592,7 +593,7 @@ class ClearFiltersButton(discord.ui.Button["LeaderboardView"]):
 # ---------------------------------------------------------------------------
 
 
-class LeaderboardView(discord.ui.View):
+class LeaderboardView(AutoDisableView):
     def __init__(self, entries: list[dict], locale: str = "enUS") -> None:
         super().__init__(timeout=600)
         self._all_entries = entries
@@ -666,7 +667,7 @@ class LeaderboardView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
 
 
-class Leaderboard2v2View(discord.ui.View):
+class Leaderboard2v2View(AutoDisableView):
     """2v2 leaderboard view — rank filter + nationality + pagination (no race filter)."""
 
     def __init__(self, entries: list[dict], locale: str = "enUS") -> None:
@@ -779,8 +780,12 @@ def register_leaderboard_command(tree: app_commands.CommandTree) -> None:
         if game_mode == "2v2":
             entries_2v2 = await _ensure_leaderboard_2v2(interaction.user.id)
             view_2v2 = Leaderboard2v2View(entries_2v2, locale=locale)
-            await interaction.followup.send(embed=view_2v2.build_embed(), view=view_2v2)
+            view_2v2.message = await interaction.followup.send(  # type: ignore[func-returns-value]
+                embed=view_2v2.build_embed(), view=view_2v2
+            )
         else:
             entries_1v1 = await _ensure_leaderboard(interaction.user.id)
             view_1v1 = LeaderboardView(entries_1v1, locale=locale)
-            await interaction.followup.send(embed=view_1v1.build_embed(), view=view_1v1)
+            view_1v1.message = await interaction.followup.send(  # type: ignore[func-returns-value]
+                embed=view_1v1.build_embed(), view=view_1v1
+            )

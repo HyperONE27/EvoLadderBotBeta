@@ -31,7 +31,9 @@ def register_referral_command(tree: app_commands.CommandTree) -> None:
         cache = get_cache()
         player = cache.player_presets.get(interaction.user.id)
         already_referred = bool((player or {}).get("referred_by"))
+        view = ReferralView(already_referred=already_referred, locale=locale)
         await interaction.response.send_message(
             embed=ReferralInitialEmbed(locale=locale),
-            view=ReferralView(already_referred=already_referred, locale=locale),
+            view=view,
         )
+        view.message = await interaction.original_response()

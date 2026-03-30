@@ -14,6 +14,7 @@ from bot.helpers.checks import (
     check_if_completed_setup,
     check_if_dm,
 )
+from bot.components.views import AutoDisableView
 from bot.helpers.embed_branding import apply_default_embed_footer
 from common.i18n import t
 
@@ -149,7 +150,7 @@ async def party_invite_command(
 
     try:
         invitee_user = await interaction.client.fetch_user(invitee_discord_uid)
-        await invitee_user.send(embed=invite_embed, view=view)
+        view.message = await invitee_user.send(embed=invite_embed, view=view)
     except discord.Forbidden:
         await interaction.followup.send(
             embed=_error_embed(
@@ -280,7 +281,7 @@ async def party_status_command(interaction: discord.Interaction) -> None:
 # --------------------
 
 
-class PartyInviteResponseView(discord.ui.View):
+class PartyInviteResponseView(AutoDisableView):
     """Buttons sent to the invitee via DM to accept or decline a party invite."""
 
     def __init__(self, invitee_discord_uid: int, inviter_name: str) -> None:

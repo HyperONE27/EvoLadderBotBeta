@@ -202,32 +202,36 @@ async def _on_match_found(client: discord.Client, match_data: dict) -> None:
     # --- High priority: DM both players with confirm/abort buttons ---
     dm_coros = []
     dm_uids: list[int] = []
+    dm_views: list[MatchFoundView1v1] = []
     for uid in (p1_uid, p2_uid):
         if uid is None:
             continue
         try:
             user = await client.fetch_user(uid)
             locale = get_player_locale(uid)
+            view = MatchFoundView1v1(match_id, match_data, locale=locale)
             dm_coros.append(
                 queue_user_send_high(
                     user,
                     embed=MatchFoundEmbed(match_data, locale=locale),
-                    view=MatchFoundView1v1(match_id, match_data, locale=locale),
+                    view=view,
                 )
             )
             dm_uids.append(uid)
+            dm_views.append(view)
         except Exception:
             logger.exception(f"[WS] Failed to fetch user {uid} for match_found")
 
     # Send all DMs concurrently (high priority — worker drains these first).
     if dm_coros:
         results = await asyncio.gather(*dm_coros, return_exceptions=True)
-        for uid, result in zip(dm_uids, results):
+        for uid, view, result in zip(dm_uids, dm_views, results):
             if isinstance(result, Exception):
                 logger.exception(
                     f"[WS] Failed to DM user {uid} for match_found", exc_info=result
                 )
             elif isinstance(result, discord.Message):
+                view.message = result
                 cache.active_match_found_messages[uid] = result
 
     # --- Low priority: update searching embeds (fire-and-forget) ---
@@ -290,6 +294,7 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
     # High priority: DM both players with per-locale MatchInfoEmbed concurrently.
     dm_coros = []
     dm_uids: list[int] = []
+    dm_views: list[MatchReportView1v1] = []
     for uid in (p1_uid, p2_uid):
         if uid is None:
             continue
@@ -305,6 +310,17 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
             locale = get_player_locale(uid)
             info = player_info_map.get(uid)
             guide_visible = not bool(info and info.get("read_lobby_guide"))
+            view = MatchReportView1v1(
+                match_id,
+                p1_name,
+                p2_name,
+                match_data,
+                p1_info,
+                p2_info,
+                report_locked=ENABLE_REPLAY_VALIDATION,
+                locale=locale,
+                guide_visible=guide_visible,
+            )
             dm_coros.append(
                 queue_user_send_high(
                     user,
@@ -314,32 +330,24 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
                             server_code, locale=locale, visible=guide_visible
                         ),
                     ],
-                    view=MatchReportView1v1(
-                        match_id,
-                        p1_name,
-                        p2_name,
-                        match_data,
-                        p1_info,
-                        p2_info,
-                        report_locked=ENABLE_REPLAY_VALIDATION,
-                        locale=locale,
-                        guide_visible=guide_visible,
-                    ),
+                    view=view,
                 )
             )
             dm_uids.append(uid)
+            dm_views.append(view)
         except Exception:
             logger.exception(f"[WS] Failed to fetch user {uid} for both_confirmed")
 
     if dm_coros:
         results = await asyncio.gather(*dm_coros, return_exceptions=True)
-        for uid, result in zip(dm_uids, results):
+        for uid, view, result in zip(dm_uids, dm_views, results):
             if isinstance(result, Exception):
                 logger.exception(
                     f"[WS] Failed to DM user {uid} for both_confirmed",
                     exc_info=result,
                 )
             elif isinstance(result, discord.Message):
+                view.message = result
                 cache.active_match_messages[uid] = result
 
     # The match-found messages already have view=None (both players pressed Confirm).
@@ -427,29 +435,33 @@ async def _on_match_found_2v2(client: discord.Client, match_data: dict) -> None:
 
     dm_coros = []
     dm_uids: list[int] = []
+    dm_views: list[MatchFoundView2v2] = []
     for uid in leader_uids:
         try:
             user = await client.fetch_user(uid)
             locale = get_player_locale(uid)
+            view = MatchFoundView2v2(match_id, locale=locale)
             dm_coros.append(
                 queue_user_send_high(
                     user,
                     embed=MatchFoundEmbed(match_data, locale=locale),
-                    view=MatchFoundView2v2(match_id, locale=locale),
+                    view=view,
                 )
             )
             dm_uids.append(uid)
+            dm_views.append(view)
         except Exception:
             logger.exception(f"[WS] Failed to fetch user {uid} for 2v2 match_found")
 
     if dm_coros:
         results = await asyncio.gather(*dm_coros, return_exceptions=True)
-        for uid, result in zip(dm_uids, results):
+        for uid, view, result in zip(dm_uids, dm_views, results):
             if isinstance(result, Exception):
                 logger.exception(
                     f"[WS] Failed to DM user {uid} for 2v2 match_found", exc_info=result
                 )
             elif isinstance(result, discord.Message):
+                view.message = result
                 cache.active_match_found_messages[uid] = result
 
     for uid in all_uids:
@@ -477,6 +489,7 @@ async def _on_all_confirmed_2v2(client: discord.Client, match_data: dict) -> Non
 
     dm_coros = []
     dm_uids: list[int] = []
+    dm_views: list[MatchReportView2v2] = []
     for uid in all_uids:
         cache.active_match_info[uid] = {"match_data": match_data, "player_infos": infos}
         try:
@@ -484,6 +497,14 @@ async def _on_all_confirmed_2v2(client: discord.Client, match_data: dict) -> Non
             locale = get_player_locale(uid)
             info = infos.get(uid)
             guide_visible = not bool(info and info.get("read_lobby_guide"))
+            view = MatchReportView2v2(
+                match_id,
+                match_data,
+                infos,
+                report_locked=ENABLE_REPLAY_VALIDATION,
+                locale=locale,
+                guide_visible=guide_visible,
+            )
             dm_coros.append(
                 queue_user_send_high(
                     user,
@@ -495,29 +516,24 @@ async def _on_all_confirmed_2v2(client: discord.Client, match_data: dict) -> Non
                             visible=guide_visible,
                         )
                     ],
-                    view=MatchReportView2v2(
-                        match_id,
-                        match_data,
-                        infos,
-                        report_locked=ENABLE_REPLAY_VALIDATION,
-                        locale=locale,
-                        guide_visible=guide_visible,
-                    ),
+                    view=view,
                 )
             )
             dm_uids.append(uid)
+            dm_views.append(view)
         except Exception:
             logger.exception(f"[WS] Failed to fetch user {uid} for 2v2 all_confirmed")
 
     if dm_coros:
         dm_results = await asyncio.gather(*dm_coros, return_exceptions=True)
-        for uid, dm_result in zip(dm_uids, dm_results):
+        for uid, view, dm_result in zip(dm_uids, dm_views, dm_results):
             if isinstance(dm_result, Exception):
                 logger.exception(
                     f"[WS] Failed to DM user {uid} for 2v2 all_confirmed",
                     exc_info=dm_result,
                 )
             elif isinstance(dm_result, discord.Message):
+                view.message = dm_result
                 cache.active_match_messages[uid] = dm_result
 
     for uid in all_uids:

@@ -125,6 +125,32 @@ def _localized_language_label(code: str) -> str:
 
 
 # =========================================================================
+# Base view — auto-disables components on timeout
+# =========================================================================
+
+
+class AutoDisableView(discord.ui.View):
+    """Base view that disables all interactive components when the timeout fires."""
+
+    message: discord.Message | None = None
+
+    async def on_timeout(self) -> None:
+        for item in self.children:
+            if hasattr(item, "disabled"):
+                item.disabled = True
+        if self.message is not None:
+            try:
+                await self.message.edit(view=self)
+            except discord.NotFound:
+                pass
+            except discord.HTTPException:
+                logger.warning(
+                    "AutoDisableView: failed to edit message on timeout",
+                    exc_info=True,
+                )
+
+
+# =========================================================================
 # Reusable buttons
 # =========================================================================
 
@@ -364,7 +390,7 @@ def _country_page_codes(
     return None, None
 
 
-class SetupIntroView(discord.ui.View):
+class SetupIntroView(AutoDisableView):
     def __init__(
         self,
         modal_presets: dict[str, str] | None = None,
@@ -396,7 +422,9 @@ class SetupIntroView(discord.ui.View):
             self.add_item(CancelButton(locale=locale))
 
 
-class SetupSelectionView(discord.ui.View):
+class SetupSelectionView(AutoDisableView):
+    message: discord.Message  # Always set in __init__; narrows parent's Optional type.
+
     def __init__(
         self,
         player_name: str,
@@ -510,23 +538,25 @@ class SetupSelectionView(discord.ui.View):
 
         async def on_restart(interaction: discord.Interaction) -> None:
             _locale = get_player_locale(interaction.user.id)
+            intro = SetupIntroView(
+                modal_presets={
+                    "player_name": self.player_name,
+                    "battletag": self.battletag,
+                    "alt_ids": " ".join(self.alt_ids),
+                },
+                preselected_nationality=self.selected_country["code"]
+                if self.selected_country
+                else None,
+                preselected_location=self.selected_region["code"]
+                if self.selected_region
+                else None,
+                locale=_locale,
+                show_cancel=self.show_cancel,
+            )
+            intro.message = interaction.message
             await interaction.response.edit_message(
                 embed=SetupIntroEmbed(locale=_locale),
-                view=SetupIntroView(
-                    modal_presets={
-                        "player_name": self.player_name,
-                        "battletag": self.battletag,
-                        "alt_ids": " ".join(self.alt_ids),
-                    },
-                    preselected_nationality=self.selected_country["code"]
-                    if self.selected_country
-                    else None,
-                    preselected_location=self.selected_region["code"]
-                    if self.selected_region
-                    else None,
-                    locale=_locale,
-                    show_cancel=self.show_cancel,
-                ),
+                view=intro,
             )
 
         self.add_item(
@@ -593,7 +623,7 @@ def _notification_select_options(
     ]
 
 
-class SetupNotificationView(discord.ui.View):
+class SetupNotificationView(AutoDisableView):
     """Notification preferences step of /setup.
 
     Player selects 1v1 and 2v2 notification intervals (or off).
@@ -617,6 +647,7 @@ class SetupNotificationView(discord.ui.View):
         show_cancel: bool = True,
     ) -> None:
         super().__init__()
+        self.message = message
 
         _options_1v1 = _notification_select_options(preselected_1v1, locale)
         _options_2v2 = _notification_select_options(preselected_2v2, locale)
@@ -683,19 +714,21 @@ class SetupNotificationView(discord.ui.View):
 
         async def on_restart(interaction: discord.Interaction) -> None:
             _locale = get_player_locale(interaction.user.id)
+            intro = SetupIntroView(
+                modal_presets={
+                    "player_name": player_name,
+                    "battletag": battletag,
+                    "alt_ids": " ".join(alt_ids),
+                },
+                preselected_nationality=country["code"],
+                preselected_location=region["code"],
+                locale=_locale,
+                show_cancel=show_cancel,
+            )
+            intro.message = interaction.message
             await interaction.response.edit_message(
                 embed=SetupIntroEmbed(locale=_locale),
-                view=SetupIntroView(
-                    modal_presets={
-                        "player_name": player_name,
-                        "battletag": battletag,
-                        "alt_ids": " ".join(alt_ids),
-                    },
-                    preselected_nationality=country["code"],
-                    preselected_location=region["code"],
-                    locale=_locale,
-                    show_cancel=show_cancel,
-                ),
+                view=intro,
             )
 
         select_1v1: discord.ui.Select = discord.ui.Select(
@@ -864,7 +897,7 @@ def _validate_q4_selection(values: list[str]) -> bool:
     return True
 
 
-class SetupSurveyView(discord.ui.View):
+class SetupSurveyView(AutoDisableView):
     """Survey step of /setup (first-time users only).
 
     Four questions, each backed by a Select. Q1-Q3 are single-select,
@@ -891,6 +924,7 @@ class SetupSurveyView(discord.ui.View):
         show_cancel: bool = True,
     ) -> None:
         super().__init__()
+        self.message = message
 
         _confirm_disabled = (
             preselected_q1 is None
@@ -1039,19 +1073,21 @@ class SetupSurveyView(discord.ui.View):
 
         async def on_restart(interaction: discord.Interaction) -> None:
             _locale = get_player_locale(interaction.user.id)
+            intro = SetupIntroView(
+                modal_presets={
+                    "player_name": player_name,
+                    "battletag": battletag,
+                    "alt_ids": " ".join(alt_ids),
+                },
+                preselected_nationality=country["code"],
+                preselected_location=region["code"],
+                locale=_locale,
+                show_cancel=show_cancel,
+            )
+            intro.message = interaction.message
             await interaction.response.edit_message(
                 embed=SetupIntroEmbed(locale=_locale),
-                view=SetupIntroView(
-                    modal_presets={
-                        "player_name": player_name,
-                        "battletag": battletag,
-                        "alt_ids": " ".join(alt_ids),
-                    },
-                    preselected_nationality=country["code"],
-                    preselected_location=region["code"],
-                    locale=_locale,
-                    show_cancel=show_cancel,
-                ),
+                view=intro,
             )
 
         self.add_item(select_q1)
@@ -1077,7 +1113,7 @@ class SetupSurveyView(discord.ui.View):
             self.add_item(CancelButton(row=4, locale=locale))
 
 
-class SetupPreviewView(discord.ui.View):
+class SetupPreviewView(AutoDisableView):
     def __init__(
         self,
         player_name: str,
@@ -1097,6 +1133,7 @@ class SetupPreviewView(discord.ui.View):
         show_cancel: bool = True,
     ) -> None:
         super().__init__()
+        self.message = message
 
         async def on_confirm(interaction: discord.Interaction) -> None:
             await _send_setup_request(
@@ -1118,19 +1155,21 @@ class SetupPreviewView(discord.ui.View):
 
         async def on_restart(interaction: discord.Interaction) -> None:
             _locale = get_player_locale(interaction.user.id)
+            intro = SetupIntroView(
+                modal_presets={
+                    "player_name": player_name,
+                    "battletag": battletag,
+                    "alt_ids": " ".join(alt_ids),
+                },
+                preselected_nationality=country["code"],
+                preselected_location=region["code"],
+                locale=_locale,
+                show_cancel=show_cancel,
+            )
+            intro.message = interaction.message
             await interaction.response.edit_message(
                 embed=SetupIntroEmbed(locale=_locale),
-                view=SetupIntroView(
-                    modal_presets={
-                        "player_name": player_name,
-                        "battletag": battletag,
-                        "alt_ids": " ".join(alt_ids),
-                    },
-                    preselected_nationality=country["code"],
-                    preselected_location=region["code"],
-                    locale=_locale,
-                    show_cancel=show_cancel,
-                ),
+                view=intro,
             )
 
         self.add_item(
@@ -1143,7 +1182,7 @@ class SetupPreviewView(discord.ui.View):
             self.add_item(CancelButton(locale=locale))
 
 
-class SetupValidationErrorView(discord.ui.View):
+class SetupValidationErrorView(AutoDisableView):
     def __init__(
         self,
         presets: dict[str, str],
@@ -1152,6 +1191,7 @@ class SetupValidationErrorView(discord.ui.View):
         show_cancel: bool = True,
     ) -> None:
         super().__init__()
+        self.message = message
 
         async def on_restart(interaction: discord.Interaction) -> None:
             modal = SetupModal(
@@ -1445,6 +1485,8 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
         embed: discord.Embed,
         view: discord.ui.View,
     ) -> None:
+        if isinstance(view, AutoDisableView):
+            view.message = message
         await interaction.response.defer()
         await message.edit(embed=embed, view=view)
 
@@ -1685,7 +1727,7 @@ async def _send_tos_request(
         )
 
 
-class TermsOfServiceSetupView(discord.ui.View):
+class TermsOfServiceSetupView(AutoDisableView):
     """ToS accept/decline view used as the first step of /setup.
 
     On accept: POSTs ToS acceptance, fetches player data for pre-population,
@@ -1715,15 +1757,17 @@ class TermsOfServiceSetupView(discord.ui.View):
                 preselected_nationality = player.get("nationality")
                 preselected_location = player.get("location")
 
+            intro = SetupIntroView(
+                modal_presets=modal_presets,
+                preselected_nationality=preselected_nationality,
+                preselected_location=preselected_location,
+                locale=locale,
+                show_cancel=show_cancel,
+            )
+            intro.message = interaction.message
             await interaction.response.edit_message(
                 embed=SetupIntroEmbed(locale=locale),
-                view=SetupIntroView(
-                    modal_presets=modal_presets,
-                    preselected_nationality=preselected_nationality,
-                    preselected_location=preselected_location,
-                    locale=locale,
-                    show_cancel=show_cancel,
-                ),
+                view=intro,
             )
 
         async def on_accept(interaction: discord.Interaction) -> None:
@@ -1760,7 +1804,7 @@ class TermsOfServiceSetupView(discord.ui.View):
         )
 
 
-class LocaleSetupView(discord.ui.View):
+class LocaleSetupView(AutoDisableView):
     """First step of /setup: ask the player to pick their preferred language.
 
     On continue: caches the selected locale in player_locales and transitions
@@ -1784,11 +1828,13 @@ class LocaleSetupView(discord.ui.View):
                 await interaction.response.defer()
                 return
             get_cache().player_locales[discord_uid] = self.selected_language
+            tos_view = TermsOfServiceSetupView(
+                discord_uid, discord_username, show_cancel=show_cancel
+            )
+            tos_view.message = interaction.message
             await interaction.response.edit_message(
                 embed=TermsOfServiceEmbed(locale=self.selected_language),
-                view=TermsOfServiceSetupView(
-                    discord_uid, discord_username, show_cancel=show_cancel
-                ),
+                view=tos_view,
             )
 
         language_select = LanguageSelect(
@@ -1811,6 +1857,7 @@ class LocaleSetupView(discord.ui.View):
                 preselected_locale=language_select.values[0],
                 show_cancel=show_cancel,
             )
+            fresh.message = interaction.message
             await interaction.response.edit_message(view=fresh)
 
         language_select.callback = on_language_select  # type: ignore[method-assign]
@@ -1826,7 +1873,7 @@ class LocaleSetupView(discord.ui.View):
 # =========================================================================
 
 
-class SetCountryView(discord.ui.View):
+class SetCountryView(AutoDisableView):
     def __init__(self, country: Country, locale: str = "enUS"):
         super().__init__()
 
@@ -1881,7 +1928,7 @@ async def _send_setcountry_request(
 # =========================================================================
 
 
-class BanConfirmView(discord.ui.View):
+class BanConfirmView(AutoDisableView):
     def __init__(
         self, caller_id: int, target_discord_uid: int, target_player_name: str
     ) -> None:
@@ -1950,7 +1997,7 @@ async def _send_ban_request(
 # =========================================================================
 
 
-class ResolveConfirmView(discord.ui.View):
+class ResolveConfirmView(AutoDisableView):
     def __init__(
         self,
         caller_id: int,
@@ -2081,7 +2128,7 @@ async def _send_to_match_log(
 # =========================================================================
 
 
-class ResolveConfirmView2v2(discord.ui.View):
+class ResolveConfirmView2v2(AutoDisableView):
     def __init__(
         self,
         caller_id: int,
@@ -2245,7 +2292,7 @@ async def _send_to_match_log_2v2(
 # =========================================================================
 
 
-class StatusResetConfirmView(discord.ui.View):
+class StatusResetConfirmView(AutoDisableView):
     def __init__(
         self, caller_id: int, target_discord_uid: int, target_player_name: str
     ) -> None:
@@ -2321,7 +2368,7 @@ async def _send_statusreset_request(
 # =========================================================================
 
 
-class ToggleAdminConfirmView(discord.ui.View):
+class ToggleAdminConfirmView(AutoDisableView):
     def __init__(
         self,
         caller_id: int,
@@ -2406,7 +2453,7 @@ async def _send_toggle_admin_request(
 # =========================================================================
 
 
-class SetMMRConfirmView(discord.ui.View):
+class SetMMRConfirmView(AutoDisableView):
     def __init__(
         self,
         caller_id: int,
@@ -2645,7 +2692,7 @@ _ACTIVITY_RANGE_TO_TD = {
 }
 
 
-class ProfilePageView(discord.ui.View):
+class ProfilePageView(AutoDisableView):
     """Three-page profile view: Info / 1v1 / 2v2.
 
     All data is stored on construction; page switches are instant with no
@@ -2698,6 +2745,7 @@ class ProfilePageView(discord.ui.View):
                 locale=locale,
                 current_page=page,
             )
+            fresh.message = interaction.message
             await interaction.response.edit_message(
                 embed=fresh._build_embed(), view=fresh
             )
@@ -2719,7 +2767,7 @@ class ProfilePageView(discord.ui.View):
         )
 
 
-class ActivityChartView(discord.ui.View):
+class ActivityChartView(AutoDisableView):
     def __init__(
         self,
         game_mode: str,
@@ -2818,7 +2866,7 @@ class ActivityRangeSelect(discord.ui.Select):
             )
 
 
-class QueueSetupView1v1(discord.ui.View):
+class QueueSetupView1v1(AutoDisableView):
     def __init__(
         self,
         discord_user_id: int,
@@ -2926,6 +2974,7 @@ class QueueSetupView1v1(discord.ui.View):
         new_view = QueueSetupView1v1(
             self.discord_user_id, self.bw_race, self.sc2_race, self.map_vetoes
         )
+        new_view.message = interaction.message
         locale = get_player_locale(self.discord_user_id)
         embed = QueueSetupEmbed1v1(
             self.bw_race, self.sc2_race, self.map_vetoes, locale=locale
@@ -2962,7 +3011,7 @@ class _CancelQueueButton(discord.ui.Button):
         )
 
 
-class QueueSearchingView(discord.ui.View):
+class QueueSearchingView(AutoDisableView):
     def __init__(
         self,
         interaction: discord.Interaction,
@@ -3061,7 +3110,7 @@ class QueueSearchingView(discord.ui.View):
             self._heartbeat_task.cancel()
 
 
-class MatchFoundView1v1(discord.ui.View):
+class MatchFoundView1v1(AutoDisableView):
     def __init__(self, match_id: int, match_data: dict, locale: str = "enUS") -> None:
         super().__init__(timeout=CONFIRMATION_TIMEOUT)
         self.match_id = match_id
@@ -3134,7 +3183,7 @@ class LobbyGuideToggleButton(
         )
 
 
-class MatchReportView1v1(discord.ui.View):
+class MatchReportView1v1(AutoDisableView):
     def __init__(
         self,
         match_id: int,
@@ -3305,6 +3354,7 @@ async def _join_queue(
         try:
             msg = await interaction.original_response()
             searching_view._message = msg
+            searching_view.message = msg
             get_cache().active_searching_messages[discord_user_id] = msg
             get_cache().active_searching_views[discord_user_id] = searching_view
         except Exception:
@@ -3612,7 +3662,7 @@ class MatchReportSelect2v2(discord.ui.Select):
 # =========================================================================
 
 
-class QueueSetupView2v2(discord.ui.View):
+class QueueSetupView2v2(AutoDisableView):
     def __init__(
         self,
         discord_user_id: int,
@@ -3771,6 +3821,7 @@ class QueueSetupView2v2(discord.ui.View):
             leader_player_name=self.leader_player_name,
             member_player_name=self.member_player_name,
         )
+        new_view.message = interaction.message
         locale = get_player_locale(self.discord_user_id)
         embed = QueueSetupEmbed2v2(
             self.pure_bw_leader_race,
@@ -3787,7 +3838,7 @@ class QueueSetupView2v2(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=new_view)
 
 
-class MatchFoundView2v2(discord.ui.View):
+class MatchFoundView2v2(AutoDisableView):
     def __init__(self, match_id: int, locale: str = "enUS") -> None:
         super().__init__(timeout=CONFIRMATION_TIMEOUT)
         self.match_id = match_id
@@ -3817,7 +3868,7 @@ class MatchFoundView2v2(discord.ui.View):
         self.add_item(abort_btn)
 
 
-class MatchReportView2v2(discord.ui.View):
+class MatchReportView2v2(AutoDisableView):
     def __init__(
         self,
         match_id: int,
@@ -3951,7 +4002,7 @@ class _CancelQueueButton2v2(discord.ui.Button["QueueSearchingView2v2"]):
         )
 
 
-class QueueSearchingView2v2(discord.ui.View):
+class QueueSearchingView2v2(AutoDisableView):
     """Searching view for 2v2 queue with heartbeat and cancel button."""
 
     def __init__(
@@ -4174,6 +4225,7 @@ async def _join_queue_2v2(
         try:
             msg = await interaction.original_response()
             searching_view._message = msg
+            searching_view.message = msg
             cache = get_cache()
             cache.active_searching_messages[discord_user_id] = msg
             cache.active_searching_views[discord_user_id] = searching_view
@@ -4394,7 +4446,7 @@ class ReferralCodeModal(discord.ui.Modal):
             )
 
 
-class ReferralView(discord.ui.View):
+class ReferralView(AutoDisableView):
     def __init__(self, already_referred: bool, locale: str = "enUS") -> None:
         super().__init__(timeout=180)
         self._locale = locale

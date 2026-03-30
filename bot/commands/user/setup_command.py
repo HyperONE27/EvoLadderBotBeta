@@ -68,12 +68,13 @@ def register_setup_command(tree: app_commands.CommandTree) -> None:
             logger.exception("Failed to prefetch notifications for setup")
 
         locale = get_player_locale(discord_uid)
-        await interaction.followup.send(
+        view = LocaleSetupView(
+            discord_uid,
+            discord_username,
+            preselected_locale=preselected_locale,
+            show_cancel=show_cancel,
+        )
+        view.message = await interaction.followup.send(  # type: ignore[func-returns-value]
             embed=LocaleSetupEmbed(locale=locale),
-            view=LocaleSetupView(
-                discord_uid,
-                discord_username,
-                preselected_locale=preselected_locale,
-                show_cancel=show_cancel,
-            ),
+            view=view,
         )

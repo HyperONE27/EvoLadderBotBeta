@@ -47,11 +47,12 @@ def register_admin_ban_command(tree: app_commands.CommandTree) -> None:
             f"Admin {interaction.user.name} ({interaction.user.id}) "
             f"invoked /ban for {target_player_name} ({target_discord_uid})"
         )
-        await interaction.followup.send(
+        view = BanConfirmView(
+            interaction.user.id, target_discord_uid, target_player_name
+        )
+        view.message = await interaction.followup.send(  # type: ignore[func-returns-value]
             embed=BanPreviewEmbed(
                 target_discord_uid, target_player_name, locale=locale
             ),
-            view=BanConfirmView(
-                interaction.user.id, target_discord_uid, target_player_name
-            ),
+            view=view,
         )

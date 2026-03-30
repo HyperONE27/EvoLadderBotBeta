@@ -106,4 +106,6 @@ def register_profile_command(tree: app_commands.CommandTree) -> None:
             locale=locale,
             current_page="info",
         )
-        await interaction.followup.send(embed=view._build_embed(), view=view)
+        view.message = await interaction.followup.send(  # type: ignore[func-returns-value]
+            embed=view._build_embed(), view=view
+        )

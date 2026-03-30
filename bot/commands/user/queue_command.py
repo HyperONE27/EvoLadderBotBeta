@@ -112,7 +112,7 @@ async def _queue_1v1(interaction: discord.Interaction) -> None:
         sc2_race=sc2_race,
         map_vetoes=map_vetoes,
     )
-    await interaction.followup.send(embed=embed, view=view)
+    view.message = await interaction.followup.send(embed=embed, view=view)  # type: ignore[func-returns-value]
 
 
 async def _queue_2v2(interaction: discord.Interaction) -> None:
@@ -194,4 +194,4 @@ async def _queue_2v2(interaction: discord.Interaction) -> None:
         leader_player_name=leader_player_name,
         member_player_name=member_player_name,
     )
-    await interaction.followup.send(embed=embed, view=view)
+    view.message = await interaction.followup.send(embed=embed, view=view)  # type: ignore[func-returns-value]

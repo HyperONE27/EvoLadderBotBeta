@@ -56,25 +56,26 @@ def register_admin_resolve_command(tree: app_commands.CommandTree) -> None:
         )
 
         result_display = t(f"resolve_result_display.{result_value}", locale)
-        await interaction.followup.send(
+        view = (
+            ResolveConfirmView2v2(
+                interaction.user.id,
+                match_id,
+                result_value,
+                interaction.user.id,
+                reason,
+            )
+            if mode == "2v2"
+            else ResolveConfirmView(
+                interaction.user.id,
+                match_id,
+                result_value,
+                interaction.user.id,
+                reason,
+            )
+        )
+        view.message = await interaction.followup.send(  # type: ignore[func-returns-value]
             embed=ResolvePreviewEmbed(
                 match_id, result_value, result_display, mode, reason, locale=locale
             ),
-            view=(
-                ResolveConfirmView2v2(
-                    interaction.user.id,
-                    match_id,
-                    result_value,
-                    interaction.user.id,
-                    reason,
-                )
-                if mode == "2v2"
-                else ResolveConfirmView(
-                    interaction.user.id,
-                    match_id,
-                    result_value,
-                    interaction.user.id,
-                    reason,
-                )
-            ),
+            view=view,
         )

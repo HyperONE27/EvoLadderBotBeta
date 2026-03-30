@@ -113,13 +113,14 @@ async def on_message(message: discord.Message) -> None:
                         logger.exception(
                             "Failed to log first_setup_started event (on_message)"
                         )
-                    await message.channel.send(
+                    view = LocaleSetupView(
+                        message.author.id,
+                        message.author.name,
+                        show_cancel=False,
+                    )
+                    view.message = await message.channel.send(
                         embed=LocaleSetupEmbed(),
-                        view=LocaleSetupView(
-                            message.author.id,
-                            message.author.name,
-                            show_cancel=False,
-                        ),
+                        view=view,
                     )
         except Exception:
             logger.warning(

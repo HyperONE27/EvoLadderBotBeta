@@ -48,14 +48,15 @@ def register_owner_admin_command(tree: app_commands.CommandTree) -> None:
             f"Owner {interaction.user.name} ({interaction.user.id}) "
             f"invoked /admin for {target_player_name} ({target_discord_uid})"
         )
-        await interaction.followup.send(
+        view = ToggleAdminConfirmView(
+            interaction.user.id,
+            target_discord_uid,
+            target_player_name,
+            target_discord_username,
+        )
+        view.message = await interaction.followup.send(  # type: ignore[func-returns-value]
             embed=ToggleAdminPreviewEmbed(
                 target_discord_uid, target_player_name, locale=locale
             ),
-            view=ToggleAdminConfirmView(
-                interaction.user.id,
-                target_discord_uid,
-                target_player_name,
-                target_discord_username,
-            ),
+            view=view,
         )
