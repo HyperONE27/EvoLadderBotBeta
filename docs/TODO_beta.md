@@ -6,6 +6,22 @@ What remains?
 
 - ✅ Write pre-beta feature announcement
 - ⏰ Write pre-beta launch announcement
+    - Things to mention:
+        - New user-facing features
+            - 2v2
+            - locales
+            - activity visibility and notifications
+            - auto-replay validation and match result reporting
+        - Referral system
+            - Use /referral
+        - Referral giveaway
+            - Grand prize for most referrals
+            - Drawing for smaller prizes
+        - Updates to Terms of Service
+            - Interaction data logging for analytics and distribution pipelines
+            - Collecting more balance data
+            - Sharing replays with community figures
+            - Use data to power testing and development
 - ⏰ Upsert updated locale strings
     - ✅ esMX
     - ✅ koKR
@@ -39,17 +55,12 @@ What remains?
 - ✅ Add a {user} argument to `/profile`
     - Admins can view other users' profiles
 - ✅ Write a /help command
-    - ⏰ Get it localized
+    - ✅ Get it localized
 - ✅ Re-write Terms of Service for the pre-beta
-    - ⏰ Now wait for localizers
+    - ✅ Now wait for localizers
 - ✅ Fill out localization strings
-    - ⏰ Localizers will do this slowly
+    - ✅ Localizers will do this slowly
 - ✅ Update untranslated keys
-    - ✅ Send to localizers:
-        - ⏰ koKR: Vanya
-        - ⏰ esMX: Kat
-        - ⏰ zhCN: Sprite, DragonVector
-        - ⏰ ruRU: Rake, ZaRDieNT, ShadowDragon
 - ✅ Made `/activity` charts slightly more appropriately-sized (image width, labels/label spacing, line chart granularity)
 - ✅ Need some way for players to see who is online
     - ✅ Activity notifier when someone queues

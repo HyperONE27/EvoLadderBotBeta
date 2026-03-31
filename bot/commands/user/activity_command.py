@@ -15,7 +15,7 @@ from bot.helpers.activity_analytics import (
     activity_chart_title,
     fetch_queue_join_analytics,
 )
-from bot.core.config import ACTIVITY_CHART_BUCKET_MINUTES
+from bot.core.config import ACTIVITY_CHART_BUCKET_MINUTES, GAME_MODE_CHOICES
 from bot.helpers.activity_stats import build_activity_embed_fields
 from bot.helpers.checks import (
     check_if_accepted_tos,
@@ -42,13 +42,7 @@ def register_activity_command(tree: app_commands.CommandTree) -> None:
     @app_commands.check(check_if_completed_setup)
     @app_commands.check(check_if_banned)
     @app_commands.check(check_if_dm)
-    @app_commands.choices(
-        game_mode=[
-            app_commands.Choice(name="1v1", value="1v1"),
-            app_commands.Choice(name="2v2", value="2v2"),
-            app_commands.Choice(name="FFA (soon)", value="FFA"),
-        ]
-    )
+    @app_commands.choices(game_mode=GAME_MODE_CHOICES)
     async def activity_command(
         interaction: discord.Interaction,
         game_mode: str,
