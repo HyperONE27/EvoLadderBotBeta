@@ -16,7 +16,7 @@ What remains?
     - ✅ where users found us
     - ✅ when users joined the server
     - ✅ how quickly they complete /setup -> go to first ladder game
-- ⏰ Fix the server in preparation for launch
+- ✅ Fix the server in preparation for launch
     - ✅ Make the server description less shit
     - ✅ Remove redundant or obsolete channels
     - ✅ Add channel honeypot + onboarding role honeypot
@@ -26,8 +26,8 @@ What remains?
         - ✅ Onboarding revised
         - ✅ Onboarding options reveal the respective channels/categories
     - ✅ Reorganize channel categories
-    - ⏰ Add clear signals directing players to their places
-    - ⏰ Add a bot that sends a welcome message to new users
+    - ✅ Add clear signals directing players to their places
+    - ✅ Add a bot that sends a welcome message to new users
 - ✅ Add a line to the end of /setup directing users to /queue and /help.
 - ✅ Ask "how did you find us?" in /setup
 - ✅ Create some kind of referral mechanism
