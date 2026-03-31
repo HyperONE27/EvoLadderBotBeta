@@ -51,7 +51,7 @@ def register_activity_command(tree: app_commands.CommandTree) -> None:
     )
     async def activity_command(
         interaction: discord.Interaction,
-        game_mode: str = "1v1",
+        game_mode: str,
     ) -> None:
         locale = get_player_locale(interaction.user.id)
         if game_mode not in ("1v1", "2v2"):

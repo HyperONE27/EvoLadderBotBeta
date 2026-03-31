@@ -324,7 +324,7 @@ class Leaderboard2v2Embed(discord.Embed):
                     p2 = f"{entry.get('player_2_name', '?')[:12]:<12}"
                     mmr = f"{entry['mmr']:>4}"
                     lines.append(
-                        f"`{ordinal}.` {rank_emote} {p1_flag} `{p1}` + {p2_flag} `{p2}` `{mmr}`"
+                        f"`{ordinal}.` {rank_emote} {p1_flag} `{p1}` {p2_flag} `{p2}` `{mmr}`"
                     )
                 chunks.append("\n".join(lines))
 
@@ -752,7 +752,7 @@ class Leaderboard2v2View(AutoDisableView):
 
 def register_leaderboard_command(tree: app_commands.CommandTree) -> None:
     @tree.command(name="leaderboard", description="View the MMR leaderboard")
-    @app_commands.describe(game_mode="Game mode (default: 1v1)")
+    @app_commands.describe(game_mode="Game mode")
     @app_commands.choices(game_mode=GAME_MODE_CHOICES)
     @app_commands.check(check_if_accepted_tos)
     @app_commands.check(check_if_completed_setup)
@@ -760,7 +760,7 @@ def register_leaderboard_command(tree: app_commands.CommandTree) -> None:
     @app_commands.check(check_if_dm)
     async def leaderboard_command(
         interaction: discord.Interaction,
-        game_mode: str = "1v1",
+        game_mode: str,
     ) -> None:
         locale = get_player_locale(interaction.user.id)
 
