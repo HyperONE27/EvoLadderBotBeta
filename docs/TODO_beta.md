@@ -6,6 +6,7 @@ What remains?
 
 - ✅ Write pre-beta feature announcement
 - ⏰ Write pre-beta launch announcement
+- ✅ Disable views on expiration so users don't get confused after trying to click them
 - ✅ Rewrite the ToS AGAIN to include data collection about:
     - ✅ where users found us
     - ✅ when users joined the server
