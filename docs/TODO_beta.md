@@ -6,6 +6,11 @@ What remains?
 
 - ✅ Write pre-beta feature announcement
 - ⏰ Write pre-beta launch announcement
+- ⏰ Upsert updated locale strings
+    - ✅ esMX
+    - ✅ koKR
+    - ⏰ ruRU
+    - ⏰ zhCN
 - ✅ Disable views on expiration so users don't get confused after trying to click them
 - ✅ Rewrite the ToS AGAIN to include data collection about:
     - ✅ where users found us
@@ -31,9 +36,6 @@ What remains?
 - ✅ Collect data about when people join the server
 - ✅ Deduplicate /queue joins
     - ✅ No more than once per 5 minutes
-- ⏰ Need to re-apply the locale strings changes in commit `2a683fda7eff0676d1e84f76830f85ae4a777a60` when the localizers get their strings back to me
-    - ⏰ also need to re-apply "queue_searching_embed.description.1" from commit `25172c41376222f194e0812ac414a3315ad79c1c`
-    - ⏰ also need to insert "help_embed.title.1" and "help_embed.description.1" from commit `6c129d5b86fc684a488f19e7075d39e1ed0aee24`
 - ✅ Add a {user} argument to `/profile`
     - Admins can view other users' profiles
 - ✅ Write a /help command
