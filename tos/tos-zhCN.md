@@ -1,6 +1,6 @@
 # EvoLadderBot 服务条款、隐私政策与退款政策
-## English: https://rentry.co/evoladderbot-tos
-*最后更新：2026-03-26*
+## 🇺🇸 English: https://rentry.co/evoladderbot-tos
+*最后更新： 2026-04-02**
 
 **运营方：** **SC Evo Complete Ladder Bot**（"EvoLadderBot"、"本服务"、"我们"或"我方"）是由 Team Koprulu 成员 HyperONE 创建的星际争霸 II 社区天梯，由 **HyperONE Dev** 代表 **Team Koprulu** 为 **SC: Evo Complete** 项目运营。
 

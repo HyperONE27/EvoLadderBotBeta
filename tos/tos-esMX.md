@@ -1,6 +1,6 @@
 # Términos de Servicio, Política de Privacidad y Política de Reembolsos de EvoLadderBot
-## English: https://rentry.co/evoladderbot-tos
-*Última actualización: 2026-03-26*
+## 🇺🇸 English: https://rentry.co/evoladderbot-tos
+*Última actualización: 2026-04-02*
 
 **Operador:** El **SC Evo Complete Ladder Bot** («EvoLadderBot», «el Servicio», «nosotros» o «nuestro») es un ranking comunitario de StarCraft II creado por HyperONE, miembro del equipo Team Koprulu, y operado por **HyperONE Dev** en nombre de **Team Koprulu** para el proyecto **SC: Evo Complete**.
 

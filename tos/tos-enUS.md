@@ -1,6 +1,9 @@
 # EvoLadderBot Terms of Service, Privacy Policy, and Refund Policy
-## 한국어: https://rentry.co/evoladderbot-tos-kr
-*Last updated: 2026-03-26*
+## 🇲🇽 Español: https://rentry.co/evoladderbot-tos-mx
+## 🇰🇷 한국어: https://rentry.co/evoladderbot-tos-kr
+## 🇷🇺 Русский: https://rentry.co/evoladderbot-tos-ru
+## 🇨🇳 简体中文: https://rentry.co/evoladderbot-tos-cn
+*Last updated: 2026-04-02*
 
 **Operator:** The **SC Evo Complete Ladder Bot** (“EvoLadderBot,” “the Service,” “we,” or “our”) is a community StarCraft II ladder created by HyperONE, a member of Team Koprulu, and operated by **HyperONE Dev** on behalf of **Team Koprulu** for the **SC: Evo Complete** project.
 

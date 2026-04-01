@@ -1,6 +1,6 @@
 # Условия использования, Политика конфиденциальности и Политика возврата средств EvoLadderBot
-## English: https://rentry.co/evoladderbot-tos
-*Последнее обновление: 2026-03-26*
+## 🇺🇸 English: https://rentry.co/evoladderbot-tos
+*Последнее обновление: 2026-04-02*
 
 **Оператор:** **SC Evo Complete Ladder Bot** («EvoLadderBot», «Сервис», «мы» или «наш») — это рейтинговый режим от сообщества StarCraft II, созданный HyperONE, участником команды Team Koprulu, и управляемый **HyperONE Dev** от имени **Team Koprulu** для проекта **SC: Evo Complete**.
 
