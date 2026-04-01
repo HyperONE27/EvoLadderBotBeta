@@ -104,6 +104,25 @@ class ErrorEmbed(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
+class PlayerTimedOutEmbed(discord.Embed):
+    """Shown when a timed-out player tries to queue."""
+
+    def __init__(self, timeout_until: datetime, *, locale: str = "enUS") -> None:
+        super().__init__(
+            title=t("player_timed_out_embed.title", locale),
+            description=t("player_timed_out_embed.description", locale),
+            color=discord.Color.red(),
+        )
+        absolute = to_discord_timestamp(dt=timeout_until, style="F")
+        relative = to_discord_timestamp(dt=timeout_until, style="R")
+        self.add_field(
+            name=t("player_timed_out_embed.field_name.timeout_until", locale),
+            value=f"{absolute} ({relative})",
+            inline=False,
+        )
+        apply_default_embed_footer(self, locale=locale)
+
+
 class UnsupportedGameModeEmbed(discord.Embed):
     def __init__(self, game_mode: str, locale: str = "enUS") -> None:
         super().__init__(

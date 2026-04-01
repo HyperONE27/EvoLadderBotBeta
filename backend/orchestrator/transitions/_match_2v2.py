@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 import polars as pl
@@ -12,10 +12,15 @@ from backend.algorithms.game_stats import count_game_stats_2v2
 from backend.algorithms.match_params_2v2 import resolve_match_params_2v2
 from backend.algorithms.matchmaker_2v2 import run_matchmaking_wave_2v2
 from backend.algorithms.ratings_1v1 import get_new_ratings
-from backend.core.config import CURRENT_SEASON
+from backend.core.config import BASE_MMR_WINDOW, CURRENT_SEASON, MMR_WINDOW_GROWTH_PER_CYCLE
 from backend.domain_types.dataframes import Matches2v2Row, row_as
-from backend.domain_types.ephemeral import MatchCandidate2v2, MatchParams2v2
-from common.datetime_helpers import utc_now
+from backend.domain_types.ephemeral import (
+    MatchCandidate2v2,
+    MatchParams2v2,
+    QueueEntry2v2,
+)
+from common.config import ABANDON_TIMEOUT_MINUTES, ABORT_TIMEOUT_MINUTES
+from common.datetime_helpers import to_iso, utc_now
 
 if TYPE_CHECKING:
     from backend.orchestrator.transitions import TransitionManager
@@ -25,6 +30,45 @@ logger = structlog.get_logger(__name__)
 # Number of confirmations required before a 2v2 match is considered confirmed.
 # Only team leaders (player_1 of each team) confirm, so this is 2, not 4.
 _REQUIRED_CONFIRMATIONS = 2
+
+
+# ==================================================================
+# Queue entry serialization (for event logging)
+# ==================================================================
+
+
+def _serialize_queue_entry_2v2(entry: QueueEntry2v2) -> dict[str, object]:
+    """Convert a 2v2 queue entry to a JSON-safe dict for event_data."""
+    return {
+        "leader_discord_uid": entry["discord_uid"],
+        "leader_player_name": entry["player_name"],
+        "member_discord_uid": entry["party_member_discord_uid"],
+        "member_player_name": entry["party_member_name"],
+        # Declared compositions (None means not declared).
+        "pure_bw_leader_race": entry["pure_bw_leader_race"],
+        "pure_bw_member_race": entry["pure_bw_member_race"],
+        "mixed_leader_race": entry["mixed_leader_race"],
+        "mixed_member_race": entry["mixed_member_race"],
+        "pure_sc2_leader_race": entry["pure_sc2_leader_race"],
+        "pure_sc2_member_race": entry["pure_sc2_member_race"],
+        # Which comps are declared (convenience flags).
+        "has_pure_bw": entry["pure_bw_leader_race"] is not None,
+        "has_mixed": entry["mixed_leader_race"] is not None,
+        "has_pure_sc2": entry["pure_sc2_leader_race"] is not None,
+        # Geo data (all four involved).
+        "leader_nationality": entry["nationality"],
+        "leader_location": entry["location"],
+        "member_nationality": entry["member_nationality"],
+        "member_location": entry["member_location"],
+        # Skill.
+        "team_mmr": entry["team_mmr"],
+        "team_letter_rank": entry["team_letter_rank"],
+        "map_vetoes": entry["map_vetoes"],
+        "joined_at": to_iso(dt=entry["joined_at"]),
+        "wait_cycles": entry["wait_cycles"],
+        "mmr_window": BASE_MMR_WINDOW
+        + entry["wait_cycles"] * MMR_WINDOW_GROWTH_PER_CYCLE,
+    }
 
 
 # ==================================================================
@@ -66,6 +110,27 @@ def run_matchmaking_wave_2v2_method(
                 f"team_2={candidate['team_2_player_1_discord_uid']}"
             )
 
+    # Build matched pair details from the created match rows.
+    matched_pairs_data = [
+        {
+            "match_id": m["id"],
+            "team_1_player_1_discord_uid": m["team_1_player_1_discord_uid"],
+            "team_1_player_2_discord_uid": m["team_1_player_2_discord_uid"],
+            "team_2_player_1_discord_uid": m["team_2_player_1_discord_uid"],
+            "team_2_player_2_discord_uid": m["team_2_player_2_discord_uid"],
+            "team_1_player_1_race": m["team_1_player_1_race"],
+            "team_1_player_2_race": m["team_1_player_2_race"],
+            "team_2_player_1_race": m["team_2_player_1_race"],
+            "team_2_player_2_race": m["team_2_player_2_race"],
+            "team_1_mmr": m["team_1_mmr"],
+            "team_2_mmr": m["team_2_mmr"],
+            "mmr_diff": abs(m["team_1_mmr"] - m["team_2_mmr"]),
+            "map_name": m["map_name"],
+            "server_name": m["server_name"],
+        }
+        for m in created_matches
+    ]
+
     self._db_writer.insert_event(
         {
             "discord_uid": 1,  # backend sentinel
@@ -76,6 +141,14 @@ def run_matchmaking_wave_2v2_method(
                 "queue_size": len(queue_snapshot),
                 "matches_created": len(created_matches),
                 "remaining_queue": len(remaining),
+                # Full queue snapshot.
+                "queue_entries": [
+                    _serialize_queue_entry_2v2(e) for e in queue_snapshot
+                ],
+                # Matched pairs with details.
+                "matched_pairs": matched_pairs_data,
+                # Unmatched teams (wait_cycles already incremented by wave).
+                "unmatched": [_serialize_queue_entry_2v2(e) for e in remaining],
             },
         }
     )
@@ -307,6 +380,14 @@ def abort_match_2v2(
         team_2_report=t2_report,
     )
 
+    # Timeout the party leader of the aborting team.
+    if discord_uid in t1_uids:
+        leader_uid = match["team_1_player_1_discord_uid"]
+    else:
+        leader_uid = match["team_2_player_1_discord_uid"]
+    timeout_until = now + timedelta(minutes=ABORT_TIMEOUT_MINUTES)
+    self._set_player_status(leader_uid, "timed_out", timeout_until=timeout_until)
+
     self._db_writer.insert_event(
         {
             "discord_uid": discord_uid,
@@ -318,6 +399,8 @@ def abort_match_2v2(
                 "game_mode": "2v2",
                 "match_id": match_id,
                 "aborter_uid": discord_uid,
+                "timed_out_leader_uid": leader_uid,
+                "timeout_minutes": ABORT_TIMEOUT_MINUTES,
             },
         }
     )
@@ -374,6 +457,17 @@ def handle_confirmation_timeout_2v2(
         team_2_report=t2_report,
     )
 
+    # Timeout party leaders whose team abandoned (didn't confirm).
+    timeout_until = now + timedelta(minutes=ABANDON_TIMEOUT_MINUTES)
+    for leader_uid, report in (
+        (match["team_1_player_1_discord_uid"], t1_report),
+        (match["team_2_player_1_discord_uid"], t2_report),
+    ):
+        if report == "abandoned":
+            self._set_player_status(
+                leader_uid, "timed_out", timeout_until=timeout_until
+            )
+
     self._db_writer.insert_event(
         {
             "discord_uid": 1,  # backend sentinel
@@ -386,6 +480,7 @@ def handle_confirmation_timeout_2v2(
                 "match_id": match_id,
                 "t1_report": t1_report,
                 "t2_report": t2_report,
+                "timeout_minutes": ABANDON_TIMEOUT_MINUTES,
             },
         }
     )

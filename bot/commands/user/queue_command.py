@@ -19,6 +19,7 @@ from bot.helpers.checks import (
     check_if_completed_setup,
     check_if_dm,
     check_if_queueing,
+    check_if_timed_out,
 )
 
 logger = structlog.get_logger(__name__)
@@ -36,6 +37,7 @@ def register_queue_command(tree: app_commands.CommandTree) -> None:
     @tree.command(name="queue", description="Join the ranked matchmaking queue")
     @app_commands.check(check_if_accepted_tos)
     @app_commands.check(check_if_completed_setup)
+    @app_commands.check(check_if_timed_out)
     @app_commands.check(check_if_queueing)
     @app_commands.check(check_if_banned)
     @app_commands.check(check_if_dm)

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import discord
 import structlog
 from discord import app_commands
@@ -5,6 +7,7 @@ from discord import app_commands
 from bot.core.config import BACKEND_URL
 from bot.core.dependencies import get_cache
 from bot.core.http import get_session
+from common.datetime_helpers import ensure_utc, utc_now
 from common.i18n import t
 
 logger = structlog.get_logger(__name__)
@@ -112,6 +115,31 @@ async def check_if_queueing(interaction: discord.Interaction) -> bool:
     if player is not None and player.get("player_status") == "queueing":
         raise AlreadyQueueingError()
     return True
+
+
+async def check_if_timed_out(interaction: discord.Interaction) -> bool:
+    """Check whether the player is currently serving a timeout penalty.
+
+    Relies on ``check_if_banned`` having already cached the player dict in
+    ``Cache.player_presets``.  Fail-open if there is no cached data.
+    """
+    uid = interaction.user.id
+    player = get_cache().player_presets.get(uid)
+    if player is None:
+        return True  # fail-open
+
+    timeout_until_raw = player.get("timeout_until")
+    if timeout_until_raw is None:
+        return True
+
+    timeout_until = ensure_utc(timeout_until_raw)
+    if timeout_until is None:
+        return True
+
+    if utc_now() >= timeout_until:
+        return True  # timeout expired
+
+    raise PlayerTimedOutError(timeout_until)
 
 
 async def check_if_admin(interaction: discord.Interaction) -> bool:
@@ -234,6 +262,14 @@ class NotCompletedSetupError(app_commands.CheckFailure):
 class AlreadyQueueingError(app_commands.CheckFailure):
     def __init__(self) -> None:
         super().__init__("You are already in the queue.")
+
+
+class PlayerTimedOutError(app_commands.CheckFailure):
+    """Player is serving a timeout penalty from aborting or abandoning a match."""
+
+    def __init__(self, timeout_until: datetime) -> None:
+        self.timeout_until = timeout_until
+        super().__init__("You are currently timed out from queueing.")
 
 
 class NameNotUniqueError(app_commands.CheckFailure):

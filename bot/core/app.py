@@ -19,7 +19,7 @@ from bot.commands.user.profile_command import register_profile_command
 from bot.commands.user.queue_command import register_queue_command
 from bot.commands.user.setcountry_command import register_setcountry_command
 from bot.commands.user.setup_command import register_setup_command
-from bot.components.embeds import ErrorEmbed, LocaleSetupEmbed
+from bot.components.embeds import ErrorEmbed, LocaleSetupEmbed, PlayerTimedOutEmbed
 from bot.components.views import LocaleSetupView
 from bot.core.bootstrap import Bot
 from bot.core.config import BACKEND_URL, BOT_TOKEN, SERVER_GUILD_ID
@@ -214,12 +214,22 @@ async def on_tree_error(
         NotCompletedSetupError,
         NotInDMError,
         NotOwnerError,
+        PlayerTimedOutError,
     )
 
     locale = get_player_locale(interaction.user.id)
     ephemeral = False
     if isinstance(error, app_commands.CheckFailure):
-        if isinstance(error, NotInDMError):
+        if isinstance(error, PlayerTimedOutError):
+            timed_out_embed = PlayerTimedOutEmbed(
+                timeout_until=error.timeout_until, locale=locale
+            )
+            if interaction.response.is_done():
+                await interaction.followup.send(embed=timed_out_embed)
+            else:
+                await interaction.response.send_message(embed=timed_out_embed)
+            return
+        elif isinstance(error, NotInDMError):
             description = t("error.not_in_dm", locale)
             ephemeral = True
         elif isinstance(error, BannedError):

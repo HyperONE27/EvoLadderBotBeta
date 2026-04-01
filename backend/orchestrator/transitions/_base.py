@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 import polars as pl
@@ -45,6 +46,7 @@ def _set_player_status(
     status: str,
     match_mode: str | None = None,
     match_id: int | None = None,
+    timeout_until: datetime | None = None,
 ) -> None:
     """Update player_status (and match columns) in both cache and DB."""
     df = self._state_manager.players_df
@@ -53,7 +55,9 @@ def _set_player_status(
         return
 
     player_id: int = rows.row(0, named=True)["id"]
-    self._db_writer.update_player_status(player_id, status, match_mode, match_id)
+    self._db_writer.update_player_status(
+        player_id, status, match_mode, match_id, timeout_until=timeout_until
+    )
 
     self._state_manager.players_df = df.with_columns(
         player_status=pl.when(pl.col("discord_uid") == discord_uid)
@@ -65,6 +69,9 @@ def _set_player_status(
         current_match_id=pl.when(pl.col("discord_uid") == discord_uid)
         .then(pl.lit(match_id))
         .otherwise(pl.col("current_match_id")),
+        timeout_until=pl.when(pl.col("discord_uid") == discord_uid)
+        .then(pl.lit(timeout_until))
+        .otherwise(pl.col("timeout_until")),
     )
 
 

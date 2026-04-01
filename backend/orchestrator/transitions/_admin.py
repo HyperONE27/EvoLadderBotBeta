@@ -37,10 +37,16 @@ def reset_player_status(
     row = rows.row(0, named=True)
     old_status: str = row.get("player_status") or "unknown"
 
-    if old_status == "idle" and row.get("current_match_id") is None:
+    if (
+        old_status == "idle"
+        and row.get("current_match_id") is None
+        and row.get("timeout_until") is None
+    ):
         return False, "Player is already idle with no active match.", old_status
 
-    self._set_player_status(discord_uid, "idle", match_mode=None, match_id=None)
+    self._set_player_status(
+        discord_uid, "idle", match_mode=None, match_id=None, timeout_until=None
+    )
 
     # If the player was in a party, remove them and reset their partner.
     self._purge_party_membership(discord_uid)

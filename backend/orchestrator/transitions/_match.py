@@ -3,28 +3,58 @@ and shared resolution helpers."""
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 import polars as pl
 import structlog
 
 from backend.algorithms.match_params import resolve_match_params
-from backend.algorithms.matchmaker import run_matchmaking_wave
+from backend.algorithms.matchmaker import _categorise, run_matchmaking_wave
 from backend.algorithms.ratings_1v1 import get_new_ratings
-from backend.core.config import CURRENT_SEASON
+from backend.core.config import (
+    BASE_MMR_WINDOW,
+    CURRENT_SEASON,
+    MMR_WINDOW_GROWTH_PER_CYCLE,
+)
 from backend.domain_types.dataframes import Matches1v1Row, row_as
 from backend.domain_types.ephemeral import (
     MatchCandidate1v1,
     MatchParams1v1,
     QueueEntry1v1,
 )
-from common.datetime_helpers import utc_now
+from common.config import ABANDON_TIMEOUT_MINUTES, ABORT_TIMEOUT_MINUTES
+from common.datetime_helpers import to_iso, utc_now
 
 if TYPE_CHECKING:
     from backend.orchestrator.transitions import TransitionManager
 
 logger = structlog.get_logger(__name__)
+
+
+# ==================================================================
+# Queue entry serialization (for event logging)
+# ==================================================================
+
+
+def _serialize_queue_entry_1v1(entry: QueueEntry1v1) -> dict[str, object]:
+    """Convert a 1v1 queue entry to a JSON-safe dict for event_data."""
+    return {
+        "discord_uid": entry["discord_uid"],
+        "player_name": entry["player_name"],
+        "bw_race": entry["bw_race"],
+        "sc2_race": entry["sc2_race"],
+        "bw_mmr": entry["bw_mmr"],
+        "sc2_mmr": entry["sc2_mmr"],
+        "bw_letter_rank": entry["bw_letter_rank"],
+        "sc2_letter_rank": entry["sc2_letter_rank"],
+        "nationality": entry["nationality"],
+        "map_vetoes": entry["map_vetoes"],
+        "joined_at": to_iso(dt=entry["joined_at"]),
+        "wait_cycles": entry["wait_cycles"],
+        "mmr_window": BASE_MMR_WINDOW
+        + entry["wait_cycles"] * MMR_WINDOW_GROWTH_PER_CYCLE,
+    }
 
 
 # ==================================================================
@@ -45,6 +75,9 @@ def run_matchmaking_wave_method(
 
     Returns the list of newly created ``Matches1v1Row`` dicts.
     """
+    # Derive pool diagnostics before the wave (categorise is pure).
+    bw_only, sc2_only, both = _categorise(queue_snapshot)
+
     remaining, candidates = run_matchmaking_wave(queue_snapshot)
 
     # Replace the queue with unmatched players (wait_cycles already incremented).
@@ -66,15 +99,47 @@ def run_matchmaking_wave_method(
                 f"{candidate['player_2_discord_uid']}"
             )
 
+    # Build matched pair details from the candidates that succeeded.
+    matched_pairs_data = [
+        {
+            "match_id": m["id"],
+            "player_1_discord_uid": m["player_1_discord_uid"],
+            "player_2_discord_uid": m["player_2_discord_uid"],
+            "player_1_name": m["player_1_name"],
+            "player_2_name": m["player_2_name"],
+            "player_1_race": m["player_1_race"],
+            "player_2_race": m["player_2_race"],
+            "player_1_mmr": m["player_1_mmr"],
+            "player_2_mmr": m["player_2_mmr"],
+            "mmr_diff": abs(m["player_1_mmr"] - m["player_2_mmr"]),
+            "map_name": m["map_name"],
+            "server_name": m["server_name"],
+        }
+        for m in created_matches
+    ]
+
     self._db_writer.insert_event(
         {
             "discord_uid": 1,  # backend sentinel
             "event_type": "system_event",
             "action": "matchmaking_wave",
             "event_data": {
+                "game_mode": "1v1",
                 "queue_size": len(queue_snapshot),
                 "matches_created": len(created_matches),
                 "remaining_queue": len(remaining),
+                # Pool diagnostics (pre-equalisation split).
+                "pool_bw_only": len(bw_only),
+                "pool_sc2_only": len(sc2_only),
+                "pool_both": len(both),
+                # Full queue snapshot.
+                "queue_entries": [
+                    _serialize_queue_entry_1v1(e) for e in queue_snapshot
+                ],
+                # Matched pairs with details.
+                "matched_pairs": matched_pairs_data,
+                # Unmatched players (wait_cycles already incremented by wave).
+                "unmatched": [_serialize_queue_entry_1v1(e) for e in remaining],
             },
         }
     )
@@ -274,6 +339,10 @@ def abort_match(
         player_2_report=p2_report,
     )
 
+    # Apply timeout penalty to the aborting player.
+    timeout_until = now + timedelta(minutes=ABORT_TIMEOUT_MINUTES)
+    self._set_player_status(discord_uid, "timed_out", timeout_until=timeout_until)
+
     self._db_writer.insert_event(
         {
             "discord_uid": discord_uid,  # acting player
@@ -287,6 +356,7 @@ def abort_match(
                 "aborter_uid": discord_uid,
                 "p1_uid": p1_uid,
                 "p2_uid": p2_uid,
+                "timeout_minutes": ABORT_TIMEOUT_MINUTES,
             },
         }
     )
@@ -337,6 +407,12 @@ def handle_confirmation_timeout(
         player_2_report=p2_report,
     )
 
+    # Apply timeout penalty to players who did not confirm.
+    timeout_until = now + timedelta(minutes=ABANDON_TIMEOUT_MINUTES)
+    for uid, report in ((p1_uid, p1_report), (p2_uid, p2_report)):
+        if report == "abandoned":
+            self._set_player_status(uid, "timed_out", timeout_until=timeout_until)
+
     self._db_writer.insert_event(
         {
             "discord_uid": 1,  # backend sentinel — timeout, no acting user
@@ -351,6 +427,7 @@ def handle_confirmation_timeout(
                 "p2_uid": p2_uid,
                 "p1_report": p1_report,
                 "p2_report": p2_report,
+                "timeout_minutes": ABANDON_TIMEOUT_MINUTES,
             },
         }
     )

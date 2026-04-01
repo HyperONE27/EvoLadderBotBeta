@@ -8,7 +8,7 @@ from typing import Any, cast
 from backend.core.config import DATABASE
 from backend.domain_types.dataframes import TABLE_SCHEMAS
 from common.config import QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT
-from common.datetime_helpers import ensure_utc, utc_now
+from common.datetime_helpers import ensure_utc, to_iso, utc_now
 
 _event_logger = structlog.get_logger("events")
 
@@ -348,13 +348,16 @@ class DatabaseWriter:
         player_status: str,
         current_match_mode: str | None,
         current_match_id: int | None,
+        timeout_until: datetime | None = None,
     ) -> None:
-        """Update player_status, current_match_mode, and current_match_id."""
+        """Update player_status, current_match_mode, current_match_id, and
+        optionally timeout_until."""
         self.client.table("players").update(
             {
                 "player_status": player_status,
                 "current_match_mode": current_match_mode,
                 "current_match_id": current_match_id,
+                "timeout_until": to_iso(dt=timeout_until),
             }
         ).eq("id", player_id).execute()
 

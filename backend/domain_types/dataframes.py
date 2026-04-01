@@ -51,6 +51,7 @@ PLAYERS_SCHEMA: dict[str, pl.DataType] = {
     "read_lobby_guide": pl.Boolean,
     "referred_by": pl.Int64,
     "referred_at": pl.Datetime("us", "utc"),
+    "timeout_until": pl.Datetime("us", "utc"),
 }
 
 NOTIFICATIONS_SCHEMA: dict[str, pl.DataType] = {
@@ -309,6 +310,7 @@ class PlayersRow(TypedDict):
     read_lobby_guide: bool
     referred_by: int | None
     referred_at: datetime | None
+    timeout_until: datetime | None
 
 
 class NotificationsRow(TypedDict):

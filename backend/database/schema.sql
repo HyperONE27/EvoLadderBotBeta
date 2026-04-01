@@ -44,7 +44,8 @@ CREATE TABLE IF NOT EXISTS players (
     current_match_id        BIGINT DEFAULT NULL,
     read_lobby_guide        BOOLEAN NOT NULL DEFAULT FALSE,
     referred_by             BIGINT,
-    referred_at             TIMESTAMPTZ
+    referred_at             TIMESTAMPTZ,
+    timeout_until           TIMESTAMPTZ DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS notifications (
