@@ -3588,6 +3588,14 @@ class CompSelect2v2(discord.ui.Select):
             leader = None
             member = None
 
+        # BW + SC2 comp requires one BW race and one SC2 race.
+        if self._comp == "mixed" and leader is not None and member is not None:
+            leader_is_bw = leader.startswith("bw_")
+            member_is_bw = member.startswith("bw_")
+            if leader_is_bw == member_is_bw:
+                leader = None
+                member = None
+
         if self._comp == "pure_bw":
             view.pure_bw_leader_race = leader
             view.pure_bw_member_race = member
