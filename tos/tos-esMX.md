@@ -22,9 +22,9 @@ Hacemos un esfuerzo de buena fe por mantener la integridad operativa, aunque pue
 
 ### 1. Aceptación de los Términos
 Al usar EvoLadderBot, unirte al ranking o acceder a los servicios relacionados, aceptas estos Términos de Servicio y la Política de Privacidad y Política de Reembolsos que los acompañan.
-Si ya no estás de acuerdo con estos términos, debes usar el comando `/termsofservice` y seleccionar «I Decline These Terms» para revocar tu consentimiento de forma explícita.
+Si ya no estás de acuerdo con estos términos, debes usar el comando `/setup` y seleccionar «I Decline These Terms» para revocar tu consentimiento de forma explícita.
 No hacerlo constituye consentimiento continuo a estos Términos.
-Los cambios en el estado del consentimiento quedan registrados. Hacemos un esfuerzo de buena fe por mantener disponible el comando `/termsofservice`. Sin embargo, el Servicio se reserva el derecho de restringir o eliminar cuentas que muestren actividad de consentimiento abusiva o inconsistente.
+Los cambios en el estado del consentimiento quedan registrados. Hacemos un esfuerzo de buena fe por mantener disponible el comando `/setup`. Sin embargo, el Servicio se reserva el derecho de restringir o eliminar cuentas que muestren actividad de consentimiento abusiva o inconsistente.
 
 ### 2. Elegibilidad
 Para usar el Servicio, debes:

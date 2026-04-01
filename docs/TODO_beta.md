@@ -22,11 +22,13 @@ What remains?
             - Collecting more balance data
             - Sharing replays with community figures
             - Use data to power testing and development
-- ⏰ Upsert updated locale strings
+- ⏰ Hide matches from match log channel if aborted/abandoned so we don't leak who's online
+- ⏰ Implement a timeout for users who abort or abandon
+- ✅ Upsert updated locale strings
     - ✅ esMX
     - ✅ koKR
-    - ⏰ ruRU
-    - ⏰ zhCN
+    - ✅ ruRU
+    - ✅ zhCN
 - ✅ Disable views on expiration so users don't get confused after trying to click them
 - ✅ Rewrite the ToS AGAIN to include data collection about:
     - ✅ where users found us
@@ -335,14 +337,22 @@ I look forward to releasing the pre-beta. See you soon!
 
 Hi @everyone,
 
-The SC: Evo Complete ladder pre-beta is now live!
+## The SC: Evo Complete ladder pre-beta is now live!
 
 Please note there are some new settings, and to make sure everyone has a chance to see them, we are requiring all users to run `/setup` again.
+
+This time, for new and returning users completing `/setup` for the first time, we will be answering some onboarding questions. We collect this data to get to know more about our playerbase and to make strategic decisions about how to reach new users.
 
 Player ratings and match history from the alpha testing phase have been retained. Returning users should be aware of the following changes:
 - The 2v2 gamemode is now available.
   - The 2v2 queue supports both **BW + BW vs SC2 + SC2** and **BW + SC2 vs BW + SC2** games.
-  - /party invite {name/Discord username/Discord UID} to invite a player to join
+  - Use `/party invite` {name/Discord username/Discord UID} to invite a player to join
+- Four new locales are available, in addition to 🇺🇸 enUS: 
+  - 🇲🇽 esMX
+  - 🇰🇷 koKR
+  - 🇷🇺 ruRU
+  - 🇨🇳 zhCN
+- Upon finding a ladder match, you will not immediately see 
   - 
   - 
-  - 
+- Upon uploading a replay to a match, the ladder will attempt to automatically resolve the match result based on replay parsing data. No more getting stuck because your opponent went AFK!

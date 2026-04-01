@@ -1,8 +1,4 @@
 # EvoLadderBot Terms of Service, Privacy Policy, and Refund Policy
-## 🇲🇽 Español: https://rentry.co/evoladderbot-tos-mx
-## 🇰🇷 한국어: https://rentry.co/evoladderbot-tos-kr
-## 🇷🇺 Русский: https://rentry.co/evoladderbot-tos-ru
-## 🇨🇳 简体中文: https://rentry.co/evoladderbot-tos-cn
 *Last updated: 2026-04-02*
 
 **Operator:** The **SC Evo Complete Ladder Bot** (“EvoLadderBot,” “the Service,” “we,” or “our”) is a community StarCraft II ladder created by HyperONE, a member of Team Koprulu, and operated by **HyperONE Dev** on behalf of **Team Koprulu** for the **SC: Evo Complete** project.
@@ -25,9 +21,9 @@ We make a good-faith effort to maintain operational integrity, but downtime, res
 
 ### 1. Acceptance of Terms
 By using EvoLadderBot, joining the ladder, or accessing related services, you agree to these Terms of Service and the accompanying Privacy Policy and Refund Policy.
-If you no longer agree to these terms, you must use the `/termsofservice` command and select "I Decline These Terms" to revoke your consent explicitly. 
+If you no longer agree to these terms, you must use the `/setup` command and select "I Decline These Terms" to revoke your consent explicitly. 
 Failure to do so constitutes ongoing consent to these Terms.
-Changes to consent status are logged. We make a good-faith effort to keep the `/termsofservice` command available. However, the Service reserves the right to restrict or remove accounts that exhibit abusive or inconsistent consent activity.
+Changes to consent status are logged. We make a good-faith effort to keep the `/setup` command available. However, the Service reserves the right to restrict or remove accounts that exhibit abusive or inconsistent consent activity.
 
 ### 2. Eligibility
 To use the Service, you must:
