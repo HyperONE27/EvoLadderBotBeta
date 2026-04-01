@@ -520,12 +520,13 @@ class DatabaseWriter:
     # ------------------------------------------------------------------
 
     def reset_all_player_statuses(self) -> None:
-        """Reset all players to idle status with no active match."""
+        """Reset all players to idle status with no active match or timeout."""
         self.client.table("players").update(
             {
                 "player_status": "idle",
                 "current_match_mode": None,
                 "current_match_id": None,
+                "timeout_until": None,
             }
         ).neq("player_status", "idle").execute()
 

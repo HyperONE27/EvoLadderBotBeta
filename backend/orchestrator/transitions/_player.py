@@ -327,6 +327,7 @@ def reset_all_player_statuses(self: TransitionManager) -> None:
         player_status=pl.lit("idle"),
         current_match_mode=pl.lit(None),
         current_match_id=pl.lit(None),
+        timeout_until=pl.lit(None),
     )
     logger.info("Reset all player statuses to idle")
 
