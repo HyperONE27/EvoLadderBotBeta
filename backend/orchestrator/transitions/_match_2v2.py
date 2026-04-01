@@ -12,7 +12,11 @@ from backend.algorithms.game_stats import count_game_stats_2v2
 from backend.algorithms.match_params_2v2 import resolve_match_params_2v2
 from backend.algorithms.matchmaker_2v2 import run_matchmaking_wave_2v2
 from backend.algorithms.ratings_1v1 import get_new_ratings
-from backend.core.config import BASE_MMR_WINDOW, CURRENT_SEASON, MMR_WINDOW_GROWTH_PER_CYCLE
+from backend.core.config import (
+    BASE_MMR_WINDOW,
+    CURRENT_SEASON,
+    MMR_WINDOW_GROWTH_PER_CYCLE,
+)
 from backend.domain_types.dataframes import Matches2v2Row, row_as
 from backend.domain_types.ephemeral import (
     MatchCandidate2v2,
