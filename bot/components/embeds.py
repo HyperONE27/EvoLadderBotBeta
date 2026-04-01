@@ -845,6 +845,68 @@ class MatchAbandonedEmbed(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
+class MatchAbortedMinimalEmbed(discord.Embed):
+    """Anonymous match-aborted embed for the match log channel (no player info)."""
+
+    def __init__(self, match_data: dict, game_mode: str = "1v1") -> None:
+        match_id = match_data.get("id", "?")
+        locale = "enUS"
+        super().__init__(
+            title=t(
+                "match_aborted_embed.title.1",
+                locale,
+                match_id=str(match_id),
+                game_mode=game_mode,
+            ),
+            color=discord.Color.red(),
+        )
+        self.add_field(
+            name=t("shared.field_name.reason", locale),
+            value=t("match_aborted_minimal_embed.field_value.reason", locale),
+            inline=False,
+        )
+        apply_default_embed_footer(self, locale=locale)
+
+
+class MatchAbandonedMinimalEmbed(discord.Embed):
+    """Anonymous match-abandoned embed for the match log channel (no player info)."""
+
+    def __init__(self, match_data: dict, game_mode: str = "1v1") -> None:
+        match_id = match_data.get("id", "?")
+        locale = "enUS"
+
+        # Determine if one or both players/teams failed to confirm.
+        if game_mode == "1v1":
+            p1_abandoned = match_data.get("player_1_report") == "abandoned"
+            p2_abandoned = match_data.get("player_2_report") == "abandoned"
+            both = p1_abandoned and p2_abandoned
+        else:
+            t1_abandoned = match_data.get("team_1_report") == "abandoned"
+            t2_abandoned = match_data.get("team_2_report") == "abandoned"
+            both = t1_abandoned and t2_abandoned
+
+        if both:
+            reason_key = "match_abandoned_minimal_embed.field_value.reason_both"
+        else:
+            reason_key = "match_abandoned_minimal_embed.field_value.reason_one"
+
+        super().__init__(
+            title=t(
+                "match_abandoned_embed.title.1",
+                locale,
+                match_id=str(match_id),
+                game_mode=game_mode,
+            ),
+            color=discord.Color.red(),
+        )
+        self.add_field(
+            name=t("shared.field_name.reason", locale),
+            value=t(reason_key, locale),
+            inline=False,
+        )
+        apply_default_embed_footer(self, locale=locale)
+
+
 class MatchFinalizedEmbed(discord.Embed):
     def __init__(
         self,
