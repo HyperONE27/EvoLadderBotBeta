@@ -369,9 +369,6 @@ async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
         client, p1_uid, p2_uid, MatchAbortedEmbed, match_data, p1_info, p2_info
     )
     await _clear_match_state_low(p1_uid, p2_uid)
-    await _post_to_match_log_low(
-        client, MatchAbortedEmbed(match_data, p1_info, p2_info, locale="enUS")
-    )
 
 
 async def _on_match_abandoned(client: discord.Client, match_data: dict) -> None:
@@ -387,9 +384,6 @@ async def _on_match_abandoned(client: discord.Client, match_data: dict) -> None:
         client, p1_uid, p2_uid, MatchAbandonedEmbed, match_data, p1_info, p2_info
     )
     await _clear_match_state_low(p1_uid, p2_uid)
-    await _post_to_match_log_low(
-        client, MatchAbandonedEmbed(match_data, p1_info, p2_info, locale="enUS")
-    )
 
 
 async def _on_match_completed(client: discord.Client, match_data: dict) -> None:
@@ -547,10 +541,6 @@ async def _on_match_aborted_2v2(client: discord.Client, match_data: dict) -> Non
         client, all_uids, MatchAbortedEmbed2v2, match_data, player_infos
     )
     await _clear_match_state_all_2v2(all_uids)
-    await _post_to_match_log_low(
-        client,
-        MatchAbortedEmbed2v2(match_data, player_infos=player_infos, locale="enUS"),
-    )
 
 
 async def _on_match_abandoned_2v2(client: discord.Client, match_data: dict) -> None:
@@ -560,10 +550,6 @@ async def _on_match_abandoned_2v2(client: discord.Client, match_data: dict) -> N
         client, all_uids, MatchAbandonedEmbed2v2, match_data, player_infos
     )
     await _clear_match_state_all_2v2(all_uids)
-    await _post_to_match_log_low(
-        client,
-        MatchAbandonedEmbed2v2(match_data, player_infos=player_infos, locale="enUS"),
-    )
 
 
 async def _on_match_completed_2v2(client: discord.Client, match_data: dict) -> None:
