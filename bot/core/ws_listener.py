@@ -24,11 +24,7 @@ from bot.components.views import (
 )
 from bot.components.embeds import (
     QueueJoinActivityNotifyEmbed,
-    MatchAbortedEmbed,
-    MatchAbortedEmbed2v2,
     MatchAbortedMinimalEmbed,
-    MatchAbandonedEmbed,
-    MatchAbandonedEmbed2v2,
     MatchAbandonedMinimalEmbed,
     MatchConflictEmbed,
     MatchConflictEmbed2v2,
@@ -359,17 +355,27 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
 
 
 async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
-    """Notify both players that the match was explicitly aborted by a player."""
+    """Notify both players that the match was aborted and post to match log.
+
+    Player DMs and the match log channel both use the minimal (anonymous)
+    embed so that neither party learns the other's identity.
+    """
     p1_uid = match_data.get("player_1_discord_uid")
     p2_uid = match_data.get("player_2_discord_uid")
 
-    p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
-    p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
+    # DEPRECATED: Full embeds with player names, races, and MMR.
+    # Replaced by MatchAbortedMinimalEmbed to prevent leaking player
+    # identities.  Kept here for reference in case we ever want to
+    # restore detailed abort DMs behind a preference flag.
+    #
+    # p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
+    # p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
+    # await _send_to_both_localized(
+    #     client, p1_uid, p2_uid, MatchAbortedEmbed, match_data, p1_info, p2_info
+    # )
 
     await _clear_match_found_messages_low(p1_uid, p2_uid)
-    await _send_to_both_localized(
-        client, p1_uid, p2_uid, MatchAbortedEmbed, match_data, p1_info, p2_info
-    )
+    await _send_to_both_minimal(client, p1_uid, p2_uid, match_data, "1v1", "aborted")
     await _clear_match_state_low(p1_uid, p2_uid)
     await _post_to_match_log_low(
         client, MatchAbortedMinimalEmbed(match_data, game_mode="1v1")
@@ -377,17 +383,27 @@ async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
 
 
 async def _on_match_abandoned(client: discord.Client, match_data: dict) -> None:
-    """Notify both players that the match was abandoned (confirmation timeout)."""
+    """Notify both players that the match was abandoned and post to match log.
+
+    Player DMs and the match log channel both use the minimal (anonymous)
+    embed so that neither party learns the other's identity.
+    """
     p1_uid = match_data.get("player_1_discord_uid")
     p2_uid = match_data.get("player_2_discord_uid")
 
-    p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
-    p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
+    # DEPRECATED: Full embeds with player names, races, and MMR.
+    # Replaced by MatchAbandonedMinimalEmbed to prevent leaking player
+    # identities.  Kept here for reference in case we ever want to
+    # restore detailed abandon DMs behind a preference flag.
+    #
+    # p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
+    # p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
+    # await _send_to_both_localized(
+    #     client, p1_uid, p2_uid, MatchAbandonedEmbed, match_data, p1_info, p2_info
+    # )
 
     await _clear_match_found_messages_low(p1_uid, p2_uid)
-    await _send_to_both_localized(
-        client, p1_uid, p2_uid, MatchAbandonedEmbed, match_data, p1_info, p2_info
-    )
+    await _send_to_both_minimal(client, p1_uid, p2_uid, match_data, "1v1", "abandoned")
     await _clear_match_state_low(p1_uid, p2_uid)
     await _post_to_match_log_low(
         client, MatchAbandonedMinimalEmbed(match_data, game_mode="1v1")
@@ -544,10 +560,18 @@ async def _on_all_confirmed_2v2(client: discord.Client, match_data: dict) -> Non
 
 async def _on_match_aborted_2v2(client: discord.Client, match_data: dict) -> None:
     all_uids = _get_2v2_uids(match_data)
-    player_infos = await _fetch_player_infos_2v2(all_uids)
-    await _send_to_all_2v2_localized(
-        client, all_uids, MatchAbortedEmbed2v2, match_data, player_infos
-    )
+
+    # DEPRECATED: Full embeds with player names, races, and MMR.
+    # Replaced by MatchAbortedMinimalEmbed to prevent leaking player
+    # identities.  Kept here for reference in case we ever want to
+    # restore detailed abort DMs behind a preference flag.
+    #
+    # player_infos = await _fetch_player_infos_2v2(all_uids)
+    # await _send_to_all_2v2_localized(
+    #     client, all_uids, MatchAbortedEmbed2v2, match_data, player_infos
+    # )
+
+    await _send_to_all_minimal(client, all_uids, match_data, "2v2", "aborted")
     await _clear_match_state_all_2v2(all_uids)
     await _post_to_match_log_low(
         client, MatchAbortedMinimalEmbed(match_data, game_mode="2v2")
@@ -556,10 +580,18 @@ async def _on_match_aborted_2v2(client: discord.Client, match_data: dict) -> Non
 
 async def _on_match_abandoned_2v2(client: discord.Client, match_data: dict) -> None:
     all_uids = _get_2v2_uids(match_data)
-    player_infos = await _fetch_player_infos_2v2(all_uids)
-    await _send_to_all_2v2_localized(
-        client, all_uids, MatchAbandonedEmbed2v2, match_data, player_infos
-    )
+
+    # DEPRECATED: Full embeds with player names, races, and MMR.
+    # Replaced by MatchAbandonedMinimalEmbed to prevent leaking player
+    # identities.  Kept here for reference in case we ever want to
+    # restore detailed abandon DMs behind a preference flag.
+    #
+    # player_infos = await _fetch_player_infos_2v2(all_uids)
+    # await _send_to_all_2v2_localized(
+    #     client, all_uids, MatchAbandonedEmbed2v2, match_data, player_infos
+    # )
+
+    await _send_to_all_minimal(client, all_uids, match_data, "2v2", "abandoned")
     await _clear_match_state_all_2v2(all_uids)
     await _post_to_match_log_low(
         client, MatchAbandonedMinimalEmbed(match_data, game_mode="2v2")
@@ -626,6 +658,51 @@ async def _send_to_both_localized(
             await queue_user_send_low(user, embed=embed_cls(*args, locale=locale))
         except Exception:
             logger.exception(f"[WS] Failed to DM user {uid}")
+
+
+async def _send_to_both_minimal(
+    client: discord.Client,
+    p1_uid: int | None,
+    p2_uid: int | None,
+    match_data: dict,
+    game_mode: str,
+    kind: str,
+) -> None:
+    """DM both 1v1 players with a minimal (anonymous) abort/abandon embed."""
+    embed_cls = (
+        MatchAbortedMinimalEmbed if kind == "aborted" else MatchAbandonedMinimalEmbed
+    )
+    for uid in (p1_uid, p2_uid):
+        if uid is None:
+            continue
+        try:
+            user = await client.fetch_user(uid)
+            await queue_user_send_low(
+                user, embed=embed_cls(match_data, game_mode=game_mode)
+            )
+        except Exception:
+            logger.exception(f"[WS] Failed to DM user {uid}")
+
+
+async def _send_to_all_minimal(
+    client: discord.Client,
+    uids: list[int],
+    match_data: dict,
+    game_mode: str,
+    kind: str,
+) -> None:
+    """DM all 2v2 players with a minimal (anonymous) abort/abandon embed."""
+    embed_cls = (
+        MatchAbortedMinimalEmbed if kind == "aborted" else MatchAbandonedMinimalEmbed
+    )
+    for uid in uids:
+        try:
+            user = await client.fetch_user(uid)
+            await queue_user_send_low(
+                user, embed=embed_cls(match_data, game_mode=game_mode)
+            )
+        except Exception:
+            logger.exception(f"[WS] Failed to DM 2v2 user {uid}")
 
 
 async def _clear_match_found_messages_low(
