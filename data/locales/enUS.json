@@ -808,7 +808,7 @@
   "setup_survey_view.q2.option_5": "More than 1 year",
   "setup_survey_view.q3.label": "Which of the following best describes you?",
   "setup_survey_view.q3.option_1": "I want to play SC: Evo Complete just occasionally",
-  "setup_survey_view.q3.option_2": "I want to consistently find opponents",
+  "setup_survey_view.q3.option_2": "I want to consistently find opponents, rank/MMR is a secondary concern",
   "setup_survey_view.q3.option_3": "I am serious about improving and tracking my rank/MMR",
   "setup_survey_view.q3.option_4": "I am competing in or preparing for tournaments",
   "setup_survey_view.q3.option_5": "I want to avoid cheaters on official ladders",
