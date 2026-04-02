@@ -833,24 +833,24 @@ _SURVEY_Q3_SLUGS = [
 _SURVEY_Q4_SLUGS = [
     "no_placement",
     "bw_s",
-    "bw_a",
-    "bw_b",
-    "bw_c",
     "sc2_grandmaster",
+    "bw_a",
     "sc2_master",
+    "bw_b",
     "sc2_diamond",
+    "bw_c",
     "sc2_platinum",
 ]
 
 _SURVEY_Q4_EMOTE_NAMES = [
     "u_rank",
     "s_rank",
-    "a_rank",
-    "b_rank",
-    "c_rank",
     "grandmaster_league",
+    "a_rank",
     "master_league",
+    "b_rank",
     "diamond_league",
+    "c_rank",
     "platinum_league",
 ]
 
