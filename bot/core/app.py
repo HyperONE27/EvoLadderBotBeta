@@ -125,9 +125,44 @@ async def on_message(message: discord.Message) -> None:
                             logger.exception(
                                 "Failed to log first_setup_started event (on_message)"
                             )
+
+                    # Mirror the /setup command: fetch player data and
+                    # notification preferences so the flow can pre-fill
+                    # existing values for returning players.
+                    preselected_locale: str | None = None
+                    if not created:
+                        try:
+                            async with get_session().get(
+                                f"{BACKEND_URL}/players/{uid}"
+                            ) as p_resp:
+                                p_data = await p_resp.json()
+                            player = p_data.get("player")
+                            if player:
+                                cache.player_presets[uid] = player
+                                lang = player.get("language")
+                                if lang:
+                                    cache.player_locales[uid] = lang
+                                    preselected_locale = lang
+                        except Exception:
+                            logger.warning(
+                                "on_message: failed to prefetch player data",
+                                exc_info=True,
+                            )
+                        try:
+                            async with get_session().get(
+                                f"{BACKEND_URL}/notifications/{uid}"
+                            ) as n_resp:
+                                cache.notification_presets[uid] = await n_resp.json()
+                        except Exception:
+                            logger.warning(
+                                "on_message: failed to prefetch notifications",
+                                exc_info=True,
+                            )
+
                     view = LocaleSetupView(
                         uid,
                         message.author.name,
+                        preselected_locale=preselected_locale,
                         show_cancel=False,
                     )
                     view.message = await message.channel.send(
