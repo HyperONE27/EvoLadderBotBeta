@@ -134,6 +134,9 @@ class AutoDisableView(discord.ui.View):
 
     message: discord.Message | None = None
 
+    def __init__(self, *, timeout: float | None = 600) -> None:
+        super().__init__(timeout=timeout)
+
     async def on_timeout(self) -> None:
         for item in self.children:
             if hasattr(item, "disabled"):

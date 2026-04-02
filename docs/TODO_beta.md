@@ -193,6 +193,22 @@ What remains?
 
 # FINISH DURING PRE-BETA
 
+## 2026-04-02
+
+- ⏰ Add better debugging for players not getting MatchInfoEmbed
+- ⏰ Add retries for players not getting MatchInfoEmbed
+- ⏰ Add admin command for players not getting MatchInfoEmbed?
+- ⏰ Prevent USB and FER players from matching on Americas
+- ⏰ Add a notice about players disconnecting mid-match?
+- ⏰ Investigate 1v1 Match #2163 replay parsing as a draw???
+    - Replay parsing fails if the replay does not contain a "winner" field; this can happen if someone leaves the game and their replay somehow does not capture this action or contain the corresponding chat messages
+- ✅ Investigate replay storage links not working
+    - ✅ Fixed replay bucket not being public
+- ⏰ Migrate wave-based matchmaking approach to a non-wave-based algorithm so we don't get synchronization issues causing players to match up into the same opponents over and over again
+- ⏰ Need to defer interactions without unlocking views or creating the potential for duplicate inputs/non-atomic interactions
+
+## 
+
 - ⏰ Add 2v2 and FFA gamemodes
     - ✅ Added 2v2
     - ⏰ FFA TBD...
