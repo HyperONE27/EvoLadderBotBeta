@@ -70,7 +70,10 @@ async def start_ws_listener(client: discord.Client) -> None:
                     logger.info(f"[WS] Connected to backend at {ws_url}")
                     async for msg in ws:
                         if msg.type == aiohttp.WSMsgType.TEXT:
-                            await _handle_message(client, msg.data)
+                            asyncio.create_task(
+                                _handle_message(client, msg.data),
+                                name=f"ws-event-{msg.data[:50]}",
+                            )
                         elif msg.type == aiohttp.WSMsgType.ERROR:
                             logger.error("[WS] WebSocket error", error=ws.exception())
                             break
