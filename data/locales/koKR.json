@@ -668,7 +668,7 @@
   "referral_initial_embed.title.1": "💬 추천",
   "referral_instructions_embed.description.1": "Discord의 \"전달\" 기능을 사용하여 다음 메시지의 임베드를 공유하세요.\n\n추천받은 플레이어가 1v1 또는 2v2 래더에서 최소 한 게임을 플레이하면 추천 보상을 받게 됩니다.",
   "referral_instructions_embed.title.1": "🎫 추천 생성됨",
-  "referral_pitch_embed.description.1": "**{player_name}**님이 **SC: Evo Complete**의 **공식 래더**에 초대합니다. 스타1과 스타2가 맞붙는 인기 커뮤니티 모드입니다!\n\n이미 **{active_player_count}**명의 플레이어가 첫 게임을 완료했습니다.\n\n🎟️ **추천 코드:**\n`{referral_code}`\n\n**참여 방법:**\n- 1. SC: Evo Complete Discord 서버에 참가하세요: **{discord_invite_url}**\n- 2. 다음의 봇에게 \"안녕하세요\"라고 DM을 보내세요: {bot_mention}\n- 3. 초기 설정을 완료하세요\n- 4. `/referral` 명령어를 사용하여 위 코드를 입력하세요",
+  "referral_pitch_embed.description.1": "**{player_name}**님이 **SC: Evo Complete**의 **공식 래더**에 초대합니다. 스타1과 스타2가 맞붙는 크로스게임 모드입니다!\n\n모든 실력대의 **{active_player_count}**명의 플레이어가 이미 래더에 참여하고 있습니다. 핵이나 스머프가 없습니다.\n\n원하는 방식으로 플레이하세요: 스타1, 스타2, 또는 둘 다로 큐를 잡을 수 있습니다. 익숙하지 않은 종족을 플레이할 필요 없습니다.\n\n🎟️ 추천 코드:\n`{referral_code}`\n\n**참여 방법:**\n- 1. **SC: Evo Complete Discord 서버**에 참가하세요:\n**{discord_invite_url}**\n- 2. 이 봇에게 **\"안녕하세요\"라고 DM**을 보내세요: {bot_mention}\n- 3. 초기 설정을 완료하세요\n- 4. `/referral` 명령어를 사용하여 위 코드를 입력하세요",
   "referral_pitch_embed.title.1": "{s_rank_emote} SC: Evo Complete 래더에 참여하세요!",
   "referral_success_embed.description.1": "감사합니다! **{player_name}**님의 추천이 확인되었습니다.",
   "referral_success_embed.title.1": "✅ 추천 확인됨",
