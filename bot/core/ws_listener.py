@@ -146,7 +146,7 @@ async def _on_talk_channel_created(client: discord.Client, data: dict) -> None:
     for uid_raw in raw_uids:
         try:
             uid = int(uid_raw)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             continue
         try:
             user = await client.fetch_user(uid)
@@ -169,7 +169,7 @@ async def _on_queue_join_activity(client: discord.Client, data: dict) -> None:
     for uid in raw_uids:
         try:
             discord_uid = int(uid)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             continue
         try:
             user = await client.fetch_user(discord_uid)

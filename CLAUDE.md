@@ -15,8 +15,8 @@ EvoLadderBotBeta is a Discord-based ladder (ranked matchmaking) system for the S
 ## Running the Project
 
 ```bash
-# Activate the venv first
-source .venv/bin/activate
+# Install dependencies (creates .venv automatically)
+uv sync
 
 # Run the local run script
 make run
@@ -29,11 +29,6 @@ Run local CI with:
 make quality
 ```
 This runs `ruff check --fix`, `ruff format`, then `mypy backend bot common`.
-
-Install dev dependencies with:
-```bash
-pip install -r requirements-dev.txt
-```
 
 CI (`.github/workflows/ci.yml`) runs on push/PR to main: ruff check + format check + mypy. Python 3.14.
 
