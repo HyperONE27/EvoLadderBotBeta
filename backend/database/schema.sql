@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS players (
     discord_username        TEXT NOT NULL,
     player_name             TEXT,       -- 3-12 letters
     alt_player_names        TEXT[],
-    battletag               TEXT,       -- 1-12 letters + "#" + 3-5 digits
+    battletag               TEXT,       -- 2-12 letters + "#" + 3-12 digits
     nationality             TEXT,       -- ISO 3166-1 alpha-2 code
     location                TEXT,       -- regions.json geographic region code
     language                TEXT NOT NULL DEFAULT 'enUS'

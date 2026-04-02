@@ -344,7 +344,7 @@ class LanguageSelect(discord.ui.Select):
 
 _PLAYER_NAME_RE = re.compile(r"^[A-Za-z]{3,12}$")
 _PLAYER_NAME_INTL_RE = re.compile(r"^[\w\-\.]{3,12}$", re.UNICODE)
-_BATTLETAG_DISCRIMINATOR_RE = re.compile(r"^\d{3,5}$")
+_BATTLETAG_DISCRIMINATOR_RE = re.compile(r"^\d{3,12}$")
 # Name part: letters (any script), decimal digits, non-spacing marks (accents)
 _BATTLETAG_NAME_ALLOWED_CATEGORIES = frozenset(
     {"Lu", "Ll", "Lt", "Lm", "Lo", "Nd", "Mn"}
@@ -367,7 +367,7 @@ def _validate_battletag(tag: str, locale: str = "enUS") -> tuple[bool, str | Non
     if tag.count("#") != 1:
         return False, err
     name_part, disc_part = tag.split("#", 1)
-    if not (1 <= len(name_part) <= 12):
+    if not (2 <= len(name_part) <= 12):
         return False, err
     if not _BATTLETAG_DISCRIMINATOR_RE.fullmatch(disc_part):
         return False, err
@@ -1245,8 +1245,8 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
             label=t("setup_modal.field_label.battletag", locale),
             placeholder=t("setup_modal.field_placeholder.battletag", locale),
             default=p.get("battletag") or None,
-            min_length=5,
-            max_length=18,
+            min_length=6,
+            max_length=25,
             required=True,
         )
         self.alt_ids_input = discord.ui.TextInput(
