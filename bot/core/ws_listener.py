@@ -91,8 +91,11 @@ async def _handle_message(client: discord.Client, raw: str) -> None:
     data = payload.get("data", {})
     game_mode = data.get("game_mode", "1v1")
 
-    logger.debug(
-        f"[WS] Received event: {event}", match_id=data.get("id"), game_mode=game_mode
+    logger.info(
+        "[WS] Event received",
+        event=event,
+        match_id=data.get("id"),
+        game_mode=game_mode,
     )
 
     if event == "match_found":
@@ -196,6 +199,12 @@ async def _on_match_found(client: discord.Client, match_data: dict) -> None:
     p1_uid = match_data.get("player_1_discord_uid")
     p2_uid = match_data.get("player_2_discord_uid")
     cache = get_cache()
+    logger.info(
+        "[WS] match_found handler start",
+        match_id=match_id,
+        p1_uid=p1_uid,
+        p2_uid=p2_uid,
+    )
 
     # --- High priority: DM both players with confirm/abort buttons ---
     dm_coros = []
@@ -206,6 +215,7 @@ async def _on_match_found(client: discord.Client, match_data: dict) -> None:
             continue
         try:
             user = await client.fetch_user(uid)
+            logger.info("[WS] fetch_user OK", match_id=match_id, uid=uid)
             locale = get_player_locale(uid)
             view = MatchFoundView1v1(match_id, match_data, locale=locale)
             dm_coros.append(
@@ -218,19 +228,31 @@ async def _on_match_found(client: discord.Client, match_data: dict) -> None:
             dm_uids.append(uid)
             dm_views.append(view)
         except Exception:
-            logger.exception(f"[WS] Failed to fetch user {uid} for match_found")
+            logger.exception(
+                "[WS] fetch_user FAILED for match_found",
+                match_id=match_id,
+                uid=uid,
+            )
 
     # Send all DMs concurrently (high priority — worker drains these first).
     if dm_coros:
         results = await asyncio.gather(*dm_coros, return_exceptions=True)
         for uid, view, result in zip(dm_uids, dm_views, results):
             if isinstance(result, Exception):
-                logger.exception(
-                    f"[WS] Failed to DM user {uid} for match_found", exc_info=result
+                logger.error(
+                    "[WS] DM delivery FAILED for match_found",
+                    match_id=match_id,
+                    uid=uid,
+                    error=str(result),
                 )
             elif isinstance(result, discord.Message):
                 view.message = result
                 cache.active_match_found_messages[uid] = result
+                logger.info(
+                    "[WS] DM delivered for match_found",
+                    match_id=match_id,
+                    uid=uid,
+                )
 
     # --- Low priority: update searching embeds (fire-and-forget) ---
     for uid in (p1_uid, p2_uid):
@@ -276,16 +298,25 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
     p1_name = match_data.get("player_1_name", "Player 1")
     p2_name = match_data.get("player_2_name", "Player 2")
     cache = get_cache()
+    logger.info(
+        "[WS] both_confirmed handler start",
+        match_id=match_id,
+        p1_uid=p1_uid,
+        p2_uid=p2_uid,
+    )
 
-    p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
-    p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
-    # _fetch_player_info seeds player_locales as a side effect.
+    # Fetch player info concurrently (seeds player_locales as a side effect).
+    uids_to_fetch = [uid for uid in (p1_uid, p2_uid) if uid is not None]
+    info_results = await asyncio.gather(
+        *(_fetch_player_info(uid) for uid in uids_to_fetch),
+        return_exceptions=True,
+    )
+    info_map: dict[int, dict | None] = {}
+    for uid, info_result in zip(uids_to_fetch, info_results):
+        info_map[uid] = info_result if isinstance(info_result, dict) else None
 
-    player_info_map: dict[int, dict | None] = {}
-    if p1_uid is not None:
-        player_info_map[p1_uid] = p1_info
-    if p2_uid is not None:
-        player_info_map[p2_uid] = p2_info
+    p1_info = info_map.get(p1_uid) if p1_uid is not None else None
+    p2_info = info_map.get(p2_uid) if p2_uid is not None else None
 
     server_code = match_data.get("server_name", "USW")
 
@@ -297,61 +328,75 @@ async def _on_both_confirmed(client: discord.Client, match_data: dict) -> None:
         if uid is None:
             continue
 
+        try:
+            user = await client.fetch_user(uid)
+            logger.info("[WS] fetch_user OK", match_id=match_id, uid=uid)
+        except Exception:
+            logger.exception(
+                "[WS] fetch_user FAILED for both_confirmed",
+                match_id=match_id,
+                uid=uid,
+            )
+            continue
+
         cache.active_match_info[uid] = {
             "match_data": match_data,
             "p1_info": p1_info,
             "p2_info": p2_info,
         }
 
-        try:
-            user = await client.fetch_user(uid)
-            locale = get_player_locale(uid)
-            info = player_info_map.get(uid)
-            guide_visible = not bool(info and info.get("read_lobby_guide"))
-            view = MatchReportView1v1(
-                match_id,
-                p1_name,
-                p2_name,
-                match_data,
-                p1_info,
-                p2_info,
-                report_locked=ENABLE_REPLAY_VALIDATION,
-                locale=locale,
-                guide_visible=guide_visible,
+        locale = get_player_locale(uid)
+        info = info_map.get(uid)
+        guide_visible = not bool(info and info.get("read_lobby_guide"))
+        view = MatchReportView1v1(
+            match_id,
+            p1_name,
+            p2_name,
+            match_data,
+            p1_info,
+            p2_info,
+            report_locked=ENABLE_REPLAY_VALIDATION,
+            locale=locale,
+            guide_visible=guide_visible,
+        )
+        dm_coros.append(
+            queue_user_send_high(
+                user,
+                embeds=[
+                    MatchInfoEmbed1v1(match_data, p1_info, p2_info, locale=locale),
+                    LobbyGuideEmbed(server_code, locale=locale, visible=guide_visible),
+                ],
+                view=view,
             )
-            dm_coros.append(
-                queue_user_send_high(
-                    user,
-                    embeds=[
-                        MatchInfoEmbed1v1(match_data, p1_info, p2_info, locale=locale),
-                        LobbyGuideEmbed(
-                            server_code, locale=locale, visible=guide_visible
-                        ),
-                    ],
-                    view=view,
-                )
-            )
-            dm_uids.append(uid)
-            dm_views.append(view)
-        except Exception:
-            logger.exception(f"[WS] Failed to fetch user {uid} for both_confirmed")
+        )
+        dm_uids.append(uid)
+        dm_views.append(view)
 
     if dm_coros:
         results = await asyncio.gather(*dm_coros, return_exceptions=True)
         for uid, view, result in zip(dm_uids, dm_views, results):
             if isinstance(result, Exception):
-                logger.exception(
-                    f"[WS] Failed to DM user {uid} for both_confirmed",
-                    exc_info=result,
+                logger.error(
+                    "[WS] DM delivery FAILED for both_confirmed",
+                    match_id=match_id,
+                    uid=uid,
+                    error=str(result),
                 )
             elif isinstance(result, discord.Message):
                 view.message = result
                 cache.active_match_messages[uid] = result
+                logger.info(
+                    "[WS] DM delivered for both_confirmed",
+                    match_id=match_id,
+                    uid=uid,
+                )
 
     # The match-found messages already have view=None (both players pressed Confirm).
     for uid in (p1_uid, p2_uid):
         if uid is not None:
             cache.active_match_found_messages.pop(uid, None)
+
+    logger.info("[WS] both_confirmed handler done", match_id=match_id)
 
 
 async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
@@ -450,6 +495,11 @@ async def _on_match_found_2v2(client: discord.Client, match_data: dict) -> None:
     all_uids = _get_2v2_uids(match_data)
     leader_uids = _get_2v2_leader_uids(match_data)
     cache = get_cache()
+    logger.info(
+        "[WS] match_found_2v2 handler start",
+        match_id=match_id,
+        leader_uids=leader_uids,
+    )
 
     dm_coros = []
     dm_uids: list[int] = []
@@ -457,6 +507,7 @@ async def _on_match_found_2v2(client: discord.Client, match_data: dict) -> None:
     for uid in leader_uids:
         try:
             user = await client.fetch_user(uid)
+            logger.info("[WS] fetch_user OK", match_id=match_id, uid=uid)
             locale = get_player_locale(uid)
             view = MatchFoundView2v2(match_id, locale=locale)
             dm_coros.append(
@@ -469,18 +520,30 @@ async def _on_match_found_2v2(client: discord.Client, match_data: dict) -> None:
             dm_uids.append(uid)
             dm_views.append(view)
         except Exception:
-            logger.exception(f"[WS] Failed to fetch user {uid} for 2v2 match_found")
+            logger.exception(
+                "[WS] fetch_user FAILED for 2v2 match_found",
+                match_id=match_id,
+                uid=uid,
+            )
 
     if dm_coros:
         results = await asyncio.gather(*dm_coros, return_exceptions=True)
         for uid, view, result in zip(dm_uids, dm_views, results):
             if isinstance(result, Exception):
-                logger.exception(
-                    f"[WS] Failed to DM user {uid} for 2v2 match_found", exc_info=result
+                logger.error(
+                    "[WS] DM delivery FAILED for 2v2 match_found",
+                    match_id=match_id,
+                    uid=uid,
+                    error=str(result),
                 )
             elif isinstance(result, discord.Message):
                 view.message = result
                 cache.active_match_found_messages[uid] = result
+                logger.info(
+                    "[WS] DM delivered for 2v2 match_found",
+                    match_id=match_id,
+                    uid=uid,
+                )
 
     for uid in all_uids:
         searching_view = cache.active_searching_views.pop(uid, None)
@@ -496,6 +559,11 @@ async def _on_all_confirmed_2v2(client: discord.Client, match_data: dict) -> Non
     match_id: int = match_data["id"]
     all_uids = _get_2v2_uids(match_data)
     cache = get_cache()
+    logger.info(
+        "[WS] all_confirmed_2v2 handler start",
+        match_id=match_id,
+        uids=all_uids,
+    )
 
     # Fetch player infos for all 4 players concurrently.
     info_results = await asyncio.gather(
@@ -509,53 +577,70 @@ async def _on_all_confirmed_2v2(client: discord.Client, match_data: dict) -> Non
     dm_uids: list[int] = []
     dm_views: list[MatchReportView2v2] = []
     for uid in all_uids:
-        cache.active_match_info[uid] = {"match_data": match_data, "player_infos": infos}
         try:
             user = await client.fetch_user(uid)
-            locale = get_player_locale(uid)
-            info = infos.get(uid)
-            guide_visible = not bool(info and info.get("read_lobby_guide"))
-            view = MatchReportView2v2(
-                match_id,
-                match_data,
-                infos,
-                report_locked=ENABLE_REPLAY_VALIDATION,
-                locale=locale,
-                guide_visible=guide_visible,
-            )
-            dm_coros.append(
-                queue_user_send_high(
-                    user,
-                    embeds=list(MatchInfoEmbeds2v2(match_data, infos, locale=locale))
-                    + [
-                        LobbyGuideEmbed(
-                            match_data.get("server_name", "USW"),
-                            locale=locale,
-                            visible=guide_visible,
-                        )
-                    ],
-                    view=view,
-                )
-            )
-            dm_uids.append(uid)
-            dm_views.append(view)
+            logger.info("[WS] fetch_user OK", match_id=match_id, uid=uid)
         except Exception:
-            logger.exception(f"[WS] Failed to fetch user {uid} for 2v2 all_confirmed")
+            logger.exception(
+                "[WS] fetch_user FAILED for 2v2 all_confirmed",
+                match_id=match_id,
+                uid=uid,
+            )
+            continue
+
+        cache.active_match_info[uid] = {"match_data": match_data, "player_infos": infos}
+
+        locale = get_player_locale(uid)
+        info = infos.get(uid)
+        guide_visible = not bool(info and info.get("read_lobby_guide"))
+        view = MatchReportView2v2(
+            match_id,
+            match_data,
+            infos,
+            report_locked=ENABLE_REPLAY_VALIDATION,
+            locale=locale,
+            guide_visible=guide_visible,
+        )
+        dm_coros.append(
+            queue_user_send_high(
+                user,
+                embeds=list(MatchInfoEmbeds2v2(match_data, infos, locale=locale))
+                + [
+                    LobbyGuideEmbed(
+                        match_data.get("server_name", "USW"),
+                        locale=locale,
+                        visible=guide_visible,
+                    )
+                ],
+                view=view,
+            )
+        )
+        dm_uids.append(uid)
+        dm_views.append(view)
 
     if dm_coros:
         dm_results = await asyncio.gather(*dm_coros, return_exceptions=True)
         for uid, view, dm_result in zip(dm_uids, dm_views, dm_results):
             if isinstance(dm_result, Exception):
-                logger.exception(
-                    f"[WS] Failed to DM user {uid} for 2v2 all_confirmed",
-                    exc_info=dm_result,
+                logger.error(
+                    "[WS] DM delivery FAILED for 2v2 all_confirmed",
+                    match_id=match_id,
+                    uid=uid,
+                    error=str(dm_result),
                 )
             elif isinstance(dm_result, discord.Message):
                 view.message = dm_result
                 cache.active_match_messages[uid] = dm_result
+                logger.info(
+                    "[WS] DM delivered for 2v2 all_confirmed",
+                    match_id=match_id,
+                    uid=uid,
+                )
 
     for uid in all_uids:
         cache.active_match_found_messages.pop(uid, None)
+
+    logger.info("[WS] all_confirmed_2v2 handler done", match_id=match_id)
 
 
 async def _on_match_aborted_2v2(client: discord.Client, match_data: dict) -> None:
