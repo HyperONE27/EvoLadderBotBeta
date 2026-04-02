@@ -846,11 +846,13 @@ class MatchAbandonedEmbed(discord.Embed):
 
 
 class MatchAbortedMinimalEmbed(discord.Embed):
-    """Anonymous match-aborted embed for the match log channel (no player info)."""
+    """Anonymous match-aborted embed (no player info). Used in both player DMs
+    and the match log channel."""
 
-    def __init__(self, match_data: dict, game_mode: str = "1v1") -> None:
+    def __init__(
+        self, match_data: dict, game_mode: str = "1v1", locale: str = "enUS"
+    ) -> None:
         match_id = match_data.get("id", "?")
-        locale = "enUS"
         super().__init__(
             title=t(
                 "match_aborted_embed.title.1",
@@ -869,11 +871,13 @@ class MatchAbortedMinimalEmbed(discord.Embed):
 
 
 class MatchAbandonedMinimalEmbed(discord.Embed):
-    """Anonymous match-abandoned embed for the match log channel (no player info)."""
+    """Anonymous match-abandoned embed (no player info). Used in both player DMs
+    and the match log channel."""
 
-    def __init__(self, match_data: dict, game_mode: str = "1v1") -> None:
+    def __init__(
+        self, match_data: dict, game_mode: str = "1v1", locale: str = "enUS"
+    ) -> None:
         match_id = match_data.get("id", "?")
-        locale = "enUS"
 
         # Determine if one or both players/teams failed to confirm.
         if game_mode == "1v1":

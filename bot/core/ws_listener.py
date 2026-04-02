@@ -668,7 +668,7 @@ async def _send_to_both_minimal(
     game_mode: str,
     kind: str,
 ) -> None:
-    """DM both 1v1 players with a minimal (anonymous) abort/abandon embed."""
+    """DM both 1v1 players with a per-locale minimal (anonymous) abort/abandon embed."""
     embed_cls = (
         MatchAbortedMinimalEmbed if kind == "aborted" else MatchAbandonedMinimalEmbed
     )
@@ -676,9 +676,11 @@ async def _send_to_both_minimal(
         if uid is None:
             continue
         try:
+            locale = get_player_locale(uid)
             user = await client.fetch_user(uid)
             await queue_user_send_low(
-                user, embed=embed_cls(match_data, game_mode=game_mode)
+                user,
+                embed=embed_cls(match_data, game_mode=game_mode, locale=locale),
             )
         except Exception:
             logger.exception(f"[WS] Failed to DM user {uid}")
@@ -691,15 +693,17 @@ async def _send_to_all_minimal(
     game_mode: str,
     kind: str,
 ) -> None:
-    """DM all 2v2 players with a minimal (anonymous) abort/abandon embed."""
+    """DM all 2v2 players with a per-locale minimal (anonymous) abort/abandon embed."""
     embed_cls = (
         MatchAbortedMinimalEmbed if kind == "aborted" else MatchAbandonedMinimalEmbed
     )
     for uid in uids:
         try:
+            locale = get_player_locale(uid)
             user = await client.fetch_user(uid)
             await queue_user_send_low(
-                user, embed=embed_cls(match_data, game_mode=game_mode)
+                user,
+                embed=embed_cls(match_data, game_mode=game_mode, locale=locale),
             )
         except Exception:
             logger.exception(f"[WS] Failed to DM 2v2 user {uid}")
