@@ -15,7 +15,7 @@ EvoLadderBotBeta is a Discord-based ladder (ranked matchmaking) system for the S
 ## Running the Project
 
 ```bash
-# Install dependencies (creates .venv automatically)
+# Install dependencies (creates .venv automatically, no activation needed)
 uv sync
 
 # Run the local run script
