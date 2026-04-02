@@ -383,7 +383,7 @@ We are introducing a referral system to help grow the ladder community. Here's h
 ## Referral Contest
 
 To celebrate the pre-beta launch, I am running a contest. 
-- The top referrer will receive a prize of $75 USD.
+- The top referrer will receive a prize of $50 USD.
 - The remaining referrers will be entered into a drawing for three $25 USD prizes.
   - Each referee who completes at least one 1v1 or 2v2 ladder match will count as one entry for their respective referrers.
 
