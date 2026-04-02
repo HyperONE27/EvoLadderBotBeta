@@ -637,6 +637,7 @@ class PlayerRegisterRequest(BaseModel):
 
 class PlayerRegisterResponse(BaseModel):
     created: bool
+    completed_setup: bool
 
 
 class PlayerNameAvailabilityResponse(BaseModel):

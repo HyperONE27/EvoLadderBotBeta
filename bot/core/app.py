@@ -23,7 +23,7 @@ from bot.components.embeds import ErrorEmbed, LocaleSetupEmbed, PlayerTimedOutEm
 from bot.components.views import LocaleSetupView
 from bot.core.bootstrap import Bot
 from bot.core.config import BACKEND_URL, BOT_TOKEN, SERVER_GUILD_ID
-from bot.core.dependencies import get_player_locale, set_bot
+from bot.core.dependencies import get_cache, get_player_locale, set_bot
 from bot.core.http import get_session, init_session, close_session
 from bot.core.message_queue import get_message_queue, initialize_message_queue
 from bot.core.ws_listener import start_ws_listener
@@ -85,36 +85,48 @@ async def on_message(message: discord.Message) -> None:
 
     if isinstance(message.channel, discord.DMChannel):
         # Register the player if this is their first interaction with the bot.
-        # If newly created, send the ToS + setup flow automatically.
+        # Send the onboarding flow if newly created OR if the player has not
+        # yet completed setup (e.g. existing players after a bulk reset).
+        uid = message.author.id
+        cache = get_cache()
         try:
             async with get_session().post(
                 f"{BACKEND_URL}/players/register",
                 json={
-                    "discord_uid": message.author.id,
+                    "discord_uid": uid,
                     "discord_username": message.author.name,
                 },
             ) as response:
                 data = await response.json()
-                if response.status < 400 and data.get("created"):
-                    try:
-                        async with get_session().post(
-                            f"{BACKEND_URL}/events/first_setup_started",
-                            json={
-                                "discord_uid": message.author.id,
-                                "discord_username": message.author.name,
-                            },
-                        ) as ev_resp:
-                            if ev_resp.status >= 400:
-                                logger.warning(
-                                    "first_setup_started event failed (on_message)",
-                                    status=ev_resp.status,
-                                )
-                    except Exception:
-                        logger.exception(
-                            "Failed to log first_setup_started event (on_message)"
-                        )
+                created = response.status < 400 and data.get("created")
+                completed_setup = data.get("completed_setup", True)
+
+                send_onboarding = created or (
+                    not completed_setup and uid not in cache.onboarding_sent_uids
+                )
+
+                if send_onboarding:
+                    cache.onboarding_sent_uids.add(uid)
+                    if created:
+                        try:
+                            async with get_session().post(
+                                f"{BACKEND_URL}/events/first_setup_started",
+                                json={
+                                    "discord_uid": uid,
+                                    "discord_username": message.author.name,
+                                },
+                            ) as ev_resp:
+                                if ev_resp.status >= 400:
+                                    logger.warning(
+                                        "first_setup_started event failed (on_message)",
+                                        status=ev_resp.status,
+                                    )
+                        except Exception:
+                            logger.exception(
+                                "Failed to log first_setup_started event (on_message)"
+                            )
                     view = LocaleSetupView(
-                        message.author.id,
+                        uid,
                         message.author.name,
                         show_cancel=False,
                     )
@@ -124,7 +136,7 @@ async def on_message(message: discord.Message) -> None:
                     )
         except Exception:
             logger.warning(
-                f"on_message: player registration check failed for user={message.author.id}",
+                f"on_message: player registration check failed for user={uid}",
                 exc_info=True,
             )
 

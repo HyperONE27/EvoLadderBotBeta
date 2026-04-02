@@ -270,8 +270,10 @@ class Orchestrator:
     # Player management
     # ------------------------------------------------------------------
 
-    def register_player(self, discord_uid: int, discord_username: str) -> bool:
-        """Ensure a player row exists. Returns True if newly created."""
+    def register_player(
+        self, discord_uid: int, discord_username: str
+    ) -> tuple[bool, bool]:
+        """Ensure a player row exists. Returns ``(was_created, completed_setup)``."""
         return self._transition_manager.register_player(discord_uid, discord_username)
 
     def toggle_lobby_guide(self, discord_uid: int) -> tuple[bool, bool]:

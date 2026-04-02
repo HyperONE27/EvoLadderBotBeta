@@ -1500,10 +1500,10 @@ async def register_player(
     request: PlayerRegisterRequest,
     app: Backend = Depends(get_backend),
 ) -> PlayerRegisterResponse:
-    was_created = app.orchestrator.register_player(
+    was_created, completed_setup = app.orchestrator.register_player(
         request.discord_uid, request.discord_username
     )
-    return PlayerRegisterResponse(created=was_created)
+    return PlayerRegisterResponse(created=was_created, completed_setup=completed_setup)
 
 
 @router.post(

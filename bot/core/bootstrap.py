@@ -104,6 +104,11 @@ class Cache:
         # backend round-trip.
         self.player_presets: dict[int, dict[str, Any]] = {}
 
+        # UIDs that have already been sent the onboarding flow this session.
+        # Prevents re-sending to existing players with completed_setup=false
+        # on every DM. Lost on restart (harmless — they just get it again).
+        self.onboarding_sent_uids: set[int] = set()
+
         # Per-player notification preset data (discord_uid → NotificationsOut dict).
         # Populated at the start of /setup so the notification step can pre-select
         # existing preferences without an HTTP call mid-flow.

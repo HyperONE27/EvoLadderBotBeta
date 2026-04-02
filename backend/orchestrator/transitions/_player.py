@@ -287,12 +287,16 @@ def register_player(
     self: TransitionManager,
     discord_uid: int,
     discord_username: str,
-) -> bool:
-    """Ensure a player row exists. Returns True if the row was newly created."""
+) -> tuple[bool, bool]:
+    """Ensure a player row exists.
+
+    Returns ``(was_created, completed_setup)``.
+    """
     df = self._state_manager.players_df
     was_created = df.filter(pl.col("discord_uid") == discord_uid).is_empty()
-    self._handle_missing_player(discord_uid, discord_username)
-    return was_created
+    row = self._handle_missing_player(discord_uid, discord_username)
+    completed_setup: bool = row.get("completed_setup", False)
+    return was_created, completed_setup
 
 
 def toggle_lobby_guide(self: TransitionManager, discord_uid: int) -> tuple[bool, bool]:
