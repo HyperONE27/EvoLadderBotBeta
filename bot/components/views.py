@@ -1384,6 +1384,8 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
             )
             return
 
+        await interaction.response.defer()
+
         try:
             await check_if_name_unique(player_name, interaction.user.id, _locale)
         except NameNotUniqueError as e:
@@ -1490,7 +1492,8 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
     ) -> None:
         if isinstance(view, AutoDisableView):
             view.message = message
-        await interaction.response.defer()
+        if not interaction.response.is_done():
+            await interaction.response.defer()
         await message.edit(embed=embed, view=view)
 
 
@@ -1521,6 +1524,10 @@ async def _send_setup_request(
         f"battletag={battletag!r} alt_ids={alt_ids!r} "
         f"nationality={country['code']} location={region['code']} language={language}"
     )
+    if not interaction.response.is_done():
+        await interaction.response.defer()
+    message = interaction.message
+
     async with get_session().put(
         f"{BACKEND_URL}/commands/setup",
         json={
@@ -1547,14 +1554,15 @@ async def _send_setup_request(
         logger.error(
             f"_send_setup_request: backend returned {response.status} for user={interaction.user.id}: {error}"
         )
-        await interaction.response.edit_message(
-            embed=SetupValidationErrorEmbed(
-                t("setup_validation_error_embed.title.setup_failed", _locale),
-                error,
-                locale=_locale,
-            ),
-            view=None,
-        )
+        if message is not None:
+            await message.edit(
+                embed=SetupValidationErrorEmbed(
+                    t("setup_validation_error_embed.title.setup_failed", _locale),
+                    error,
+                    locale=_locale,
+                ),
+                view=None,
+            )
         return
 
     # Cache the player's chosen language so locale-aware embeds can use it.
@@ -1627,10 +1635,11 @@ async def _send_setup_request(
     embeds: list[discord.Embed] = [success_embed]
     if not already_setup:
         embeds.append(SetupNextStepsEmbed(locale=language))
-    await interaction.response.edit_message(
-        embeds=embeds,
-        view=None,
-    )
+    if message is not None:
+        await message.edit(
+            embeds=embeds,
+            view=None,
+        )
 
 
 # =========================================================================
@@ -1690,6 +1699,9 @@ async def _send_tos_request(
     On accept: calls on_accept_success(interaction, locale) so the caller controls
     the post-accept transition (e.g. continue to setup flow).
     """
+    await interaction.response.defer()
+    message = interaction.message
+
     async with get_session().put(
         f"{BACKEND_URL}/commands/termsofservice",
         json={
@@ -1707,14 +1719,15 @@ async def _send_tos_request(
         logger.error(
             f"TOS upsert failed for {discord_username} ({discord_uid}): {error}"
         )
-        await interaction.response.edit_message(
-            embed=ErrorEmbed(
-                title=t("error_embed.title.generic", _locale),
-                description=error,
-                locale=_locale,
-            ),
-            view=None,
-        )
+        if message is not None:
+            await message.edit(
+                embed=ErrorEmbed(
+                    title=t("error_embed.title.generic", _locale),
+                    description=error,
+                    locale=_locale,
+                ),
+                view=None,
+            )
         return
 
     logger.info(
@@ -1724,10 +1737,11 @@ async def _send_tos_request(
     if accepted and on_accept_success is not None:
         await on_accept_success(interaction, _locale)
     else:
-        await interaction.response.edit_message(
-            embed=TermsOfServiceDeclinedEmbed(locale=_locale),
-            view=None,
-        )
+        if message is not None:
+            await message.edit(
+                embed=TermsOfServiceDeclinedEmbed(locale=_locale),
+                view=None,
+            )
 
 
 class TermsOfServiceSetupView(AutoDisableView):
@@ -1767,11 +1781,13 @@ class TermsOfServiceSetupView(AutoDisableView):
                 locale=locale,
                 show_cancel=show_cancel,
             )
-            intro.message = interaction.message
-            await interaction.response.edit_message(
-                embed=SetupIntroEmbed(locale=locale),
-                view=intro,
-            )
+            message = interaction.message
+            intro.message = message
+            if message is not None:
+                await message.edit(
+                    embed=SetupIntroEmbed(locale=locale),
+                    view=intro,
+                )
 
         async def on_accept(interaction: discord.Interaction) -> None:
             logger.info(
