@@ -369,7 +369,7 @@
   "error.not_accepted_tos": "使用此命令前必须接受服务条款。\n使用 `/setup` 查看并接受。",
   "error.not_admin": "此命令仅限管理员使用。",
   "error.not_completed_setup": "使用此命令前必须完成玩家设置。\n使用 `/setup` 配置你的资料。",
-  "error.not_in_dm": "此命令只能在私信中使用。",
+  "error.not_in_dm": "此命令只能在私信中使用。为了保持公共频道的整洁，请在 {bot_mention} 的私信中使用此命令。",
   "error.not_owner": "此命令仅限机器人所有者使用。",
   "error.not_your_button": "你无法使用此按钮。",
   "error.player_not_found": "未找到与 **{player}** 匹配的玩家。",

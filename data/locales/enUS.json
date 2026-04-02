@@ -369,7 +369,7 @@
   "error.not_accepted_tos": "You must accept the Terms of Service before using this command.\nUse `/setup` to review and accept them.",
   "error.not_admin": "This command is restricted to administrators.",
   "error.not_completed_setup": "You must complete your player setup before using this command.\nUse `/setup` to configure your profile.",
-  "error.not_in_dm": "This command can only be used in DMs.",
+  "error.not_in_dm": "This command can only be used in DMs. Please help us keep public channels clean by using this command in {bot_mention}'s DMs.",
   "error.not_owner": "This command is restricted to bot owners.",
   "error.not_your_button": "You cannot use this button.",
   "error.player_not_found": "No player found matching **{player}**.",

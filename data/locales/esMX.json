@@ -369,7 +369,7 @@
   "error.not_accepted_tos": "Debes aceptar los Términos de Servicio antes de usar este comando.\nUsa `/setup` para revisarlos y aceptarlos.",
   "error.not_admin": "Este comando está restringido a administradores.",
   "error.not_completed_setup": "Debes completar la configuración de tu perfil antes de usar este comando.\nUsa `/setup` para configurar tu perfil.",
-  "error.not_in_dm": "Este comando solo se puede usar en DMs.",
+  "error.not_in_dm": "Este comando solo se puede usar en DMs. Ayúdanos a mantener los canales públicos limpios usando este comando en los DMs de {bot_mention}.",
   "error.not_owner": "Este comando está restringido a los dueños del bot.",
   "error.not_your_button": "No puedes usar este botón.",
   "error.player_not_found": "No se encontró jugador con **{player}**.",
