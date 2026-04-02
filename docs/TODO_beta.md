@@ -391,7 +391,9 @@ I reserve the right to ignore referrals from alternative, spam, or otherwise sus
 
 The contest closes at at 00:00 PDT, Monday, May 4th (<t:1777878000>), with winners to be announced soon after. Referrals after this time will still be logged, but they will not be considered in this contest.
 
----
+## Getting Started
+
+Whether you're new or returning, simply DM "hello" to <@1415538525742301216> and the bot will take care of the rest.
 
 This launch has taken a lot of work, and I'm grateful to finally be here. I hope that the improvements brought by this pre-beta launch will help the ladder grow for months and years to come.
 
