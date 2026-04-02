@@ -93,7 +93,7 @@ async def _handle_message(client: discord.Client, raw: str) -> None:
 
     logger.info(
         "[WS] Event received",
-        event=event,
+        ws_event=event,
         match_id=data.get("id"),
         game_mode=game_mode,
     )
