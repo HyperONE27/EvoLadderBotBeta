@@ -22,7 +22,7 @@ What remains?
             - Collecting more balance data
             - Sharing replays with community figures
             - Use data to power testing and development
-- ✅ Hide matches from match log channel if aborted/abandoned so we don't leak who's online
+- ✅ Hide detailed match info from match log channel AND players if aborted/abandoned so we don't leak who's online
 - ✅ Implement a timeout for users who abort or abandon
 - ✅ Fix BW + SC2 team race selection not clearing in 2v2 when double BW or double SC2 is selected
 - ✅ Upsert updated locale strings
