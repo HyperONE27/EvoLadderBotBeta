@@ -60,8 +60,8 @@ CONFIRMATION_TIMEOUT: int = 60
 # Timeout penalties (minutes) — applied after abort / abandon
 # ---------------------------------------------------------------------------
 
-ABORT_TIMEOUT_MINUTES: int = 10
-ABANDON_TIMEOUT_MINUTES: int = 20
+ABORT_TIMEOUT_MINUTES: int = 5
+ABANDON_TIMEOUT_MINUTES: int = 15
 
 # ---------------------------------------------------------------------------
 # Leaderboard

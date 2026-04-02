@@ -22,8 +22,9 @@ What remains?
             - Collecting more balance data
             - Sharing replays with community figures
             - Use data to power testing and development
-- ⏰ Hide matches from match log channel if aborted/abandoned so we don't leak who's online
-- ⏰ Implement a timeout for users who abort or abandon
+- ✅ Hide matches from match log channel if aborted/abandoned so we don't leak who's online
+- ✅ Implement a timeout for users who abort or abandon
+- ✅ Fix BW + SC2 team race selection not clearing in 2v2 when double BW or double SC2 is selected
 - ✅ Upsert updated locale strings
     - ✅ esMX
     - ✅ koKR
@@ -337,22 +338,61 @@ I look forward to releasing the pre-beta. See you soon!
 
 Hi @everyone,
 
-## The SC: Evo Complete ladder pre-beta is now live!
+# The SC: Evo Complete ladder pre-beta is now live!
 
 Please note there are some new settings, and to make sure everyone has a chance to see them, we are requiring all users to run `/setup` again.
 
 This time, for new and returning users completing `/setup` for the first time, we will be answering some onboarding questions. We collect this data to get to know more about our playerbase and to make strategic decisions about how to reach new users.
 
+We have updated the Terms of Service and Privacy Policy. Among the changes are that we are recording interactions with the bot more comprehensively and sharing a limited number of replays of players with third-party commentators for community outreach purposes.
+
+## New Features
+
 Player ratings and match history from the alpha testing phase have been retained. Returning users should be aware of the following changes:
+- Upon finding a match, the <@1486092524631359670> will create a dedicated chat channel in the Ladder category for all players in the match. Players can use this channel to avoid needing to DM their opponents on Discord. This channel also provides a dedicated place to request help from <@&1432573890898559036> for that specific match.
+- Detailed instructions on how to switch regions/server and create a lobby are now displayed alongside match information.
 - The 2v2 gamemode is now available.
   - The 2v2 queue supports both **BW + BW vs SC2 + SC2** and **BW + SC2 vs BW + SC2** games.
-  - Use `/party invite` {name/Discord username/Discord UID} to invite a player to join
+    - The party leader will have the ability to select preferred BW + BW, BW + SC2, and SC2 + SC2 race combos when queueing.
+  - Use `/party invite` {name/Discord username/Discord UID} to invite a player to join.
 - Four new locales are available, in addition to 🇺🇸 enUS: 
   - 🇲🇽 esMX
   - 🇰🇷 koKR
   - 🇷🇺 ruRU
   - 🇨🇳 zhCN
-- Upon finding a ladder match, you will not immediately see 
-  - 
-  - 
+- Upon finding a ladder match, you will not immediately see your opponent. Instead, you will have a 60-second window in which to confirm you are ready to play.
+  - Players who abort a match manually will receive a **5-minute timeout.**
+  - Players who fail to accept a match will receive a **15-minute timeout** for abandoning the match.
+  - These values may be adjusted later.
 - Upon uploading a replay to a match, the ladder will attempt to automatically resolve the match result based on replay parsing data. No more getting stuck because your opponent went AFK!
+- Players can now opt-in to receive notifications in `/setup` when someone is queueing for 1v1 or 2v2.
+- Players can now view queue join activity history using `/activity` to better plan around when other players will be most active.
+- `/help` command has been updated with the new list of commands.
+
+## Referral System
+
+We are introducing a referral system to help grow the ladder community. Here's how it works:
+
+- Use `/referral` and click **Create Referral** to generate your personal referral embed. You can share this embed with friends, clanmates, or anyone you think would enjoy the ladder. This embed contains an 11-character code unique to your account.
+- After your referee completes their onboarding setup, they can use `/referral` and click **Enter Referral Code** to input the referral code they received from you.
+- The referee will receive confirmation upon successful validation of your code.
+  - For UX reasons, the referring player will not receive notice at this time. I plan to implement a means for players to view their referral count later.
+- You cannot refer yourself, and each player can only be referred once.
+- Players who had existing accounts before the pre-beta will not be able to enter a referral code.
+
+## Referral Contest
+
+To celebrate the pre-beta launch, I am running a contest. 
+- The top referrer will receive a prize of $75 USD.
+- The remaining referrers will be entered into a drawing for three $25 USD prizes.
+  - Each referee who completes at least one 1v1 or 2v2 ladder match will count as one entry.
+
+I reserve the right to ignore referrals from alternative, spam, or otherwise suspicious accounts, or disqualify participants who appear to engaging in fradulent behavior.
+
+The contest closes at at 00:00 PDT, Monday, May 4th (<t:1777878000>). Referrals after this time will still be logged, but they will not be considered in this contest.
+
+---
+
+This launch has taken a lot of work, and I'm grateful to finally be here. I hope that the improvements brought by this pre-beta launch will help the ladder grow for months and years to come.
+
+Thank you, and see you on the ladder!

@@ -30,7 +30,8 @@ def register_referral_command(tree: app_commands.CommandTree) -> None:
         locale = get_player_locale(interaction.user.id)
         cache = get_cache()
         player = cache.player_presets.get(interaction.user.id)
-        already_referred = bool((player or {}).get("referred_by"))
+        p = player or {}
+        already_referred = bool(p.get("referred_by") or p.get("referred_at"))
         view = ReferralView(already_referred=already_referred, locale=locale)
         await interaction.response.send_message(
             embed=ReferralInitialEmbed(locale=locale),

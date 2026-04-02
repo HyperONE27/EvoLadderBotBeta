@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS players (
     current_match_id        BIGINT DEFAULT NULL,
     read_lobby_guide        BOOLEAN NOT NULL DEFAULT FALSE,
     referred_by             BIGINT,
-    referred_at             TIMESTAMPTZ,
+    referred_at             TIMESTAMPTZ,    -- this value is set to Unix epoch zero for players who joined before pre-beta referral system
     timeout_until           TIMESTAMPTZ DEFAULT NULL
 );
 
