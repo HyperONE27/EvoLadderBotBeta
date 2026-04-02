@@ -13,14 +13,7 @@ from bot.core.config import BACKEND_URL, GAME_MODE_CHOICES
 from bot.core.dependencies import get_player_locale
 from bot.core.http import get_session
 from common.i18n import t
-from bot.helpers.checks import (
-    check_if_accepted_tos,
-    check_if_banned,
-    check_if_completed_setup,
-    check_if_dm,
-    check_if_queueing,
-    check_if_timed_out,
-)
+from bot.helpers.checks import check_if_dm, check_player
 
 logger = structlog.get_logger(__name__)
 
@@ -35,11 +28,6 @@ __all__ = ["MatchFoundView1v1", "MatchReportView1v1", "register_queue_command"]
 
 def register_queue_command(tree: app_commands.CommandTree) -> None:
     @tree.command(name="queue", description="Join the ranked matchmaking queue")
-    @app_commands.check(check_if_accepted_tos)
-    @app_commands.check(check_if_completed_setup)
-    @app_commands.check(check_if_timed_out)
-    @app_commands.check(check_if_queueing)
-    @app_commands.check(check_if_banned)
     @app_commands.check(check_if_dm)
     @app_commands.choices(game_mode=GAME_MODE_CHOICES)
     async def queue_command(
@@ -51,6 +39,13 @@ def register_queue_command(tree: app_commands.CommandTree) -> None:
             f"queue_command invoked by user={interaction.user.id}, mode={mode}"
         )
         await interaction.response.defer()
+        await check_player(
+            interaction,
+            accepted_tos=True,
+            completed_setup=True,
+            not_queueing=True,
+            not_timed_out=True,
+        )
 
         if mode == "1v1":
             await _queue_1v1(interaction)

@@ -53,57 +53,57 @@ def check_if_dm(interaction: discord.Interaction) -> bool:
     return True
 
 
-async def check_if_banned(interaction: discord.Interaction) -> bool:
-    """Hit GET /players/{uid} and check is_banned. Async check."""
+async def check_player(
+    interaction: discord.Interaction,
+    *,
+    banned: bool = True,
+    accepted_tos: bool = False,
+    completed_setup: bool = False,
+    not_queueing: bool = False,
+    not_timed_out: bool = False,
+) -> None:
+    """Single ``GET /players/{uid}`` fetch, validate multiple conditions.
+
+    Always caches the player dict in ``Cache.player_presets`` and locale in
+    ``Cache.player_locales``.  Fail-open on network errors.
+    """
     uid = interaction.user.id
     try:
         async with get_session().get(f"{BACKEND_URL}/players/{uid}") as resp:
             data = await resp.json()
     except Exception:
-        # If the backend is unreachable, don't block the user.
-        return True
+        return  # fail-open
 
     player = data.get("player")
     if player is not None:
         await _ensure_locale_cached(uid, player)
         get_cache().player_presets[uid] = player
-        if player.get("is_banned"):
-            raise BannedError()
-    return True
 
-
-async def check_if_accepted_tos(interaction: discord.Interaction) -> bool:
-    """Hit GET /players/{uid} and check accepted_tos. Async check."""
-    uid = interaction.user.id
-    try:
-        async with get_session().get(f"{BACKEND_URL}/players/{uid}") as resp:
-            data = await resp.json()
-    except Exception:
-        return True
-
-    player = data.get("player")
-    if player is None or not player.get("accepted_tos"):
+    if banned and player is not None and player.get("is_banned"):
+        raise BannedError()
+    if accepted_tos and (player is None or not player.get("accepted_tos")):
         raise NotAcceptedTosError()
-    return True
-
-
-async def check_if_completed_setup(interaction: discord.Interaction) -> bool:
-    """Hit GET /players/{uid} and check completed_setup. Async check."""
-    uid = interaction.user.id
-    try:
-        async with get_session().get(f"{BACKEND_URL}/players/{uid}") as resp:
-            data = await resp.json()
-    except Exception:
-        return True
-
-    player = data.get("player")
-    if player is None or not player.get("completed_setup"):
+    if completed_setup and (player is None or not player.get("completed_setup")):
         raise NotCompletedSetupError()
-    return True
+    if (
+        not_queueing
+        and player is not None
+        and player.get("player_status") == "queueing"
+    ):
+        raise AlreadyQueueingError()
+    if not_timed_out and player is not None:
+        timeout_until_raw = player.get("timeout_until")
+        if timeout_until_raw is not None:
+            timeout_until = ensure_utc(timeout_until_raw)
+            if timeout_until is not None and utc_now() < timeout_until:
+                raise PlayerTimedOutError(timeout_until)
 
 
 async def check_if_queueing(interaction: discord.Interaction) -> bool:
-    """Hit GET /players/{uid} and check player_status is not 'queueing'. Async check."""
+    """Hit GET /players/{uid} and check player_status is not 'queueing'. Async check.
+
+    Kept as a standalone function for inline use in view button callbacks.
+    """
     uid = interaction.user.id
     try:
         async with get_session().get(f"{BACKEND_URL}/players/{uid}") as resp:
@@ -117,46 +117,28 @@ async def check_if_queueing(interaction: discord.Interaction) -> bool:
     return True
 
 
-async def check_if_timed_out(interaction: discord.Interaction) -> bool:
-    """Check whether the player is currently serving a timeout penalty.
-
-    Relies on ``check_if_banned`` having already cached the player dict in
-    ``Cache.player_presets``.  Fail-open if there is no cached data.
-    """
-    uid = interaction.user.id
-    player = get_cache().player_presets.get(uid)
-    if player is None:
-        return True  # fail-open
-
-    timeout_until_raw = player.get("timeout_until")
-    if timeout_until_raw is None:
-        return True
-
-    timeout_until = ensure_utc(timeout_until_raw)
-    if timeout_until is None:
-        return True
-
-    if utc_now() >= timeout_until:
-        return True  # timeout expired
-
-    raise PlayerTimedOutError(timeout_until)
-
-
-async def check_if_admin(interaction: discord.Interaction) -> bool:
-    """Hit GET /admins/{uid} and check role is not 'inactive'."""
+async def check_admin(
+    interaction: discord.Interaction,
+    *,
+    owner: bool = False,
+) -> None:
+    """Single ``GET /admins/{uid}`` fetch, validate admin or owner role."""
     uid = interaction.user.id
     try:
         async with get_session().get(f"{BACKEND_URL}/admins/{uid}") as resp:
             data = await resp.json()
     except Exception:
-        raise NotAdminError()
+        raise NotOwnerError() if owner else NotAdminError()
 
     admin = data.get("admin")
-    if admin is None or admin.get("role") == "inactive":
-        raise NotAdminError()
+    if owner:
+        if admin is None or admin.get("role") != "owner":
+            raise NotOwnerError()
+    else:
+        if admin is None or admin.get("role") == "inactive":
+            raise NotAdminError()
 
     await _ensure_locale_cached(uid)
-    return True
 
 
 async def check_if_name_unique(
@@ -198,23 +180,6 @@ async def check_if_name_unique(
         raise NameNotUniqueError(
             t("setup_validation_error_embed.error.player_name_taken", locale)
         )
-
-
-async def check_if_owner(interaction: discord.Interaction) -> bool:
-    """Hit GET /admins/{uid} and check role is 'owner'."""
-    uid = interaction.user.id
-    try:
-        async with get_session().get(f"{BACKEND_URL}/admins/{uid}") as resp:
-            data = await resp.json()
-    except Exception:
-        raise NotOwnerError()
-
-    admin = data.get("admin")
-    if admin is None or admin.get("role") != "owner":
-        raise NotOwnerError()
-
-    await _ensure_locale_cached(uid)
-    return True
 
 
 # --- Errors ---

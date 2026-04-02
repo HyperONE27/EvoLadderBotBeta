@@ -15,7 +15,7 @@ from bot.components.embeds import (
 from bot.core.config import BACKEND_URL, GAME_MODE_CHOICES
 from bot.core.dependencies import get_player_locale
 from bot.core.http import get_session
-from bot.helpers.checks import check_if_admin
+from bot.helpers.checks import check_admin
 
 logger = structlog.get_logger(__name__)
 
@@ -52,7 +52,6 @@ def register_admin_match_command(tree: app_commands.CommandTree) -> None:
     @tree.command(
         name="match", description="[Admin] View full match details and replays"
     )
-    @app_commands.check(check_if_admin)
     @app_commands.choices(game_mode=GAME_MODE_CHOICES)
     async def match_command(
         interaction: discord.Interaction,
@@ -60,6 +59,7 @@ def register_admin_match_command(tree: app_commands.CommandTree) -> None:
         match_id: int,
     ) -> None:
         await interaction.response.defer()
+        await check_admin(interaction)
 
         mode = game_mode.value
         locale = get_player_locale(interaction.user.id)

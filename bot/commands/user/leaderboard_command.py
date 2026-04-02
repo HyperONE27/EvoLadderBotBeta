@@ -9,12 +9,7 @@ from bot.core.config import (
 )
 from bot.core.dependencies import get_cache, get_player_locale
 from bot.core.http import get_session
-from bot.helpers.checks import (
-    check_if_accepted_tos,
-    check_if_banned,
-    check_if_completed_setup,
-    check_if_dm,
-)
+from bot.helpers.checks import check_if_dm, check_player
 from bot.components.views import AutoDisableView
 from bot.helpers.embed_branding import apply_default_embed_footer
 from bot.helpers.emotes import get_flag_emote, get_race_emote, get_rank_emote
@@ -754,9 +749,6 @@ def register_leaderboard_command(tree: app_commands.CommandTree) -> None:
     @tree.command(name="leaderboard", description="View the MMR leaderboard")
     @app_commands.describe(game_mode="Game mode")
     @app_commands.choices(game_mode=GAME_MODE_CHOICES)
-    @app_commands.check(check_if_accepted_tos)
-    @app_commands.check(check_if_completed_setup)
-    @app_commands.check(check_if_banned)
     @app_commands.check(check_if_dm)
     async def leaderboard_command(
         interaction: discord.Interaction,
@@ -776,6 +768,7 @@ def register_leaderboard_command(tree: app_commands.CommandTree) -> None:
             return
 
         await interaction.response.defer()
+        await check_player(interaction, accepted_tos=True, completed_setup=True)
 
         if game_mode == "2v2":
             entries_2v2 = await _ensure_leaderboard_2v2(interaction.user.id)

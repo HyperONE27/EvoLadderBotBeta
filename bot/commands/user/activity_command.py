@@ -17,12 +17,7 @@ from bot.helpers.activity_analytics import (
 )
 from bot.core.config import ACTIVITY_CHART_BUCKET_MINUTES, GAME_MODE_CHOICES
 from bot.helpers.activity_stats import build_activity_embed_fields
-from bot.helpers.checks import (
-    check_if_accepted_tos,
-    check_if_banned,
-    check_if_completed_setup,
-    check_if_dm,
-)
+from bot.helpers.checks import check_if_dm, check_player
 from bot.helpers.embed_branding import apply_default_embed_footer
 from common.datetime_helpers import utc_now
 from common.i18n import t
@@ -38,9 +33,6 @@ def register_activity_command(tree: app_commands.CommandTree) -> None:
     @app_commands.describe(
         game_mode=t("activity_command.game_mode_param.1", "enUS"),
     )
-    @app_commands.check(check_if_accepted_tos)
-    @app_commands.check(check_if_completed_setup)
-    @app_commands.check(check_if_banned)
     @app_commands.check(check_if_dm)
     @app_commands.choices(game_mode=GAME_MODE_CHOICES)
     async def activity_command(
@@ -65,6 +57,7 @@ def register_activity_command(tree: app_commands.CommandTree) -> None:
             )
             return
         await interaction.response.defer()
+        await check_player(interaction, accepted_tos=True, completed_setup=True)
         end = utc_now()
         start = end - timedelta(hours=24)
         try:

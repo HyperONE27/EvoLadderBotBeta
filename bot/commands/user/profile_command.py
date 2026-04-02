@@ -10,13 +10,7 @@ from bot.core.config import BACKEND_URL
 from bot.core.dependencies import get_cache, get_player_locale
 from bot.core.http import get_session
 from bot.core.player_lookup import resolve_player_by_string
-from bot.helpers.checks import (
-    check_if_accepted_tos,
-    check_if_admin,
-    check_if_banned,
-    check_if_completed_setup,
-    check_if_dm,
-)
+from bot.helpers.checks import check_admin, check_if_dm, check_player
 
 logger = structlog.get_logger(__name__)
 
@@ -38,9 +32,6 @@ async def _fetch_profile(discord_uid: int) -> dict[str, Any]:
 
 def register_profile_command(tree: app_commands.CommandTree) -> None:
     @tree.command(name="profile", description="View your player profile")
-    @app_commands.check(check_if_accepted_tos)
-    @app_commands.check(check_if_completed_setup)
-    @app_commands.check(check_if_banned)
     @app_commands.check(check_if_dm)
     @app_commands.describe(
         player="[Admin only] Ladder name, Discord username, or Discord ID"
@@ -50,10 +41,11 @@ def register_profile_command(tree: app_commands.CommandTree) -> None:
         player: str | None = None,
     ) -> None:
         await interaction.response.defer()
+        await check_player(interaction, accepted_tos=True, completed_setup=True)
         invoker_uid = interaction.user.id
 
         if player is not None:
-            await check_if_admin(interaction)
+            await check_admin(interaction)
             locale = get_player_locale(invoker_uid)
             target_player_row = await resolve_player_by_string(player)
             if target_player_row is None:

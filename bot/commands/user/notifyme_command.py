@@ -10,12 +10,7 @@ from discord import app_commands
 from bot.core.config import BACKEND_URL
 from bot.core.dependencies import get_player_locale
 from bot.core.http import get_session
-from bot.helpers.checks import (
-    check_if_accepted_tos,
-    check_if_banned,
-    check_if_completed_setup,
-    check_if_dm,
-)
+from bot.helpers.checks import check_if_dm, check_player
 from bot.components.embeds import (
     ErrorEmbed,
     NotifyMeSuccessEmbed,
@@ -36,9 +31,6 @@ def register_notifyme_command(tree: app_commands.CommandTree) -> None:
         enabled=t("notifyme_command.enabled_param.1", "enUS"),
         cooldown_minutes=t("notifyme_command.cooldown_param.1", "enUS"),
     )
-    @app_commands.check(check_if_accepted_tos)
-    @app_commands.check(check_if_completed_setup)
-    @app_commands.check(check_if_banned)
     @app_commands.check(check_if_dm)
     @app_commands.choices(
         game_mode=[
@@ -74,6 +66,7 @@ def register_notifyme_command(tree: app_commands.CommandTree) -> None:
             return
 
         await interaction.response.defer()
+        await check_player(interaction, accepted_tos=True, completed_setup=True)
         payload: dict = {
             "discord_uid": interaction.user.id,
             "notify_queue_1v1": enabled,

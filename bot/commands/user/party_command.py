@@ -8,12 +8,7 @@ from bot.core.config import BACKEND_URL
 from bot.core.dependencies import get_player_locale
 from bot.core.http import get_session
 from bot.core.player_lookup import resolve_player_by_string
-from bot.helpers.checks import (
-    check_if_accepted_tos,
-    check_if_banned,
-    check_if_completed_setup,
-    check_if_dm,
-)
+from bot.helpers.checks import check_if_dm, check_player
 from bot.components.views import AutoDisableView
 from bot.helpers.embed_branding import apply_default_embed_footer
 from common.i18n import t
@@ -60,9 +55,6 @@ party_group = app_commands.Group(
 
 
 @party_group.command(name="invite", description="Invite a player to your 2v2 party")
-@app_commands.check(check_if_accepted_tos)
-@app_commands.check(check_if_completed_setup)
-@app_commands.check(check_if_banned)
 @app_commands.check(check_if_dm)
 @app_commands.describe(player="Ladder name, Discord username, or Discord ID")
 async def party_invite_command(
@@ -70,6 +62,7 @@ async def party_invite_command(
     player: str,
 ) -> None:
     await interaction.response.defer()
+    await check_player(interaction, accepted_tos=True, completed_setup=True)
     uid = interaction.user.id
     locale = get_player_locale(uid)
 
@@ -171,10 +164,10 @@ async def party_invite_command(
 
 
 @party_group.command(name="leave", description="Leave your current 2v2 party")
-@app_commands.check(check_if_banned)
 @app_commands.check(check_if_dm)
 async def party_leave_command(interaction: discord.Interaction) -> None:
     await interaction.response.defer()
+    await check_player(interaction)
     uid = interaction.user.id
     locale = get_player_locale(uid)
 

@@ -264,35 +264,50 @@ async def on_tree_error(
         PlayerTimedOutError,
     )
 
+    # Unwrap CommandInvokeError so check errors raised after defer() are
+    # handled the same way as errors raised from decorators.
+    original: BaseException = error
+    if isinstance(error, app_commands.CommandInvokeError):
+        original = error.original
+
     locale = get_player_locale(interaction.user.id)
     ephemeral = False
-    if isinstance(error, app_commands.CheckFailure):
-        if isinstance(error, PlayerTimedOutError):
+    if isinstance(original, app_commands.CheckFailure):
+        if isinstance(original, PlayerTimedOutError):
             timed_out_embed = PlayerTimedOutEmbed(
-                timeout_until=error.timeout_until, locale=locale
+                timeout_until=original.timeout_until, locale=locale
             )
-            if interaction.response.is_done():
-                await interaction.followup.send(embed=timed_out_embed)
-            else:
-                await interaction.response.send_message(embed=timed_out_embed)
+            try:
+                if interaction.response.is_done():
+                    await interaction.followup.send(embed=timed_out_embed)
+                else:
+                    await interaction.response.send_message(embed=timed_out_embed)
+            except discord.NotFound, discord.HTTPException:
+                logger.warning(
+                    "on_tree_error: interaction expired",
+                    error=repr(original),
+                    user=interaction.user.id,
+                )
             return
-        elif isinstance(error, NotInDMError):
+        elif isinstance(original, NotInDMError):
             description = t("error.not_in_dm", locale)
             ephemeral = True
-        elif isinstance(error, BannedError):
+        elif isinstance(original, BannedError):
             description = t("error.banned", locale)
-        elif isinstance(error, NotAdminError):
+        elif isinstance(original, NotAdminError):
             description = t("error.not_admin", locale)
-        elif isinstance(error, NotOwnerError):
+        elif isinstance(original, NotOwnerError):
             description = t("error.not_owner", locale)
-        elif isinstance(error, NotAcceptedTosError):
+        elif isinstance(original, NotAcceptedTosError):
             description = t("error.not_accepted_tos", locale)
-        elif isinstance(error, NotCompletedSetupError):
+        elif isinstance(original, NotCompletedSetupError):
             description = t("error.not_completed_setup", locale)
-        elif isinstance(error, AlreadyQueueingError):
+        elif isinstance(original, AlreadyQueueingError):
             description = t("error.already_queueing", locale)
         else:
-            description = str(error) if str(error) else t("error.unauthorized", locale)
+            description = (
+                str(original) if str(original) else t("error.unauthorized", locale)
+            )
 
         embed = ErrorEmbed(
             title=t("error_embed.title.unauthorized_command", locale),
@@ -302,14 +317,22 @@ async def on_tree_error(
     else:
         embed = ErrorEmbed(
             title=t("error_embed.title.unexpected_error", locale),
-            description=t("error.unexpected_command", locale) + f"\nError: {error!r}",
+            description=t("error.unexpected_command", locale)
+            + f"\nError: {original!r}",
             locale=locale,
         )
 
-    if interaction.response.is_done():
-        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-    else:
-        await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
+    try:
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+        else:
+            await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
+    except discord.NotFound, discord.HTTPException:
+        logger.warning(
+            "on_tree_error: interaction expired",
+            error=repr(original),
+            user=interaction.user.id,
+        )
 
 
 # ---------------

@@ -6,7 +6,7 @@ from bot.components.embeds import ResolvePreviewEmbed
 from bot.components.views import ResolveConfirmView, ResolveConfirmView2v2
 from bot.core.config import GAME_MODE_CHOICES
 from bot.core.dependencies import get_player_locale
-from bot.helpers.checks import check_if_admin
+from bot.helpers.checks import check_admin
 from common.i18n import t
 
 logger = structlog.get_logger(__name__)
@@ -28,7 +28,6 @@ RESULT_CHOICES = [
 
 def register_admin_resolve_command(tree: app_commands.CommandTree) -> None:
     @tree.command(name="resolve", description="[Admin] Manually resolve a match result")
-    @app_commands.check(check_if_admin)
     @app_commands.choices(game_mode=GAME_MODE_CHOICES, result=RESULT_CHOICES)
     async def resolve_command(
         interaction: discord.Interaction,
@@ -38,6 +37,7 @@ def register_admin_resolve_command(tree: app_commands.CommandTree) -> None:
         reason: str | None = None,
     ) -> None:
         await interaction.response.defer()
+        await check_admin(interaction)
 
         mode = game_mode.value
         locale = get_player_locale(interaction.user.id)

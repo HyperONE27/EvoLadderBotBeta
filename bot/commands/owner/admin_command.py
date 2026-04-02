@@ -6,7 +6,7 @@ from bot.components.embeds import ErrorEmbed, ToggleAdminPreviewEmbed
 from bot.components.views import ToggleAdminConfirmView
 from bot.core.dependencies import get_player_locale
 from bot.core.player_lookup import resolve_player_by_string
-from bot.helpers.checks import check_if_owner
+from bot.helpers.checks import check_admin
 from common.i18n import t
 
 logger = structlog.get_logger(__name__)
@@ -19,13 +19,13 @@ logger = structlog.get_logger(__name__)
 
 def register_owner_admin_command(tree: app_commands.CommandTree) -> None:
     @tree.command(name="admin", description="[Owner] Toggle a user's admin role")
-    @app_commands.check(check_if_owner)
     @app_commands.describe(player="Ladder name, Discord username, or Discord ID")
     async def admin_command(
         interaction: discord.Interaction,
         player: str,
     ) -> None:
         await interaction.response.defer()
+        await check_admin(interaction, owner=True)
 
         locale = get_player_locale(interaction.user.id)
 

@@ -7,7 +7,7 @@ from bot.components.views import LocaleSetupView
 from bot.core.config import BACKEND_URL
 from bot.core.dependencies import get_cache, get_player_locale
 from bot.core.http import get_session
-from bot.helpers.checks import check_if_banned, check_if_dm
+from bot.helpers.checks import check_if_dm, check_player
 
 logger = structlog.get_logger(__name__)
 
@@ -21,11 +21,11 @@ def register_setup_command(tree: app_commands.CommandTree) -> None:
     @tree.command(
         name="setup", description="Set up your player profile for matchmaking"
     )
-    @app_commands.check(check_if_banned)
     @app_commands.check(check_if_dm)
     async def setup_command(interaction: discord.Interaction) -> None:
         logger.debug(f"setup_command invoked by user={interaction.user.id}")
         await interaction.response.defer()
+        await check_player(interaction)
 
         discord_uid = interaction.user.id
         discord_username = interaction.user.name

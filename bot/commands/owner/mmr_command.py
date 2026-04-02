@@ -11,7 +11,7 @@ from bot.components.views import SetMMRConfirmView
 from bot.core.config import GAME_MODE_CHOICES
 from bot.core.dependencies import get_player_locale
 from bot.core.player_lookup import resolve_player_by_string
-from bot.helpers.checks import check_if_owner
+from bot.helpers.checks import check_admin
 from common.i18n import t
 from common.lookups.race_lookups import get_races
 
@@ -44,7 +44,6 @@ async def _autocomplete_race(
 
 def register_owner_mmr_command(tree: app_commands.CommandTree) -> None:
     @tree.command(name="mmr", description="[Owner] Set a user's MMR value")
-    @app_commands.check(check_if_owner)
     @app_commands.choices(game_mode=GAME_MODE_CHOICES)
     @app_commands.autocomplete(race=_autocomplete_race)
     @app_commands.describe(player="Ladder name, Discord username, or Discord ID")
@@ -56,6 +55,7 @@ def register_owner_mmr_command(tree: app_commands.CommandTree) -> None:
         game_mode: app_commands.Choice[str] = None,  # type: ignore[assignment]
     ) -> None:
         await interaction.response.defer()
+        await check_admin(interaction, owner=True)
 
         mode = game_mode.value if game_mode else "1v1"
         locale = get_player_locale(interaction.user.id)
