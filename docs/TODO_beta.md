@@ -207,6 +207,7 @@ What remains?
 - ⏰ Migrate wave-based matchmaking approach to a non-wave-based algorithm so we don't get synchronization issues causing players to match up into the same opponents over and over again
 - ✅ Need to defer interactions without unlocking views or creating the potential for duplicate inputs/non-atomic interactions
     - ✅ ToS now defers interactions
+- ⏰ Add before/after state warnings to ALL admin commands
 
 ## 
 
