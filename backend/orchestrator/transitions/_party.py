@@ -42,7 +42,9 @@ def create_party_invite(
     )
     if inviter_row.is_empty():
         return False, "Inviter player not found."
-    inviter_status: str = inviter_row.row(0, named=True).get("player_status", "")
+    inviter_data = inviter_row.row(0, named=True)
+    inviter_data = self._clear_expired_timeout(inviter_data)
+    inviter_status: str = inviter_data.get("player_status", "")
 
     if inviter_status == "in_party":
         # Already in a party — only allow if they are the leader with no member
@@ -66,7 +68,9 @@ def create_party_invite(
     )
     if invitee_row.is_empty():
         return False, "Invited player not found."
-    invitee_status: str = invitee_row.row(0, named=True).get("player_status", "")
+    invitee_data = invitee_row.row(0, named=True)
+    invitee_data = self._clear_expired_timeout(invitee_data)
+    invitee_status: str = invitee_data.get("player_status", "")
 
     if invitee_status != "idle":
         return (
@@ -134,8 +138,12 @@ def respond_to_party_invite(
     if invitee_row.is_empty():
         return False, "Your player profile was not found.", invite
 
-    inviter_status: str = inviter_row.row(0, named=True).get("player_status", "")
-    invitee_status: str = invitee_row.row(0, named=True).get("player_status", "")
+    inviter_data = inviter_row.row(0, named=True)
+    inviter_data = self._clear_expired_timeout(inviter_data)
+    invitee_data = invitee_row.row(0, named=True)
+    invitee_data = self._clear_expired_timeout(invitee_data)
+    inviter_status: str = inviter_data.get("player_status", "")
+    invitee_status: str = invitee_data.get("player_status", "")
 
     if inviter_status != "idle":
         return (

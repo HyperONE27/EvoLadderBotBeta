@@ -9,6 +9,7 @@ import polars as pl
 import structlog
 
 from backend.domain_types.dataframes import Matches1v1Row, row_as
+from common.datetime_helpers import ensure_utc, utc_now
 
 if TYPE_CHECKING:
     from backend.orchestrator.transitions import TransitionManager
@@ -73,6 +74,32 @@ def _set_player_status(
         .then(pl.lit(timeout_until))
         .otherwise(pl.col("timeout_until")),
     )
+
+
+def _clear_expired_timeout(self: TransitionManager, player: dict) -> dict:
+    """If the player is timed out but the timeout has expired, reset to idle.
+
+    Returns the (possibly updated) player dict so callers can proceed with
+    the fresh status.
+    """
+    if player.get("player_status") != "timed_out":
+        return player
+
+    timeout_until_raw = player.get("timeout_until")
+    if timeout_until_raw is None:
+        # Status is timed_out but no expiry — clean it up.
+        _set_player_status(self, player["discord_uid"], "idle", timeout_until=None)
+        player["player_status"] = "idle"
+        return player
+
+    timeout_until = ensure_utc(timeout_until_raw)
+    if timeout_until is not None and utc_now() >= timeout_until:
+        logger.info(f"Auto-clearing expired timeout for player {player['discord_uid']}")
+        _set_player_status(self, player["discord_uid"], "idle", timeout_until=None)
+        player["player_status"] = "idle"
+        player["timeout_until"] = None
+
+    return player
 
 
 def _get_match_row(self: TransitionManager, match_id: int) -> Matches1v1Row | None:

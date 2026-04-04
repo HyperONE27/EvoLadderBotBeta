@@ -34,6 +34,7 @@ def join_queue_1v1(
     queue and sets ``player_status`` to ``'queueing'``.
     """
     player = self._handle_missing_player(discord_uid, discord_username)
+    player = self._clear_expired_timeout(player)
     if player["player_status"] != "idle":
         return False, f"Cannot queue: player status is '{player['player_status']}'."
 

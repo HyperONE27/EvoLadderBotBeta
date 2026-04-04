@@ -42,6 +42,7 @@ class TransitionManager:
     _get_player_location = _base._get_player_location
     _get_player_nationality = _base._get_player_nationality
     _get_player_letter_rank = _base._get_player_letter_rank
+    _clear_expired_timeout = _base._clear_expired_timeout
 
     # -- player transitions (_player.py) -------------------------------------
     register_player = _player.register_player
