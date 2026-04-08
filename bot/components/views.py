@@ -2189,35 +2189,6 @@ async def _send_setcountry_request(
 # =========================================================================
 
 
-class ResolveConfirmView(AutoDisableView):
-    def __init__(
-        self,
-        caller_id: int,
-        match_id: int,
-        result: str,
-        admin_discord_uid: int,
-        reason: str | None,
-    ) -> None:
-        super().__init__()
-
-        async def on_confirm(interaction: discord.Interaction) -> None:
-            if interaction.user.id != caller_id:
-                await interaction.response.send_message(
-                    t("error.not_your_button", get_player_locale(interaction.user.id)),
-                    ephemeral=True,
-                )
-                return
-            await _send_resolve_request(
-                interaction, match_id, result, admin_discord_uid, reason
-            )
-
-        _locale = get_player_locale(caller_id)
-        self.add_item(
-            ConfirmButton(callback=on_confirm, label=t("button.confirm", _locale))
-        )
-        self.add_item(CancelButton(locale=_locale))
-
-
 async def _send_resolve_request(
     interaction: discord.Interaction,
     match_id: int,
@@ -2318,35 +2289,6 @@ async def _send_to_match_log(
 # =========================================================================
 # Admin: Resolve 2v2
 # =========================================================================
-
-
-class ResolveConfirmView2v2(AutoDisableView):
-    def __init__(
-        self,
-        caller_id: int,
-        match_id: int,
-        result: str,
-        admin_discord_uid: int,
-        reason: str | None,
-    ) -> None:
-        super().__init__()
-
-        async def on_confirm(interaction: discord.Interaction) -> None:
-            if interaction.user.id != caller_id:
-                await interaction.response.send_message(
-                    t("error.not_your_button", get_player_locale(interaction.user.id)),
-                    ephemeral=True,
-                )
-                return
-            await _send_resolve_request_2v2(
-                interaction, match_id, result, admin_discord_uid, reason
-            )
-
-        _locale = get_player_locale(caller_id)
-        self.add_item(
-            ConfirmButton(callback=on_confirm, label=t("button.confirm", _locale))
-        )
-        self.add_item(CancelButton(locale=_locale))
 
 
 async def _send_resolve_request_2v2(

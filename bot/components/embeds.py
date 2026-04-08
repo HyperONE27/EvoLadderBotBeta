@@ -3792,38 +3792,6 @@ def _get_result_display(result: str, data: dict, locale: str = "enUS") -> str:
     return result
 
 
-class ResolvePreviewEmbed(discord.Embed):
-    def __init__(
-        self,
-        match_id: int,
-        result: str,
-        result_display: str,
-        game_mode: str,
-        reason: str | None,
-        locale: str = "enUS",
-    ) -> None:
-        description = t(
-            "resolve_preview_embed.description.1",
-            locale,
-            match_id=str(match_id),
-            game_mode=game_mode,
-            result_display=result_display,
-            result=result,
-        )
-        if reason:
-            description += t(
-                "resolve_preview_embed.reason_suffix.1", locale, reason=reason
-            )
-        description += t("resolve_preview_embed.confirm_suffix.1", locale)
-        super().__init__(
-            title=t("resolve_preview_embed.title.1", locale),
-            description=description,
-            color=discord.Color.orange(),
-        )
-
-        apply_default_embed_footer(self, locale=locale)
-
-
 class AdminResolutionEmbed(discord.Embed):
     """Admin Resolution embed — used for admin confirmation, player DMs,
     and match log channel."""
