@@ -37,18 +37,27 @@ def reset_player_status(
     row = rows.row(0, named=True)
     old_status: str = row.get("player_status") or "unknown"
 
+    in_queue_1v1 = any(
+        e["discord_uid"] == discord_uid for e in self._state_manager.queue_1v1
+    )
     if (
         old_status == "idle"
         and row.get("current_match_id") is None
         and row.get("timeout_until") is None
+        and not in_queue_1v1
     ):
         return False, "Player is already idle with no active match.", old_status
+
+    # Drop any stale 1v1 queue entry so the next matchmaker wave doesn't pair them.
+    sm = self._state_manager
+    sm.queue_1v1 = [e for e in sm.queue_1v1 if e["discord_uid"] != discord_uid]
 
     self._set_player_status(
         discord_uid, "idle", match_mode=None, match_id=None, timeout_until=None
     )
 
     # If the player was in a party, remove them and reset their partner.
+    # (Also strips both party members from queue_2v2.)
     self._purge_party_membership(discord_uid)
 
     logger.info(f"Admin reset player {discord_uid} status from {old_status!r} to idle")
