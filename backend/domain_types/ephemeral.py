@@ -27,6 +27,8 @@ class MatchCandidate1v1(TypedDict):
     player_2_race: str  # Must be a key in state_manager.races
     player_1_mmr: int
     player_2_mmr: int
+    player_1_location: str | None  # geographic region code (snapshot from queue join)
+    player_2_location: str | None
     player_1_map_vetoes: list[str]
     player_2_map_vetoes: list[str]
 
@@ -55,6 +57,7 @@ class QueueEntry1v1(TypedDict):
         str | None
     )  # "U" if unranked, letter rank from leaderboard otherwise
     nationality: str | None  # ISO country code from player profile
+    location: str | None  # geographic region code from data/core/regions.json
     map_vetoes: list[str]  # Must be a key in state_manager.maps
     joined_at: datetime
     wait_cycles: int

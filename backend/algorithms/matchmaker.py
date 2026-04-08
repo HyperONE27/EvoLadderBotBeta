@@ -9,13 +9,33 @@ Accepts a list of ``QueueEntry1v1`` objects and returns:
   - a list of ``MatchCandidate1v1`` objects for newly formed matches.
 
 No global state, no singletons, no I/O, no mutation of the input list.
+
+Algorithm
+---------
+Inspired by the 2v2 matchmaker: build the entire bipartite cost matrix
+first, then let the Hungarian algorithm decide side-commitment globally.
+
+Rows are players that *can* play BW (``bw_only ∪ both``); columns are
+players that *can* play SC2 (``sc2_only ∪ both``).  A "Both" player
+appears on both axes; the assignment optimiser is responsible for never
+selecting them on more than one side.
+
+Each cell ``cost[i][j]`` is finite if:
+  - the row and column refer to different players (``discord_uid``), and
+  - ``|row.bw_mmr − col.sc2_mmr|`` lies within either player's MMR window.
+
+Otherwise the cell is ``_SENTINEL``.  The matrix is then padded to a
+square of side ``max(n_rows, n_cols)`` with ``_SENTINEL`` and fed to the
+O(n³) Hungarian algorithm, producing a minimum-weight maximum-cardinality
+matching.  Side-commitment for "Both" players falls out of the assignment
+automatically.
 """
 
 from copy import deepcopy
 
 from backend.core.config import (
-    BALANCE_THRESHOLD_MMR,
     BASE_MMR_WINDOW,
+    DISALLOWED_REGION_PAIRS,
     MMR,
     MMR_WINDOW_GROWTH_PER_CYCLE,
     WAIT_PRIORITY_COEFFICIENT,
@@ -24,6 +44,10 @@ from backend.domain_types.ephemeral import MatchCandidate1v1, QueueEntry1v1
 
 # Fallback MMR used when a player's MMR is ``None``.
 DEFAULT_MMR: int = MMR["default"]
+
+# Sentinel cost for infeasible / padding / self-match cells.  Must exceed
+# the absolute value of any valid score.
+_SENTINEL: float = 1e18
 
 
 # ---------------------------------------------------------------------------
@@ -48,181 +72,59 @@ def _has_sc2(entry: QueueEntry1v1) -> bool:
     return entry["sc2_race"] is not None
 
 
-def _effective_mmr(entry: QueueEntry1v1, *, bw: bool) -> int:
-    return _mmr_or_default(entry["bw_mmr"] if bw else entry["sc2_mmr"])
+def _regions_disallowed(loc_a: str | None, loc_b: str | None) -> bool:
+    """Return True if this region pair is in ``DISALLOWED_REGION_PAIRS``.
 
-
-def _race_for_match(entry: QueueEntry1v1, *, bw: bool) -> str | None:
-    return entry["bw_race"] if bw else entry["sc2_race"]
-
-
-def _skill_bias(entry: QueueEntry1v1) -> int:
-    """Positive → stronger at BW, negative → stronger at SC2."""
-    return _mmr_or_default(entry["bw_mmr"]) - _mmr_or_default(entry["sc2_mmr"])
-
-
-# ---------------------------------------------------------------------------
-# Categorise queue entries
-# ---------------------------------------------------------------------------
-
-
-def _categorise(
-    entries: list[QueueEntry1v1],
-) -> tuple[list[QueueEntry1v1], list[QueueEntry1v1], list[QueueEntry1v1]]:
-    """Split entries into (bw_only, sc2_only, both) lists sorted by MMR."""
-    bw_only: list[QueueEntry1v1] = []
-    sc2_only: list[QueueEntry1v1] = []
-    both: list[QueueEntry1v1] = []
-
-    for e in entries:
-        has_bw = _has_bw(e)
-        has_sc2 = _has_sc2(e)
-        if has_bw and not has_sc2:
-            bw_only.append(e)
-        elif has_sc2 and not has_bw:
-            sc2_only.append(e)
-        elif has_bw and has_sc2:
-            both.append(e)
-        # else: entry has no race — silently skip.
-
-    bw_only.sort(key=lambda p: _mmr_or_default(p["bw_mmr"]), reverse=True)
-    sc2_only.sort(key=lambda p: _mmr_or_default(p["sc2_mmr"]), reverse=True)
-    both.sort(
-        key=lambda p: max(_mmr_or_default(p["bw_mmr"]), _mmr_or_default(p["sc2_mmr"])),
-        reverse=True,
-    )
-    return bw_only, sc2_only, both
-
-
-# ---------------------------------------------------------------------------
-# Equalise BW / SC2 pools using "both" players
-# ---------------------------------------------------------------------------
-
-
-def _equalise(
-    bw_list: list[QueueEntry1v1],
-    sc2_list: list[QueueEntry1v1],
-    both_list: list[QueueEntry1v1],
-) -> tuple[list[QueueEntry1v1], list[QueueEntry1v1]]:
-    """Assign *both_list* players into *bw_list* or *sc2_list* to balance sizes
-    and, as a secondary objective, skill.  Returns new lists; inputs are not
-    mutated."""
-    bw = list(bw_list)
-    sc2 = list(sc2_list)
-    remaining = sorted(both_list, key=_skill_bias)  # SC2-leaning first
-
-    # Special case: both dedicated pools empty – split evenly by bias.
-    if not bw and not sc2 and remaining:
-        mid = len(remaining) // 2
-        sc2 = remaining[:mid]
-        bw = remaining[mid:]
-        return bw, sc2
-
-    if not remaining:
-        return bw, sc2
-
-    # Phase 1 – hard population balance.
-    delta = len(bw) - len(sc2)
-    if delta < 0:
-        # BW needs more – take the most BW-biased (end of list).
-        for _ in range(min(abs(delta), len(remaining))):
-            bw.append(remaining.pop())
-    elif delta > 0:
-        # SC2 needs more – take the most SC2-biased (start of list).
-        for _ in range(min(delta, len(remaining))):
-            sc2.append(remaining.pop(0))
-
-    # Phase 2 – distribute leftovers, alternating to keep sizes balanced.
-    while remaining:
-        if len(bw) < len(sc2):
-            bw.append(remaining.pop())
-        elif len(bw) > len(sc2):
-            sc2.append(remaining.pop(0))
-        else:
-            if remaining:
-                sc2.append(remaining.pop(0))
-            if remaining:
-                bw.append(remaining.pop())
-
-    # Phase 3 – soft skill rebalancing: if the mean-MMR gap is too large,
-    # swap a single neutral "both" player across pools.
-    if bw and sc2:
-        bw_mean = sum(_mmr_or_default(p["bw_mmr"]) for p in bw) / len(bw)
-        sc2_mean = sum(_mmr_or_default(p["sc2_mmr"]) for p in sc2) / len(sc2)
-        mmr_delta = bw_mean - sc2_mean
-        pop_diff = abs(len(bw) - len(sc2))
-
-        if abs(mmr_delta) > BALANCE_THRESHOLD_MMR:
-            if mmr_delta > BALANCE_THRESHOLD_MMR:
-                # BW pool is stronger – move a neutral "both" player to SC2.
-                candidates = sorted(
-                    [p for p in bw if _has_bw(p) and _has_sc2(p)],
-                    key=lambda p: abs(_skill_bias(p)),
-                )
-                if candidates:
-                    new_pop_diff = abs((len(bw) - 1) - (len(sc2) + 1))
-                    if new_pop_diff <= pop_diff:
-                        player = candidates[0]
-                        bw.remove(player)
-                        sc2.append(player)
-            elif mmr_delta < -BALANCE_THRESHOLD_MMR:
-                candidates = sorted(
-                    [p for p in sc2 if _has_bw(p) and _has_sc2(p)],
-                    key=lambda p: abs(_skill_bias(p)),
-                )
-                if candidates:
-                    new_pop_diff = abs((len(bw) + 1) - (len(sc2) - 1))
-                    if new_pop_diff <= pop_diff:
-                        player = candidates[0]
-                        sc2.remove(player)
-                        bw.append(player)
-
-    return bw, sc2
-
-
-# ---------------------------------------------------------------------------
-# Build candidate pairs
-# ---------------------------------------------------------------------------
-
-
-def _build_candidates(
-    lead: list[QueueEntry1v1],
-    follow: list[QueueEntry1v1],
-    lead_is_bw: bool,
-) -> list[tuple[float, QueueEntry1v1, QueueEntry1v1, int]]:
-    """Return ``(score, lead_entry, follow_entry, mmr_diff)`` for every valid
-    pairing within either player's MMR window.
-
-    The score for a candidate pair is::
-
-        wait_factor = max(lead_wait_cycles, follow_wait_cycles)
-        score       = mmr_diff² − 2^wait_factor × WAIT_PRIORITY_COEFFICIENT
-
-    Using the *max* of the two wait counts means that a long-waiting player
-    pulls the score down for every pair they appear in, regardless of the
-    opponent's tenure in the queue.  The exponential term ensures that after
-    a modest number of cycles the wait bonus dominates any MMR gap.
+    Players with an unknown ``location`` (``None``) are never blocked —
+    we have no information to act on, and ``_match.py`` will fall back
+    to the opponent's location at server-resolution time.
     """
-    candidates: list[tuple[float, QueueEntry1v1, QueueEntry1v1, int]] = []
+    if loc_a is None or loc_b is None:
+        return False
+    return frozenset({loc_a, loc_b}) in DISALLOWED_REGION_PAIRS
 
-    for le in lead:
-        le_mmr = _effective_mmr(le, bw=lead_is_bw)
-        le_window = _max_mmr_diff(le["wait_cycles"])
 
-        for fe in follow:
-            if le["discord_uid"] == fe["discord_uid"]:
+# ---------------------------------------------------------------------------
+# Cost matrix
+# ---------------------------------------------------------------------------
+
+
+def _build_cost_matrix(
+    bw_rows: list[QueueEntry1v1],
+    sc2_cols: list[QueueEntry1v1],
+) -> list[list[float]]:
+    """Build a bipartite cost matrix padded to a square with ``_SENTINEL``.
+
+    Rows index players that can play BW; columns index players that can
+    play SC2.  A "Both" player appears once in each list.  Cells where the
+    row and column refer to the same ``discord_uid`` are ``_SENTINEL`` so
+    the assignment can never self-match.
+    """
+    n_rows = len(bw_rows)
+    n_cols = len(sc2_cols)
+    n = max(n_rows, n_cols)
+    cost: list[list[float]] = [[_SENTINEL] * n for _ in range(n)]
+
+    for i in range(n_rows):
+        row = bw_rows[i]
+        row_mmr = _mmr_or_default(row["bw_mmr"])
+        row_window = _max_mmr_diff(row["wait_cycles"])
+        for j in range(n_cols):
+            col = sc2_cols[j]
+            if row["discord_uid"] == col["discord_uid"]:
                 continue
+            if _regions_disallowed(row["location"], col["location"]):
+                continue
+            col_mmr = _mmr_or_default(col["sc2_mmr"])
+            diff = abs(row_mmr - col_mmr)
+            col_window = _max_mmr_diff(col["wait_cycles"])
+            if diff > row_window and diff > col_window:
+                continue
+            wait_factor = max(row["wait_cycles"], col["wait_cycles"])
+            score = (diff**2) - ((2**wait_factor) * WAIT_PRIORITY_COEFFICIENT)
+            cost[i][j] = score
 
-            fe_mmr = _effective_mmr(fe, bw=not lead_is_bw)
-            fe_window = _max_mmr_diff(fe["wait_cycles"])
-            diff = abs(le_mmr - fe_mmr)
-
-            if diff <= le_window or diff <= fe_window:
-                wait_factor = max(le["wait_cycles"], fe["wait_cycles"])
-                score = (diff**2) - ((2**wait_factor) * WAIT_PRIORITY_COEFFICIENT)
-                candidates.append((score, le, fe, diff))
-
-    return candidates
+    return cost
 
 
 # ---------------------------------------------------------------------------
@@ -298,107 +200,35 @@ def _hungarian_minimize(cost: list[list[float]], n: int) -> list[int]:
 
 
 # ---------------------------------------------------------------------------
-# Optimal pair selection via Hungarian algorithm
-# ---------------------------------------------------------------------------
-
-# Sentinel cost for infeasible / padding cells.  Must exceed the absolute
-# value of any valid score.  With the exponential wait term 2^w × 20, a
-# player at wait_cycles=40 produces a bonus of ~2.2 × 10¹³, so 10¹⁸ leaves
-# ample headroom.
-_SENTINEL: float = 1e18
-
-
-def _select_optimal(
-    candidates: list[tuple[float, QueueEntry1v1, QueueEntry1v1, int]],
-) -> list[tuple[QueueEntry1v1, QueueEntry1v1]]:
-    """Find the minimum-weight maximum-cardinality bipartite matching.
-
-    Because every infeasible or padding cell carries a cost of ``_SENTINEL``
-    (far exceeding any valid score), the Hungarian algorithm will maximise
-    the number of real matches first, then minimise total score among all
-    maximum-cardinality matchings.
-    """
-    if not candidates:
-        return []
-
-    # Collect unique lead and follow players that appear in at least one
-    # feasible candidate pair.
-    lead_by_uid: dict[int, QueueEntry1v1] = {}
-    follow_by_uid: dict[int, QueueEntry1v1] = {}
-    for _score, le, fe, _diff in candidates:
-        lead_by_uid[le["discord_uid"]] = le
-        follow_by_uid[fe["discord_uid"]] = fe
-
-    lead_uids = sorted(lead_by_uid)
-    follow_uids = sorted(follow_by_uid)
-    n_lead = len(lead_uids)
-    n_follow = len(follow_uids)
-
-    if n_lead == 0 or n_follow == 0:
-        return []
-
-    lead_idx = {uid: i for i, uid in enumerate(lead_uids)}
-    follow_idx = {uid: i for i, uid in enumerate(follow_uids)}
-
-    # Build a square cost matrix padded with _SENTINEL.
-    n = max(n_lead, n_follow)
-    cost: list[list[float]] = [[_SENTINEL] * n for _ in range(n)]
-
-    for score, le, fe, _diff in candidates:
-        i = lead_idx[le["discord_uid"]]
-        j = follow_idx[fe["discord_uid"]]
-        # If multiple candidate entries exist for the same pair (shouldn't
-        # happen, but guard defensively), keep the lowest score.
-        if score < cost[i][j]:
-            cost[i][j] = score
-
-    col_for_row = _hungarian_minimize(cost, n)
-
-    # Extract valid matches (ignore padding rows/columns and sentinel costs).
-    matches: list[tuple[QueueEntry1v1, QueueEntry1v1]] = []
-    for i, j in enumerate(col_for_row):
-        if i >= n_lead or j < 0 or j >= n_follow:
-            continue
-        if cost[i][j] >= _SENTINEL:
-            continue
-        matches.append((lead_by_uid[lead_uids[i]], follow_by_uid[follow_uids[j]]))
-
-    return matches
-
-
-# ---------------------------------------------------------------------------
 # Convert internal match tuples to MatchCandidate1v1
 # ---------------------------------------------------------------------------
 
 
 def _to_match_candidate(
-    lead_entry: QueueEntry1v1,
-    follow_entry: QueueEntry1v1,
-    lead_is_bw: bool,
+    bw_entry: QueueEntry1v1,
+    sc2_entry: QueueEntry1v1,
 ) -> MatchCandidate1v1:
-    p1_race = _race_for_match(lead_entry, bw=lead_is_bw)
-    p2_race = _race_for_match(follow_entry, bw=not lead_is_bw)
+    p1_race = bw_entry["bw_race"]
+    p2_race = sc2_entry["sc2_race"]
 
     if p1_race is None:
-        raise ValueError(
-            f"Lead player {lead_entry['discord_uid']} has no race for bw={lead_is_bw}"
-        )
+        raise ValueError(f"BW-side player {bw_entry['discord_uid']} has no bw_race")
     if p2_race is None:
-        raise ValueError(
-            f"Follow player {follow_entry['discord_uid']} has no race for bw={not lead_is_bw}"
-        )
+        raise ValueError(f"SC2-side player {sc2_entry['discord_uid']} has no sc2_race")
 
     return MatchCandidate1v1(
-        player_1_discord_uid=lead_entry["discord_uid"],
-        player_2_discord_uid=follow_entry["discord_uid"],
-        player_1_name=lead_entry["player_name"],
-        player_2_name=follow_entry["player_name"],
+        player_1_discord_uid=bw_entry["discord_uid"],
+        player_2_discord_uid=sc2_entry["discord_uid"],
+        player_1_name=bw_entry["player_name"],
+        player_2_name=sc2_entry["player_name"],
         player_1_race=p1_race,
         player_2_race=p2_race,
-        player_1_mmr=_effective_mmr(lead_entry, bw=lead_is_bw),
-        player_2_mmr=_effective_mmr(follow_entry, bw=not lead_is_bw),
-        player_1_map_vetoes=list(lead_entry["map_vetoes"]),
-        player_2_map_vetoes=list(follow_entry["map_vetoes"]),
+        player_1_mmr=_mmr_or_default(bw_entry["bw_mmr"]),
+        player_2_mmr=_mmr_or_default(sc2_entry["sc2_mmr"]),
+        player_1_location=bw_entry["location"],
+        player_2_location=sc2_entry["location"],
+        player_1_map_vetoes=list(bw_entry["map_vetoes"]),
+        player_2_map_vetoes=list(sc2_entry["map_vetoes"]),
     )
 
 
@@ -439,47 +269,40 @@ def run_matchmaking_wave(
     for e in entries:
         e["wait_cycles"] = e["wait_cycles"] + 1
 
-    # --- Categorise ---------------------------------------------------------
-    bw_only, sc2_only, both = _categorise(entries)
+    # Build BW (row) and SC2 (column) lists.  "Both" players appear in
+    # both lists; entries with no race are silently skipped.
+    bw_rows: list[QueueEntry1v1] = [e for e in entries if _has_bw(e)]
+    sc2_cols: list[QueueEntry1v1] = [e for e in entries if _has_sc2(e)]
 
-    # --- Equalise pools using "both" players --------------------------------
-    bw_pool, sc2_pool = _equalise(bw_only, sc2_only, both)
-
-    # Sanity: pools must be disjoint.
-    bw_ids = {p["discord_uid"] for p in bw_pool}
-    sc2_ids = {p["discord_uid"] for p in sc2_pool}
-    if bw_ids & sc2_ids:
-        raise RuntimeError("Equalisation produced overlapping pools")
-
-    # --- Determine lead / follow and match ----------------------------------
-    matched_pairs: list[tuple[QueueEntry1v1, QueueEntry1v1]] = []
-    lead_is_bw: bool = True  # default; may be flipped below
-
-    if bw_pool and sc2_pool:
-        if len(bw_pool) <= len(sc2_pool):
-            lead, follow = bw_pool, sc2_pool
-            lead_is_bw = True
-        else:
-            lead, follow = sc2_pool, bw_pool
-            lead_is_bw = False
-
-        candidates = _build_candidates(lead, follow, lead_is_bw)
-        matched_pairs = _select_optimal(candidates)
-
-    # --- Build outputs ------------------------------------------------------
     matched_uids: set[int] = set()
     match_candidates: list[MatchCandidate1v1] = []
 
-    for lead_entry, follow_entry in matched_pairs:
-        # Final self-match guard (should never trigger).
-        if lead_entry["discord_uid"] == follow_entry["discord_uid"]:
-            continue
+    if bw_rows and sc2_cols:
+        n_rows = len(bw_rows)
+        n_cols = len(sc2_cols)
+        n = max(n_rows, n_cols)
+        cost = _build_cost_matrix(bw_rows, sc2_cols)
+        col_for_row = _hungarian_minimize(cost, n)
 
-        match_candidates.append(
-            _to_match_candidate(lead_entry, follow_entry, lead_is_bw)
-        )
-        matched_uids.add(lead_entry["discord_uid"])
-        matched_uids.add(follow_entry["discord_uid"])
+        for i, j in enumerate(col_for_row):
+            if i >= n_rows or j < 0 or j >= n_cols:
+                continue
+            if cost[i][j] >= _SENTINEL:
+                continue
+            bw_entry = bw_rows[i]
+            sc2_entry = sc2_cols[j]
+            # Defensive guards: a player already committed to one side
+            # this wave can't appear on the other.
+            if bw_entry["discord_uid"] == sc2_entry["discord_uid"]:
+                continue
+            if bw_entry["discord_uid"] in matched_uids:
+                continue
+            if sc2_entry["discord_uid"] in matched_uids:
+                continue
+
+            match_candidates.append(_to_match_candidate(bw_entry, sc2_entry))
+            matched_uids.add(bw_entry["discord_uid"])
+            matched_uids.add(sc2_entry["discord_uid"])
 
     remaining: list[QueueEntry1v1] = [
         e for e in entries if e["discord_uid"] not in matched_uids

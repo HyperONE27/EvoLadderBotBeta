@@ -126,14 +126,6 @@ def _update_match_cache(
     )
 
 
-def _get_player_location(self: TransitionManager, discord_uid: int) -> str | None:
-    df = self._state_manager.players_df
-    rows = df.filter(pl.col("discord_uid") == discord_uid)
-    if rows.is_empty():
-        return None
-    return rows.row(0, named=True).get("location")
-
-
 def _get_player_nationality(self: TransitionManager, discord_uid: int) -> str | None:
     df = self._state_manager.players_df
     rows = df.filter(pl.col("discord_uid") == discord_uid)

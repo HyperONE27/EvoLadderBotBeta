@@ -43,6 +43,7 @@ def join_queue_1v1(
 
     player_name: str = player.get("player_name") or discord_username
     nationality: str | None = player.get("nationality")
+    location: str | None = player.get("location")
 
     # Ensure MMR rows exist; use provided values if given, else look up/create.
     actual_bw_mmr: int | None = None
@@ -79,6 +80,7 @@ def join_queue_1v1(
         bw_letter_rank=bw_letter_rank,
         sc2_letter_rank=sc2_letter_rank,
         nationality=nationality,
+        location=location,
         map_vetoes=map_vetoes,
         joined_at=utc_now(),
         wait_cycles=0,

@@ -10,7 +10,7 @@ import polars as pl
 import structlog
 
 from backend.algorithms.match_params import resolve_match_params
-from backend.algorithms.matchmaker import _categorise, run_matchmaking_wave
+from backend.algorithms.matchmaker import run_matchmaking_wave
 from backend.algorithms.ratings_1v1 import get_new_ratings
 from backend.core.config import (
     BASE_MMR_WINDOW,
@@ -75,8 +75,18 @@ def run_matchmaking_wave_method(
 
     Returns the list of newly created ``Matches1v1Row`` dicts.
     """
-    # Derive pool diagnostics before the wave (categorise is pure).
-    bw_only, sc2_only, both = _categorise(queue_snapshot)
+    # Derive pool diagnostics before the wave.
+    bw_only_count = sum(
+        1 for e in queue_snapshot if e["bw_race"] is not None and e["sc2_race"] is None
+    )
+    sc2_only_count = sum(
+        1 for e in queue_snapshot if e["sc2_race"] is not None and e["bw_race"] is None
+    )
+    both_count = sum(
+        1
+        for e in queue_snapshot
+        if e["bw_race"] is not None and e["sc2_race"] is not None
+    )
 
     remaining, candidates = run_matchmaking_wave(queue_snapshot)
 
@@ -129,9 +139,9 @@ def run_matchmaking_wave_method(
                 "matches_created": len(created_matches),
                 "remaining_queue": len(remaining),
                 # Pool diagnostics (pre-equalisation split).
-                "pool_bw_only": len(bw_only),
-                "pool_sc2_only": len(sc2_only),
-                "pool_both": len(both),
+                "pool_bw_only": bw_only_count,
+                "pool_sc2_only": sc2_only_count,
+                "pool_both": both_count,
                 # Full queue snapshot.
                 "queue_entries": [
                     _serialize_queue_entry_1v1(e) for e in queue_snapshot
@@ -159,8 +169,10 @@ def _create_match_from_candidate(
     p2_uid = candidate["player_2_discord_uid"]
 
     # Resolve locations — fall back to opponent's location if missing.
-    p1_loc = self._get_player_location(p1_uid)
-    p2_loc = self._get_player_location(p2_uid)
+    # The candidate carries each player's region as a snapshot from
+    # queue-join time (see backend/algorithms/matchmaker._to_match_candidate).
+    p1_loc = candidate["player_1_location"]
+    p2_loc = candidate["player_2_location"]
 
     if p1_loc is None and p2_loc is not None:
         p1_loc = p2_loc

@@ -102,7 +102,23 @@ MATCHMAKER: dict[str, float | int] = {
 BASE_MMR_WINDOW: int = 100
 MMR_WINDOW_GROWTH_PER_CYCLE: int = 50
 WAIT_PRIORITY_COEFFICIENT: float = 20.0
-BALANCE_THRESHOLD_MMR: int = 50
+
+# Region pairs that must never be matched against each other.  Each pair is
+# expressed as a frozenset of two region codes from data/core/regions.json
+# (cross_table.json's ``region_order`` is the canonical list).  Order
+# within the pair does not matter; lookup is symmetric.
+#
+# Currently used to keep USB / FER players (Russian/Asian "bridge" regions)
+# from being matched against CAM / SAM (Central / South America), since the
+# resulting servers are unplayable for both sides.
+DISALLOWED_REGION_PAIRS: frozenset[frozenset[str]] = frozenset(
+    {
+        frozenset({"USB", "CAM"}),
+        frozenset({"USB", "SAM"}),
+        frozenset({"FER", "CAM"}),
+        frozenset({"FER", "SAM"}),
+    }
+)
 
 # ---------------------
 # MMR / ELO

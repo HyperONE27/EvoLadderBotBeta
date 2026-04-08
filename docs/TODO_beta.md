@@ -205,7 +205,7 @@ What remains?
 
 ## 2026-04-05
 
-- ⏰ Add before/after state warnings to ALL admin commands
+- ⏰ Add before/after state warnings to ALL admin and owner commands
 - ⏰ Add admin command for players not getting MatchInfoEmbed?
 - ⏰ Prevent USB and FER players from matching on Americas
 - ⏰ Add a notice about players disconnecting mid-match?
@@ -215,6 +215,10 @@ What remains?
     - For this to happen, we need:
         - A persistent record of recent matches
         - Updated fitness scoring criteria for any given match
+    - Some issues that can happen:
+        - A poor implementation might cause players to have to wait 5-6 minutes to play vs each other when they're the only ones online anyway
+        - However we also want to prefer new matchups when they are available
+        - We have to balance this against potential MMR differences, for example, if a new guy shows up when two people are in a long streak of games vs each other, but they're a bit far off from the MMR, how much is too much?
 - ⏰ Add an owner announcement command
 - ⏰ Add a role to users on the server when they complete setup for the first time
 

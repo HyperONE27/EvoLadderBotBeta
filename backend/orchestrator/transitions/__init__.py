@@ -39,7 +39,6 @@ class TransitionManager:
     _set_player_status = _base._set_player_status
     _get_match_row = _base._get_match_row
     _update_match_cache = _base._update_match_cache
-    _get_player_location = _base._get_player_location
     _get_player_nationality = _base._get_player_nationality
     _get_player_letter_rank = _base._get_player_letter_rank
     _clear_expired_timeout = _base._clear_expired_timeout
