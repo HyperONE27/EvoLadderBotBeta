@@ -109,6 +109,9 @@ async def handle_replay_upload(
         parsed: dict = data["parsed"]
         verification: dict | None = data.get("verification")
         auto_resolved: bool = data.get("auto_resolved", False)
+        autoresolve_eligible_ignoring_result: bool = data.get(
+            "autoresolve_eligible_ignoring_result", False
+        )
 
         # Send the replay details as a new message (high priority).
         replay_embed: discord.Embed
@@ -140,7 +143,13 @@ async def handle_replay_upload(
         # (conditionally) unlock the report dropdown (high priority — gates reporting).
         match_msg = cache.active_match_messages.get(user_id)
         if match_msg is not None:
-            should_unlock = (not ENABLE_REPLAY_VALIDATION) or _races_pass(verification)
+            # Unlock the manual report dropdown iff the replay would have
+            # qualified for autoresolve except the parsed result is
+            # non-actionable (draw / indeterminate).  The backend computes
+            # this — see ReplayUploadResponse.autoresolve_eligible_ignoring_result.
+            should_unlock = (
+                not ENABLE_REPLAY_VALIDATION
+            ) or autoresolve_eligible_ignoring_result
 
             new_embed: discord.Embed | None = None
             new_embeds: list[discord.Embed] | None = None
@@ -202,16 +211,3 @@ async def handle_replay_upload(
             message,
             content=t("replay_handler.unexpected_error", get_player_locale(user_id)),
         )
-
-
-def _races_pass(verification: dict | None) -> bool:
-    """Return True only if the races check passed (no critical failure)."""
-    if verification is None:
-        return False
-    if "races" in verification:
-        return bool(verification["races"].get("success", False))
-    # 2v2: both teams must pass
-    return bool(
-        verification.get("races_team_1", {}).get("success", False)
-        and verification.get("races_team_2", {}).get("success", False)
-    )

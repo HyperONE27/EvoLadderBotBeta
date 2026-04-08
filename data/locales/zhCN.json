@@ -701,6 +701,8 @@
   "replay_success_embed.observers_ok.1": "✅ 无观战者",
   "replay_success_embed.title.1": "📄 录像详情",
   "replay_success_embed.winner_draw.1": "⚖️ 平局",
+  "replay_success_embed.winner_indeterminate.1": "❓ 无法判定",
+  "replay_success_embed.winner_indeterminate_coerced.1": "📋 失败（无法判定 — 比赛结束前已停止录制）",
   "replay_success_embed.winner_p1.1": "🥇 {race_emote} {name}",
   "replay_success_embed.winner_p2.1": "🥇 {race_emote} {name}",
   "replay_success_embed_2v2.winner_indeterminate.1": "❓ Indeterminate",

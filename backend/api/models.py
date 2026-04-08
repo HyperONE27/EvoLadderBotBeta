@@ -673,6 +673,10 @@ class ReplayUploadResponse(BaseModel):
     upload_status: str | None = None
     auto_resolved: bool = False
     match: dict | None = None
+    # True iff the replay would have qualified for autoresolve EXCEPT the
+    # parsed result is non-actionable (draw/indeterminate).  Used by the bot
+    # to decide whether to unlock the manual report dropdown.
+    autoresolve_eligible_ignoring_result: bool = False
 
 
 # --- /party_2v2 ---

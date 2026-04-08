@@ -1670,13 +1670,20 @@ async def upload_replay(
     )
     is_indeterminate_1v1 = not is_determinate_1v1 and COERCE_INDETERMINATE_AS_LOSS
 
-    can_auto_resolve = (
-        current_match is not None
-        and current_match["match_result"] is None
-        and verification.get("races", {}).get("success", False)
+    # Autoresolve precondition: every check passes EXCEPT possibly the
+    # result.  Used both for the unlock-gate flag and as part of the
+    # auto-resolve gate below.
+    autoresolve_preconditions_met_1v1 = (
+        verification.get("races", {}).get("success", False)
         and verification.get("map", {}).get("success", False)
         and verification.get("timestamp", {}).get("success", False)
         and verification.get("ai_players", {}).get("success", True)
+    )
+
+    can_auto_resolve = (
+        current_match is not None
+        and current_match["match_result"] is None
+        and autoresolve_preconditions_met_1v1
         and (is_determinate_1v1 or is_indeterminate_1v1)
     )
 
@@ -1739,6 +1746,7 @@ async def upload_replay(
         upload_status=upload_status,
         auto_resolved=auto_resolved,
         match=resolved_match,
+        autoresolve_eligible_ignoring_result=autoresolve_preconditions_met_1v1,
     )
 
 
@@ -1901,13 +1909,16 @@ async def upload_replay_2v2(
     races_pass_2v2 = verification.get("races_team_1", {}).get(
         "success", False
     ) and verification.get("races_team_2", {}).get("success", False)
-    can_auto_resolve = (
-        current_match is not None
-        and current_match["match_result"] is None
-        and races_pass_2v2
+    autoresolve_preconditions_met_2v2 = (
+        races_pass_2v2
         and verification.get("map", {}).get("success", False)
         and verification.get("timestamp", {}).get("success", False)
         and verification.get("ai_players", {}).get("success", True)
+    )
+    can_auto_resolve = (
+        current_match is not None
+        and current_match["match_result"] is None
+        and autoresolve_preconditions_met_2v2
         and (is_determinate_2v2 or is_indeterminate_2v2)
     )
 
@@ -1960,6 +1971,7 @@ async def upload_replay_2v2(
         upload_status=upload_status,
         auto_resolved=auto_resolved,
         match=resolved_match,
+        autoresolve_eligible_ignoring_result=autoresolve_preconditions_met_2v2,
     )
 
 

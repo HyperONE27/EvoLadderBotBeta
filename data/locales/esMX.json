@@ -701,6 +701,8 @@
   "replay_success_embed.observers_ok.1": "✅ Sin observadores presentes",
   "replay_success_embed.title.1": "📄 Detalles de la Repeticion",
   "replay_success_embed.winner_draw.1": "⚖️ Empate",
+  "replay_success_embed.winner_indeterminate.1": "❓ Indeterminado",
+  "replay_success_embed.winner_indeterminate_coerced.1": "📋 Derrota (Indeterminado — grabado antes de terminar la partida)",
   "replay_success_embed.winner_p1.1": "🥇 {race_emote} {name}",
   "replay_success_embed.winner_p2.1": "🥇 {race_emote} {name}",
   "replay_success_embed_2v2.winner_indeterminate.1": "❓ Indeterminate",

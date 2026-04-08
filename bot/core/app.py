@@ -282,7 +282,7 @@ async def on_tree_error(
                     await interaction.followup.send(embed=timed_out_embed)
                 else:
                     await interaction.response.send_message(embed=timed_out_embed)
-            except discord.NotFound, discord.HTTPException:
+            except (discord.NotFound, discord.HTTPException):
                 logger.warning(
                     "on_tree_error: interaction expired",
                     error=repr(original),
@@ -327,7 +327,7 @@ async def on_tree_error(
             await interaction.followup.send(embed=embed, ephemeral=ephemeral)
         else:
             await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
-    except discord.NotFound, discord.HTTPException:
+    except (discord.NotFound, discord.HTTPException):
         logger.warning(
             "on_tree_error: interaction expired",
             error=repr(original),

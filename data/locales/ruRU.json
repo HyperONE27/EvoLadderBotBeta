@@ -701,6 +701,8 @@
   "replay_success_embed.observers_ok.1": "✅ Наблюдатели отсутствуют",
   "replay_success_embed.title.1": "📄 Подробности повтора",
   "replay_success_embed.winner_draw.1": "⚖️ Ничья",
+  "replay_success_embed.winner_indeterminate.1": "❓ Не определено",
+  "replay_success_embed.winner_indeterminate_coerced.1": "📋 Поражение (не определено — запись завершена до конца матча)",
   "replay_success_embed.winner_p1.1": "🥇 {race_emote} {name}",
   "replay_success_embed.winner_p2.1": "🥇 {race_emote} {name}",
   "replay_success_embed_2v2.winner_indeterminate.1": "❓ Indeterminate",

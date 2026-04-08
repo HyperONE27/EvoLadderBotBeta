@@ -4309,6 +4309,13 @@ class ReplaySuccessEmbed(discord.Embed):
                 race_emote=p2_race_emote,
                 name=p2_name,
             )
+        elif winner_result == -1:
+            winner_text = t(
+                "replay_success_embed.winner_indeterminate_coerced.1"
+                if COERCE_INDETERMINATE_AS_LOSS
+                else "replay_success_embed.winner_indeterminate.1",
+                locale,
+            )
         else:
             winner_text = t("replay_success_embed.winner_draw.1", locale)
 

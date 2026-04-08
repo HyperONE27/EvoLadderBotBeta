@@ -58,6 +58,6 @@ def t(key: str, locale: str = _DEFAULT_LOCALE, **kwargs: str) -> str:
     if kwargs:
         try:
             return value.format_map(kwargs)
-        except KeyError, ValueError:
+        except (KeyError, ValueError):
             return value
     return value

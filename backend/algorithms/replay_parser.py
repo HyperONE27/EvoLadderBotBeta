@@ -20,6 +20,7 @@ import xxhash
 # ---------------------------------------------------------------------------
 
 _RESULT_INT_TO_STR_1V1: dict[int, str] = {
+    -1: "indeterminate",
     0: "draw",
     1: "player_1_win",
     2: "player_2_win",
@@ -169,7 +170,18 @@ def parse_replay_1v1(replay_bytes: bytes) -> dict[str, Any]:
                         break
 
         if winner is None:
-            result_int = 0
+            # Could not infer a winner from sc2reader OR from the chat
+            # "X was defeated!" messages.  This usually means the recorder
+            # disconnected before the game ended.  We deliberately do NOT
+            # silently fall back to "draw" — replays without a clear outcome
+            # become indeterminate so manual reporting can take over.
+            logging.getLogger("sc2reader").warning(
+                "1v1 replay winner could not be inferred (recorder likely "
+                "disconnected); marking result as indeterminate. "
+                "replay_hash=%s",
+                replay_hash,
+            )
+            result_int = -1
         else:
             winner_str = str(winner)
             if "Player 1" in winner_str:
@@ -177,7 +189,14 @@ def parse_replay_1v1(replay_bytes: bytes) -> dict[str, Any]:
             elif "Player 2" in winner_str:
                 result_int = 2
             else:
-                result_int = 0
+                logging.getLogger("sc2reader").warning(
+                    "1v1 replay winner string did not contain 'Player 1' or "
+                    "'Player 2' (got %r); marking result as indeterminate. "
+                    "replay_hash=%s",
+                    winner_str,
+                    replay_hash,
+                )
+                result_int = -1
 
         # --- Toon handles ---
         toon_handles = _find_toon_handles(replay.raw_data)

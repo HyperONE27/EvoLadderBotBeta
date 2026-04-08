@@ -270,8 +270,8 @@ CREATE TABLE IF NOT EXISTS replays_1v1 (
             'sc2_terran', 'sc2_zerg', 'sc2_protoss')
         ),
     match_result            TEXT NOT NULL
-        CHECK (match_result IN 
-            ('player_1_win', 'player_2_win', 'draw')
+        CHECK (match_result IN
+            ('player_1_win', 'player_2_win', 'draw', 'indeterminate')
         ),
     player_1_handle         TEXT NOT NULL,
     player_2_handle         TEXT NOT NULL,
