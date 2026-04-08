@@ -640,6 +640,14 @@ class Orchestrator:
         """Toggle a user between admin and inactive roles."""
         return self._transition_manager.toggle_admin_role(discord_uid, discord_username)
 
+    def get_announcement_recipient_uids(
+        self, *, debug: bool, require_setup: bool
+    ) -> list[int]:
+        """Return the Discord UIDs that should receive an /owner announcement."""
+        return self._state_reader.get_announcement_recipient_uids(
+            debug=debug, require_setup=require_setup
+        )
+
     # ------------------------------------------------------------------
     # Admin snapshot
     # ------------------------------------------------------------------

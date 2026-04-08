@@ -9,6 +9,7 @@ from bot.commands.admin.resolve_command import register_admin_resolve_command
 from bot.commands.admin.snapshot_command import register_admin_snapshot_command
 from bot.commands.admin.statusreset_command import register_admin_statusreset_command
 from bot.commands.owner.admin_command import register_owner_admin_command
+from bot.commands.owner.announcement_command import register_owner_announcement_command
 from bot.commands.owner.mmr_command import register_owner_mmr_command
 from bot.commands.user.activity_command import register_activity_command
 from bot.commands.user.referral_command import register_referral_command
@@ -59,6 +60,7 @@ def _register_commands(client: discord.Client) -> None:
     register_admin_snapshot_command(tree)
     register_admin_statusreset_command(tree)
     register_owner_admin_command(tree)
+    register_owner_announcement_command(tree)
     register_owner_mmr_command(tree)
     register_activity_command(tree)
     register_help_command(tree)

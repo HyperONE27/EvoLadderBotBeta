@@ -1930,7 +1930,7 @@ class SetupSuccessEmbed(discord.Embed):
         super().__init__(
             title=t("setup_success_embed.title.1", locale),
             description=t("setup_success_embed.description.1", locale),
-            color=discord.Color.blurple(),
+            color=discord.Color.green(),
         )
         self.add_field(
             name=t("setup_preview_embed.field_name.language", locale),

@@ -239,6 +239,30 @@ class OwnerSetMMRResponse(BaseModel):
     old_mmr: int | None = None
 
 
+# --- /owner announcement ---
+
+
+class OwnerAnnouncementRecipientsResponse(BaseModel):
+    discord_uids: list[int]
+
+
+class OwnerAnnouncementLogRequest(BaseModel):
+    owner_discord_uid: int
+    title: str
+    body: str
+    debug: bool
+    require_setup: bool
+    recipient_count: int
+    sent_count: int
+    dm_closed_count: int
+    not_in_server_count: int
+    other_error_count: int
+
+
+class OwnerAnnouncementLogResponse(BaseModel):
+    success: bool
+
+
 # --- /help ---
 
 # --- /leaderboard ---

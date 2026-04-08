@@ -59,6 +59,9 @@ from backend.api.models import (
     MMRs1v1Response,
     NotificationsOut,
     NotificationsUpsertRequest,
+    OwnerAnnouncementLogRequest,
+    OwnerAnnouncementLogResponse,
+    OwnerAnnouncementRecipientsResponse,
     OwnerSetMMRRequest,
     OwnerSetMMRResponse,
     OwnerToggleAdminRequest,
@@ -709,6 +712,63 @@ async def owner_set_mmr(
     )
     await _broadcast_leaderboard_if_dirty(app, ws)
     return OwnerSetMMRResponse(success=True, old_mmr=old_mmr)
+
+
+# --- /owner announcement ---
+
+
+@router.get(
+    "/owner/announcement_recipients",
+    response_model=OwnerAnnouncementRecipientsResponse,
+)
+async def owner_announcement_recipients(
+    owner_discord_uid: int = Query(...),
+    debug: bool = Query(False),
+    require_setup: bool = Query(True),
+    app: Backend = Depends(get_backend),
+) -> OwnerAnnouncementRecipientsResponse:
+    uids = app.orchestrator.get_announcement_recipient_uids(
+        debug=debug, require_setup=require_setup
+    )
+    app.orchestrator.log_event(
+        {
+            "discord_uid": owner_discord_uid,
+            "event_type": "owner_command",
+            "action": "announcement_recipients_fetched",
+            "event_data": {
+                "debug": debug,
+                "require_setup": require_setup,
+                "count": len(uids),
+            },
+        }
+    )
+    return OwnerAnnouncementRecipientsResponse(discord_uids=uids)
+
+
+@router.post("/owner/announcement_log", response_model=OwnerAnnouncementLogResponse)
+async def owner_announcement_log(
+    request: OwnerAnnouncementLogRequest,
+    app: Backend = Depends(get_backend),
+) -> OwnerAnnouncementLogResponse:
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.owner_discord_uid,
+            "event_type": "owner_command",
+            "action": "announcement_sent",
+            "event_data": {
+                "debug": request.debug,
+                "require_setup": request.require_setup,
+                "title": request.title,
+                "body": request.body,
+                "recipient_count": request.recipient_count,
+                "sent_count": request.sent_count,
+                "dm_closed_count": request.dm_closed_count,
+                "not_in_server_count": request.not_in_server_count,
+                "other_error_count": request.other_error_count,
+            },
+        }
+    )
+    return OwnerAnnouncementLogResponse(success=True)
 
 
 # --- /help ---

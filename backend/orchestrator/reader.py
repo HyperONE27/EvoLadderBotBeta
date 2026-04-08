@@ -32,6 +32,7 @@ from backend.lookups.mmr_1v1_lookups import (
 )
 from backend.lookups.notification_lookups import get_notification_by_discord_uid
 from backend.lookups.player_lookups import (
+    get_announcement_recipient_uids,
     get_player_by_discord_uid,
     get_player_by_string,
     is_player_name_taken,
@@ -92,6 +93,12 @@ class StateReader:
     def get_active_player_count(self) -> int:
         """Count unique players who have played at least one game across 1v1 or 2v2."""
         return len(self._active_player_uids())
+
+    def get_announcement_recipient_uids(
+        self, *, debug: bool, require_setup: bool
+    ) -> list[int]:
+        """Return the Discord UIDs that should receive an /owner announcement."""
+        return get_announcement_recipient_uids(debug=debug, require_setup=require_setup)
 
     def _active_player_uids(self) -> set[int]:
         """Return the set of discord_uids with at least one game in mmrs_1v1 or mmrs_2v2."""
