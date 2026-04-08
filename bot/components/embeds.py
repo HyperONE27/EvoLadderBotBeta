@@ -4021,64 +4021,6 @@ class AdminResolution2v2Embed(discord.Embed):
 
 
 # =========================================================================
-# Admin: Status Reset
-# =========================================================================
-
-
-class StatusResetPreviewEmbed(discord.Embed):
-    def __init__(
-        self, target_discord_uid: int, target_player_name: str, locale: str = "enUS"
-    ) -> None:
-        super().__init__(
-            title=t("status_reset_preview_embed.title.1", locale),
-            description=t(
-                "status_reset_preview_embed.description.1",
-                locale,
-                mention=f"<@{target_discord_uid}>",
-                username=target_player_name,
-                uid=str(target_discord_uid),
-            ),
-            color=discord.Color.orange(),
-        )
-
-        apply_default_embed_footer(self, locale=locale)
-
-
-class StatusResetSuccessEmbed(discord.Embed):
-    def __init__(
-        self,
-        target_discord_uid: int,
-        target_player_name: str,
-        old_status: str | None,
-        admin: discord.User | discord.Member,
-        locale: str = "enUS",
-    ) -> None:
-        super().__init__(
-            title=t("status_reset_success_embed.title.1", locale),
-            description=t(
-                "status_reset_success_embed.description.1",
-                locale,
-                mention=f"<@{target_discord_uid}>",
-                username=target_player_name,
-                uid=str(target_discord_uid),
-                old_status=(
-                    t(f"player_status.{old_status}", locale)
-                    if old_status
-                    else t("shared.unknown", locale)
-                ),
-            ),
-            color=discord.Color.green(),
-        )
-        self.add_field(
-            name=t("status_reset_success_embed.field_name.1", locale),
-            value=admin.name,
-            inline=True,
-        )
-
-        apply_default_embed_footer(self, locale=locale)
-
-
-# =========================================================================
 # Shared: state-change preview / applied / cancelled
 # =========================================================================
 

@@ -48,7 +48,6 @@ from bot.components.embeds import (
     SetupSuccessEmbed,
     SetupSurveyEmbed,
     SetupValidationErrorEmbed,
-    StatusResetSuccessEmbed,
     TermsOfServiceDeclinedEmbed,
     TermsOfServiceEmbed,
 )
@@ -2478,82 +2477,6 @@ async def _send_to_match_log_2v2(
             await queue_channel_send_low(channel, embed=embed)
     except Exception:
         logger.warning("Failed to send admin resolve 2v2 embed to match log channel")
-
-
-# =========================================================================
-# Admin: Status Reset
-# =========================================================================
-
-
-class StatusResetConfirmView(AutoDisableView):
-    def __init__(
-        self, caller_id: int, target_discord_uid: int, target_player_name: str
-    ) -> None:
-        super().__init__()
-
-        async def on_confirm(interaction: discord.Interaction) -> None:
-            if interaction.user.id != caller_id:
-                await interaction.response.send_message(
-                    t("error.not_your_button", get_player_locale(interaction.user.id)),
-                    ephemeral=True,
-                )
-                return
-            await _send_statusreset_request(
-                interaction, target_discord_uid, target_player_name
-            )
-
-        _locale = get_player_locale(caller_id)
-        self.add_item(
-            ConfirmButton(callback=on_confirm, label=t("button.confirm", _locale))
-        )
-        self.add_item(CancelButton(locale=_locale))
-
-
-async def _send_statusreset_request(
-    interaction: discord.Interaction,
-    target_discord_uid: int,
-    target_player_name: str,
-) -> None:
-    async with get_session().put(
-        f"{BACKEND_URL}/admin/statusreset",
-        json={
-            "discord_uid": target_discord_uid,
-            "admin_discord_uid": interaction.user.id,
-        },
-    ) as response:
-        data = await response.json()
-
-    if response.status >= 400:
-        _locale = get_player_locale(interaction.user.id)
-        error = data.get("detail") or t("error.unexpected_error", _locale)
-        await interaction.response.edit_message(
-            embed=ErrorEmbed(
-                title=t("error_embed.title.status_reset_failed", _locale),
-                description=t(
-                    "error_embed.description.with_error", _locale, error=error
-                ),
-                locale=_locale,
-            ),
-            view=None,
-        )
-        return
-
-    old_status = data.get("old_status")
-    logger.info(
-        f"Admin {interaction.user.name} ({interaction.user.id}) reset status for "
-        f"{target_player_name} ({target_discord_uid}): {old_status} -> idle"
-    )
-
-    await interaction.response.edit_message(
-        embed=StatusResetSuccessEmbed(
-            target_discord_uid,
-            target_player_name,
-            old_status,
-            interaction.user,
-            locale=get_player_locale(interaction.user.id),
-        ),
-        view=None,
-    )
 
 
 # =========================================================================
