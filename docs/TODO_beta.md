@@ -222,6 +222,9 @@ What remains?
 - ⏰ Add an owner announcement command
 - ⏰ Add a role to users on the server when they complete setup for the first time
 - ✅ `/statusreset` should not just reset the player's status but also remove them from any parties or matchmaking queues
+- ✅ Add a dedicated `/notifications` command so people don't have to go all the way back to `/setup` to change them
+- ⏰ Add time zones and quiet hours selection to notifications
+- ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
 
 ## 
 
