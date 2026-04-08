@@ -466,26 +466,34 @@ class NotificationsUpdatedEmbed(discord.Embed):
         notification_2v2: int | None,
         locale: str = "enUS",
     ) -> None:
-        def _line(minutes: int | None) -> str:
-            if minutes is None:
-                return t("notifications_updated_embed.state.off.1", locale)
-            return t(
-                "notifications_updated_embed.state.every.1",
-                locale,
-                minutes=str(minutes),
-            )
-
-        description = t(
-            "notifications_updated_embed.description.1",
-            locale,
-            line_1v1=_line(notification_1v1),
-            line_2v2=_line(notification_2v2),
-        )
         any_on = notification_1v1 is not None or notification_2v2 is not None
         super().__init__(
             title=t("notifications_updated_embed.title.1", locale),
-            description=description,
             color=discord.Color.green() if any_on else discord.Color.light_grey(),
+        )
+
+        off_label = t("setup_preview_embed.notifications.off", locale)
+        if notification_1v1 is not None:
+            line_1v1 = t(
+                "setup_preview_embed.notifications.interval_1v1",
+                locale,
+                minutes=f"`{notification_1v1}`",
+            )
+        else:
+            line_1v1 = f"1v1: `{off_label}`"
+        if notification_2v2 is not None:
+            line_2v2 = t(
+                "setup_preview_embed.notifications.interval_2v2",
+                locale,
+                minutes=f"`{notification_2v2}`",
+            )
+        else:
+            line_2v2 = f"2v2: `{off_label}`"
+
+        self.add_field(
+            name=t("setup_preview_embed.field_name.notifications", locale),
+            value=f"{line_1v1}\n{line_2v2}",
+            inline=False,
         )
         apply_default_embed_footer(self, locale=locale)
 
