@@ -209,7 +209,7 @@ What remains?
 - ⏰ Add admin command for players not getting MatchInfoEmbed?
 - ✅ Prevent USB and FER players from matching on Americas
 - ⏰ Add a notice about players disconnecting mid-match?
-- ⏰ Investigate 1v1 Match #2163 replay parsing as a draw???
+- ✅ Investigate 1v1 Match #2163 replay parsing as a draw???
     - Replay parsing fails if the replay does not contain a "winner" field; this can happen if someone leaves the game and their replay somehow does not capture this action or contain the corresponding chat messages
 - ⏰ Migrate wave-based matchmaking approach to a non-wave-based algorithm/faster wave-based algorithm with no matching obligations per wave so we don't get synchronization issues causing players to match up into the same opponents over and over again
     - For this to happen, we need:
@@ -221,7 +221,7 @@ What remains?
         - We have to balance this against potential MMR differences, for example, if a new guy shows up when two people are in a long streak of games vs each other, but they're a bit far off from the MMR, how much is too much?
 - ⏰ Add an owner announcement command
 - ⏰ Add a role to users on the server when they complete setup for the first time
-- ⏰ `/statusreset` should not just reset the player's status but also remove them from any parties or matchmaking queues
+- ✅ `/statusreset` should not just reset the player's status but also remove them from any parties or matchmaking queues
 
 ## 
 
