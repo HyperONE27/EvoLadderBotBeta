@@ -4198,75 +4198,100 @@ class ToggleAdminSuccessEmbed(discord.Embed):
 
 
 # =========================================================================
-# Owner: MMR
+# Shared: state-change preview / applied / cancelled
 # =========================================================================
 
 
-class SetMMRPreviewEmbed(discord.Embed):
+def _format_state_changes(changes: list[tuple[str, str, str]], locale: str) -> str:
+    arrow = t("state_change.arrow", locale)
+    lines = []
+    for label, before, after in changes:
+        if before == after:
+            lines.append(f"**{label}**: `{before}`")
+        else:
+            lines.append(f"**{label}**: `{before}` {arrow} `{after}`")
+    return "\n".join(lines) if lines else t("state_change.no_changes", locale)
+
+
+class StateChangePreviewEmbed(discord.Embed):
+    """Generic ⚠️ confirm-before-mutate embed for admin/owner commands."""
+
     def __init__(
         self,
-        target_discord_uid: int,
-        target_player_name: str,
-        race: str,
-        new_mmr: int,
+        *,
+        action: str,
+        target_label: str,
+        changes: list[tuple[str, str, str]],
+        warning: str | None = None,
         locale: str = "enUS",
     ) -> None:
-        try:
-            race_emote = get_race_emote(race)
-        except ValueError:
-            race_emote = "🎮"
+        description_parts = [
+            f"**{t('state_change.field.target', locale)}:** {target_label}",
+            "",
+            f"**{t('state_change.field.changes', locale)}:**",
+            _format_state_changes(changes, locale),
+        ]
+        if warning:
+            description_parts.append("")
+            description_parts.append(f"⚠️ {warning}")
 
         super().__init__(
-            title=t("set_mmr_preview_embed.title.1", locale),
-            description=t(
-                "set_mmr_preview_embed.description.1",
-                locale,
-                mention=f"<@{target_discord_uid}>",
-                username=target_player_name,
-                uid=str(target_discord_uid),
-                race_emote=str(race_emote),
-                race=_race_display(race, locale),
-                new_mmr=str(new_mmr),
-            ),
+            title=t("state_change.title.preview", locale, action=action),
+            description="\n".join(description_parts),
             color=discord.Color.orange(),
         )
-
         apply_default_embed_footer(self, locale=locale)
 
 
-class SetMMRSuccessEmbed(discord.Embed):
+class StateChangeAppliedEmbed(discord.Embed):
+    """Generic ✅ post-mutation embed showing the realized before/after."""
+
     def __init__(
         self,
-        target_discord_uid: int,
-        target_player_name: str,
-        race: str,
-        old_mmr: int | None,
-        new_mmr: int,
+        *,
+        action: str,
+        target_label: str,
+        changes: list[tuple[str, str, str]],
         locale: str = "enUS",
     ) -> None:
-        try:
-            race_emote = get_race_emote(race)
-        except ValueError:
-            race_emote = "🎮"
-
-        old_str = str(old_mmr) if old_mmr is not None else t("shared.na", locale)
-
         super().__init__(
-            title=t("set_mmr_success_embed.title.1", locale),
-            description=t(
-                "set_mmr_success_embed.description.1",
-                locale,
-                mention=f"<@{target_discord_uid}>",
-                username=target_player_name,
-                uid=str(target_discord_uid),
-                race_emote=str(race_emote),
-                race=_race_display(race, locale),
-                old_mmr=old_str,
-                new_mmr=str(new_mmr),
+            title=t("state_change.title.applied", locale, action=action),
+            description="\n".join(
+                [
+                    f"**{t('state_change.field.target', locale)}:** {target_label}",
+                    "",
+                    f"**{t('state_change.field.changes', locale)}:**",
+                    _format_state_changes(changes, locale),
+                ]
             ),
             color=discord.Color.green(),
         )
+        apply_default_embed_footer(self, locale=locale)
 
+
+class StateChangeCancelledEmbed(discord.Embed):
+    """Generic ❌ embed shown when a state-change confirmation is cancelled or expired."""
+
+    def __init__(
+        self,
+        *,
+        action: str,
+        target_label: str,
+        reason: str | None = None,
+        locale: str = "enUS",
+    ) -> None:
+        description_parts = [
+            f"**{t('state_change.field.target', locale)}:** {target_label}",
+        ]
+        if reason:
+            description_parts.append("")
+            description_parts.append(reason)
+
+        super().__init__(
+            title=t("state_change.title.cancelled", locale, action=action),
+            description="\n".join(description_parts),
+            color=discord.Color.dark_grey(),
+        )
         apply_default_embed_footer(self, locale=locale)
 
 

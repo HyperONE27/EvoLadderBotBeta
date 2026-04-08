@@ -39,7 +39,8 @@ from bot.components.embeds import (
     ReferralPitchEmbed,
     ReferralSuccessEmbed,
     SetCountryConfirmEmbed,
-    SetMMRSuccessEmbed,
+    StateChangeAppliedEmbed,
+    StateChangeCancelledEmbed,
     SetupIntroEmbed,
     SetupNotificationEmbed,
     SetupPreviewEmbed,
@@ -205,6 +206,162 @@ class CancelButton(discord.ui.Button["discord.ui.View"]):
     async def callback(self, interaction: discord.Interaction) -> None:
         if interaction.message is not None:
             await interaction.message.delete()
+
+
+# =========================================================================
+# Reusable: confirm-before-mutate view for admin/owner state changes
+# =========================================================================
+
+
+class ConfirmStateChangeView(AutoDisableView):
+    """
+    Generic confirm/cancel view for admin/owner commands that mutate state.
+
+    `apply` is called on confirm. It must perform the backend mutation and
+    return the realized list of (label, before, after) tuples — these are
+    rendered in the post-apply embed so the operator sees what the server
+    actually wrote.
+    """
+
+    def __init__(
+        self,
+        *,
+        invoker_uid: int,
+        action: str,
+        target_label: str,
+        apply: Callable[
+            [discord.Interaction], Awaitable[list[tuple[str, str, str]] | None]
+        ],
+        timeout: float | None = 60,
+    ) -> None:
+        super().__init__(timeout=timeout)
+        self._invoker_uid = invoker_uid
+        self._action = action
+        self._target_label = target_label
+        self._apply = apply
+        self._resolved = False
+
+        locale = get_player_locale(invoker_uid)
+
+        async def on_confirm(interaction: discord.Interaction) -> None:
+            if interaction.user.id != invoker_uid:
+                await interaction.response.send_message(
+                    t(
+                        "state_change.invoker_only",
+                        get_player_locale(interaction.user.id),
+                    ),
+                    ephemeral=True,
+                )
+                return
+
+            self._resolved = True
+            for item in self.children:
+                if hasattr(item, "disabled"):
+                    item.disabled = True
+
+            invoker_locale = get_player_locale(interaction.user.id)
+            try:
+                applied_changes = await self._apply(interaction)
+            except Exception:
+                logger.exception(
+                    "ConfirmStateChangeView: apply failed",
+                    action=self._action,
+                    target=self._target_label,
+                    invoker=interaction.user.id,
+                )
+                # Don't double-respond if apply already edited the message.
+                if not interaction.response.is_done():
+                    await interaction.response.edit_message(
+                        embed=ErrorEmbed(
+                            title=t("error_embed.title.generic", invoker_locale),
+                            description=t("state_change.apply_failed", invoker_locale),
+                            locale=invoker_locale,
+                        ),
+                        view=None,
+                    )
+                return
+
+            # If apply already edited the message itself (e.g. with a
+            # domain-specific success embed), don't override it.
+            if interaction.response.is_done():
+                return
+
+            if applied_changes is None:
+                return
+
+            logger.info(
+                "ConfirmStateChangeView: applied",
+                action=self._action,
+                target=self._target_label,
+                invoker=interaction.user.id,
+                changes=applied_changes,
+            )
+            await interaction.response.edit_message(
+                embed=StateChangeAppliedEmbed(
+                    action=self._action,
+                    target_label=self._target_label,
+                    changes=applied_changes,
+                    locale=invoker_locale,
+                ),
+                view=None,
+            )
+
+        async def on_cancel(interaction: discord.Interaction) -> None:
+            if interaction.user.id != invoker_uid:
+                await interaction.response.send_message(
+                    t(
+                        "state_change.invoker_only",
+                        get_player_locale(interaction.user.id),
+                    ),
+                    ephemeral=True,
+                )
+                return
+            self._resolved = True
+            invoker_locale = get_player_locale(interaction.user.id)
+            await interaction.response.edit_message(
+                embed=StateChangeCancelledEmbed(
+                    action=self._action,
+                    target_label=self._target_label,
+                    reason=t("state_change.cancelled_by_user", invoker_locale),
+                    locale=invoker_locale,
+                ),
+                view=None,
+            )
+
+        self.add_item(
+            ConfirmButton(callback=on_confirm, label=t("button.confirm", locale))
+        )
+        # Custom cancel button so we can edit-in-place rather than delete the message.
+        cancel_btn: discord.ui.Button[Any] = discord.ui.Button(
+            label=t("button.cancel", locale),
+            emoji="✖️",
+            style=discord.ButtonStyle.danger,
+        )
+        cancel_btn.callback = on_cancel  # type: ignore[method-assign]
+        self.add_item(cancel_btn)
+
+    async def on_timeout(self) -> None:
+        if self._resolved or self.message is None:
+            await super().on_timeout()
+            return
+        for item in self.children:
+            if hasattr(item, "disabled"):
+                item.disabled = True
+        locale = get_player_locale(self._invoker_uid)
+        try:
+            await self.message.edit(
+                embed=StateChangeCancelledEmbed(
+                    action=self._action,
+                    target_label=self._target_label,
+                    reason=t("state_change.timeout", locale),
+                    locale=locale,
+                ),
+                view=None,
+            )
+        except discord.HTTPException:
+            logger.warning(
+                "ConfirmStateChangeView: failed to edit on timeout", exc_info=True
+            )
 
 
 # =========================================================================
@@ -2549,90 +2706,6 @@ async def _send_toggle_admin_request(
             target_player_name,
             action,
             new_role,
-            locale=get_player_locale(interaction.user.id),
-        ),
-        view=None,
-    )
-
-
-# =========================================================================
-# Owner: MMR
-# =========================================================================
-
-
-class SetMMRConfirmView(AutoDisableView):
-    def __init__(
-        self,
-        caller_id: int,
-        target_discord_uid: int,
-        target_player_name: str,
-        race: str,
-        new_mmr: int,
-    ) -> None:
-        super().__init__()
-
-        async def on_confirm(interaction: discord.Interaction) -> None:
-            if interaction.user.id != caller_id:
-                await interaction.response.send_message(
-                    t("error.not_your_button", get_player_locale(interaction.user.id)),
-                    ephemeral=True,
-                )
-                return
-            await _send_set_mmr_request(
-                interaction, target_discord_uid, target_player_name, race, new_mmr
-            )
-
-        _locale = get_player_locale(caller_id)
-        self.add_item(
-            ConfirmButton(callback=on_confirm, label=t("button.confirm", _locale))
-        )
-        self.add_item(CancelButton(locale=_locale))
-
-
-async def _send_set_mmr_request(
-    interaction: discord.Interaction,
-    target_discord_uid: int,
-    target_player_name: str,
-    race: str,
-    new_mmr: int,
-) -> None:
-    async with get_session().put(
-        f"{BACKEND_URL}/owner/mmr",
-        json={
-            "discord_uid": target_discord_uid,
-            "race": race,
-            "new_mmr": new_mmr,
-            "owner_discord_uid": interaction.user.id,
-        },
-    ) as response:
-        data = await response.json()
-
-    if response.status >= 400:
-        _locale = get_player_locale(interaction.user.id)
-        await interaction.response.edit_message(
-            embed=ErrorEmbed(
-                title=t("error_embed.title.generic", _locale),
-                description=t("error_embed.description.mmr_failed", _locale),
-                locale=_locale,
-            ),
-            view=None,
-        )
-        return
-
-    old_mmr = data.get("old_mmr")
-
-    logger.info(
-        f"Owner {interaction.user.name} ({interaction.user.id}) set MMR for "
-        f"{target_player_name} ({target_discord_uid}): race={race}, {old_mmr} -> {new_mmr}"
-    )
-
-    await interaction.response.edit_message(
-        embed=SetMMRSuccessEmbed(
-            target_discord_uid,
-            target_player_name,
-            race,
-            old_mmr,
-            new_mmr,
             locale=get_player_locale(interaction.user.id),
         ),
         view=None,
