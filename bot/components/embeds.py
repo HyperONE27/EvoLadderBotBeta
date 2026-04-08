@@ -4079,66 +4079,6 @@ class StatusResetSuccessEmbed(discord.Embed):
 
 
 # =========================================================================
-# Owner: Admin
-# =========================================================================
-
-
-class ToggleAdminPreviewEmbed(discord.Embed):
-    def __init__(
-        self, target_discord_uid: int, target_player_name: str, locale: str = "enUS"
-    ) -> None:
-        super().__init__(
-            title=t("toggle_admin_preview_embed.title.1", locale),
-            description=t(
-                "toggle_admin_preview_embed.description.1",
-                locale,
-                mention=f"<@{target_discord_uid}>",
-                username=target_player_name,
-                uid=str(target_discord_uid),
-            ),
-            color=discord.Color.orange(),
-        )
-
-        apply_default_embed_footer(self, locale=locale)
-
-
-class ToggleAdminSuccessEmbed(discord.Embed):
-    def __init__(
-        self,
-        target_discord_uid: int,
-        target_player_name: str,
-        action: str,
-        new_role: str,
-        locale: str = "enUS",
-    ) -> None:
-        if action == "promoted":
-            title_key = "toggle_admin_success_embed.title_promoted.1"
-            color = discord.Color.green()
-        elif action == "demoted":
-            title_key = "toggle_admin_success_embed.title_demoted.1"
-            color = discord.Color.orange()
-        else:
-            title_key = "toggle_admin_success_embed.title_other.1"
-            color = discord.Color.green()
-
-        super().__init__(
-            title=t(title_key, locale),
-            description=t(
-                "toggle_admin_success_embed.description.1",
-                locale,
-                mention=f"<@{target_discord_uid}>",
-                username=target_player_name,
-                uid=str(target_discord_uid),
-                action=t(f"toggle_admin_success_embed.action.{action}", locale),
-                new_role=new_role,
-            ),
-            color=color,
-        )
-
-        apply_default_embed_footer(self, locale=locale)
-
-
-# =========================================================================
 # Shared: state-change preview / applied / cancelled
 # =========================================================================
 

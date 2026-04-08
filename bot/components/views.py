@@ -51,7 +51,6 @@ from bot.components.embeds import (
     StatusResetSuccessEmbed,
     TermsOfServiceDeclinedEmbed,
     TermsOfServiceEmbed,
-    ToggleAdminSuccessEmbed,
 )
 from bot.core.config import (
     ACTIVITY_CHART_BUCKET_MINUTES,
@@ -2551,91 +2550,6 @@ async def _send_statusreset_request(
             target_player_name,
             old_status,
             interaction.user,
-            locale=get_player_locale(interaction.user.id),
-        ),
-        view=None,
-    )
-
-
-# =========================================================================
-# Owner: Admin
-# =========================================================================
-
-
-class ToggleAdminConfirmView(AutoDisableView):
-    def __init__(
-        self,
-        caller_id: int,
-        target_discord_uid: int,
-        target_player_name: str,
-        target_discord_username: str,
-    ) -> None:
-        super().__init__()
-
-        async def on_confirm(interaction: discord.Interaction) -> None:
-            if interaction.user.id != caller_id:
-                await interaction.response.send_message(
-                    t("error.not_your_button", get_player_locale(interaction.user.id)),
-                    ephemeral=True,
-                )
-                return
-            await _send_toggle_admin_request(
-                interaction,
-                target_discord_uid,
-                target_player_name,
-                target_discord_username,
-            )
-
-        _locale = get_player_locale(caller_id)
-        self.add_item(
-            ConfirmButton(callback=on_confirm, label=t("button.confirm", _locale))
-        )
-        self.add_item(CancelButton(locale=_locale))
-
-
-async def _send_toggle_admin_request(
-    interaction: discord.Interaction,
-    target_discord_uid: int,
-    target_player_name: str,
-    target_discord_username: str,
-) -> None:
-    async with get_session().put(
-        f"{BACKEND_URL}/owner/admin",
-        json={
-            "discord_uid": target_discord_uid,
-            "discord_username": target_discord_username,
-            "owner_discord_uid": interaction.user.id,
-        },
-    ) as response:
-        data = await response.json()
-
-    if response.status >= 400:
-        _locale = get_player_locale(interaction.user.id)
-        error = data.get("detail") or t("error.unexpected_error", _locale)
-        await interaction.response.edit_message(
-            embed=ErrorEmbed(
-                title=t("error_embed.title.generic", _locale),
-                description=error,
-                locale=_locale,
-            ),
-            view=None,
-        )
-        return
-
-    action = data.get("action") or "updated"
-    new_role = data.get("new_role") or "unknown"
-
-    logger.info(
-        f"Owner {interaction.user.name} ({interaction.user.id}) toggled admin for "
-        f"{target_player_name} ({target_discord_uid}): action={action}, new_role={new_role}"
-    )
-
-    await interaction.response.edit_message(
-        embed=ToggleAdminSuccessEmbed(
-            target_discord_uid,
-            target_player_name,
-            action,
-            new_role,
             locale=get_player_locale(interaction.user.id),
         ),
         view=None,
