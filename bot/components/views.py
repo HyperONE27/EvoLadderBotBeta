@@ -22,7 +22,6 @@ from bot.components.embeds import (
     Profile2v2Embed,
     ProfileInfoEmbed,
     AdminResolutionEmbed,
-    BanSuccessEmbed,
     ErrorEmbed,
     LobbyGuideEmbed,
     MatchAbortAckEmbed,
@@ -2183,75 +2182,6 @@ async def _send_setcountry_request(
     locale = get_cache().player_locales.get(interaction.user.id, "enUS")
     await interaction.response.edit_message(
         embed=SetCountryConfirmEmbed(country, locale=locale),
-        view=None,
-    )
-
-
-# =========================================================================
-# Admin: Ban
-# =========================================================================
-
-
-class BanConfirmView(AutoDisableView):
-    def __init__(
-        self, caller_id: int, target_discord_uid: int, target_player_name: str
-    ) -> None:
-        super().__init__()
-
-        async def on_confirm(interaction: discord.Interaction) -> None:
-            if interaction.user.id != caller_id:
-                await interaction.response.send_message(
-                    t("error.not_your_button", get_player_locale(interaction.user.id)),
-                    ephemeral=True,
-                )
-                return
-            await _send_ban_request(interaction, target_discord_uid, target_player_name)
-
-        _locale = get_player_locale(caller_id)
-        self.add_item(
-            ConfirmButton(callback=on_confirm, label=t("button.confirm", _locale))
-        )
-        self.add_item(CancelButton(locale=_locale))
-
-
-async def _send_ban_request(
-    interaction: discord.Interaction,
-    target_discord_uid: int,
-    target_player_name: str,
-) -> None:
-    async with get_session().put(
-        f"{BACKEND_URL}/admin/ban",
-        json={
-            "discord_uid": target_discord_uid,
-            "admin_discord_uid": interaction.user.id,
-        },
-    ) as response:
-        data = await response.json()
-
-    if response.status >= 400:
-        _locale = get_player_locale(interaction.user.id)
-        await interaction.response.edit_message(
-            embed=ErrorEmbed(
-                title=t("error_embed.title.generic", _locale),
-                description=t("error_embed.description.ban_failed", _locale),
-                locale=_locale,
-            ),
-            view=None,
-        )
-        return
-
-    new_is_banned: bool = data["new_is_banned"]
-    logger.info(
-        f"Admin {interaction.user.name} ({interaction.user.id}) toggled ban for "
-        f"{target_player_name} ({target_discord_uid}): is_banned={new_is_banned}"
-    )
-    await interaction.response.edit_message(
-        embed=BanSuccessEmbed(
-            target_discord_uid,
-            target_player_name,
-            new_is_banned,
-            locale=get_player_locale(interaction.user.id),
-        ),
         view=None,
     )
 

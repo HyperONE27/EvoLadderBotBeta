@@ -2671,65 +2671,6 @@ class SetCountryConfirmEmbed(discord.Embed):
 
 
 # =========================================================================
-# Admin: Ban
-# =========================================================================
-
-
-class BanPreviewEmbed(discord.Embed):
-    def __init__(
-        self, target_discord_uid: int, target_player_name: str, locale: str = "enUS"
-    ) -> None:
-        super().__init__(
-            title=t("ban_preview_embed.title.1", locale),
-            description=t(
-                "ban_preview_embed.description.1",
-                locale,
-                mention=f"<@{target_discord_uid}>",
-                username=target_player_name,
-                uid=str(target_discord_uid),
-            ),
-            color=discord.Color.orange(),
-        )
-
-        apply_default_embed_footer(self, locale=locale)
-
-
-class BanSuccessEmbed(discord.Embed):
-    def __init__(
-        self,
-        target_discord_uid: int,
-        target_player_name: str,
-        new_is_banned: bool,
-        locale: str = "enUS",
-    ) -> None:
-        title_key = (
-            "ban_success_embed.title_banned.1"
-            if new_is_banned
-            else "ban_success_embed.title_unbanned.1"
-        )
-        status_key = (
-            "ban_success_embed.status_banned.1"
-            if new_is_banned
-            else "ban_success_embed.status_unbanned.1"
-        )
-        color = discord.Color.red() if new_is_banned else discord.Color.green()
-        super().__init__(
-            title=t(title_key, locale),
-            description=t(
-                "ban_success_embed.description.1",
-                locale,
-                mention=f"<@{target_discord_uid}>",
-                username=target_player_name,
-                uid=str(target_discord_uid),
-                status=t(status_key, locale),
-            ),
-            color=color,
-        )
-
-        apply_default_embed_footer(self, locale=locale)
-
-
-# =========================================================================
 # Admin: Snapshot
 # =========================================================================
 
