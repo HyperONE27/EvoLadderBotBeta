@@ -626,6 +626,71 @@ def _notification_select_options(
     ]
 
 
+async def _save_notifications_standalone(
+    interaction: discord.Interaction,
+    *,
+    notification_1v1: int | None,
+    notification_2v2: int | None,
+    locale: str,
+) -> None:
+    """PUT notifications and finish the standalone /notifications flow."""
+    from bot.components.embeds import (
+        NotificationsUpdatedEmbed,
+        SetupValidationErrorEmbed,
+    )
+
+    payload: dict[str, object] = {
+        "discord_uid": interaction.user.id,
+        "notify_queue_1v1": notification_1v1 is not None,
+        "notify_queue_2v2": notification_2v2 is not None,
+    }
+    if notification_1v1 is not None:
+        payload["notify_queue_1v1_cooldown"] = notification_1v1
+    if notification_2v2 is not None:
+        payload["notify_queue_2v2_cooldown"] = notification_2v2
+
+    try:
+        async with get_session().put(
+            f"{BACKEND_URL}/notifications",
+            json=payload,
+        ) as resp:
+            if resp.status >= 400:
+                logger.warning(
+                    "notifications standalone PUT failed",
+                    status=resp.status,
+                    user=interaction.user.id,
+                )
+                await interaction.response.edit_message(
+                    embed=SetupValidationErrorEmbed(
+                        t("error_embed.title.unexpected_error", locale),
+                        t("notifications_command.error.save_failed.1", locale),
+                        locale=locale,
+                    ),
+                    view=None,
+                )
+                return
+    except Exception:
+        logger.exception("notifications standalone PUT raised")
+        await interaction.response.edit_message(
+            embed=SetupValidationErrorEmbed(
+                t("error_embed.title.unexpected_error", locale),
+                t("notifications_command.error.save_failed.1", locale),
+                locale=locale,
+            ),
+            view=None,
+        )
+        return
+
+    await interaction.response.edit_message(
+        embed=NotificationsUpdatedEmbed(
+            notification_1v1=notification_1v1,
+            notification_2v2=notification_2v2,
+            locale=locale,
+        ),
+        view=None,
+    )
+
+
 class SetupNotificationView(AutoDisableView):
     """Notification preferences step of /setup.
 
@@ -637,20 +702,23 @@ class SetupNotificationView(AutoDisableView):
 
     def __init__(
         self,
-        player_name: str,
-        battletag: str,
-        alt_ids: list[str],
-        message: discord.Message,
-        country: Country,
-        region: GeographicRegion,
-        language: str,
+        player_name: str = "",
+        battletag: str = "",
+        alt_ids: list[str] | None = None,
+        message: discord.Message | None = None,
+        country: Country | None = None,
+        region: GeographicRegion | None = None,
+        language: str = "enUS",
         preselected_1v1: str | None = None,
         preselected_2v2: str | None = None,
         locale: str = "enUS",
         show_cancel: bool = True,
+        standalone: bool = False,
     ) -> None:
         super().__init__()
         self.message = message
+        if alt_ids is None:
+            alt_ids = []
 
         _options_1v1 = _notification_select_options(preselected_1v1, locale)
         _options_2v2 = _notification_select_options(preselected_2v2, locale)
@@ -668,6 +736,21 @@ class SetupNotificationView(AutoDisableView):
             notification_2v2 = (
                 None if preselected_2v2 == "off" else int(preselected_2v2)
             )
+
+            # Standalone /notifications command: persist directly and finish.
+            if standalone:
+                await _save_notifications_standalone(
+                    interaction,
+                    notification_1v1=notification_1v1,
+                    notification_2v2=notification_2v2,
+                    locale=_locale,
+                )
+                return
+
+            # Setup-flow path requires the full player context.
+            assert message is not None
+            assert country is not None
+            assert region is not None
 
             # First-time users see the survey; returning users skip to preview.
             if not show_cancel:
@@ -716,6 +799,8 @@ class SetupNotificationView(AutoDisableView):
                 )
 
         async def on_restart(interaction: discord.Interaction) -> None:
+            assert country is not None
+            assert region is not None
             _locale = get_player_locale(interaction.user.id)
             intro = SetupIntroView(
                 modal_presets={
@@ -762,6 +847,7 @@ class SetupNotificationView(AutoDisableView):
                 preselected_2v2=preselected_2v2,
                 locale=get_player_locale(interaction.user.id),
                 show_cancel=show_cancel,
+                standalone=standalone,
             )
             await interaction.response.edit_message(view=fresh)
 
@@ -778,6 +864,7 @@ class SetupNotificationView(AutoDisableView):
                 preselected_2v2=select_2v2.values[0],
                 locale=get_player_locale(interaction.user.id),
                 show_cancel=show_cancel,
+                standalone=standalone,
             )
             await interaction.response.edit_message(view=fresh)
 
@@ -794,14 +881,15 @@ class SetupNotificationView(AutoDisableView):
                 disabled=_confirm_disabled,
             )
         )
-        self.add_item(
-            RestartButton(
-                callback=on_restart,
-                label=t("button.restart", locale),
-                row=2,
+        if not standalone:
+            self.add_item(
+                RestartButton(
+                    callback=on_restart,
+                    label=t("button.restart", locale),
+                    row=2,
+                )
             )
-        )
-        if show_cancel:
+        if show_cancel or standalone:
             self.add_item(CancelButton(row=2, locale=locale))
 
 

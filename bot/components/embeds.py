@@ -457,40 +457,35 @@ class QueueJoinActivityNotifyEmbed(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
-class NotifyMeSuccessEmbed(discord.Embed):
-    """Shown after /notifyme succeeds."""
+class NotificationsUpdatedEmbed(discord.Embed):
+    """Shown after the standalone /notifications command saves successfully."""
 
     def __init__(
         self,
-        enabled: bool,
-        cooldown_minutes: int | None = None,
+        notification_1v1: int | None,
+        notification_2v2: int | None,
         locale: str = "enUS",
     ) -> None:
-        state = t(
-            "notifyme_command.state.on.1"
-            if enabled
-            else "notifyme_command.state.off.1",
-            locale,
-        )
-        cooldown_line = (
-            t(
-                "notifyme_command.cooldown_line.1",
+        def _line(minutes: int | None) -> str:
+            if minutes is None:
+                return t("notifications_updated_embed.state.off.1", locale)
+            return t(
+                "notifications_updated_embed.state.every.1",
                 locale,
-                minutes=str(cooldown_minutes),
+                minutes=str(minutes),
             )
-            if cooldown_minutes is not None
-            else ""
-        )
+
         description = t(
-            "notifyme_command.success.1",
+            "notifications_updated_embed.description.1",
             locale,
-            state=state,
-            cooldown_line=cooldown_line,
+            line_1v1=_line(notification_1v1),
+            line_2v2=_line(notification_2v2),
         )
+        any_on = notification_1v1 is not None or notification_2v2 is not None
         super().__init__(
-            title=t("notifyme_success_embed.title.1", locale),
+            title=t("notifications_updated_embed.title.1", locale),
             description=description,
-            color=discord.Color.green() if enabled else discord.Color.light_grey(),
+            color=discord.Color.green() if any_on else discord.Color.light_grey(),
         )
         apply_default_embed_footer(self, locale=locale)
 
