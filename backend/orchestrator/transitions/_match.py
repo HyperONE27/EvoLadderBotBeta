@@ -175,12 +175,32 @@ def _create_match_from_candidate(
     p2_loc = candidate["player_2_location"]
 
     if p1_loc is None and p2_loc is not None:
+        logger.error(
+            "match_location_fallback: player_1 location missing, "
+            "borrowing from opponent",
+            player_1_discord_uid=candidate["player_1_discord_uid"],
+            player_2_discord_uid=candidate["player_2_discord_uid"],
+            borrowed_from_player_2=p2_loc,
+        )
         p1_loc = p2_loc
     elif p2_loc is None and p1_loc is not None:
+        logger.error(
+            "match_location_fallback: player_2 location missing, "
+            "borrowing from opponent",
+            player_1_discord_uid=candidate["player_1_discord_uid"],
+            player_2_discord_uid=candidate["player_2_discord_uid"],
+            borrowed_from_player_1=p1_loc,
+        )
         p2_loc = p1_loc
     elif p1_loc is None and p2_loc is None:
         # Both missing — pick a sensible fallback.  The cross-table
         # requires valid region codes so we can't just pass None.
+        logger.error(
+            "match_location_fallback: BOTH players missing location, "
+            "defaulting to NAC — investigate the players' profiles",
+            player_1_discord_uid=candidate["player_1_discord_uid"],
+            player_2_discord_uid=candidate["player_2_discord_uid"],
+        )
         p1_loc = "NAC"
         p2_loc = "NAC"
 
