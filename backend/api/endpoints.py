@@ -724,11 +724,12 @@ async def owner_set_mmr(
 async def owner_announcement_recipients(
     owner_discord_uid: int = Query(...),
     debug: bool = Query(False),
+    owners_only: bool = Query(False),
     require_setup: bool = Query(True),
     app: Backend = Depends(get_backend),
 ) -> OwnerAnnouncementRecipientsResponse:
     uids = app.orchestrator.get_announcement_recipient_uids(
-        debug=debug, require_setup=require_setup
+        debug=debug, owners_only=owners_only, require_setup=require_setup
     )
     app.orchestrator.log_event(
         {
@@ -737,6 +738,7 @@ async def owner_announcement_recipients(
             "action": "announcement_recipients_fetched",
             "event_data": {
                 "debug": debug,
+                "owners_only": owners_only,
                 "require_setup": require_setup,
                 "count": len(uids),
             },
@@ -757,6 +759,7 @@ async def owner_announcement_log(
             "action": "announcement_sent",
             "event_data": {
                 "debug": request.debug,
+                "owners_only": request.owners_only,
                 "require_setup": request.require_setup,
                 "title": request.title,
                 "body": request.body,

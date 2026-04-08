@@ -251,6 +251,7 @@ class OwnerAnnouncementLogRequest(BaseModel):
     title: str
     body: str
     debug: bool
+    owners_only: bool
     require_setup: bool
     recipient_count: int
     sent_count: int

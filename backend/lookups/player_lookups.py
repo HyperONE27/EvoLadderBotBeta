@@ -99,14 +99,23 @@ def get_player_by_string(s: str) -> PlayersRow | None:
     return get_player_by_discord_username(s)
 
 
-def get_announcement_recipient_uids(*, debug: bool, require_setup: bool) -> list[int]:
+def get_announcement_recipient_uids(
+    *, debug: bool, owners_only: bool, require_setup: bool
+) -> list[int]:
     """Return the Discord UIDs of players who should receive an /owner announcement.
 
-    When ``debug`` is True, the recipient set is the admins table (excluding rows
-    with role == "inactive"), regardless of ``require_setup``. Otherwise it is
-    the players table filtered to is_banned == False, optionally narrowed by
-    completed_setup == True.
+    Audience precedence:
+      - ``owners_only`` (highest): admins table filtered to role == "owner".
+      - ``debug``: admins table excluding role == "inactive".
+      - default: players table filtered to is_banned == False, optionally
+        narrowed by completed_setup == True.
     """
+    if owners_only:
+        admins_df = _get_state_manager().admins_df
+        if admins_df.is_empty():
+            return []
+        rows = admins_df.filter(pl.col("role") == "owner")
+        return [int(uid) for uid in rows.get_column("discord_uid").to_list()]
     if debug:
         admins_df = _get_state_manager().admins_df
         if admins_df.is_empty():

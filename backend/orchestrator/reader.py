@@ -95,10 +95,12 @@ class StateReader:
         return len(self._active_player_uids())
 
     def get_announcement_recipient_uids(
-        self, *, debug: bool, require_setup: bool
+        self, *, debug: bool, owners_only: bool, require_setup: bool
     ) -> list[int]:
         """Return the Discord UIDs that should receive an /owner announcement."""
-        return get_announcement_recipient_uids(debug=debug, require_setup=require_setup)
+        return get_announcement_recipient_uids(
+            debug=debug, owners_only=owners_only, require_setup=require_setup
+        )
 
     def _active_player_uids(self) -> set[int]:
         """Return the set of discord_uids with at least one game in mmrs_1v1 or mmrs_2v2."""
