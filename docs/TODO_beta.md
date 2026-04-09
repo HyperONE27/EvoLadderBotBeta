@@ -231,6 +231,7 @@ What remains?
 - ⏰ Add time zones and quiet hours selection to `/setup`/ and `/notifications`
 - ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
 - ⏰ Update `/help` to include `/notifications` description
+- ⏰ Make channel manager channels public viewing but private talk
 
 ## 
 
