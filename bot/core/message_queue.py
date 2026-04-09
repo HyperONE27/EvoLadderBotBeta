@@ -183,6 +183,12 @@ class MessageQueue:
             else:
                 self._handle_failure(job, queue_type, exc)
 
+        except discord.Forbidden as exc:
+            # Permanent — recipient has DMs closed, blocked the bot, or shares
+            # no mutual guild.  Retrying will never succeed; surface to caller.
+            if not job.future.done():
+                job.future.set_exception(exc)
+
         except discord.NotFound as exc:
             if exc.code == 10008:  # Unknown Message — already deleted, treat as no-op
                 if not job.future.done():

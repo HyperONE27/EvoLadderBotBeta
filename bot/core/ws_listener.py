@@ -169,6 +169,7 @@ async def _on_queue_join_activity(client: discord.Client, data: dict) -> None:
     payload_locales: dict[str, str] = data.get("locales") or {}
     game_mode = str(data.get("game_mode", "1v1"))
 
+    unreachable: list[int] = []
     for uid in raw_uids:
         try:
             discord_uid = int(uid)
@@ -193,7 +194,23 @@ async def _on_queue_join_activity(client: discord.Client, data: dict) -> None:
         if footer:
             embed.set_footer(text=footer)
             apply_default_embed_footer(embed, locale=locale)
-        await queue_user_send_low(user, embed=embed)
+        try:
+            await queue_user_send_low(user, embed=embed)
+        except discord.Forbidden:
+            unreachable.append(discord_uid)
+        except Exception:
+            logger.warning(
+                "[WS] queue_join_activity DM failed",
+                discord_uid=discord_uid,
+                exc_info=True,
+            )
+    if unreachable:
+        logger.info(
+            "[WS] queue_join_activity unreachable subscribers",
+            count=len(unreachable),
+            discord_uids=unreachable,
+            game_mode=game_mode,
+        )
 
 
 async def _on_match_found(client: discord.Client, match_data: dict) -> None:
