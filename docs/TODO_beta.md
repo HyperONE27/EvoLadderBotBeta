@@ -205,14 +205,14 @@ What remains?
 
 ## 2026-04-05
 
-- ⏰ Add before/after state warnings to ALL admin and owner commands
+- ✅ Add before/after state warnings to ALL admin and owner commands
 - ❌ Add admin command for players not getting MatchInfoEmbed?
     - Deprioritized
 - ✅ Prevent USB and FER players from matching on Americas
 - ⏰ Add a notice about players disconnecting mid-match?
 - ✅ Investigate 1v1 Match #2163 replay parsing as a draw???
     - Replay parsing fails if the replay does not contain a "winner" field; this can happen if someone leaves the game and their replay somehow does not capture this action or contain the corresponding chat messages
-- ✅ Migrate wave-based matchmaking approach to a non-wave-based algorithm/faster wave-based algorithm with no matching obligations per wave so we don't get synchronization issues causing players to match up into the same opponents over and over again
+- ⏰ Migrate wave-based matchmaking approach to a non-wave-based algorithm/faster wave-based algorithm with no matching obligations per wave so we don't get synchronization issues causing players to match up into the same opponents over and over again
     - For this to happen, we need:
         - A persistent record of recent matches
         - Updated fitness scoring criteria for any given match
