@@ -131,12 +131,11 @@ def _announcement_embed(title: str, body: str) -> discord.Embed:
     )
     icon_url = BOT_ICON_URL.strip() or None
     embed.set_author(
-        name="EvoLadder Staff Announcement",
+        name="SC: Evo Complete Ladder Announcement",
         icon_url=icon_url,
     )
     embed.set_footer(
-        text="Official broadcast from the EvoLadder team · "
-        "use /notifications to manage your DMs"
+        text="Official SC: Evvo Complete Ladder Annoucncement
     )
     apply_default_embed_footer(embed)
     return embed
