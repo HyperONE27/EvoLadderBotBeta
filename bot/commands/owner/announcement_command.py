@@ -135,7 +135,7 @@ def _announcement_embed(title: str, body: str) -> discord.Embed:
         icon_url=icon_url,
     )
     embed.set_footer(
-        text="Official SC: Evvo Complete Ladder Annoucncement
+        text="Official SC: Evo Complete Ladder Annoucncement"
     )
     apply_default_embed_footer(embed)
     return embed
