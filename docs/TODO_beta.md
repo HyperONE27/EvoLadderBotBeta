@@ -203,15 +203,21 @@ What remains?
     - ✅ ToS now defers interactions
 
 
-## 2026-04-05
+## 2026-04-08
 
 - ✅ Add before/after state warnings to ALL admin and owner commands
 - ❌ Add admin command for players not getting MatchInfoEmbed?
     - Deprioritized
 - ✅ Prevent USB and FER players from matching on Americas
-- ⏰ Add a notice about players disconnecting mid-match?
 - ✅ Investigate 1v1 Match #2163 replay parsing as a draw???
     - Replay parsing fails if the replay does not contain a "winner" field; this can happen if someone leaves the game and their replay somehow does not capture this action or contain the corresponding chat messages
+- ✅ `/statusreset` should not just reset the player's status but also remove them from any parties or matchmaking queues
+- ✅ Add a dedicated `/notifications` command so people don't have to go all the way back to `/setup` to change them
+
+
+## 2026-04-10
+
+- ⏰ Add a notice about players disconnecting mid-match?
 - ⏰ Migrate wave-based matchmaking approach to a non-wave-based algorithm/faster wave-based algorithm with no matching obligations per wave so we don't get synchronization issues causing players to match up into the same opponents over and over again
     - For this to happen, we need:
         - A persistent record of recent matches
@@ -222,10 +228,9 @@ What remains?
         - We have to balance this against potential MMR differences, for example, if a new guy shows up when two people are in a long streak of games vs each other, but they're a bit far off from the MMR, how much is too much?
 - ⏰ Add an owner announcement command
 - ⏰ Add a role to users on the server when they complete setup for the first time
-- ✅ `/statusreset` should not just reset the player's status but also remove them from any parties or matchmaking queues
-- ✅ Add a dedicated `/notifications` command so people don't have to go all the way back to `/setup` to change them
 - ⏰ Add time zones and quiet hours selection to `/setup`/ and `/notifications`
 - ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
+- ⏰ Update `/help` to include `/notifications` description
 
 ## 
 
