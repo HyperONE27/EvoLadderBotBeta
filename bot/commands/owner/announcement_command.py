@@ -97,8 +97,21 @@ async def _post_audit_log(payload: dict[str, Any]) -> None:
 # ----------------
 
 
-def _flags_str(debug: bool, owners_only: bool, require_setup: bool) -> str:
-    return f"owners_only={owners_only} · debug={debug} · require_setup={require_setup}"
+def _audience_label(debug: bool, owners_only: bool) -> str:
+    if owners_only:
+        return 'Owners only (`admins.role == "owner"`)'
+    if debug:
+        return 'Admins (debug — `admins.role != "inactive"`)'
+    return "All eligible players"
+
+
+def _flags_block(debug: bool, owners_only: bool, require_setup: bool) -> str:
+    lines = [f"• **Audience:** {_audience_label(debug, owners_only)}"]
+    if not (owners_only or debug):
+        lines.append(
+            f"• **Require completed setup:** {'Yes' if require_setup else 'No'}"
+        )
+    return "\n".join(lines)
 
 
 def _announcement_embed(title: str, body: str) -> discord.Embed:
@@ -118,7 +131,7 @@ def _intro_embed(
         description=t(
             "owner_announcement.intro.description",
             locale,
-            flags=_flags_str(debug, owners_only, require_setup),
+            flags=_flags_block(debug, owners_only, require_setup),
         ),
         color=discord.Color.blurple(),
     )
@@ -148,7 +161,7 @@ def _preview_meta_embed(
     )
     embed.add_field(
         name=t("owner_announcement.preview.field.flags", locale),
-        value=_flags_str(debug, owners_only, require_setup),
+        value=_flags_block(debug, owners_only, require_setup),
         inline=False,
     )
     return embed
@@ -250,11 +263,26 @@ class _AnnouncementModal(discord.ui.Modal):
         self.add_item(self.body_input)
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
+        # Defer as a message update — the modal was launched from a button on
+        # the intro message, so this acks the modal submit without sending a
+        # new response, leaving us free to edit the parent message in place.
         await interaction.response.defer()
 
         title = self.title_input.value.strip()
         body = self.body_input.value
         locale = self._locale
+
+        async def _edit_with_error(description: str) -> None:
+            await interaction.edit_original_response(
+                embeds=[
+                    ErrorEmbed(
+                        title=t("error_embed.title.generic", locale),
+                        description=description,
+                        locale=locale,
+                    )
+                ],
+                view=None,
+            )
 
         all_uids = await _fetch_recipient_uids(
             self._invoker_uid,
@@ -263,27 +291,15 @@ class _AnnouncementModal(discord.ui.Modal):
             self._require_setup,
         )
         if all_uids is None:
-            await interaction.followup.send(
-                embed=ErrorEmbed(
-                    title=t("error_embed.title.generic", locale),
-                    description=t(
-                        "owner_announcement.error.fetch_recipients_failed", locale
-                    ),
-                    locale=locale,
-                ),
-                ephemeral=True,
+            await _edit_with_error(
+                t("owner_announcement.error.fetch_recipients_failed", locale)
             )
             return
 
         guild = self._client.get_guild(SERVER_GUILD_ID)
         if guild is None:
-            await interaction.followup.send(
-                embed=ErrorEmbed(
-                    title=t("error_embed.title.generic", locale),
-                    description=t("owner_announcement.error.guild_unavailable", locale),
-                    locale=locale,
-                ),
-                ephemeral=True,
+            await _edit_with_error(
+                t("owner_announcement.error.guild_unavailable", locale)
             )
             return
 
@@ -317,10 +333,11 @@ class _AnnouncementModal(discord.ui.Modal):
             require_setup=self._require_setup,
             locale=locale,
         )
-        view.message = await interaction.followup.send(  # type: ignore[func-returns-value]
+        await interaction.edit_original_response(
             embeds=[announcement_embed, meta_embed],
             view=view,
         )
+        view.message = await interaction.original_response()
 
 
 # ----------------
