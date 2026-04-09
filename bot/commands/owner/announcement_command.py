@@ -31,7 +31,8 @@ import structlog
 from discord import app_commands
 
 from bot.components.embeds import ErrorEmbed
-from bot.core.config import BACKEND_URL, SERVER_GUILD_ID
+from bot.core.config import BACKEND_URL, BOT_ICON_URL, SERVER_GUILD_ID
+from bot.helpers.embed_branding import apply_default_embed_footer
 from bot.core.dependencies import get_player_locale
 from bot.core.http import get_session
 from bot.helpers.checks import check_admin
@@ -115,12 +116,30 @@ def _flags_block(debug: bool, owners_only: bool, require_setup: bool) -> str:
 
 
 def _announcement_embed(title: str, body: str) -> discord.Embed:
-    """The actual embed that will be DM'd to recipients."""
-    return discord.Embed(
-        title=title[:_TITLE_MAX],
+    """The actual embed that will be DM'd to recipients.
+
+    Branded so recipients can immediately tell this is an official staff
+    broadcast and not the bot misbehaving: an "EvoLadder Staff Announcement"
+    author block above the title, a 📣 prefix on the title itself, and a
+    "manage your DMs" footer beneath the standard ladder brand line.
+    """
+    prefixed_title = f"📣 Announcement — {title}"
+    embed = discord.Embed(
+        title=prefixed_title[:_TITLE_MAX],
         description=body[:4096],
         color=discord.Color.blurple(),
     )
+    icon_url = BOT_ICON_URL.strip() or None
+    embed.set_author(
+        name="EvoLadder Staff Announcement",
+        icon_url=icon_url,
+    )
+    embed.set_footer(
+        text="Official broadcast from the EvoLadder team · "
+        "use /notifications to manage your DMs"
+    )
+    apply_default_embed_footer(embed)
+    return embed
 
 
 def _intro_embed(
