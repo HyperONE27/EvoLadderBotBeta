@@ -232,6 +232,7 @@ What remains?
 - ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
 - ⏰ Update `/help` to include `/notifications` description
 - ⏰ Make channel manager channels public viewing but private talk
+- ⏰ Include information about who joined (BW/SC2/both) in notifications?
 
 ## 
 
