@@ -213,6 +213,7 @@ What remains?
     - Replay parsing fails if the replay does not contain a "winner" field; this can happen if someone leaves the game and their replay somehow does not capture this action or contain the corresponding chat messages
 - ✅ `/statusreset` should not just reset the player's status but also remove them from any parties or matchmaking queues
 - ✅ Add a dedicated `/notifications` command so people don't have to go all the way back to `/setup` to change them
+- ✅ Add an owner announcement command
 
 
 ## 2026-04-10
@@ -226,13 +227,14 @@ What remains?
         - A poor implementation might cause players to have to wait 5-6 minutes to play vs each other when they're the only ones online anyway
         - However we also want to prefer new matchups when they are available
         - We have to balance this against potential MMR differences, for example, if a new guy shows up when two people are in a long streak of games vs each other, but they're a bit far off from the MMR, how much is too much?
-- ⏰ Add an owner announcement command
 - ⏰ Add a role to users on the server when they complete setup for the first time
 - ⏰ Add time zones and quiet hours selection to `/setup`/ and `/notifications`
 - ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
 - ⏰ Update `/help` to include `/notifications` description
 - ⏰ Make channel manager channels public viewing but private talk
 - ⏰ Include information about who joined (BW/SC2/both) in notifications?
+- ⏰ China vs NAW and SEA vs NAW should probably be on Korea
+- ⏰ Maybe lighten up the penalty for missing a match? Seems to just discourage people from queueing more than anything
 
 ## 
 
