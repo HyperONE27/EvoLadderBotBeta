@@ -2790,6 +2790,7 @@ class QueueSetupView1v1(AutoDisableView):
                     view=None,
                 )
                 return
+            self.stop()
             await _join_queue(
                 interaction,
                 self.discord_user_id,
@@ -3592,6 +3593,7 @@ class QueueSetupView2v2(AutoDisableView):
 
         # Row 0: action buttons
         async def on_join(interaction: discord.Interaction) -> None:
+            self.stop()
             await _join_queue_2v2(
                 interaction,
                 self.discord_user_id,
