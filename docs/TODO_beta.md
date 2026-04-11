@@ -235,6 +235,7 @@ What remains?
 - ⏰ Include information about who joined (BW/SC2/both) in notifications?
 - ⏰ China vs NAW and SEA vs NAW should probably be on Korea
 - ⏰ Maybe lighten up the penalty for missing a match? Seems to just discourage people from queueing more than anything
+- ⏰ Players often join, see nobody, and immediately leave despite the new notifications system, so it may not be doing as much to solve desyncs as I thought if I don't log people joining/leaving and display it in a more OBVIOUSLY VISIBLE/public manner
 
 ## 
 
