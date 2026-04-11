@@ -19,10 +19,16 @@ class ChannelDatabase:
         match_id: int,
         match_mode: str,
         channel_id: int,
-        message_id: int,
-        message_url: str,
+        message_id: int | None = None,
+        message_url: str | None = None,
     ) -> dict:
-        """Insert a new channel row and return it."""
+        """Insert a new channel row and return it.
+
+        `message_id` / `message_url` are optional so the row can be recorded
+        immediately after Discord channel creation, before the welcome message
+        is sent. This guarantees the channel stays tracked (and therefore
+        cleanable on match end) even if the ping send fails transiently.
+        """
         result = (
             self._client.table("channels")
             .insert(
@@ -37,6 +43,17 @@ class ChannelDatabase:
             .execute()
         )
         return cast(dict[str, Any], result.data[0])
+
+    def set_welcome_message(
+        self,
+        channel_id: int,
+        message_id: int,
+        message_url: str,
+    ) -> None:
+        """Fill in the welcome message fields after a successful send."""
+        self._client.table("channels").update(
+            {"message_id": message_id, "message_url": message_url}
+        ).eq("channel_id", channel_id).execute()
 
     def get_channel_by_match_id(self, match_id: int, match_mode: str) -> dict | None:
         """Return the channel row for a match, or None if not found."""

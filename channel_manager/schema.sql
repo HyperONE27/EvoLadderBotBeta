@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS channels (
     match_mode      TEXT NOT NULL
                         CHECK (match_mode IN ('1v1', '2v2', 'FFA')),
     channel_id      BIGINT NOT NULL UNIQUE,   -- Discord channel snowflake
-    message_id      BIGINT NOT NULL,           -- snowflake of the ping message in the channel
-    message_url     TEXT NOT NULL,             -- https://discord.com/channels/{guild}/{channel}/{message}
+    message_id      BIGINT,                    -- snowflake of the welcome ping message (NULL if the message send failed)
+    message_url     TEXT,                      -- https://discord.com/channels/{guild}/{channel}/{message} (NULL if no welcome message)
     messages        JSONB NOT NULL DEFAULT '[]',
         -- Append-only log of messages and edits for audit purposes.
         -- Message entry: {"type": "message", "message_id": <int>, "ts": "<ISO>", "discord_uid": <int>, "content": "<text>"}
@@ -23,6 +23,12 @@ CREATE TABLE IF NOT EXISTS channels (
     -- (matches_1v1 and matches_2v2 use independent sequences).
     CONSTRAINT uq_channels_match_id_mode UNIQUE (match_id, match_mode)
 );
+
+-- Idempotent migration: relax NOT NULL on the welcome message columns so that
+-- channel creation can record the row even when the initial ping send fails
+-- transiently (Discord 5xx). Safe to re-run.
+ALTER TABLE channels ALTER COLUMN message_id  DROP NOT NULL;
+ALTER TABLE channels ALTER COLUMN message_url DROP NOT NULL;
 
 -- Atomically appends one message entry to the messages JSONB array.
 CREATE OR REPLACE FUNCTION append_channel_message(

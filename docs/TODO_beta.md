@@ -236,6 +236,35 @@ What remains?
 - ⏰ China vs NAW and SEA vs NAW should probably be on Korea
 - ⏰ Maybe lighten up the penalty for missing a match? Seems to just discourage people from queueing more than anything
 - ⏰ Players often join, see nobody, and immediately leave despite the new notifications system, so it may not be doing as much to solve desyncs as I thought if I don't log people joining/leaving and display it in a more OBVIOUSLY VISIBLE/public manner
+- ⏰ Fix messages dropping on channel manager
+- ⏰ Handle Supabase SQL migration manually
+
+```
+ Here's what happened — I traced it through channel_manager/app.py.
+                                                                                                                                                                                                                             
+  The sequence at 02:43:10
+                                                                                                                                                                                                                 1. Channel created successfully on Discord (1492354295108993055) via _discord.create_channel() at channel_manager/app.py:68.                                                                                                                                                                                                           2. The follow-up send_message() call hit a Discord 503 — channel_manager/app.py:96. That's a transient Discord API outage, not your bug.                                                                                   
+  3. The except handler at app.py:99-103 logged the error and raised HTTPException(502), returning control to the backend before _db.insert_channel() ran at app.py:109.                                                     
+  4. Because the DB row was never written, the channel is orphaned: the channel_manager has no record that it exists.
+  5. When the match ended, the backend called DELETE /channels/by_match/{match_id}. get_channel_by_match_id() returned None, so the endpoint 404'd and the channel was never deleted. That's why you see no deletion log line
+   for that match.
+
+  So all three symptoms trace to the same root cause: a transient 503 on the ping message, combined with a non-atomic create flow that aborts after the Discord channel already exists.
+
+  The bug
+
+  create_channel in channel_manager/app.py treats "channel created on Discord" and "row inserted in DB" as all-or-nothing, but they're not. Any failure between lines 68 and 109 leaks a Discord channel that the manager can
+   no longer track.
+
+  Fixes, in order of how much I'd recommend them
+
+  1. Insert the DB row immediately after Discord channel creation, before sending the welcome message. Make message_id / message_url nullable (or insert 0 / "" as placeholders) and update them after send_message()        
+  succeeds. This guarantees the channel is tracked and will be cleaned up even if messaging fails. Requires a small schema tweak and a new update_channel_message method on ChannelDatabase.
+  2. On send_message failure, rollback by deleting the Discord channel before raising. Simpler but loses the channel entirely on any transient blip — worse UX than option 1.
+  3. Retry the 503. Discord 5xxs are documented as transient and safe to retry with backoff. Good to add regardless, but not sufficient on its own — you still want option 1 as the safety net.
+
+  I'd do 1 + 3 together. Want me to implement it?
+```
 
 ## 
 

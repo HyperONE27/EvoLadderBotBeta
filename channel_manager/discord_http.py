@@ -4,6 +4,9 @@ Async Discord REST client for channel lifecycle management.
 Uses httpx directly against the Discord API v10; no gateway connection needed.
 """
 
+import asyncio
+from typing import Any
+
 import structlog
 import httpx
 
@@ -19,6 +22,10 @@ _SEND_MESSAGES = 1 << 11  # 2048
 _READ_MESSAGE_HISTORY = 1 << 14  # 16384
 _MEMBER_ALLOW = _VIEW_CHANNEL | _SEND_MESSAGES | _READ_MESSAGE_HISTORY
 
+# Retry config for transient Discord 5xx responses.
+_RETRY_ATTEMPTS = 3
+_RETRY_BACKOFFS = (0.5, 1.5, 3.0)  # seconds between attempts 1→2, 2→3, 3→4
+
 
 class DiscordClient:
     def __init__(self) -> None:
@@ -30,6 +37,43 @@ class DiscordClient:
 
     async def close(self) -> None:
         await self._http.aclose()
+
+    async def _request_with_retry(
+        self, method: str, url: str, **kwargs: Any
+    ) -> httpx.Response:
+        """Issue an httpx request, retrying on transient 5xx responses.
+
+        Discord periodically returns 502/503/504 during partial outages. The
+        REST endpoints we use here (create channel, send message, delete
+        channel) are safe to retry — the worst case on a retried create is a
+        duplicate channel, which hasn't been observed in practice because the
+        first attempt either succeeds or fails before the request is accepted.
+        """
+        last_exc: httpx.HTTPStatusError | None = None
+        for attempt in range(_RETRY_ATTEMPTS + 1):
+            resp = await self._http.request(method, url, **kwargs)
+            if resp.status_code < 500:
+                resp.raise_for_status()
+                return resp
+            # 5xx — decide whether to retry.
+            if attempt < _RETRY_ATTEMPTS:
+                backoff = _RETRY_BACKOFFS[attempt]
+                logger.warning(
+                    f"[ChannelManager] Discord {resp.status_code} on "
+                    f"{method} {url}; retrying in {backoff}s "
+                    f"(attempt {attempt + 1}/{_RETRY_ATTEMPTS})"
+                )
+                await asyncio.sleep(backoff)
+                continue
+            # Final attempt failed: raise the underlying error.
+            try:
+                resp.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                last_exc = exc
+                raise
+        # Unreachable — the loop either returns or raises.
+        assert last_exc is not None
+        raise last_exc
 
     async def create_channel(
         self,
@@ -63,7 +107,8 @@ class DiscordClient:
                 }
             )
 
-        resp = await self._http.post(
+        resp = await self._request_with_retry(
+            "POST",
             f"/guilds/{guild_id}/channels",
             json={
                 "name": name,
@@ -72,7 +117,6 @@ class DiscordClient:
                 "permission_overwrites": overwrites,
             },
         )
-        resp.raise_for_status()
         return int(resp.json()["id"])
 
     async def send_message(
@@ -85,14 +129,13 @@ class DiscordClient:
         payload: dict = {"content": content}
         if embeds:
             payload["embeds"] = embeds
-        resp = await self._http.post(
+        resp = await self._request_with_retry(
+            "POST",
             f"/channels/{channel_id}/messages",
             json=payload,
         )
-        resp.raise_for_status()
         return int(resp.json()["id"])
 
     async def delete_channel(self, channel_id: int) -> None:
         """Delete a guild channel."""
-        resp = await self._http.delete(f"/channels/{channel_id}")
-        resp.raise_for_status()
+        await self._request_with_retry("DELETE", f"/channels/{channel_id}")

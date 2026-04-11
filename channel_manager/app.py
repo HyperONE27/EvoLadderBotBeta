@@ -78,6 +78,16 @@ async def create_channel(request: ChannelCreateRequest) -> ChannelCreateResponse
         )
         raise HTTPException(status_code=502, detail="Discord channel creation failed.")
 
+    # Record the channel immediately, before any further Discord calls. This is
+    # essential: if the welcome-message send below fails transiently, the row
+    # still exists so the channel will be cleaned up when the match ends.
+    # Without this step a failed send would orphan the Discord channel forever.
+    _db.insert_channel(
+        match_id=request.match_id,
+        match_mode=request.match_mode,
+        channel_id=channel_id,
+    )
+
     # Ping all players and send a welcome embed.
     ping_content = " ".join(f"<@{uid}>" for uid in request.discord_uids)
     description = (
@@ -97,18 +107,25 @@ async def create_channel(request: ChannelCreateRequest) -> ChannelCreateResponse
             channel_id, ping_content, embeds=[welcome_embed]
         )
     except Exception:
+        # Welcome message failed even after retries. The channel still exists
+        # and is already tracked in the DB, so it will be cleaned up on match
+        # end. Fall back to a channel-root URL so players still get a usable
+        # link in the DM embed.
         logger.exception(
-            f"[ChannelManager] Failed to send ping message in channel {channel_id}"
+            f"[ChannelManager] Failed to send welcome message in channel {channel_id}; "
+            f"returning channel-root URL as fallback"
         )
-        raise HTTPException(status_code=502, detail="Failed to send channel message.")
+        fallback_url = f"https://discord.com/channels/{DISCORD_GUILD_ID}/{channel_id}"
+        logger.info(
+            f"[ChannelManager] Created channel {channel_id} for match #{request.match_id} "
+            f"(welcome message send failed)"
+        )
+        return ChannelCreateResponse(channel_id=channel_id, message_url=fallback_url)
 
     message_url = (
         f"https://discord.com/channels/{DISCORD_GUILD_ID}/{channel_id}/{message_id}"
     )
-
-    _db.insert_channel(
-        match_id=request.match_id,
-        match_mode=request.match_mode,
+    _db.set_welcome_message(
         channel_id=channel_id,
         message_id=message_id,
         message_url=message_url,
