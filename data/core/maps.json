@@ -83,6 +83,89 @@
                 "game": "bw"
             }
         },
+        "season_pre_beta": {
+            "Death Valley": {
+                "short_name": "Death Valley",
+                "name": "[SC:Evo] Death Valley (데스밸리)",
+                "author": "SCEvoLadder",
+                "am_link": "battlenet:://starcraft/map/1/367495",
+                "eu_link": "battlenet:://starcraft/map/2/258890",
+                "as_link": "battlenet:://starcraft/map/3/184685",
+                "game": "bw"
+            },
+            "Golden Wall": {
+                "short_name": "Golden Wall",
+                "name": "Golden Wall SEL",
+                "author": "SCEvoLeague",
+                "am_link": "battlenet:://starcraft/map/1/374671",
+                "eu_link": "battlenet:://starcraft/map/2/261404",
+                "as_link": "battlenet:://starcraft/map/3/188794",
+                "game": "sc2"
+            },
+            "Holy World": {
+                "short_name": "Holy World",
+                "name": "[SC:Evo] Holy World (홀리월드)",
+                "author": "SCEvoLadder",
+                "am_link": "battlenet:://starcraft/map/1/367497",
+                "eu_link": "battlenet:://starcraft/map/2/258892",
+                "as_link": "battlenet:://starcraft/map/3/184687",
+                "game": "bw"
+            },
+            "Keres Passage": {
+                "short_name": "Keres Passage",
+                "name": "Keres Passage SEL",
+                "author": "HyperONE",
+                "am_link": "battlenet:://starcraft/map/1/367550",
+                "eu_link": "battlenet:://starcraft/map/2/258950",
+                "as_link": "battlenet:://starcraft/map/3/184790",
+                "game": "sc2"
+            },
+            "Mothership": {
+                "short_name": "Mothership",
+                "name": "Mothership SEL",
+                "author": "SCEvoLeague",
+                "am_link": "battlenet:://starcraft/map/1/377211",
+                "eu_link": "battlenet:://starcraft/map/2/263960",
+                "as_link": "battlenet:://starcraft/map/3/189313",
+                "game": "sc2"
+            },
+            "Radeon": {
+                "short_name": "Radeon",
+                "name": "[SC:Evo] Radeon (라데온)",
+                "author": "SCEvoLadder",
+                "am_link": "battlenet:://starcraft/map/1/367506",
+                "eu_link": "battlenet:://starcraft/map/2/258902",
+                "as_link": "battlenet:://starcraft/map/3/184696",
+                "game": "bw"
+            },
+            "Ruby Rock": {
+                "short_name": "Ruby Rock",
+                "name": "Ruby Rock SEL",
+                "author": "SCEvoLeague",
+                "am_link": "battlenet:://starcraft/map/1/376705",
+                "eu_link": "battlenet:://starcraft/map/2/261405",
+                "as_link": "battlenet:://starcraft/map/3/189816",
+                "game": "sc2"
+            },
+            "Sylphid": {
+                "short_name": "Sylphid",
+                "name": "[SC:Evo] Sylphid (실피드)",
+                "author": "SCEvoLadder",
+                "am_link": "battlenet:://starcraft/map/1/367510",
+                "eu_link": "battlenet:://starcraft/map/2/258906",
+                "as_link": "battlenet:://starcraft/map/3/184701",
+                "game": "bw"
+            },
+            "Vermeer": {
+                "short_name": "Vermeer",
+                "name": "[SC:Evo] Vermeer (버미어)",
+                "author": "SCEvoLadder",
+                "am_link": "battlenet:://starcraft/map/1/367512",
+                "eu_link": "battlenet:://starcraft/map/2/258908",
+                "as_link": "battlenet:://starcraft/map/3/184704",
+                "game": "bw"
+            }
+        },
         "season_beta": {
             "": {
                 "short_name": "",
@@ -106,6 +189,89 @@
     },
     "2v2": {
         "season_alpha": {
+            "Crimson Research Lab": {
+                "short_name": "Crimson Research Lab",
+                "name": "Crimson Research Lab SEL",
+                "author": "SCEvoLeague",
+                "am_link": "battlenet:://starcraft/map/1/377185",
+                "eu_link": "battlenet:://starcraft/map/2/265971",
+                "as_link": "battlenet:://starcraft/map/3/189286",
+                "game": "sc2"
+            },
+            "New Bed of Chaos": {
+                "short_name": "New Bed of Chaos",
+                "name": "New Bed of Chaos SEL",
+                "author": "SCEvoLeague",
+                "am_link": "battlenet:://starcraft/map/1/376154",
+                "eu_link": "battlenet:://starcraft/map/2/260869",
+                "as_link": "battlenet:://starcraft/map/3/189787",
+                "game": "sc2"
+            },
+            "Reclamation": {
+                "short_name": "Reclamation",
+                "name": "Reclamation SEL",
+                "author": "SCEvoLeague",
+                "am_link": "battlenet:://starcraft/map/1/378199",
+                "eu_link": "battlenet:://starcraft/map/2/264442",
+                "as_link": "battlenet:://starcraft/map/3/189284",
+                "game": "sc2"
+            },
+            "Rhoskallian": {
+                "short_name": "Rhoskallian",
+                "name": "Rhoskallian SEL",
+                "author": "SCEvoLeague",
+                "am_link": "battlenet:://starcraft/map/1/375646",
+                "eu_link": "battlenet:://starcraft/map/2/264443",
+                "as_link": "battlenet:://starcraft/map/3/188260",
+                "game": "sc2"
+            },
+            "Rohana": {
+                "short_name": "Rohana",
+                "name": "Rohana SEL",
+                "author": "SCEvoLeague",
+                "am_link": "battlenet:://starcraft/map/1/378200",
+                "eu_link": "battlenet:://starcraft/map/2/263935",
+                "as_link": "battlenet:://starcraft/map/3/188261",
+                "game": "sc2"
+            },
+            "Rust Bucket": {
+                "short_name": "Rust Bucket",
+                "name": "Rust Bucket SEL",
+                "author": "SCEvoLeague",
+                "am_link": "battlenet:://starcraft/map/1/377184",
+                "eu_link": "battlenet:://starcraft/map/2/264939",
+                "as_link": "battlenet:://starcraft/map/3/191329",
+                "game": "sc2"
+            },
+            "Team Biodome": {
+                "short_name": "Team Biodome",
+                "name": "Team Biodome SEL",
+                "author": "SCEvoLeague",
+                "am_link": "battlenet:://starcraft/map/1/376676",
+                "eu_link": "battlenet:://starcraft/map/2/263936",
+                "as_link": "battlenet:://starcraft/map/3/188772",
+                "game": "sc2"
+            },
+            "Undercurrent": {
+                "short_name": "Undercurrent",
+                "name": "Undercurrent SEL",
+                "author": "SCEvoLeague",
+                "am_link": "battlenet:://starcraft/map/1/375132",
+                "eu_link": "battlenet:://starcraft/map/2/262905",
+                "as_link": "battlenet:://starcraft/map/3/188771",
+                "game": "sc2"
+            },
+            "Yellowjacket": {
+                "short_name": "Yellowjacket",
+                "name": "Yellowjacket SEL",
+                "author": "SCEvoLeague",
+                "am_link": "battlenet:://starcraft/map/1/374636",
+                "eu_link": "battlenet:://starcraft/map/2/264445",
+                "as_link": "battlenet:://starcraft/map/3/188262",
+                "game": "sc2"
+            }
+        },
+        "season_pre_beta": {
             "Crimson Research Lab": {
                 "short_name": "Crimson Research Lab",
                 "name": "Crimson Research Lab SEL",

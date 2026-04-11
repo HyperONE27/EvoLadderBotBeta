@@ -28,7 +28,7 @@ def _get_bool_env(key: str) -> bool:
 # Season
 # ---------------------------------------------------------------------------
 
-CURRENT_SEASON: str = "season_alpha"
+CURRENT_SEASON: str = "season_pre_beta"
 
 # ---------------------------------------------------------------------------
 # Game rules
