@@ -238,6 +238,7 @@ What remains?
 - ⏰ Players often join, see nobody, and immediately leave despite the new notifications system, so it may not be doing as much to solve desyncs as I thought if I don't log people joining/leaving and display it in a more OBVIOUSLY VISIBLE/public manner
 - ⏰ Fix messages dropping on channel manager
 - ⏰ Handle Supabase SQL migration manually
+- ⏰ Add chat history embed to match admin info command
 
 ```
  Here's what happened — I traced it through channel_manager/app.py.
