@@ -28,7 +28,11 @@ from typing import Any, Awaitable, Callable, TypeVar
 import discord
 import structlog
 
-from bot.core.config import DISCORD_MESSAGE_RATE_LIMIT, MESSAGE_QUEUE_MAX_RETRIES
+from bot.core.config import (
+    DISCORD_MESSAGE_RATE_LIMIT,
+    MESSAGE_QUEUE_MAX_RETRIES,
+    ROLE_QUEUE_RATE_LIMIT,
+)
 
 _T = TypeVar("_T")
 
@@ -239,10 +243,115 @@ class MessageQueue:
 
 
 # ======================================================================
-# Global singleton
+# Role queue — dedicated worker for PUT /guilds/{id}/members/{id}/roles/{id}
+# ======================================================================
+
+
+class RoleQueue:
+    """Single-priority queue for guild role assignment API calls.
+
+    Discord rate-limits this route at 10 requests / 10 seconds per guild.
+    We stay safe at 1 request/second (configurable via ROLE_QUEUE_RATE_LIMIT).
+    """
+
+    def __init__(self, rate_limit: float = ROLE_QUEUE_RATE_LIMIT) -> None:
+        self._queue: asyncio.Queue[MessageQueueJob] = asyncio.Queue()
+        self._worker_task: asyncio.Task[None] | None = None
+        self._running: bool = False
+        self._min_interval: float = 1.0 / rate_limit
+        self._next_allowed_time: float = time.monotonic()
+
+    async def start(self) -> None:
+        if self._running:
+            return
+        self._running = True
+        self._worker_task = asyncio.create_task(self._worker_loop())
+        logger.info("role_queue.started", rate_limit=1.0 / self._min_interval)
+
+    async def stop(self) -> None:
+        if not self._running:
+            return
+        self._running = False
+        if self._worker_task:
+            await self._worker_task
+        remaining = self._queue.qsize()
+        if remaining:
+            logger.warning("role_queue.shutdown_pending", remaining=remaining)
+
+    async def enqueue(
+        self, operation: Callable[[], Awaitable[_T]]
+    ) -> asyncio.Future[_T]:
+        future: asyncio.Future[_T] = asyncio.get_running_loop().create_future()
+        job = MessageQueueJob(
+            operation=operation, future=future, job_type="role_assign"
+        )
+        await self._queue.put(job)
+        return future
+
+    async def _worker_loop(self) -> None:
+        while self._running:
+            try:
+                if not self._queue.empty():
+                    job = await self._queue.get()
+                    await self._execute_job(job)
+                else:
+                    await asyncio.sleep(0.05)
+            except Exception:
+                logger.exception("role_queue.worker_error")
+                await asyncio.sleep(0.5)
+
+    async def _enforce_rate_limit(self) -> None:
+        now = time.monotonic()
+        if now < self._next_allowed_time:
+            await asyncio.sleep(self._next_allowed_time - now)
+        self._next_allowed_time = max(
+            self._next_allowed_time + self._min_interval,
+            time.monotonic(),
+        )
+
+    async def _execute_job(self, job: MessageQueueJob) -> None:
+        await self._enforce_rate_limit()
+        try:
+            result = await job.operation()
+            if not job.future.done():
+                job.future.set_result(result)
+        except discord.Forbidden as exc:
+            # Bot lacks Manage Roles or role is higher than bot's top role.
+            logger.warning("role_queue.forbidden", error=str(exc))
+            if not job.future.done():
+                job.future.set_exception(exc)
+        except discord.NotFound as exc:
+            # Member left the guild between enqueue and execution.
+            logger.warning("role_queue.member_not_found", error=str(exc))
+            if not job.future.done():
+                job.future.set_exception(exc)
+        except Exception as exc:
+            if job.retry_count < MESSAGE_QUEUE_MAX_RETRIES:
+                job.retry_count += 1
+                logger.warning(
+                    "role_queue.retry",
+                    attempt=job.retry_count,
+                    error=str(exc),
+                )
+                self._queue.put_nowait(job)
+            else:
+                logger.error("role_queue.max_retries", error=str(exc))
+                if not job.future.done():
+                    job.future.set_exception(exc)
+
+    def get_queue_stats(self) -> dict[str, object]:
+        return {
+            "count": self._queue.qsize(),
+            "running": self._running,
+        }
+
+
+# ======================================================================
+# Global singletons
 # ======================================================================
 
 _message_queue: MessageQueue | None = None
+_role_queue: RoleQueue | None = None
 
 
 def initialize_message_queue() -> MessageQueue:
@@ -257,3 +366,17 @@ def get_message_queue() -> MessageQueue:
             "MessageQueue not initialized — call initialize_message_queue() first"
         )
     return _message_queue
+
+
+def initialize_role_queue() -> RoleQueue:
+    global _role_queue
+    _role_queue = RoleQueue()
+    return _role_queue
+
+
+def get_role_queue() -> RoleQueue:
+    if _role_queue is None:
+        raise RuntimeError(
+            "RoleQueue not initialized — call initialize_role_queue() first"
+        )
+    return _role_queue

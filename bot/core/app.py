@@ -27,7 +27,7 @@ from bot.core.bootstrap import Bot
 from bot.core.config import BACKEND_URL, BOT_TOKEN, SERVER_GUILD_ID
 from bot.core.dependencies import get_cache, get_player_locale, set_bot
 from bot.core.http import get_session, init_session, close_session
-from bot.core.message_queue import get_message_queue, initialize_message_queue
+from bot.core.queues import get_message_queue, initialize_message_queue
 from bot.core.ws_listener import start_ws_listener
 from bot.helpers.replay_handler import handle_replay_upload
 from common.datetime_helpers import utc_now

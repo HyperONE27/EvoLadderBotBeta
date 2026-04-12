@@ -132,6 +132,10 @@ WRAITH_TRANSPARENT_IMAGE_LINK: str = (
 
 DISCORD_MESSAGE_RATE_LIMIT: int = 40
 
+# Role assignment queue — PUT /guilds/{id}/members/{id}/roles/{id} is 10/10s per guild.
+# Stay conservative at 1 req/s.
+ROLE_QUEUE_RATE_LIMIT: float = 1.0
+
 # ---------------------
 # Queue heartbeat
 # ---------------------
