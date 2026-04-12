@@ -237,6 +237,7 @@ What remains?
 - ✅ Fix messages dropping on channel manager
   - ✅ Added retry logic
   - ✅ Need to migrate Supabase SQL migration manually to enable this feature
+- ✅ Add chat history embed to match admin info command JSON dump
 
 
 ## 2026-04-14
@@ -254,7 +255,7 @@ What remains?
 - ⏰ Include information about who joined (BW/SC2/both) in notifications?
 - ⏰ Add time zones and quiet hours selection to `/setup`/ and `/notifications`
 - ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
-- ⏰ Add chat history embed to match admin info command
+- ⏰ Put channel chat history for each match in a nicer-looking embed in /match
 
 ```
  Here's what happened — I traced it through channel_manager/app.py.

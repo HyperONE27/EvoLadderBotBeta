@@ -24,12 +24,6 @@ CREATE TABLE IF NOT EXISTS channels (
     CONSTRAINT uq_channels_match_id_mode UNIQUE (match_id, match_mode)
 );
 
--- Idempotent migration: relax NOT NULL on the welcome message columns so that
--- channel creation can record the row even when the initial ping send fails
--- transiently (Discord 5xx). Safe to re-run.
-ALTER TABLE channels ALTER COLUMN message_id  DROP NOT NULL;
-ALTER TABLE channels ALTER COLUMN message_url DROP NOT NULL;
-
 -- Atomically appends one message entry to the messages JSONB array.
 CREATE OR REPLACE FUNCTION append_channel_message(
     p_channel_id BIGINT,
