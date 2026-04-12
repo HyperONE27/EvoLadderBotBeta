@@ -229,12 +229,12 @@ What remains?
         - A poor implementation might cause players to have to wait 5-6 minutes to play vs each other when they're the only ones online anyway
         - However we also want to prefer new matchups when they are available
         - We have to balance this against potential MMR differences, for example, if a new guy shows up when two people are in a long streak of games vs each other, but they're a bit far off from the MMR, how much is too much?
-- ⏰ Add a role to users on the server when they complete setup for the first time
+- ✅ Add a role to users on the server when they complete setup for the first time
     - ✅ Added a role queue respecting Discord's 10 requests/10 seconds limit
-    - ⏰ Implemented checking everyone's presence in server + roles on startup
-    - ⏰ Role is added to all non-banned users in the players table regardless of setup status, but is now conditioned on accepting ToS
-    - ⏰ Role is added/removed on toggling un/ban status
-    - ⏰ Startup backfill automaticlly handles the correct status for all players
+    - ✅ Implemented checking everyone's presence in server + roles on startup
+    - ✅ Role is added to all non-banned users in the players table regardless of setup status, but is now conditioned on accepting ToS
+    - ✅ Role is added/removed on toggling un/ban status
+    - ✅ Startup backfill automaticlly handles the correct status for all players
 - ⏰ Add time zones and quiet hours selection to `/setup`/ and `/notifications`
 - ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
 - ✅ Update `/help` to include `/notifications` description
