@@ -3,6 +3,7 @@ import structlog
 from typing import Any
 
 import httpx
+import polars as pl
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 
@@ -108,6 +109,7 @@ from backend.api.models import (
     TermsOfServiceConfirmRequest,
     TermsOfServiceConfirmResponse,
     ActivePlayersResponse,
+    EligibleRoleUidsResponse,
     ReferralPitchRequest,
     ReferralRequest,
     ReferralResponse,
@@ -937,6 +939,18 @@ async def stats_active_players(
     return ActivePlayersResponse(
         active_player_count=app.orchestrator.get_active_player_count()
     )
+
+
+@router.get("/players/eligible_role_uids", response_model=EligibleRoleUidsResponse)
+async def eligible_role_uids(
+    app: Backend = Depends(get_backend),
+) -> EligibleRoleUidsResponse:
+    df = app.state_manager.players_df
+    if df.is_empty():
+        return EligibleRoleUidsResponse(discord_uids=[])
+    rows = df.filter(pl.col("accepted_tos") & ~pl.col("is_banned"))
+    uids = [int(uid) for uid in rows.get_column("discord_uid").to_list()]
+    return EligibleRoleUidsResponse(discord_uids=uids)
 
 
 @router.get("/notifications/{discord_uid}", response_model=NotificationsOut)

@@ -1976,6 +1976,11 @@ async def _send_tos_request(
         f"TOS upsert succeeded for {discord_username} ({discord_uid}): accepted={accepted}"
     )
 
+    if accepted:
+        from bot.core.role_sync import grant_role
+
+        await grant_role(interaction.client, discord_uid)
+
     if accepted and on_accept_success is not None:
         await on_accept_success(interaction, _locale)
     else:

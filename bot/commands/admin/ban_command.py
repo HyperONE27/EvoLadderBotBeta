@@ -98,6 +98,14 @@ def register_admin_ban_command(tree: app_commands.CommandTree) -> None:
                 f"Admin {btn_interaction.user.name} ({btn_interaction.user.id}) toggled ban for "
                 f"{target_player_name} ({target_discord_uid}): is_banned={new_is_banned}"
             )
+
+            from bot.core.role_sync import grant_role, remove_role
+
+            if new_is_banned:
+                await remove_role(btn_interaction.client, target_discord_uid)
+            else:
+                await grant_role(btn_interaction.client, target_discord_uid)
+
             return [
                 (
                     t("admin_ban.field.is_banned", locale),

@@ -79,6 +79,12 @@ MATCH_LOG_CHANNEL_ID: int = _get_int_env("MATCH_LOG_CHANNEL_ID")
 
 SERVER_GUILD_ID: int = _get_int_env("SERVER_GUILD_ID")
 
+# Optional: role granted to non-banned players who have accepted ToS.
+# If unset, role management is skipped.
+LADDER_PLAYER_ROLE_ID: int | None = (
+    int(v) if (v := os.getenv("LADDER_PLAYER_ROLE_ID")) else None
+)
+
 # ---------------------
 # Game rules
 # ---------------------

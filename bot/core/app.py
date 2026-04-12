@@ -27,7 +27,12 @@ from bot.core.bootstrap import Bot
 from bot.core.config import BACKEND_URL, BOT_TOKEN, SERVER_GUILD_ID
 from bot.core.dependencies import get_cache, get_player_locale, set_bot
 from bot.core.http import get_session, init_session, close_session
-from bot.core.queues import get_message_queue, initialize_message_queue
+from bot.core.queues import (
+    get_message_queue,
+    initialize_message_queue,
+    initialize_role_queue,
+)
+from bot.core.role_sync import backfill_roles
 from bot.core.ws_listener import start_ws_listener
 from bot.helpers.replay_handler import handle_replay_upload
 from common.datetime_helpers import utc_now
@@ -208,6 +213,24 @@ async def on_member_join(member: discord.Member) -> None:
             exc_info=True,
         )
 
+    # Grant ladder role if this player already accepted ToS (e.g. rejoining server).
+    try:
+        async with get_session().get(
+            f"{BACKEND_URL}/players/{member.id}"
+        ) as player_resp:
+            if player_resp.status == 200:
+                player_data = (await player_resp.json()).get("player")
+                if (
+                    player_data
+                    and player_data.get("accepted_tos")
+                    and not player_data.get("is_banned")
+                ):
+                    from bot.core.role_sync import grant_role
+
+                    await grant_role(client, member.id)
+    except Exception:
+        pass  # Non-critical; backfill will catch it on next restart.
+
 
 @client.event
 async def on_connect() -> None:
@@ -228,6 +251,8 @@ async def on_ready() -> None:
     await init_session()
     mq = initialize_message_queue()
     await mq.start()
+    rq = initialize_role_queue()
+    await rq.start()
     try:
         _register_commands(client)
         synced = await tree.sync()
@@ -235,6 +260,8 @@ async def on_ready() -> None:
         logger.info("[Discord Gateway] Bot is ready!")
         # Start WebSocket listener for real-time backend events.
         _ws_task = asyncio.create_task(start_ws_listener(client))
+        # Backfill ladder player role in background.
+        asyncio.create_task(backfill_roles(client))
         _initialized = True
     except Exception as e:
         logger.error(f"[Discord Gateway] Error during initialization: {e}")

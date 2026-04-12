@@ -46,6 +46,13 @@ class ActivePlayersResponse(BaseModel):
     active_player_count: int
 
 
+# --- /players/eligible_role_uids ---
+
+
+class EligibleRoleUidsResponse(BaseModel):
+    discord_uids: list[int]
+
+
 # --- /admins/{discord_uid} ---
 
 
