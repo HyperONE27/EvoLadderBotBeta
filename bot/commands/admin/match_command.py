@@ -1,5 +1,5 @@
-# import io
-# import json
+import io
+import json
 from typing import Any
 
 import structlog
@@ -105,24 +105,25 @@ async def _handle_match_1v1(
             AdminReplayDetailsEmbed(i + 1, replay, verification, url, locale=locale)
         )
 
-    # raw_state = {
-    #     "match": match,
-    #     "player_1": player_1,
-    #     "player_2": player_2,
-    #     "admin": admin,
-    #     "replays": replays,
-    #     "verification": verifications,
-    #     "replay_urls": replay_urls,
-    # }
-    # json_bytes = json.dumps(
-    #     raw_state, indent=2, ensure_ascii=False, default=str
-    # ).encode()
-    # file = discord.File(
-    #     fp=io.BytesIO(json_bytes),
-    #     filename=f"admin_match_{match_id}.json",
-    # )
+    raw_state = {
+        "match": match,
+        "player_1": player_1,
+        "player_2": player_2,
+        "admin": admin,
+        "replays": replays,
+        "verification": verifications,
+        "replay_urls": replay_urls,
+        "chat_history": data.get("chat_history"),
+    }
+    json_bytes = json.dumps(
+        raw_state, indent=2, ensure_ascii=False, default=str
+    ).encode()
+    file = discord.File(
+        fp=io.BytesIO(json_bytes),
+        filename=f"admin_match_{match_id}.json",
+    )
 
-    await interaction.followup.send(embeds=embeds)
+    await interaction.followup.send(embeds=embeds, file=file)
 
 
 async def _handle_match_2v2(
@@ -149,17 +150,18 @@ async def _handle_match_2v2(
         AdminMatchEmbed2v2(match, players, admin, locale=locale)
     ]
 
-    # raw_state = {
-    #     "match": match,
-    #     **players,
-    #     "admin": admin,
-    # }
-    # json_bytes = json.dumps(
-    #     raw_state, indent=2, ensure_ascii=False, default=str
-    # ).encode()
-    # file = discord.File(
-    #     fp=io.BytesIO(json_bytes),
-    #     filename=f"admin_match_2v2_{match_id}.json",
-    # )
+    raw_state = {
+        "match": match,
+        **players,
+        "admin": admin,
+        "chat_history": data.get("chat_history"),
+    }
+    json_bytes = json.dumps(
+        raw_state, indent=2, ensure_ascii=False, default=str
+    ).encode()
+    file = discord.File(
+        fp=io.BytesIO(json_bytes),
+        filename=f"admin_match_2v2_{match_id}.json",
+    )
 
-    await interaction.followup.send(embeds=embeds)
+    await interaction.followup.send(embeds=embeds, file=file)

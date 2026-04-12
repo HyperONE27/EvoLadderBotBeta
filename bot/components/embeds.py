@@ -5,7 +5,7 @@ Organized by domain.  Private helper functions used only by embed constructors
 live next to the embeds that depend on them.
 """
 
-import json
+# import json
 import time
 from datetime import datetime, timedelta
 from typing import Any
@@ -3301,51 +3301,52 @@ class AdminMatchEmbed(discord.Embed):
             inline=False,
         )
 
-        raw: dict[str, Any] = {}
-        for key in (
-            "id",
-            "player_1_discord_uid",
-            "player_2_discord_uid",
-            "player_1_name",
-            "player_2_name",
-            "player_1_race",
-            "player_2_race",
-            "player_1_mmr",
-            "player_2_mmr",
-            "player_1_report",
-            "player_2_report",
-            "match_result",
-            "player_1_mmr_change",
-            "player_2_mmr_change",
-            "map_name",
-            "server_name",
-            "assigned_at",
-            "completed_at",
-            "admin_intervened",
-            "admin_discord_uid",
-            "player_1_replay_path",
-            "player_1_replay_row_id",
-            "player_1_uploaded_at",
-            "player_2_replay_path",
-            "player_2_replay_row_id",
-            "player_2_uploaded_at",
-        ):
-            val = match.get(key)
-            if isinstance(val, datetime):
-                raw[key] = str(val)
-            elif key.endswith("_replay_path") and isinstance(val, str):
-                raw[key] = val.rsplit("/", 1)[-1] if "/" in val else val
-            else:
-                raw[key] = val
-
-        raw_json = json.dumps(raw, indent=2, ensure_ascii=False)
-        if len(raw_json) > 950:
-            raw_json = raw_json[:950] + "\n..."
-        self.add_field(
-            name=t("admin_match_embed.field_name.raw", locale),
-            value=f"```json\n{raw_json}\n```",
-            inline=False,
-        )
+        # Raw match data moved to JSON file attachment in match_command.py.
+        # raw: dict[str, Any] = {}
+        # for key in (
+        #     "id",
+        #     "player_1_discord_uid",
+        #     "player_2_discord_uid",
+        #     "player_1_name",
+        #     "player_2_name",
+        #     "player_1_race",
+        #     "player_2_race",
+        #     "player_1_mmr",
+        #     "player_2_mmr",
+        #     "player_1_report",
+        #     "player_2_report",
+        #     "match_result",
+        #     "player_1_mmr_change",
+        #     "player_2_mmr_change",
+        #     "map_name",
+        #     "server_name",
+        #     "assigned_at",
+        #     "completed_at",
+        #     "admin_intervened",
+        #     "admin_discord_uid",
+        #     "player_1_replay_path",
+        #     "player_1_replay_row_id",
+        #     "player_1_uploaded_at",
+        #     "player_2_replay_path",
+        #     "player_2_replay_row_id",
+        #     "player_2_uploaded_at",
+        # ):
+        #     val = match.get(key)
+        #     if isinstance(val, datetime):
+        #         raw[key] = str(val)
+        #     elif key.endswith("_replay_path") and isinstance(val, str):
+        #         raw[key] = val.rsplit("/", 1)[-1] if "/" in val else val
+        #     else:
+        #         raw[key] = val
+        #
+        # raw_json = json.dumps(raw, indent=2, ensure_ascii=False)
+        # if len(raw_json) > 950:
+        #     raw_json = raw_json[:950] + "\n..."
+        # self.add_field(
+        #     name=t("admin_match_embed.field_name.raw", locale),
+        #     value=f"```json\n{raw_json}\n```",
+        #     inline=False,
+        # )
 
         p1_replay = match.get("player_1_replay_path")
         p2_replay = match.get("player_2_replay_path")
@@ -3658,58 +3659,58 @@ class AdminMatchEmbed2v2(discord.Embed):
             inline=False,
         )
 
-        # --- Raw JSON ---
-        raw: dict[str, Any] = {}
-        for key in (
-            "id",
-            "team_1_player_1_discord_uid",
-            "team_1_player_2_discord_uid",
-            "team_2_player_1_discord_uid",
-            "team_2_player_2_discord_uid",
-            "team_1_player_1_name",
-            "team_1_player_2_name",
-            "team_2_player_1_name",
-            "team_2_player_2_name",
-            "team_1_player_1_race",
-            "team_1_player_2_race",
-            "team_2_player_1_race",
-            "team_2_player_2_race",
-            "team_1_mmr",
-            "team_2_mmr",
-            "team_1_report",
-            "team_2_report",
-            "match_result",
-            "team_1_mmr_change",
-            "team_2_mmr_change",
-            "map_name",
-            "server_name",
-            "assigned_at",
-            "completed_at",
-            "admin_intervened",
-            "admin_discord_uid",
-            "team_1_replay_path",
-            "team_1_replay_row_id",
-            "team_1_uploaded_at",
-            "team_2_replay_path",
-            "team_2_replay_row_id",
-            "team_2_uploaded_at",
-        ):
-            val = match.get(key)
-            if isinstance(val, datetime):
-                raw[key] = str(val)
-            elif key.endswith("_replay_path") and isinstance(val, str):
-                raw[key] = val.rsplit("/", 1)[-1] if "/" in val else val
-            else:
-                raw[key] = val
-
-        raw_json = json.dumps(raw, indent=2, ensure_ascii=False)
-        if len(raw_json) > 950:
-            raw_json = raw_json[:950] + "\n..."
-        self.add_field(
-            name=t("admin_match_embed.field_name.raw", locale),
-            value=f"```json\n{raw_json}\n```",
-            inline=False,
-        )
+        # Raw match data moved to JSON file attachment in match_command.py.
+        # raw: dict[str, Any] = {}
+        # for key in (
+        #     "id",
+        #     "team_1_player_1_discord_uid",
+        #     "team_1_player_2_discord_uid",
+        #     "team_2_player_1_discord_uid",
+        #     "team_2_player_2_discord_uid",
+        #     "team_1_player_1_name",
+        #     "team_1_player_2_name",
+        #     "team_2_player_1_name",
+        #     "team_2_player_2_name",
+        #     "team_1_player_1_race",
+        #     "team_1_player_2_race",
+        #     "team_2_player_1_race",
+        #     "team_2_player_2_race",
+        #     "team_1_mmr",
+        #     "team_2_mmr",
+        #     "team_1_report",
+        #     "team_2_report",
+        #     "match_result",
+        #     "team_1_mmr_change",
+        #     "team_2_mmr_change",
+        #     "map_name",
+        #     "server_name",
+        #     "assigned_at",
+        #     "completed_at",
+        #     "admin_intervened",
+        #     "admin_discord_uid",
+        #     "team_1_replay_path",
+        #     "team_1_replay_row_id",
+        #     "team_1_uploaded_at",
+        #     "team_2_replay_path",
+        #     "team_2_replay_row_id",
+        #     "team_2_uploaded_at",
+        # ):
+        #     val = match.get(key)
+        #     if isinstance(val, datetime):
+        #         raw[key] = str(val)
+        #     elif key.endswith("_replay_path") and isinstance(val, str):
+        #         raw[key] = val.rsplit("/", 1)[-1] if "/" in val else val
+        #     else:
+        #         raw[key] = val
+        #
+        # raw_json = json.dumps(raw, indent=2, ensure_ascii=False)
+        # if len(raw_json) > 950:
+        #     raw_json = raw_json[:950] + "\n..."
+        # self.add_field(
+        #     name=t("admin_match_embed.field_name.raw", locale),
+        #     value=f"```json\n{raw_json}\n```",
+        #     inline=False,
+        # )
 
         # --- Replay status ---
         t1_replay = match.get("team_1_replay_path")
