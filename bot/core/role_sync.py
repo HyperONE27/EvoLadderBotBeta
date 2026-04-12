@@ -7,6 +7,7 @@ the Terms of Service. It is toggled on ban/unban and granted on ToS acceptance.
 
 import asyncio
 from collections.abc import Coroutine
+from functools import partial
 from typing import Any
 
 import discord
@@ -59,8 +60,7 @@ async def grant_role(client: discord.Client, discord_uid: int) -> None:
     if role in member.roles:
         return
     rq = get_role_queue()
-    _member, _role = member, role
-    await rq.enqueue(lambda: _add_role_op(_member, _role, "Ladder: ToS accepted"))
+    await rq.enqueue(partial(_add_role_op, member, role, "Ladder: ToS accepted"))
 
 
 async def remove_role(client: discord.Client, discord_uid: int) -> None:
@@ -77,8 +77,7 @@ async def remove_role(client: discord.Client, discord_uid: int) -> None:
     if role not in member.roles:
         return
     rq = get_role_queue()
-    _member, _role = member, role
-    await rq.enqueue(lambda: _remove_role_op(_member, _role, "Ladder: banned"))
+    await rq.enqueue(partial(_remove_role_op, member, role, "Ladder: banned"))
 
 
 async def backfill_roles(client: discord.Client) -> None:
@@ -110,14 +109,18 @@ async def backfill_roles(client: discord.Client) -> None:
     rq = get_role_queue()
     enqueued = 0
 
+    # Ensure the full member list is cached — Discord only sends all members
+    # automatically for small guilds (<75 members).  Requires members intent.
+    if not guild.chunked:
+        await guild.chunk()
+
     for uid in uids:
         member = guild.get_member(uid)
         if member is None:
             continue
         if role in member.roles:
             continue
-        _member, _role = member, role
-        await rq.enqueue(lambda: _add_role_op(_member, _role, "Ladder: backfill"))
+        await rq.enqueue(partial(_add_role_op, member, role, "Ladder: backfill"))
         enqueued += 1
         # Yield to event loop periodically to avoid blocking.
         if enqueued % 50 == 0:
