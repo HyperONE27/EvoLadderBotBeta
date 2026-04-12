@@ -449,7 +449,7 @@
   "get_result_display.invalidated.1": "❌ **比赛已作废**",
   "get_result_display.player_1_win.1": "🏆 **{p1_emote} {p1_name}**",
   "get_result_display.player_2_win.1": "🏆 **{p2_emote} {p2_name}**",
-  "help_embed.description.1": "所有指令必须在**与机器人的私信中**使用。\n\n**入门指南**\n- `/setup` — 初次注册：语言、服务条款、玩家名称、战网ID、地区、服务器和通知偏好设置。\n  - 必须完成此步骤才能使用机器人的其他功能。\n  - 您可以随时返回此指令撤销对服务条款的同意或更改设置。\n- `/setcountry {country}` — 如果您的地区未在 `/setup` 中列出，请在此选择。\n\n**游戏**\n- `/queue {game_mode}` — 加入天梯匹配队列。配置种族选择和反对的地图。2v2需要一个活跃的队伍。\n- `/party invite {player}` — 邀请已注册的玩家加入2v2队伍。可通过玩家用户名、Discord用户名或Discord ID查找。\n- `/party leave` — 离开当前的2v2队伍。\n- `/party status` — 查看当前2v2队伍状态及您的搭档是否已接受邀请。\n\n**统计与排行榜**\n- `/profile` — 查看您的各游戏模式的MMR、段位和对战记录统计。\n- `/leaderboard {game_mode}` — 查看MMR排行榜。\n- `/activity {game_mode}` — 查看近期加入队列尝试的图表。",
+  "help_embed.description.1": "所有指令必须在**与机器人的私信中**使用。\n\n**入门指南**\n- `/setup` — 初次注册：语言、服务条款、玩家名称、战网ID、地区、服务器和通知偏好设置。\n  - 必须完成此步骤才能使用机器人的其他功能。\n  - 您可以随时返回此指令撤销对服务条款的同意或更改设置。\n- `/setcountry {country}` — 如果您的地区未在 `/setup` 中列出，请在此选择。\n- `/notifications` — 配置队列活动通知（1v1/2v2 订阅和冷却时间）。\n\n**游戏**\n- `/queue {game_mode}` — 加入天梯匹配队列。配置种族选择和反对的地图。2v2需要一个活跃的队伍。\n- `/party invite {player}` — 邀请已注册的玩家加入2v2队伍。可通过玩家用户名、Discord用户名或Discord ID查找。\n- `/party leave` — 离开当前的2v2队伍。\n- `/party status` — 查看当前2v2队伍状态及您的搭档是否已接受邀请。\n\n**统计与排行榜**\n- `/profile` — 查看您的各游戏模式的MMR、段位和对战记录统计。\n- `/leaderboard {game_mode}` — 查看MMR排行榜。\n- `/activity {game_mode}` — 查看近期加入队列尝试的图表。",
   "help_embed.title.1": "ℹ️ SC: Evo Complete 天梯机器人 • 指令参考",
   "leaderboard.button.all_ranks": "所有段位",
   "leaderboard.button.best_race_only": "仅最佳种族",
