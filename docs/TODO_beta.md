@@ -216,7 +216,9 @@ What remains?
 - ✅ Add an owner announcement command
 
 
-## 2026-04-10
+## 2026-04-12
+
+❌⏰✅
 
 - ⏰ Add a notice about players disconnecting mid-match?
 - ⏰ Migrate wave-based matchmaking approach to a non-wave-based algorithm/faster wave-based algorithm with no matching obligations per wave so we don't get synchronization issues causing players to match up into the same opponents over and over again
@@ -228,16 +230,24 @@ What remains?
         - However we also want to prefer new matchups when they are available
         - We have to balance this against potential MMR differences, for example, if a new guy shows up when two people are in a long streak of games vs each other, but they're a bit far off from the MMR, how much is too much?
 - ⏰ Add a role to users on the server when they complete setup for the first time
+    - ✅ Added a role queue respecting Discord's 10 requests/10 seconds limit
+    - ⏰ Implemented checking everyone's presence in server + roles on startup
+    - ⏰ Role is added to all non-banned users in the players table regardless of setup status, but is now conditioned on accepting ToS
+    - ⏰ Role is added/removed on toggling un/ban status
+    - ⏰ Startup backfill automaticlly handles the correct status for all players
 - ⏰ Add time zones and quiet hours selection to `/setup`/ and `/notifications`
 - ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
-- ⏰ Update `/help` to include `/notifications` description
-- ⏰ Make channel manager channels public viewing but private talk
+- ✅ Update `/help` to include `/notifications` description
+- ✅ Make channel manager channels public viewing but private talk
+    - ✅ Match channels are now publicly viewable but message sending/reactions are disabled
 - ⏰ Include information about who joined (BW/SC2/both) in notifications?
 - ⏰ China vs NAW and SEA vs NAW should probably be on Korea
-- ⏰ Maybe lighten up the penalty for missing a match? Seems to just discourage people from queueing more than anything
+- ✅ Maybe lighten up the penalty for missing a match? Seems to just discourage people from queueing more than anything
+    - Penalty for abandonment 15 -> 10 minutes
 - ⏰ Players often join, see nobody, and immediately leave despite the new notifications system, so it may not be doing as much to solve desyncs as I thought if I don't log people joining/leaving and display it in a more OBVIOUSLY VISIBLE/public manner
 - ⏰ Fix messages dropping on channel manager
-- ⏰ Handle Supabase SQL migration manually
+  - ✅ Added retry logic
+  - ⏰ Need to migrate Supabase SQL migration manually to enable this feature
 - ⏰ Add chat history embed to match admin info command
 
 ```
