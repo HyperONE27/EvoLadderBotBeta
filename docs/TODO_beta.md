@@ -243,6 +243,7 @@ What remains?
 ## 2026-04-14
 
 - ⏰ Add a notice about players disconnecting mid-match?
+    - We probably should not be allowing reconnects for ladder matches as we have no  way to enforce fairness in these conditions
 - ⏰ Migrate wave-based matchmaking approach to a non-wave-based algorithm/faster wave-based algorithm with no matching obligations per wave so we don't get synchronization issues causing players to match up into the same opponents over and over again
     - For this to happen, we need:
         - A persistent record of recent matches
@@ -257,6 +258,8 @@ What remains?
 - ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
 - ⏰ Add better indicators for 1v1 and 2v2 settings for notifications in `/setup` and `/notifications`
 - ⏰ Put channel chat history for each match in a nicer-looking embed in /match
+- ⏰ Announce new SEL Code S/Code A/Code B
+- ⏰ Send a one-time DMs message to all bot users about SEL competitions
 
 ```
  Here's what happened — I traced it through channel_manager/app.py.
