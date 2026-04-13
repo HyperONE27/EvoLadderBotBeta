@@ -258,6 +258,7 @@ What remains?
 - ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
 - ⏰ Add better indicators for 1v1 and 2v2 settings for notifications in `/setup` and `/notifications`
 - ⏰ Put channel chat history for each match in a nicer-looking embed in /match
+- ⏰ Fix /match failing when embed characters exceed 6000
 - ⏰ Announce new SEL Code S/Code A/Code B
 - ⏰ Send a one-time DMs message to all bot users about SEL competitions
 
