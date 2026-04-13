@@ -255,6 +255,7 @@ What remains?
 - ⏰ Include information about who joined (BW/SC2/both) in notifications?
 - ⏰ Add time zones and quiet hours selection to `/setup`/ and `/notifications`
 - ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
+- ⏰ Add better indicators for 1v1 and 2v2 settings for notifications in `/setup` and `/notifications`
 - ⏰ Put channel chat history for each match in a nicer-looking embed in /match
 
 ```
