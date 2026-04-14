@@ -259,8 +259,10 @@ What remains?
 - ⏰ Add better indicators for 1v1 and 2v2 settings for notifications in `/setup` and `/notifications`
 - ⏰ Put channel chat history for each match in a nicer-looking embed in /match
 - ⏰ Fix /match failing when embed characters exceed 6000
+- ✅ Fix users being able to `/party invite` other users who have not completed setup
 - ⏰ Announce new SEL Code S/Code A/Code B
 - ⏰ Send a one-time DMs message to all bot users about SEL competitions
+- ⏰ Write a README.md that doesn't suck
 
 ```
  Here's what happened — I traced it through channel_manager/app.py.
