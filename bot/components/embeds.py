@@ -1626,7 +1626,7 @@ class SetupValidationErrorEmbed(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
-class SetupSelectionEmbed(discord.Embed):
+class SetupLocationEmbed(discord.Embed):
     def __init__(
         self,
         country: Country | None = None,
@@ -1634,14 +1634,14 @@ class SetupSelectionEmbed(discord.Embed):
         locale: str = "enUS",
     ) -> None:
         super().__init__(
-            title=t("setup_selection_embed.title.1", locale),
+            title=t("setup_location_embed.title.1", locale),
             color=discord.Color.blurple(),
         )
         selected_lines: list[str] = []
         if country:
             selected_lines.append(
                 t(
-                    "setup_selection_embed.nationality_label.1",
+                    "setup_location_embed.nationality_label.1",
                     locale,
                     flag=str(get_flag_emote(country["code"])),
                     name=_localized_country(country["code"], locale),
@@ -1650,7 +1650,7 @@ class SetupSelectionEmbed(discord.Embed):
         if region:
             selected_lines.append(
                 t(
-                    "setup_selection_embed.location_label.1",
+                    "setup_location_embed.location_label.1",
                     locale,
                     globe=str(get_globe_emote(region["globe_emote_code"])),
                     name=_localized_region(region["code"], locale),
@@ -1659,7 +1659,7 @@ class SetupSelectionEmbed(discord.Embed):
 
         if selected_lines:
             selected_block = (
-                t("setup_selection_embed.selected_header.1", locale)
+                t("setup_location_embed.selected_header.1", locale)
                 + "\n"
                 + "\n".join(selected_lines)
                 + "\n\n"
@@ -1669,35 +1669,96 @@ class SetupSelectionEmbed(discord.Embed):
 
         if country and region:
             self.description = selected_block + t(
-                "setup_selection_embed.confirm_prompt.1", locale
+                "setup_location_embed.confirm_prompt.1", locale
             )
         else:
             missing: list[str] = []
             if not country:
-                missing.append(t("setup_selection_embed.missing.nationality", locale))
+                missing.append(t("setup_location_embed.missing.nationality", locale))
             if not region:
-                missing.append(t("setup_selection_embed.missing.location", locale))
+                missing.append(t("setup_location_embed.missing.location", locale))
             self.description = (
                 selected_block
                 + t(
-                    "setup_selection_embed.select_prompt.1",
+                    "setup_location_embed.select_prompt.1",
                     locale,
                     missing=", ".join(missing),
                 )
                 + "\n\n"
-                + t("setup_selection_embed.country_limit_note.1", locale)
+                + t("setup_location_embed.country_limit_note.1", locale)
             )
 
         apply_default_embed_footer(self, locale=locale)
 
 
+_NOTIFICATION_VALUE_KEYS: dict[str, str] = {
+    "off": "setup_notification_view.option.off",
+    "5": "setup_notification_view.option.5min",
+    "15": "setup_notification_view.option.15min",
+    "30": "setup_notification_view.option.30min",
+    "60": "setup_notification_view.option.1hr",
+    "180": "setup_notification_view.option.3hr",
+    "360": "setup_notification_view.option.6hr",
+    "720": "setup_notification_view.option.12hr",
+    "1440": "setup_notification_view.option.24hr",
+}
+
+
+def _notification_value_label(value: str, locale: str) -> str:
+    """Map a notification select value (e.g. ``"15"``, ``"off"``) to its
+    localised display label."""
+    key = _NOTIFICATION_VALUE_KEYS.get(value)
+    return t(key, locale) if key else value
+
+
 class SetupNotificationEmbed(discord.Embed):
-    def __init__(self, locale: str = "enUS") -> None:
+    def __init__(
+        self,
+        preselected_1v1: str | None = None,
+        preselected_2v2: str | None = None,
+        locale: str = "enUS",
+    ) -> None:
         super().__init__(
             title=t("setup_notification_embed.title.1", locale),
-            description=t("setup_notification_embed.description.1", locale),
             color=discord.Color.blurple(),
         )
+
+        selected_lines: list[str] = []
+        if preselected_1v1 is not None:
+            selected_lines.append(
+                t(
+                    "setup_notification_embed.1v1_label.1",
+                    locale,
+                    value=_notification_value_label(preselected_1v1, locale),
+                )
+            )
+        if preselected_2v2 is not None:
+            selected_lines.append(
+                t(
+                    "setup_notification_embed.2v2_label.1",
+                    locale,
+                    value=_notification_value_label(preselected_2v2, locale),
+                )
+            )
+
+        if selected_lines:
+            selected_block = (
+                t("setup_notification_embed.selected_header.1", locale)
+                + "\n"
+                + "\n".join(selected_lines)
+                + "\n\n"
+            )
+        else:
+            selected_block = ""
+
+        if preselected_1v1 is not None and preselected_2v2 is not None:
+            self.description = selected_block + t(
+                "setup_notification_embed.confirm_prompt.1", locale
+            )
+        else:
+            self.description = selected_block + t(
+                "setup_notification_embed.description.1", locale
+            )
 
         apply_default_embed_footer(self, locale=locale)
 

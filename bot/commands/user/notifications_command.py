@@ -61,6 +61,10 @@ def register_notifications_command(tree: app_commands.CommandTree) -> None:
             standalone=True,
         )
         view.message = await interaction.followup.send(  # type: ignore[func-returns-value]
-            embed=SetupNotificationEmbed(locale=locale),
+            embed=SetupNotificationEmbed(
+                preselected_1v1=preselected_1v1,
+                preselected_2v2=preselected_2v2,
+                locale=locale,
+            ),
             view=view,
         )
