@@ -599,6 +599,7 @@
   "party.error.cannot_dm": "无法向**{invitee_name}**发送私信。对方可能已关闭私信功能。",
   "party.error.cannot_invite_self": "你不能邀请自己加入队伍。",
   "party.error.invite_failed": "无法发送邀请:{detail}",
+  "party.error.invitee_not_setup": "**{invitee_name}**尚未完成玩家设置。需要先执行 `/setup` 才能加入队伍。",
   "party.error.leave_failed": "无法离开队伍:{detail}",
   "party.error.no_profile": "未找到你的玩家资料。请先执行 `/setup`。",
   "party.error.player_not_found": "未找到与**{player}**匹配的玩家。",

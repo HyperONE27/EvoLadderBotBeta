@@ -599,6 +599,7 @@
   "party.error.cannot_dm": "",
   "party.error.cannot_invite_self": "",
   "party.error.invite_failed": "",
+  "party.error.invitee_not_setup": "",
   "party.error.leave_failed": "",
   "party.error.no_profile": "",
   "party.error.player_not_found": "",

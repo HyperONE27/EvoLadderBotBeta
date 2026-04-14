@@ -599,6 +599,7 @@
   "party.error.cannot_dm": "No se pudo enviar MD a **{invitee_name}**. Puede que tenga los MDs desactivados.",
   "party.error.cannot_invite_self": "No puedes invitarte a ti mismo a un grupo.",
   "party.error.invite_failed": "No se pudo enviar la invitación: {detail}",
+  "party.error.invitee_not_setup": "**{invitee_name}** aún no ha completado su configuración de jugador. Debe ejecutar `/setup` antes de unirse a un grupo.",
   "party.error.leave_failed": "No se pudo abandonar el grupo: {detail}",
   "party.error.no_profile": "No se encontró tu perfil de jugador. Ejecuta `/setup` primero.",
   "party.error.player_not_found": "No se encontró jugador con **{player}**.",

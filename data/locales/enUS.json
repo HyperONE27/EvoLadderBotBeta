@@ -599,6 +599,7 @@
   "party.error.cannot_dm": "Could not DM **{invitee_name}**. They may have DMs disabled.",
   "party.error.cannot_invite_self": "You cannot invite yourself to a party.",
   "party.error.invite_failed": "Could not send invite: {detail}",
+  "party.error.invitee_not_setup": "**{invitee_name}** has not completed their player setup yet. They need to run `/setup` before they can join a party.",
   "party.error.leave_failed": "Could not leave party: {detail}",
   "party.error.no_profile": "Your player profile was not found. Run `/setup` first.",
   "party.error.player_not_found": "No player found matching **{player}**.",

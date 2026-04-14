@@ -599,6 +599,7 @@
   "party.error.cannot_dm": "Не удалось отправить ЛС **{invitee_name}**. Возможно, ЛС отключены.",
   "party.error.cannot_invite_self": "Нельзя пригласить самого себя в группу.",
   "party.error.invite_failed": "Не удалось отправить приглашение: {detail}",
+  "party.error.invitee_not_setup": "**{invitee_name}** ещё не завершил настройку профиля. Для участия в группе необходимо сначала выполнить `/setup`.",
   "party.error.leave_failed": "Не удалось покинуть группу: {detail}",
   "party.error.no_profile": "Профиль игрока не найден. Сначала выполните `/setup`.",
   "party.error.player_not_found": "Игрок **{player}** не найден.",
