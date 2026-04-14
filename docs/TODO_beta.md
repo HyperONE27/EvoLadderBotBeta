@@ -253,6 +253,7 @@ What remains?
         - However we also want to prefer new matchups when they are available
         - We have to balance this against potential MMR differences, for example, if a new guy shows up when two people are in a long streak of games vs each other, but they're a bit far off from the MMR, how much is too much?
 - ⏰ Players often join, see nobody, and immediately leave despite the new notifications system, so it may not be doing as much to solve desyncs as I thought if I don't log people joining/leaving and display it in a more OBVIOUSLY VISIBLE/public manner
+    - People often join and then leave in 5 seconds
 - ⏰ Include information about who joined (BW/SC2/both) in notifications?
 - ⏰ Add time zones and quiet hours selection to `/setup`/ and `/notifications`
 - ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
@@ -263,6 +264,10 @@ What remains?
 - ⏰ Announce new SEL Code S/Code A/Code B
 - ⏰ Send a one-time DMs message to all bot users about SEL competitions
 - ⏰ Write a README.md that doesn't suck
+- ⏰ Big feature to entice content creators to cast ladder matches
+    - ⏰ Implement a content creators table
+    - ⏰ Implements a content creators-only command that lets content creators easily filter for and find replays they want to cast
+
 
 ```
  Here's what happened — I traced it through channel_manager/app.py.
