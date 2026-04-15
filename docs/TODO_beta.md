@@ -276,6 +276,7 @@ What remains?
 - ⏰ Update the match help instructions to distinguish between DISCORD channels and STARCRAFT II channels
 - ⏰ Suppress displaying races with 0 games played, not just on `/leaderboard` but in `/profile` and anywhere else needed
 - ⏰ `❌ You are not currently in an active match. Replay uploads are only accepted during an in-progress match.` appears as bare content without an embed
+- ⏰ Leaderboard presentation would be cleaner without `Leaderboard (1-10)`, etc.
 
 ```
  Here's what happened — I traced it through channel_manager/app.py.
