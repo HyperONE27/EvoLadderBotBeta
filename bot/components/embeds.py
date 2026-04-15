@@ -1739,41 +1739,27 @@ class SetupNotificationEmbed(discord.Embed):
             color=discord.Color.blurple(),
         )
 
-        selected_lines: list[str] = []
+        if preselected_1v1 is not None and preselected_2v2 is not None:
+            self.description = t("setup_notification_embed.confirm_prompt.1", locale)
+        else:
+            self.description = t("setup_notification_embed.description.1", locale)
+
+        # Inline fields showing current selection for each mode.
         if preselected_1v1 is not None:
-            selected_lines.append(
-                t(
-                    "setup_notification_embed.1v1_label.1",
-                    locale,
-                    value=_notification_value_label(preselected_1v1, locale),
-                )
+            is_on = preselected_1v1 != "off"
+            label = _notification_value_label(preselected_1v1, locale)
+            self.add_field(
+                name=t("setup_notification_embed.field_name.1v1", locale),
+                value=f"{'🔔' if is_on else '🔕'} {label}",
+                inline=True,
             )
         if preselected_2v2 is not None:
-            selected_lines.append(
-                t(
-                    "setup_notification_embed.2v2_label.1",
-                    locale,
-                    value=_notification_value_label(preselected_2v2, locale),
-                )
-            )
-
-        if selected_lines:
-            selected_block = (
-                t("setup_notification_embed.selected_header.1", locale)
-                + "\n"
-                + "\n".join(selected_lines)
-                + "\n\n"
-            )
-        else:
-            selected_block = ""
-
-        if preselected_1v1 is not None and preselected_2v2 is not None:
-            self.description = selected_block + t(
-                "setup_notification_embed.confirm_prompt.1", locale
-            )
-        else:
-            self.description = selected_block + t(
-                "setup_notification_embed.description.1", locale
+            is_on = preselected_2v2 != "off"
+            label = _notification_value_label(preselected_2v2, locale)
+            self.add_field(
+                name=t("setup_notification_embed.field_name.2v2", locale),
+                value=f"{'🔔' if is_on else '🔕'} {label}",
+                inline=True,
             )
 
         apply_default_embed_footer(self, locale=locale)
