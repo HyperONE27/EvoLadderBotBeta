@@ -57,7 +57,9 @@ async def handle_replay_upload(
         locale = get_player_locale(user_id)
         await queue_message_reply_low(
             message,
-            content=t("replay_handler.not_in_match", locale),
+            embed=ReplayErrorEmbed(
+                t("replay_handler.not_in_match", locale), locale=locale
+            ),
         )
         return
 
@@ -207,7 +209,10 @@ async def handle_replay_upload(
                 await queue_message_delete_low(processing_msg)
             except Exception:
                 pass
+        locale = get_player_locale(user_id)
         await queue_message_reply_high(
             message,
-            content=t("replay_handler.unexpected_error", get_player_locale(user_id)),
+            embed=ReplayErrorEmbed(
+                t("replay_handler.unexpected_error", locale), locale=locale
+            ),
         )
