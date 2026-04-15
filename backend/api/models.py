@@ -46,6 +46,13 @@ class ActivePlayersResponse(BaseModel):
     active_player_count: int
 
 
+# --- /players/eligible_role_uids ---
+
+
+class EligibleRoleUidsResponse(BaseModel):
+    discord_uids: list[int]
+
+
 # --- /admins/{discord_uid} ---
 
 
@@ -197,6 +204,7 @@ class AdminMatchResponse(BaseModel):
     replays: list[Replays1v1Row]
     verification: list[dict | None]
     replay_urls: list[str | None]
+    chat_history: list[dict] | None = None
 
 
 class AdminMatch2v2Response(BaseModel):
@@ -206,6 +214,7 @@ class AdminMatch2v2Response(BaseModel):
     team_2_player_1: PlayersRow | None
     team_2_player_2: PlayersRow | None
     admin: AdminsRow | None
+    chat_history: list[dict] | None = None
 
 
 # --- /owner admin ---

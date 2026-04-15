@@ -299,8 +299,9 @@ def confirm_match(
     if match_id not in self._confirmations:
         self._confirmations[match_id] = set()
 
+    already_confirmed = len(self._confirmations[match_id]) >= 2
     self._confirmations[match_id].add(discord_uid)
-    both = len(self._confirmations[match_id]) >= 2
+    both = not already_confirmed and len(self._confirmations[match_id]) >= 2
 
     self._db_writer.insert_event(
         {

@@ -101,6 +101,14 @@ async def party_invite_command(
         )
         return
 
+    if not invitee_player.get("completed_setup"):
+        await interaction.followup.send(
+            embed=_error_embed(
+                "party.error.invitee_not_setup", locale, invitee_name=invitee_name
+            )
+        )
+        return
+
     # Send invite to backend.
     payload = {
         "inviter_discord_uid": uid,

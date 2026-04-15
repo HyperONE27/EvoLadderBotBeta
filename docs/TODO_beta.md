@@ -216,9 +216,34 @@ What remains?
 - ✅ Add an owner announcement command
 
 
-## 2026-04-10
+## 2026-04-12
+
+❌⏰✅
+
+- ✅ Add a role to users on the server when they complete setup for the first time
+    - ✅ Added a role queue respecting Discord's 10 requests/10 seconds limit
+    - ✅ Implemented checking everyone's presence in server + roles on startup
+    - ✅ Role is added to all non-banned users in the players table regardless of setup status, but is now conditioned on accepting ToS
+    - ✅ Role is added/removed on toggling un/ban status
+    - ✅ Startup backfill automaticlly handles the correct status for all players
+- ✅ Update `/help` to include `/notifications` description
+- ✅ Make channel manager channels public viewing but private talk
+    - ✅ Match channels are now publicly viewable but message sending/reactions are disabled
+- ❌ China vs NAW and SEA vs NAW should probably be on Korea
+    - China vs NAW remains on NAW
+    - ✅ SEA vs NAW is already on Korea
+- ✅ Maybe lighten up the penalty for missing a match? Seems to just discourage people from queueing more than anything
+    - Penalty for abandonment 15 -> 10 minutes
+- ✅ Fix messages dropping on channel manager
+  - ✅ Added retry logic
+  - ✅ Need to migrate Supabase SQL migration manually to enable this feature
+- ✅ Add chat history embed to match admin info command JSON dump
+
+
+## 2026-04-14
 
 - ⏰ Add a notice about players disconnecting mid-match?
+    - We probably should not be allowing reconnects for ladder matches as we have no  way to enforce fairness in these conditions
 - ⏰ Migrate wave-based matchmaking approach to a non-wave-based algorithm/faster wave-based algorithm with no matching obligations per wave so we don't get synchronization issues causing players to match up into the same opponents over and over again
     - For this to happen, we need:
         - A persistent record of recent matches
@@ -227,19 +252,22 @@ What remains?
         - A poor implementation might cause players to have to wait 5-6 minutes to play vs each other when they're the only ones online anyway
         - However we also want to prefer new matchups when they are available
         - We have to balance this against potential MMR differences, for example, if a new guy shows up when two people are in a long streak of games vs each other, but they're a bit far off from the MMR, how much is too much?
-- ⏰ Add a role to users on the server when they complete setup for the first time
+- ⏰ Players often join, see nobody, and immediately leave despite the new notifications system, so it may not be doing as much to solve desyncs as I thought if I don't log people joining/leaving and display it in a more OBVIOUSLY VISIBLE/public manner
+    - People often join and then leave in 5 seconds
+- ⏰ Include information about who joined (BW/SC2/both) in notifications?
 - ⏰ Add time zones and quiet hours selection to `/setup`/ and `/notifications`
 - ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
-- ⏰ Update `/help` to include `/notifications` description
-- ⏰ Make channel manager channels public viewing but private talk
-- ⏰ Include information about who joined (BW/SC2/both) in notifications?
-- ⏰ China vs NAW and SEA vs NAW should probably be on Korea
-- ⏰ Maybe lighten up the penalty for missing a match? Seems to just discourage people from queueing more than anything
-- ⏰ Players often join, see nobody, and immediately leave despite the new notifications system, so it may not be doing as much to solve desyncs as I thought if I don't log people joining/leaving and display it in a more OBVIOUSLY VISIBLE/public manner
-- ⏰ Fix messages dropping on channel manager
-- ⏰ Handle Supabase SQL migration manually
-- ⏰ Add chat history embed to match admin info command
-- ⏰ Fix QueueSearchingView econtinuing to cycle through a bunch of disabled views at around the...150-180 second mark? or maybe the 300s mark. the views from previous queue -> cancel -> queue attempts might be getting reapplied somehow
+- ⏰ Add better indicators for 1v1 and 2v2 settings for notifications in `/setup` and `/notifications`
+- ⏰ Put channel chat history for each match in a nicer-looking embed in /match
+- ⏰ Fix /match failing when embed characters exceed 6000
+- ✅ Fix users being able to `/party invite` other users who have not completed setup
+- ⏰ Announce new SEL Code S/Code A/Code B
+- ⏰ Send a one-time DMs message to all bot users about SEL competitions
+- ⏰ Write a README.md that doesn't suck
+- ⏰ Big feature to entice content creators to cast ladder matches
+    - ⏰ Implement a content creators table
+    - ⏰ Implements a content creators-only command that lets content creators easily filter for and find replays they want to cast
+
 
 ```
  Here's what happened — I traced it through channel_manager/app.py.

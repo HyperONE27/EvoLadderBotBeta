@@ -19,8 +19,21 @@ _DISCORD_API_BASE = "https://discord.com/api/v10"
 # Permission bitfields
 _VIEW_CHANNEL = 1 << 10  # 1024
 _SEND_MESSAGES = 1 << 11  # 2048
+_CREATE_PUBLIC_THREADS = 1 << 35
+_CREATE_PRIVATE_THREADS = 1 << 36
+_ADD_REACTIONS = 1 << 6
+_SEND_MESSAGES_IN_THREADS = 1 << 38
 _READ_MESSAGE_HISTORY = 1 << 14  # 16384
 _MEMBER_ALLOW = _VIEW_CHANNEL | _SEND_MESSAGES | _READ_MESSAGE_HISTORY
+
+# Deny public viewers everything except viewing and reading history.
+_EVERYONE_DENY = (
+    _SEND_MESSAGES
+    | _CREATE_PUBLIC_THREADS
+    | _CREATE_PRIVATE_THREADS
+    | _ADD_REACTIONS
+    | _SEND_MESSAGES_IN_THREADS
+)
 
 # Retry config for transient Discord 5xx responses.
 _RETRY_ATTEMPTS = 3
@@ -85,8 +98,13 @@ class DiscordClient:
     ) -> int:
         """Create a private text channel. Returns the new channel's snowflake ID."""
         overwrites = [
-            # Deny @everyone (role ID == guild ID)
-            {"id": str(guild_id), "type": 0, "allow": "0", "deny": str(_VIEW_CHANNEL)},
+            # @everyone can view and read history but cannot send, react, or create threads
+            {
+                "id": str(guild_id),
+                "type": 0,
+                "allow": str(_VIEW_CHANNEL | _READ_MESSAGE_HISTORY),
+                "deny": str(_EVERYONE_DENY),
+            },
         ]
         for role_id in allow_role_ids:
             overwrites.append(

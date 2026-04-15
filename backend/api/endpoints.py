@@ -1,8 +1,9 @@
 import asyncio
 import structlog
-from typing import Any
+from typing import Any, cast
 
 import httpx
+import polars as pl
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 
@@ -108,6 +109,7 @@ from backend.api.models import (
     TermsOfServiceConfirmRequest,
     TermsOfServiceConfirmResponse,
     ActivePlayersResponse,
+    EligibleRoleUidsResponse,
     ReferralPitchRequest,
     ReferralRequest,
     ReferralResponse,
@@ -393,6 +395,31 @@ async def admin_statusreset(
 # --- /admin match ---
 
 
+def _fetch_chat_history(
+    app: Backend, match_id: int, match_mode: str
+) -> list[dict[str, Any]] | None:
+    """Read the messages JSONB column from the channels table for a match."""
+    try:
+        result = (
+            app.db_writer.client.table("channels")
+            .select("messages")
+            .eq("match_id", match_id)
+            .eq("match_mode", match_mode)
+            .limit(1)
+            .execute()
+        )
+        if result.data:
+            row = cast(dict[str, Any], result.data[0])
+            return cast(list[dict[str, Any]] | None, row.get("messages"))
+    except Exception:
+        logger.warning(
+            "admin_match.chat_history_fetch_failed",
+            match_id=match_id,
+            match_mode=match_mode,
+        )
+    return None
+
+
 @router.get("/admin/matches_1v1/{match_id}", response_model=AdminMatchResponse)
 async def admin_match(
     match_id: int,
@@ -438,6 +465,8 @@ async def admin_match(
             "event_data": {"match_id": match_id},
         }
     )
+    chat_history = _fetch_chat_history(app, match_id, "1v1")
+
     return AdminMatchResponse(
         match=match,
         player_1=player_1,
@@ -446,6 +475,7 @@ async def admin_match(
         replays=replays,
         verification=verifications,
         replay_urls=replay_urls,
+        chat_history=chat_history,
     )
 
 
@@ -519,6 +549,8 @@ async def admin_match_2v2(
             "event_data": {"game_mode": "2v2", "match_id": match_id},
         }
     )
+    chat_history = _fetch_chat_history(app, match_id, "2v2")
+
     return AdminMatch2v2Response(
         match=match,
         team_1_player_1=t1_p1,
@@ -526,6 +558,7 @@ async def admin_match_2v2(
         team_2_player_1=t2_p1,
         team_2_player_2=t2_p2,
         admin=admin,
+        chat_history=chat_history,
     )
 
 
@@ -937,6 +970,18 @@ async def stats_active_players(
     return ActivePlayersResponse(
         active_player_count=app.orchestrator.get_active_player_count()
     )
+
+
+@router.get("/players/eligible_role_uids", response_model=EligibleRoleUidsResponse)
+async def eligible_role_uids(
+    app: Backend = Depends(get_backend),
+) -> EligibleRoleUidsResponse:
+    df = app.state_manager.players_df
+    if df.is_empty():
+        return EligibleRoleUidsResponse(discord_uids=[])
+    rows = df.filter(pl.col("accepted_tos") & ~pl.col("is_banned"))
+    uids = [int(uid) for uid in rows.get_column("discord_uid").to_list()]
+    return EligibleRoleUidsResponse(discord_uids=uids)
 
 
 @router.get("/notifications/{discord_uid}", response_model=NotificationsOut)

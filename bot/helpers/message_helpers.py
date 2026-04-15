@@ -21,7 +21,7 @@ from typing import Any
 
 import discord
 
-from bot.core.message_queue import get_message_queue
+from bot.core.queues import get_message_queue
 
 # Sentinel to distinguish "not provided" from None in message edits.
 MISSING: Any = object()

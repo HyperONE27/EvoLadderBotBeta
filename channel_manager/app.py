@@ -64,6 +64,20 @@ async def create_channel(request: ChannelCreateRequest) -> ChannelCreateResponse
 
     channel_name = f"ladder-{request.match_mode}-match-{request.match_id}"
 
+    # Guard against duplicate requests: if a channel already exists for this
+    # match, return it instead of creating a second Discord channel.
+    existing = _db.get_channel_by_match_id(request.match_id, request.match_mode)
+    if existing is not None:
+        logger.warning(
+            f"[ChannelManager] Channel already exists for match #{request.match_id} "
+            f"({request.match_mode}), returning existing channel {existing['channel_id']}"
+        )
+        return ChannelCreateResponse(
+            channel_id=int(existing["channel_id"]),
+            message_url=existing.get("message_url")
+            or f"https://discord.com/channels/{DISCORD_GUILD_ID}/{existing['channel_id']}",
+        )
+
     try:
         channel_id = await _discord.create_channel(
             guild_id=DISCORD_GUILD_ID,

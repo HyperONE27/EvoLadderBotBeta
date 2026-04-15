@@ -43,7 +43,7 @@ from bot.components.embeds import (
     SetupIntroEmbed,
     SetupNotificationEmbed,
     SetupPreviewEmbed,
-    SetupSelectionEmbed,
+    SetupLocationEmbed,
     SetupNextStepsEmbed,
     SetupSuccessEmbed,
     SetupSurveyEmbed,
@@ -380,7 +380,7 @@ class CountryPage1Select(discord.ui.Select):
             for c in countries[:25]
         ]
         super().__init__(
-            placeholder=t("setup_selection_view.placeholder.nationality_page1", locale),
+            placeholder=t("setup_location_view.placeholder.nationality_page1", locale),
             min_values=1,
             max_values=1,
             options=options,
@@ -388,7 +388,7 @@ class CountryPage1Select(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
-        view: SetupSelectionView = self.view  # type: ignore[assignment]
+        view: SetupLocationView = self.view  # type: ignore[assignment]
         view.selected_country = next(
             c for c in view.countries if c["code"] == self.values[0]
         )
@@ -411,7 +411,7 @@ class CountryPage2Select(discord.ui.Select):
             for c in countries[25:50]
         ]
         super().__init__(
-            placeholder=t("setup_selection_view.placeholder.nationality_page2", locale),
+            placeholder=t("setup_location_view.placeholder.nationality_page2", locale),
             min_values=1,
             max_values=1,
             options=options,
@@ -419,7 +419,7 @@ class CountryPage2Select(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
-        view: SetupSelectionView = self.view  # type: ignore[assignment]
+        view: SetupLocationView = self.view  # type: ignore[assignment]
         view.selected_country = next(
             c for c in view.countries if c["code"] == self.values[0]
         )
@@ -445,7 +445,7 @@ class RegionSelect(discord.ui.Select):
             for r in regions
         ]
         super().__init__(
-            placeholder=t("setup_selection_view.placeholder.location", locale),
+            placeholder=t("setup_location_view.placeholder.location", locale),
             min_values=1,
             max_values=1,
             options=options,
@@ -453,7 +453,7 @@ class RegionSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
-        view: SetupSelectionView = self.view  # type: ignore[assignment]
+        view: SetupLocationView = self.view  # type: ignore[assignment]
         view.selected_region = next(
             r for r in view.regions if r["code"] == self.values[0]
         )
@@ -579,7 +579,7 @@ class SetupIntroView(AutoDisableView):
             self.add_item(CancelButton(locale=locale))
 
 
-class SetupSelectionView(AutoDisableView):
+class SetupLocationView(AutoDisableView):
     message: discord.Message  # Always set in __init__; narrows parent's Optional type.
 
     def __init__(
@@ -634,19 +634,19 @@ class SetupSelectionView(AutoDisableView):
         async def on_confirm(interaction: discord.Interaction) -> None:
             if not self.selected_country or not self.selected_region:
                 _loc = get_player_locale(interaction.user.id)
-                embed = SetupSelectionEmbed(
+                embed = SetupLocationEmbed(
                     self.selected_country,
                     self.selected_region,
                     locale=_loc,
                 )
                 embed.set_footer(
                     text=t(
-                        "setup_selection_view.incomplete_footer.1",
+                        "setup_location_view.incomplete_footer.1",
                         _loc,
                     )
                 )
                 apply_default_embed_footer(embed, locale=_loc)
-                fresh = SetupSelectionView(
+                fresh = SetupLocationView(
                     player_name=self.player_name,
                     battletag=self.battletag,
                     alt_ids=self.alt_ids,
@@ -677,7 +677,11 @@ class SetupSelectionView(AutoDisableView):
                     else str(notif.get("notify_queue_2v2_cooldown", 15))
                 )
             await interaction.response.edit_message(
-                embed=SetupNotificationEmbed(locale=_locale),
+                embed=SetupNotificationEmbed(
+                    preselected_1v1=preselected_1v1,
+                    preselected_2v2=preselected_2v2,
+                    locale=_locale,
+                ),
                 view=SetupNotificationView(
                     player_name=self.player_name,
                     battletag=self.battletag,
@@ -733,7 +737,7 @@ class SetupSelectionView(AutoDisableView):
             self.add_item(CancelButton(row=4, locale=self.locale))
 
     async def refresh(self, interaction: discord.Interaction) -> None:
-        new_view = SetupSelectionView(
+        new_view = SetupLocationView(
             player_name=self.player_name,
             battletag=self.battletag,
             alt_ids=self.alt_ids,
@@ -746,7 +750,7 @@ class SetupSelectionView(AutoDisableView):
             show_cancel=self.show_cancel,
         )
         await interaction.response.edit_message(
-            embed=SetupSelectionEmbed(
+            embed=SetupLocationEmbed(
                 self.selected_country,
                 self.selected_region,
                 locale=get_player_locale(interaction.user.id),
@@ -989,6 +993,8 @@ class SetupNotificationView(AutoDisableView):
         )
 
         async def on_select_1v1(interaction: discord.Interaction) -> None:
+            _new_1v1 = select_1v1.values[0]
+            _loc = get_player_locale(interaction.user.id)
             fresh = SetupNotificationView(
                 player_name=player_name,
                 battletag=battletag,
@@ -997,15 +1003,24 @@ class SetupNotificationView(AutoDisableView):
                 country=country,
                 region=region,
                 language=language,
-                preselected_1v1=select_1v1.values[0],
+                preselected_1v1=_new_1v1,
                 preselected_2v2=preselected_2v2,
-                locale=get_player_locale(interaction.user.id),
+                locale=_loc,
                 show_cancel=show_cancel,
                 standalone=standalone,
             )
-            await interaction.response.edit_message(view=fresh)
+            await interaction.response.edit_message(
+                embed=SetupNotificationEmbed(
+                    preselected_1v1=_new_1v1,
+                    preselected_2v2=preselected_2v2,
+                    locale=_loc,
+                ),
+                view=fresh,
+            )
 
         async def on_select_2v2(interaction: discord.Interaction) -> None:
+            _new_2v2 = select_2v2.values[0]
+            _loc = get_player_locale(interaction.user.id)
             fresh = SetupNotificationView(
                 player_name=player_name,
                 battletag=battletag,
@@ -1015,12 +1030,19 @@ class SetupNotificationView(AutoDisableView):
                 region=region,
                 language=language,
                 preselected_1v1=preselected_1v1,
-                preselected_2v2=select_2v2.values[0],
-                locale=get_player_locale(interaction.user.id),
+                preselected_2v2=_new_2v2,
+                locale=_loc,
                 show_cancel=show_cancel,
                 standalone=standalone,
             )
-            await interaction.response.edit_message(view=fresh)
+            await interaction.response.edit_message(
+                embed=SetupNotificationEmbed(
+                    preselected_1v1=preselected_1v1,
+                    preselected_2v2=_new_2v2,
+                    locale=_loc,
+                ),
+                view=fresh,
+            )
 
         select_1v1.callback = on_select_1v1  # type: ignore[method-assign]
         select_2v2.callback = on_select_2v2  # type: ignore[method-assign]
@@ -1672,12 +1694,12 @@ class SetupModal(discord.ui.Modal, title="Player Setup"):
         await self._edit(
             interaction,
             message=message,
-            embed=SetupSelectionEmbed(
+            embed=SetupLocationEmbed(
                 preselected_country,
                 preselected_region,
                 locale=_locale,
             ),
-            view=SetupSelectionView(
+            view=SetupLocationView(
                 player_name=player_name,
                 battletag=battletag,
                 alt_ids=alt_ids,
@@ -1975,6 +1997,11 @@ async def _send_tos_request(
     logger.info(
         f"TOS upsert succeeded for {discord_username} ({discord_uid}): accepted={accepted}"
     )
+
+    if accepted:
+        from bot.core.role_sync import grant_role
+
+        await grant_role(interaction.client, discord_uid)
 
     if accepted and on_accept_success is not None:
         await on_accept_success(interaction, _locale)

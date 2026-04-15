@@ -79,6 +79,12 @@ MATCH_LOG_CHANNEL_ID: int = _get_int_env("MATCH_LOG_CHANNEL_ID")
 
 SERVER_GUILD_ID: int = _get_int_env("SERVER_GUILD_ID")
 
+# Optional: role granted to non-banned players who have accepted ToS.
+# If unset, role management is skipped.
+LADDER_PLAYER_ROLE_ID: int | None = (
+    int(v) if (v := os.getenv("LADDER_PLAYER_ROLE_ID")) else None
+)
+
 # ---------------------
 # Game rules
 # ---------------------
@@ -131,6 +137,10 @@ WRAITH_TRANSPARENT_IMAGE_LINK: str = (
 )
 
 DISCORD_MESSAGE_RATE_LIMIT: int = 40
+
+# Role assignment queue — PUT /guilds/{id}/members/{id}/roles/{id} is 10/10s per guild.
+# Stay conservative at 1 req/s.
+ROLE_QUEUE_RATE_LIMIT: float = 1.0
 
 # ---------------------
 # Queue heartbeat

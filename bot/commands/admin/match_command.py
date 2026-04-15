@@ -113,6 +113,7 @@ async def _handle_match_1v1(
         "replays": replays,
         "verification": verifications,
         "replay_urls": replay_urls,
+        "chat_history": data.get("chat_history"),
     }
     json_bytes = json.dumps(
         raw_state, indent=2, ensure_ascii=False, default=str
@@ -153,6 +154,7 @@ async def _handle_match_2v2(
         "match": match,
         **players,
         "admin": admin,
+        "chat_history": data.get("chat_history"),
     }
     json_bytes = json.dumps(
         raw_state, indent=2, ensure_ascii=False, default=str

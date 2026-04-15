@@ -61,7 +61,7 @@ CONFIRMATION_TIMEOUT: int = 60
 # ---------------------------------------------------------------------------
 
 ABORT_TIMEOUT_MINUTES: int = 5
-ABANDON_TIMEOUT_MINUTES: int = 15
+ABANDON_TIMEOUT_MINUTES: int = 10
 
 # ---------------------------------------------------------------------------
 # Leaderboard

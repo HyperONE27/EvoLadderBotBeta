@@ -39,6 +39,7 @@ def _make_client(db: ChannelDatabase) -> discord.Client:
                 channel_id=message.channel.id,
                 message_id=message.id,
                 discord_uid=message.author.id,
+                discord_username=message.author.name,
                 content=message.content,
                 ts=message.created_at.isoformat(),
             )
@@ -68,6 +69,7 @@ def _make_client(db: ChannelDatabase) -> discord.Client:
                 channel_id=after.channel.id,
                 message_id=after.id,
                 discord_uid=after.author.id,
+                discord_username=after.author.name,
                 original_content=before.content,
                 new_content=after.content,
                 ts=ts,
