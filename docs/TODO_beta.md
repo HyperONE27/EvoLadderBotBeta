@@ -254,12 +254,17 @@ What remains?
         - We have to balance this against potential MMR differences, for example, if a new guy shows up when two people are in a long streak of games vs each other, but they're a bit far off from the MMR, how much is too much?
 - ⏰ Players often join, see nobody, and immediately leave despite the new notifications system, so it may not be doing as much to solve desyncs as I thought if I don't log people joining/leaving and display it in a more OBVIOUSLY VISIBLE/public manner
     - People often join and then leave in 5 seconds
-- ⏰ Include information about who joined (BW/SC2/both) in notifications?
+- ✅ Include information about who joined (BW/SC2/both) in notifications
+    - ✅ Backend derives `queue_type` from joiner's queue entry and includes it in the WS payload
+    - ✅ Notification embed appends localized suffix e.g. "(Brood War)", "(스타1 + 스타2)" using `shared.game_name` conventions
 - ⏰ Add time zones and quiet hours selection to `/setup`/ and `/notifications`
 - ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
-- ⏰ Add better indicators for 1v1 and 2v2 settings for notifications in `/setup` and `/notifications`
+- ✅ Add better indicators for 1v1 and 2v2 settings for notifications in `/setup` and `/notifications`
+    - ✅ Replaced `**Selected:**` text block with side-by-side inline fields showing 🔔/🔕 + localized value
+    - ✅ New locale keys `setup_notification_embed.field_name.1v1` and `.2v2` across all 6 files
 - ⏰ Put channel chat history for each match in a nicer-looking embed in /match
-- ⏰ Fix /match failing when embed characters exceed 6000
+- ✅ Fix /match failing when embed characters exceed 6000
+    - ✅ Resolved by `AdminReplayToggleView` — only 2 embeds shown at a time instead of N+1
 - ✅ Fix users being able to `/party invite` other users who have not completed setup
 - ⏰ Announce new SEL Code S/Code A/Code B
 - ⏰ Send a one-time DMs message to all bot users about SEL competitions
@@ -283,7 +288,17 @@ What remains?
 - ✅ Leaderboard presentation would be cleaner without `Leaderboard (1-10)`, etc.
     - ✅ Changed `leaderboard_embed.field_name.1` from `"Leaderboard ({start}-{end})"` to `"#{start}-{end}"` across all 5 locale files
 - ⏰ Add retry logic for match resolution for Cloudflare Error 500 outages
-- ⏰ Add pagination for replay details embeds: 👤 Player 1 and 👤 Player 2 buttons
+    - Add `_retry_db(fn, *, max_retries=2, delay=0.5)` in `backend/database/database.py`
+    - Catches `postgrest.exceptions.APIError` (5xx codes) and `httpx.TransportError`/`httpx.TimeoutException`
+    - Linear backoff (0.5s, 1.0s), re-raises immediately on 4xx
+    - Wrap the `.execute()` call in each of these 6 methods with `_retry_db(lambda: ...)`:
+        - `finalise_match_1v1`, `batch_update_mmrs_1v1`, `admin_resolve_match_1v1`
+        - `finalise_match_2v2`, `batch_update_mmrs_2v2`, `admin_resolve_match_2v2`
+    - All 6 are idempotent (UPDATE WHERE id=X / UPSERT with on_conflict), safe to retry
+    - Does NOT change the cache-before-DB ordering in `_apply_match_resolution` — that is intentional for `count_game_stats` correctness; the retry wrapper protects against transient failures without restructuring
+- ✅ Add pagination for replay details embeds: 👤 Player 1 and 👤 Player 2 buttons
+    - ✅ `AdminReplayToggleView` in `views.py` with localized buttons via `shared.player_fallback` keys
+    - ✅ `/admin match` shows one replay embed at a time when 2+ replays exist; 0-1 replays unchanged
 
 ```
 Here is a draft plan to refine:
