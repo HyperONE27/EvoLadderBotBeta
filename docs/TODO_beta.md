@@ -265,18 +265,23 @@ What remains?
 - ⏰ Send a one-time DMs message to all bot users about SEL competitions
 - ⏰ Write a README.md that doesn't suck
 - ⏰ Big feature to entice content creators to cast ladder matches
+    - ⏰ Add a replays dashboard microservice with a Discord bot as its frontend
     - ⏰ Implement a content creators table
     - ⏰ Implements a content creators-only command that lets content creators easily filter for and find replays they want to cast
-- ⏰ Fix QueueSearchingView getting overwritten by stale QueueSetupView on_timeout after queue -> cancel -> queue
-    - Root cause: `persist_and_refresh()` in both `QueueSetupView1v1` and `QueueSetupView2v2` creates a brand-new view instance and edits the message with it, but never calls `self.stop()` on the old view being replaced. The old view retains `self.message` (set via `interaction.message`) and its 300s `AutoDisableView` timeout keeps running.
-    - When the timeout fires, `on_timeout()` calls `self.message.edit(view=self)`, overwriting whatever view is currently active on that message (e.g. the QueueSearchingView) with the orphaned view's disabled children.
-    - The fix in commit 3920900 only addressed the `on_join` path (stopping the view when Join Queue is clicked). It cannot reach views orphaned by earlier `persist_and_refresh` calls (race select changes, map veto changes, clear button).
-    - Reproduction: `/queue` -> change any select (race/veto) -> Join Queue -> Cancel Queue -> Join Queue -> wait up to 300s -> searching view is overwritten by the orphaned setup view's disabled children.
-    - Fix: add `self.stop()` at the top of `persist_and_refresh()` in both `QueueSetupView1v1` and `QueueSetupView2v2`, mirroring the `on_join` fix. This cancels the old view's timeout before the replacement view is created.
-- ⏰ Update the match help instructions to distinguish between DISCORD channels and STARCRAFT II channels
-- ⏰ Suppress displaying races with 0 games played, not just on `/leaderboard` but in `/profile` and anywhere else needed
-- ⏰ `❌ You are not currently in an active match. Replay uploads are only accepted during an in-progress match.` appears as bare content without an embed
-- ⏰ Leaderboard presentation would be cleaner without `Leaderboard (1-10)`, etc.
+    - ⏰ Implement filters for length, race, map, etc.
+- ✅ Fix QueueSearchingView getting overwritten by stale QueueSetupView on_timeout after queue -> cancel -> queue
+    - ✅ Added `self.stop()` at the top of `persist_and_refresh()` in both `QueueSetupView1v1` and `QueueSetupView2v2`
+    - ✅ Mirrors the existing `on_join` fix — cancels the orphaned view's timeout before the replacement is created
+- ✅ Update the match help instructions to distinguish between DISCORD channels and STARCRAFT II channels
+    - ✅ Updated `lobby_guide_embed.description.1` headings and body to say "StarCraft II In-Game Chat Channel" across all 5 locale files
+    - ✅ Updated `match_info_embed.field_value.3` to say "In-Game Chat Channel" across all 5 locale files
+- ✅ Suppress displaying races with 0 games played, not just on `/leaderboard` but in `/profile` and anywhere else needed
+    - ✅ 1v1: skip `gp == 0` rows in `_format_mmr_rows`; 2v2: skip `gp == 0` partners in `_add_partners`
+    - ✅ New `profile_embed.no_games_played.1` locale key as fallback when all entries are empty
+- ✅ `❌ You are not currently in an active match. Replay uploads are only accepted during an in-progress match.` appears as bare content without an embed
+    - ✅ Wrapped both `not_in_match` and `unexpected_error` messages in `ReplayErrorEmbed` in `replay_handler.py`
+- ✅ Leaderboard presentation would be cleaner without `Leaderboard (1-10)`, etc.
+    - ✅ Changed `leaderboard_embed.field_name.1` from `"Leaderboard ({start}-{end})"` to `"#{start}-{end}"` across all 5 locale files
 - ⏰ Add retry logic for match resolution for Cloudflare Error 500 outages
 - ⏰ Add pagination for replay details embeds: 👤 Player 1 and 👤 Player 2 buttons
 
