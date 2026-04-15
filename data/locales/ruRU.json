@@ -640,6 +640,7 @@
   "profile_embed.mmr_row.1": "- {rank_emote} {race_emote} **{race_name}:** {mmr_val} MMR ● {gw}W-{gl}L-{gd}D ({wr}%)",
   "profile_embed.mmr_row_unranked.1": "- {rank_emote} {race_emote} **{race_name}:** Нет MMR ● Не сыграно ни одной игры.",
   "profile_embed.nationality_label.1": "- **Гражданство:** {flag} {name}",
+  "profile_embed.no_games_played.1": "Игры ещё не сыграны.",
   "profile_embed.no_mmr.1": "Рейтинговые игры еще не сыграны.",
   "profile_embed.notifications_1v1.1": "1v1: каждые {minutes} мин",
   "profile_embed.notifications_2v2.1": "2v2: каждые {minutes} мин",

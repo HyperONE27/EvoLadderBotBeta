@@ -640,6 +640,7 @@
   "profile_embed.mmr_row.1": "- {rank_emote} {race_emote} **{race_name}:** {mmr_val} MMR ● {gw}V-{gl}D-{gd}E ({wr}%)",
   "profile_embed.mmr_row_unranked.1": "- {rank_emote} {race_emote} **{race_name}:** Sin MMR ● Sin partidas jugadas",
   "profile_embed.nationality_label.1": "- **Nacionalidad:** {flag} {name}",
+  "profile_embed.no_games_played.1": "Aún no has jugado partidas.",
   "profile_embed.no_mmr.1": "Aún no has jugado partidas rankeadas.",
   "profile_embed.notifications_1v1.1": "1v1: Cada {minutes} min",
   "profile_embed.notifications_2v2.1": "2v2: Cada {minutes} min",

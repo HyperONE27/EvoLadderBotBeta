@@ -2119,14 +2119,6 @@ def _format_mmr_rows(mmrs: list[dict], locale: str = "enUS") -> str:
         wr = (gw / gp * 100) if gp > 0 else 0.0
 
         if gp == 0:
-            line = t(
-                "profile_embed.mmr_row_unranked.1",
-                locale,
-                rank_emote=str(rank_emote),
-                race_emote=str(race_emote),
-                race_name=race_name,
-            )
-            lines.append(line)
             continue
 
         line = t(
@@ -2314,23 +2306,32 @@ class ProfileEmbed(discord.Embed):
 
         bw_emote = get_game_emote("bw")
         sc2_emote = get_game_emote("sc2")
+        no_games_fallback = t("profile_embed.no_games_played.1", locale)
+        bw_body = _format_mmr_rows(bw_mmrs, locale) if bw_mmrs else ""
+        sc2_body = _format_mmr_rows(sc2_mmrs, locale) if sc2_mmrs else ""
 
-        if bw_mmrs:
+        if bw_body:
             self.add_field(
                 name=t(
                     "profile_embed.bw_mmr_field_name.1", locale, bw_emote=str(bw_emote)
                 ),
-                value=_format_mmr_rows(bw_mmrs, locale),
+                value=bw_body,
                 inline=False,
             )
-        if sc2_mmrs:
+        if sc2_body:
             self.add_field(
                 name=t(
                     "profile_embed.sc2_mmr_field_name.1",
                     locale,
                     sc2_emote=str(sc2_emote),
                 ),
-                value=_format_mmr_rows(sc2_mmrs, locale),
+                value=sc2_body,
+                inline=False,
+            )
+        if not bw_body and not sc2_body:
+            self.add_field(
+                name=t("profile_embed.mmr_field_name.1", locale),
+                value=no_games_fallback,
                 inline=False,
             )
 
@@ -2532,22 +2533,31 @@ class Profile1v1Embed(discord.Embed):
         )
         bw_emote = get_game_emote("bw")
         sc2_emote = get_game_emote("sc2")
-        if bw_mmrs:
+        no_games_fallback = t("profile_embed.no_games_played.1", locale)
+        bw_body = _format_mmr_rows(bw_mmrs, locale) if bw_mmrs else ""
+        sc2_body = _format_mmr_rows(sc2_mmrs, locale) if sc2_mmrs else ""
+        if bw_body:
             self.add_field(
                 name=t(
                     "profile_embed.bw_mmr_field_name.1", locale, bw_emote=str(bw_emote)
                 ),
-                value=_format_mmr_rows(bw_mmrs, locale),
+                value=bw_body,
                 inline=False,
             )
-        if sc2_mmrs:
+        if sc2_body:
             self.add_field(
                 name=t(
                     "profile_embed.sc2_mmr_field_name.1",
                     locale,
                     sc2_emote=str(sc2_emote),
                 ),
-                value=_format_mmr_rows(sc2_mmrs, locale),
+                value=sc2_body,
+                inline=False,
+            )
+        if not bw_body and not sc2_body:
+            self.add_field(
+                name=t("profile_embed.mmr_field_name.1", locale),
+                value=no_games_fallback,
                 inline=False,
             )
 
@@ -2583,6 +2593,8 @@ class Profile2v2Embed(discord.Embed):
         lines: list[str] = []
         for p in partners:
             gp: int = p.get("games_played") or 0
+            if gp == 0:
+                continue
             gw: int = p.get("games_won") or 0
             gl: int = p.get("games_lost") or 0
             gd: int = p.get("games_drawn") or 0
@@ -2618,9 +2630,12 @@ class Profile2v2Embed(discord.Embed):
                 if ts != "—":
                     line += "\n" + t("profile_embed.last_played.1", locale, ts=ts)
             lines.append(line)
+        body = "\n".join(lines)
+        if not body:
+            body = t("profile_embed.no_games_played.1", locale)
         self.add_field(
             name=t("profile_embed.2v2_partner_field_name.1", locale),
-            value="\n".join(lines),
+            value=body,
             inline=False,
         )
 

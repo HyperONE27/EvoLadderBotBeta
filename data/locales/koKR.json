@@ -640,6 +640,7 @@
   "profile_embed.mmr_row.1": "- {rank_emote} {race_emote} **{race_name}:** {mmr_val} MMR ● {gw}승-{gl}패-{gd}무 ({wr}%)",
   "profile_embed.mmr_row_unranked.1": "- {rank_emote} {race_emote} **{race_name}:** MMR 없음 ● 경기 없음",
   "profile_embed.nationality_label.1": "- **국적:** {flag} {name}",
+  "profile_embed.no_games_played.1": "아직 플레이한 게임이 없습니다.",
   "profile_embed.no_mmr.1": "아직 랭크 게임을 플레이하지 않았습니다.",
   "profile_embed.notifications_1v1.1": "1v1: {minutes}분마다",
   "profile_embed.notifications_2v2.1": "2v2: {minutes}분마다",

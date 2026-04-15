@@ -640,6 +640,7 @@
   "profile_embed.mmr_row.1": "- {rank_emote} {race_emote} **{race_name}:** {mmr_val} MMR ● {gw}胜-{gl}负-{gd}平 ({wr}%)",
   "profile_embed.mmr_row_unranked.1": "- {rank_emote} {race_emote} **{race_name}:** 无MMR ● 无对局记录",
   "profile_embed.nationality_label.1": "- **地区:** {flag} {name}",
+  "profile_embed.no_games_played.1": "尚未进行任何对局。",
   "profile_embed.no_mmr.1": "尚未进行排位赛。",
   "profile_embed.notifications_1v1.1": "1v1：每{minutes}分钟",
   "profile_embed.notifications_2v2.1": "2v2：每{minutes}分钟",
