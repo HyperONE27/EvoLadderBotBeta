@@ -289,8 +289,12 @@ def confirm_match_2v2(
 
     if match_id not in self._confirmations:
         self._confirmations[match_id] = set()
+    already_confirmed = len(self._confirmations[match_id]) >= _REQUIRED_CONFIRMATIONS
     self._confirmations[match_id].add(discord_uid)
-    all_confirmed = len(self._confirmations[match_id]) >= _REQUIRED_CONFIRMATIONS
+    all_confirmed = (
+        not already_confirmed
+        and len(self._confirmations[match_id]) >= _REQUIRED_CONFIRMATIONS
+    )
 
     self._db_writer.insert_event(
         {
