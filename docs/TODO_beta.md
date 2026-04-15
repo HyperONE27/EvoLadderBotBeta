@@ -277,6 +277,77 @@ What remains?
 - ⏰ Suppress displaying races with 0 games played, not just on `/leaderboard` but in `/profile` and anywhere else needed
 - ⏰ `❌ You are not currently in an active match. Replay uploads are only accepted during an in-progress match.` appears as bare content without an embed
 - ⏰ Leaderboard presentation would be cleaner without `Leaderboard (1-10)`, etc.
+- ⏰ Add retry logic for match resolution for Cloudflare Error 500 outages
+- ⏰ Add pagination for replay details embeds: 👤 Player 1 and 👤 Player 2 buttons
+
+```
+Here is a draft plan to refine:
+
+# Plan: Admin Match Replay Toggle + Match Resolution Retry
+
+## Context
+
+Two issues surfaced from a production incident:
+1. The `/admin match` command sends one `AdminReplayDetailsEmbed` per uploaded replay. When both players upload, the combined embed size exceeds Discord's 6000-char limit → `400 Bad Request`.
+2. A transient Supabase/Cloudflare 500 crashed `_apply_match_resolution` at the `batch_update_mmrs_1v1` step, leaving the match stuck with in-memory state partially applied but DB writes incomplete.
+
+---
+
+## Part 1: Replay Details Toggle View
+
+**Goal:** When a match has 2 replays, show only one replay embed at a time with a Player 1 / Player 2 button toggle. When there's 0 or 1 replay, keep current behavior (no view, just the embed(s)).
+
+**Pattern:** Follow `ProfilePageView` (`bot/components/views.py:2611`) — store all data on construction, swap embeds on button press via `interaction.response.edit_message`.
+
+### Files to modify
+
+1. **`bot/components/views.py`** — Add `AdminReplayToggleView(AutoDisableView)`:
+   - Constructor takes: `match_embed`, `replays` list, `verifications` list, `replay_urls` list, `locale`, `current_player=1`
+   - Two buttons: 👤 Player 1 (primary when selected, secondary otherwise) and 👤 Player 2 (vice versa)
+   - `_build_embeds()` returns `[match_embed, AdminReplayDetailsEmbed(current_player, ...)]`
+   - Button callback: create fresh `AdminReplayToggleView` with swapped `current_player`, edit message with new embeds + view
+   - Attach `file` as `None` on toggle (file was already sent on initial message)
+
+2. **`bot/commands/admin/match_command.py`** — Update `_handle_match_1v1`:
+   - If `len(replays) == 2`: build `AdminReplayToggleView`, send with `view=` and only the first replay embed
+   - If `len(replays) <= 1`: keep current behavior (send all embeds, no view)
+   - Import the new view
+
+### No locale keys needed — button labels use the emoji + "Player 1" / "Player 2" which are proper nouns.
+
+---
+
+## Part 2: Match Resolution Retry
+
+**Goal:** Wrap Supabase write calls in `_apply_match_resolution` with retry logic for transient 5xx errors, so a single Cloudflare blip doesn't leave the match in a broken state.
+
+**Approach:** Add a `_retry_supabase` helper in `backend/database/database.py` that retries a callable on `postgrest.exceptions.APIError` when the error code is 5xx. Apply it to each `.execute()` call in the critical match resolution write methods.
+
+### Files to modify
+
+1. **`backend/database/database.py`** — Add a private retry wrapper:
+   ```python
+   def _retry_supabase(fn, *, max_retries=2, delay=0.5):
+   ```
+   - Catches `postgrest.exceptions.APIError`, checks if code is 5xx (or message contains HTML / "500")
+   - Retries up to `max_retries` times with `time.sleep(delay)` between attempts
+   - Re-raises on non-5xx errors or after exhausting retries
+   - Apply to: `finalise_match_1v1`, `batch_update_mmrs_1v1`, `admin_resolve_match_1v1`, `finalise_match_2v2`, `batch_update_mmrs_2v2`, `admin_resolve_match_2v2`
+
+2. **`backend/orchestrator/transitions/_match.py`** — Fix writethrough ordering in `_apply_match_resolution`:
+   - Line 609 updates in-memory cache *before* the DB write (violates the writethrough rule from CLAUDE.md). Move `self._update_match_cache(match_id, **cache_kwargs)` to *after* the successful DB writes (after line 643). The comment says it's needed for `count_game_stats` in `_compute_mmr_update`, but we can pass `cache_kwargs` to the compute step or restructure so the cache update happens after DB persistence.
+   
+   Actually — re-reading the code, the comment at line 607 explains *why*: `_compute_mmr_update` at lines 612-617 needs `count_game_stats` to include the current match. This is an intentional ordering choice for correctness of the game stats calculation. The retry wrapper on the DB calls is the right fix — it protects against transient failures without changing the computation order.
+
+---
+
+## Verification
+
+1. `make quality` — ruff + mypy pass
+2. Manual test: invoke `/admin match` on a match with 2 replays → should show one replay embed with toggle buttons
+3. Manual test: invoke on a match with 0 or 1 replay → same behavior as before (no buttons)
+4. Unit test: can verify retry wrapper independently with a mock that raises `APIError` then succeeds
+```
 
 ```
  Here's what happened — I traced it through channel_manager/app.py.
