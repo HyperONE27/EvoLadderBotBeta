@@ -2870,6 +2870,7 @@ class QueueSetupView1v1(AutoDisableView):
 
     async def persist_and_refresh(self, interaction: discord.Interaction) -> None:
         """Save preferences to backend and refresh the embed."""
+        self.stop()
         try:
             races: list[str] = []
             if self.bw_race:
@@ -3717,6 +3718,7 @@ class QueueSetupView2v2(AutoDisableView):
 
     async def persist_and_refresh(self, interaction: discord.Interaction) -> None:
         """Save preferences to backend and refresh the embed."""
+        self.stop()
         try:
             async with get_session().put(
                 f"{BACKEND_URL}/preferences_2v2",
