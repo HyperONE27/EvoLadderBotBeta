@@ -803,9 +803,46 @@ class Orchestrator:
         )
         if uids:
             self._transition_manager.record_notify_wave(uids, game_mode, now, cooldowns)
+
+        # Derive queue_type: "bw", "sc2", or "both" from the joiner's queue entry.
+        queue_type: str | None = None
+        if game_mode == "1v1":
+            entry = self._state_reader.get_queue_entry_1v1(joiner_uid)
+            if entry:
+                has_bw = entry.get("bw_race") is not None
+                has_sc2 = entry.get("sc2_race") is not None
+                if has_bw and has_sc2:
+                    queue_type = "both"
+                elif has_bw:
+                    queue_type = "bw"
+                elif has_sc2:
+                    queue_type = "sc2"
+        elif game_mode == "2v2":
+            entry_2v2 = self._state_reader.get_queue_entry_2v2(joiner_uid)
+            if entry_2v2:
+                has_bw = (
+                    entry_2v2.get("pure_bw_leader_race") is not None
+                    and entry_2v2.get("pure_bw_member_race") is not None
+                )
+                has_sc2 = (
+                    entry_2v2.get("pure_sc2_leader_race") is not None
+                    and entry_2v2.get("pure_sc2_member_race") is not None
+                )
+                has_mixed = (
+                    entry_2v2.get("mixed_leader_race") is not None
+                    and entry_2v2.get("mixed_member_race") is not None
+                )
+                if has_mixed or (has_bw and has_sc2):
+                    queue_type = "both"
+                elif has_bw:
+                    queue_type = "bw"
+                elif has_sc2:
+                    queue_type = "sc2"
+
         return {
             "game_mode": game_mode,
             "notify_discord_uids": uids,
             "footers": footers,
             "locales": locales,
+            "queue_type": queue_type,
         }

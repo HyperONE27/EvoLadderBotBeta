@@ -168,6 +168,7 @@ async def _on_queue_join_activity(client: discord.Client, data: dict) -> None:
     footers: dict[str, str] = data.get("footers") or {}
     payload_locales: dict[str, str] = data.get("locales") or {}
     game_mode = str(data.get("game_mode", "1v1"))
+    queue_type: str | None = data.get("queue_type")
 
     unreachable: list[int] = []
     for uid in raw_uids:
@@ -190,7 +191,9 @@ async def _on_queue_join_activity(client: discord.Client, data: dict) -> None:
         if str(discord_uid) in payload_locales:
             get_cache().player_locales[discord_uid] = locale
         footer = footers.get(str(discord_uid), "")
-        embed = QueueJoinActivityNotifyEmbed(game_mode=game_mode, locale=locale)
+        embed = QueueJoinActivityNotifyEmbed(
+            game_mode=game_mode, queue_type=queue_type, locale=locale
+        )
         if footer:
             embed.set_footer(text=footer)
             apply_default_embed_footer(embed, locale=locale)

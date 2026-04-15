@@ -438,19 +438,35 @@ class QueueErrorEmbed(discord.Embed):
 class QueueJoinActivityNotifyEmbed(discord.Embed):
     """Anonymous DM when another user joins the queue (queue_join_activity WS)."""
 
-    def __init__(self, *, game_mode: str, locale: str = "enUS") -> None:
+    def __init__(
+        self,
+        *,
+        game_mode: str,
+        queue_type: str | None = None,
+        locale: str = "enUS",
+    ) -> None:
         gm = game_mode.lower().replace("-", "_")
         mode_key = f"shared.ladder_mode.{gm}"
         mode_label = t(mode_key, locale)
         if mode_label == mode_key:
             mode_label = game_mode.upper() if gm == "ffa" else game_mode
+
+        # Build a localized game-type suffix like "(Brood War + StarCraft II)"
+        type_suffix = ""
+        if queue_type:
+            type_key = f"queue_join_activity_notify_embed.queue_type.{queue_type}"
+            type_label = t(type_key, locale)
+            if type_label != type_key:
+                type_suffix = f" ({type_label})"
+
         super().__init__(
             title=t("queue_join_activity_notify_embed.title.1", locale),
             description=t(
                 "queue_join_activity_notify_embed.description.1",
                 locale,
                 mode_label=mode_label,
-            ),
+            )
+            + type_suffix,
             color=discord.Color.blue(),
         )
 

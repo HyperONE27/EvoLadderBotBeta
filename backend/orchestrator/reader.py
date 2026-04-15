@@ -181,6 +181,13 @@ class StateReader:
                 return entry
         return None
 
+    def get_queue_entry_2v2(self, discord_uid: int) -> QueueEntry2v2 | None:
+        """Find a specific party leader's 2v2 queue entry, or None."""
+        for entry in self._state_manager.queue_2v2:
+            if entry["discord_uid"] == discord_uid:
+                return entry
+        return None
+
     # ------------------------------------------------------------------
     # Preferences
     # ------------------------------------------------------------------
