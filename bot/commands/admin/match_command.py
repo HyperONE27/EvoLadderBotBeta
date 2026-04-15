@@ -12,6 +12,7 @@ from bot.components.embeds import (
     AdminReplayDetailsEmbed,
     MatchNotFoundEmbed,
 )
+from bot.components.views import AdminReplayToggleView
 from bot.core.config import BACKEND_URL, GAME_MODE_CHOICES
 from bot.core.dependencies import get_player_locale
 from bot.core.http import get_session
@@ -94,16 +95,7 @@ async def _handle_match_1v1(
     verifications: list[dict[str, Any] | None] = data.get("verification") or []
     replay_urls: list[str | None] = data.get("replay_urls") or []
 
-    embeds: list[discord.Embed] = [
-        AdminMatchEmbed(match, player_1, player_2, admin, locale=locale)
-    ]
-
-    for i, replay in enumerate(replays):
-        verification = verifications[i] if i < len(verifications) else None
-        url = replay_urls[i] if i < len(replay_urls) else None
-        embeds.append(
-            AdminReplayDetailsEmbed(i + 1, replay, verification, url, locale=locale)
-        )
+    match_embed = AdminMatchEmbed(match, player_1, player_2, admin, locale=locale)
 
     raw_state = {
         "match": match,
@@ -123,7 +115,23 @@ async def _handle_match_1v1(
         filename=f"admin_match_{match_id}.json",
     )
 
-    await interaction.followup.send(embeds=embeds, file=file)
+    if len(replays) >= 2:
+        view = AdminReplayToggleView(
+            match_embed, replays, verifications, replay_urls, locale=locale
+        )
+        await interaction.followup.send(
+            embeds=view.build_embeds(), file=file, view=view
+        )
+    elif len(replays) == 1:
+        verification = verifications[0] if verifications else None
+        url = replay_urls[0] if replay_urls else None
+        embeds = [
+            match_embed,
+            AdminReplayDetailsEmbed(1, replays[0], verification, url, locale=locale),
+        ]
+        await interaction.followup.send(embeds=embeds, file=file)
+    else:
+        await interaction.followup.send(embeds=[match_embed], file=file)
 
 
 async def _handle_match_2v2(

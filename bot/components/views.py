@@ -17,6 +17,7 @@ import structlog
 
 from bot.components.queue_activity_chart import render_queue_join_chart_png
 from bot.components.embeds import (
+    AdminReplayDetailsEmbed,
     AdminResolution2v2Embed,
     Profile1v1Embed,
     Profile2v2Embed,
@@ -2606,6 +2607,81 @@ _ACTIVITY_RANGE_TO_TD = {
     "7d": timedelta(days=7),
     "30d": timedelta(days=30),
 }
+
+
+class AdminReplayToggleView(AutoDisableView):
+    """Toggle between Player 1 and Player 2 replay details for /admin match.
+
+    Shows one AdminReplayDetailsEmbed at a time to stay under Discord's
+    6000-char embed limit when a match has two uploaded replays.
+    """
+
+    def __init__(
+        self,
+        match_embed: discord.Embed,
+        replays: list[dict[str, Any]],
+        verifications: list[dict[str, Any] | None],
+        replay_urls: list[str | None],
+        locale: str = "enUS",
+        current_index: int = 0,
+    ) -> None:
+        super().__init__(timeout=300)
+        self._match_embed = match_embed
+        self._replays = replays
+        self._verifications = verifications
+        self._replay_urls = replay_urls
+        self._locale = locale
+        self._current_index = current_index
+
+        for idx in range(len(replays)):
+            label = t(f"shared.player_fallback.{idx + 1}", locale)
+            style = (
+                discord.ButtonStyle.primary
+                if idx == current_index
+                else discord.ButtonStyle.secondary
+            )
+            btn: discord.ui.Button = discord.ui.Button(label=label, style=style, row=0)
+            btn.callback = self._make_callback(idx)  # type: ignore[method-assign]
+            self.add_item(btn)
+
+    def _make_callback(self, idx: int):  # noqa: ANN202
+        async def callback(interaction: discord.Interaction) -> None:
+            new_view = AdminReplayToggleView(
+                self._match_embed,
+                self._replays,
+                self._verifications,
+                self._replay_urls,
+                locale=self._locale,
+                current_index=idx,
+            )
+            await interaction.response.edit_message(
+                embeds=new_view.build_embeds(), view=new_view
+            )
+
+        return callback
+
+    def build_embeds(self) -> list[discord.Embed]:
+        replay = self._replays[self._current_index]
+        verification = (
+            self._verifications[self._current_index]
+            if self._current_index < len(self._verifications)
+            else None
+        )
+        url = (
+            self._replay_urls[self._current_index]
+            if self._current_index < len(self._replay_urls)
+            else None
+        )
+        return [
+            self._match_embed,
+            AdminReplayDetailsEmbed(
+                self._current_index + 1,
+                replay,
+                verification,
+                url,
+                locale=self._locale,
+            ),
+        ]
 
 
 class ProfilePageView(AutoDisableView):
