@@ -268,6 +268,9 @@ What remains?
     - ⏰ Implement a content creators table
     - ⏰ Implements a content creators-only command that lets content creators easily filter for and find replays they want to cast
 - ⏰ Fix QueueSearchingView econtinuing to cycle through a bunch of disabled views at around the...150-180 second mark? or maybe the 300s mark. the views from previous queue -> cancel -> queue attempts might be getting reapplied somehow
+- ⏰ Update the match help instructions to distinguish between DISCORD channels and STARCRAFT II channels
+- ⏰ Suppress displaying races with 0 games played, not just on `/leaderboard` but in `/profile` and anywhere else needed
+- ⏰ `❌ You are not currently in an active match. Replay uploads are only accepted during an in-progress match.` appears as bare content without an embed
 
 ```
  Here's what happened — I traced it through channel_manager/app.py.
