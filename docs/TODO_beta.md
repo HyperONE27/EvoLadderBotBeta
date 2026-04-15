@@ -239,6 +239,7 @@ What remains?
 - ⏰ Fix messages dropping on channel manager
 - ⏰ Handle Supabase SQL migration manually
 - ⏰ Add chat history embed to match admin info command
+- ⏰ Fix QueueSearchingView econtinuing to cycle through a bunch of disabled views at around the...150-180 second mark? or maybe the 300s mark. the views from previous queue -> cancel -> queue attempts might be getting reapplied somehow
 
 ```
  Here's what happened — I traced it through channel_manager/app.py.
