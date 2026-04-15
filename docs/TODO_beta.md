@@ -267,7 +267,7 @@ What remains?
 - ⏰ Big feature to entice content creators to cast ladder matches
     - ⏰ Implement a content creators table
     - ⏰ Implements a content creators-only command that lets content creators easily filter for and find replays they want to cast
-
+- ⏰ Fix QueueSearchingView econtinuing to cycle through a bunch of disabled views at around the...150-180 second mark? or maybe the 300s mark. the views from previous queue -> cancel -> queue attempts might be getting reapplied somehow
 
 ```
  Here's what happened — I traced it through channel_manager/app.py.
