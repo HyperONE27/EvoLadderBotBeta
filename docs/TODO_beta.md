@@ -267,7 +267,12 @@ What remains?
 - ⏰ Big feature to entice content creators to cast ladder matches
     - ⏰ Implement a content creators table
     - ⏰ Implements a content creators-only command that lets content creators easily filter for and find replays they want to cast
-- ⏰ Fix QueueSearchingView econtinuing to cycle through a bunch of disabled views at around the...150-180 second mark? or maybe the 300s mark. the views from previous queue -> cancel -> queue attempts might be getting reapplied somehow
+- ⏰ Fix QueueSearchingView getting overwritten by stale QueueSetupView on_timeout after queue -> cancel -> queue
+    - Root cause: `persist_and_refresh()` in both `QueueSetupView1v1` and `QueueSetupView2v2` creates a brand-new view instance and edits the message with it, but never calls `self.stop()` on the old view being replaced. The old view retains `self.message` (set via `interaction.message`) and its 300s `AutoDisableView` timeout keeps running.
+    - When the timeout fires, `on_timeout()` calls `self.message.edit(view=self)`, overwriting whatever view is currently active on that message (e.g. the QueueSearchingView) with the orphaned view's disabled children.
+    - The fix in commit 3920900 only addressed the `on_join` path (stopping the view when Join Queue is clicked). It cannot reach views orphaned by earlier `persist_and_refresh` calls (race select changes, map veto changes, clear button).
+    - Reproduction: `/queue` -> change any select (race/veto) -> Join Queue -> Cancel Queue -> Join Queue -> wait up to 300s -> searching view is overwritten by the orphaned setup view's disabled children.
+    - Fix: add `self.stop()` at the top of `persist_and_refresh()` in both `QueueSetupView1v1` and `QueueSetupView2v2`, mirroring the `on_join` fix. This cancels the old view's timeout before the replacement view is created.
 - ⏰ Update the match help instructions to distinguish between DISCORD channels and STARCRAFT II channels
 - ⏰ Suppress displaying races with 0 games played, not just on `/leaderboard` but in `/profile` and anywhere else needed
 - ⏰ `❌ You are not currently in an active match. Replay uploads are only accepted during an in-progress match.` appears as bare content without an embed
