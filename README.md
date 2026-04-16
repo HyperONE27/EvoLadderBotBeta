@@ -54,8 +54,6 @@ Copy `.env.example` to `.env` and fill in the values.
 
 ### Channel Manager
 
-All required if the channel manager is running.
-
 | Variable | Required | Description |
 |---|---|---|
 | `CHANNEL_MANAGER_BOT_TOKEN` | yes | Discord bot token (may differ from the bot's token) |
