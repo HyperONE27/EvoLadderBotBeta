@@ -2,57 +2,52 @@
 
 A Discord-based ranked matchmaking system for the [SC: Evo Complete](https://evomod.com/) StarCraft II mod. Players queue from DMs, get matched by MMR, confirm matches, play, upload replays, and see results — all through Discord.
 
-1v1 is fully live. 2v2 is in beta. 3v3 and FFA are planned.
+Supports 1v1 and 2v2 game modes, with potential extensibility to other modes.
 
 ## How It Works
 
 Three processes run together:
 
 ```
-                      ┌───────────────┐
-                      │ Discord Users │
-                      └───────┬───────┘
-                              │
-              slash commands, buttons, replay DMs
-                              │
-                              ▼
-                  ┌───────────────────────┐
-                  │          Bot          │
-                  │       discord.py      │
-                  ├───────────────────────┤
-                  │  slash commands       │
-                  │  embeds & views       │
-                  │  replay upload        │
-                  │  message queue        │
-                  └───────────┬───────────┘
-                         HTTP │ ▲ WebSocket
-                              │ │ (real-time match events)
-                              ▼ │
-┌─────────────────────────────────────────────────┐
-│                    Backend                       │
-│                FastAPI + Polars                  │
-├──────────────────────┬──────────────────────────┤
-│  matchmaker (60s)    │  in-memory DataFrames    │
-│  ELO rating engine   │  writethrough to DB      │
-│  replay parser       │  WebSocket broadcaster   │
-└──────────┬───────────┴──────────┬───────────────┘
-           │                      │
-      read / write             HTTP (optional)
-           │                      │
-           ▼                      ▼
-┌──────────────────┐  ┌─────────────────────────┐
-│     Supabase     │  │    Channel Manager      │
-│  PostgreSQL      │  │    FastAPI + Discord     │
-│  + File Storage  │  │        REST API         │
-└──────────────────┘  ├─────────────────────────┤
-                      │  create / delete match  │
-                      │  voice & text channels  │
-                      └─────────────────────────┘
+                            ┌─────────────────┐
+                            │  Discord Users  │
+                            └───┬─────────┬───┘
+                                │         │
+               slash commands,  │         │  public match
+             buttons, replay DMs│         │  channels
+                                │         │
+                    ┌───────────▼──┐     ┌▼──────────────────────┐
+                    │     Bot      │     │   Channel Manager     │
+                    │  discord.py  │     │   FastAPI + Discord   │
+                    ├──────────────┤     │       REST API        │
+                    │slash commands│     ├───────────────────────┤
+                    │embeds & views│     │ create/delete match   │
+                    │replay upload │     │ text channels         │
+                    │message queue │     │ channel DB tracking   │
+                    └──────┬───────┘     │                       │
+                      HTTP │ ▲ WS        │                       │
+                           │ │           │                       │
+                  ┌────────▼─┴────┐      │                       │
+                  │    Backend    ├──────▶                       │
+                  │ FastAPI+Polars│ HTTP │                       │
+                  ├───────────────┤      │                       │
+                  │ matchmaker    │      │                       │
+                  │ ELO ratings   │      │                       │
+                  │ replay parser │      │                       │
+                  │ WS broadcast  │      │                       │
+                  └──────┬────────┘      └───────────┬───────────┘
+                         │                           │
+                    read / write                read / write
+                         │                           │
+                  ┌──────▼───────────────────────────▼───────────┐
+                  │                  Supabase                    │
+                  │          PostgreSQL + File Storage           │
+                  └─────────────────────────────────────────────┘
 ```
 
 - **Bot** handles all Discord interaction (slash commands, buttons, DMs, replay uploads) and calls the backend over HTTP.
 - **Backend** is the single source of truth. Loads the full database into Polars DataFrames at startup for sub-millisecond reads. Writes go to Supabase first, then update memory. Pushes real-time events to the bot over WebSocket.
-- **Channel Manager** creates and deletes Discord voice/text channels for active matches. Called by the backend. Optional — skipped if `CHANNEL_MANAGER_URL` is unset.
+- **Channel Manager** creates and deletes Discord text channels for active matches. Called by the backend; also reads/writes Supabase directly. Optional — skipped if `CHANNEL_MANAGER_URL` is unset.
 
 Matchmaking runs every 60 seconds. It uses an ELO-like system (K=40, default 1500 MMR) with the Hungarian algorithm for optimal pairing.
 
@@ -66,24 +61,41 @@ cd EvoLadderBotBeta
 uv sync
 ```
 
-Copy `.env.example` to `.env` (or create `.env` in the project root) and fill in:
+Copy `.env.example` to `.env` and fill in the values.
 
-| Variable | Required | Used by |
+### Backend
+
+| Variable | Required | Description |
 |---|---|---|
-| `BOT_TOKEN` | yes | Bot |
-| `BACKEND_URL` | yes | Bot |
-| `MATCH_LOG_CHANNEL_ID` | yes | Bot |
-| `SUPABASE_URL` | yes | Backend |
-| `SUPABASE_ANON_KEY` | yes | Backend |
-| `SUPABASE_SERVICE_ROLE_KEY` | yes | Backend, Channel Manager |
-| `SUPABASE_BUCKET_NAME` | yes | Backend |
-| `CHANNEL_MANAGER_BOT_TOKEN` | no | Channel Manager |
-| `DISCORD_GUILD_ID` | no | Channel Manager |
-| `DISCORD_CHANNEL_CATEGORY_ID` | no | Channel Manager |
-| `DISCORD_STAFF_ROLE_IDS` | no | Channel Manager |
-| `CHANNEL_MANAGER_URL` | no | Backend |
-| `REPLAY_WORKER_PROCESSES` | no | Backend (default: 2) |
-| `BOT_ICON_URL` | no | Bot |
+| `SUPABASE_URL` | yes | Supabase project URL |
+| `SUPABASE_ANON_KEY` | yes | Supabase anonymous key (read) |
+| `SUPABASE_SERVICE_ROLE_KEY` | yes | Supabase service role key (write) |
+| `SUPABASE_BUCKET_NAME` | yes | Supabase Storage bucket for replays |
+| `CHANNEL_MANAGER_URL` | no | Channel manager base URL; if unset, channel creation is skipped |
+| `REPLAY_WORKER_PROCESSES` | no | Replay parser worker count (default: 2) |
+
+### Bot
+
+| Variable | Required | Description |
+|---|---|---|
+| `BOT_TOKEN` | yes | Discord bot token |
+| `BACKEND_URL` | yes | Backend base URL |
+| `MATCH_LOG_CHANNEL_ID` | yes | Discord channel ID for match log posts |
+| `BOT_ICON_URL` | no | HTTPS URL for branded embed footer icon |
+
+### Channel Manager
+
+All required if the channel manager is running.
+
+| Variable | Required | Description |
+|---|---|---|
+| `CHANNEL_MANAGER_BOT_TOKEN` | yes | Discord bot token (may differ from the bot's token) |
+| `SUPABASE_URL` | yes | Supabase project URL (shared with backend) |
+| `SUPABASE_SERVICE_ROLE_KEY` | yes | Supabase service role key (shared with backend) |
+| `DISCORD_GUILD_ID` | yes | Guild where match channels are created |
+| `DISCORD_CHANNEL_CATEGORY_ID` | yes | Category under which match channels are created |
+| `DISCORD_STAFF_ROLE_IDS` | no | Comma-separated role IDs granted access to match channels |
+| `CHANNEL_DELETION_DELAY_SECONDS` | no | Seconds to wait before deleting a channel (default: 0) |
 
 Then run all three processes:
 
@@ -117,8 +129,7 @@ backend/
 
 bot/
   commands/     # Slash commands (user/, admin/, owner/)
-  views/        # Discord UI components (buttons, modals, dropdowns)
-  embeds/       # Embed builders
+  components/   # Discord UI components (embeds, views, modals)
   helpers/      # Permission checks, branding, utilities
   core/         # App entry point, WS listener, message queue
 
@@ -133,11 +144,11 @@ tests/          # Invariant-based test suite
 
 ## Slash Commands
 
-**Player:** `/setup`, `/queue`, `/profile`, `/leaderboard`, `/activity`, `/party invite|leave|status`, `/setcountry`, `/greeting`
+**Player:** `/setup`, `/queue`, `/profile`, `/leaderboard`, `/activity`, `/notifications`, `/referral`, `/help`, `/party invite|leave|status`, `/setcountry`
 
-**Admin:** `/admin ban|snapshot|match|resolve|statusreset`
+**Admin:** `/ban`, `/snapshot`, `/match`, `/resolve`, `/statusreset`
 
-**Owner:** `/owner admin|mmr`
+**Owner:** `/admin`, `/mmr`, `/announcement`
 
 ## License
 
