@@ -271,6 +271,13 @@ What remains?
 
 ## 2026-04-17
 
+- ✅ Replay details embed pagination in `/match` shows extra buttons, remove these
+    - ✅ Filtered replay toggle to only the current replays referenced by match row `player_N_replay_row_id`
+- ✅ Replay details embed pagination buttons do not include 👤 emote
+- ✅ Fix README.md
+    - ✅ 4-layer architecture diagram with Channel Manager spanning bot/backend layers
+    - ✅ Env vars reorganized by process, added `.env.example`
+    - ✅ Fixed slash commands list (top-level names, added missing commands)
 - ⏰ Add a notice about players disconnecting mid-match?
     - We probably should not be allowing reconnects for ladder matches as we have no  way to enforce fairness in these conditions
 - ⏰ Migrate wave-based matchmaking approach to a non-wave-based algorithm/faster wave-based algorithm with no matching obligations per wave so we don't get synchronization issues causing players to match up into the same opponents over and over again
