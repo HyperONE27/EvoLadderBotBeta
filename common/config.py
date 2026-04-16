@@ -54,7 +54,7 @@ MAX_MAP_VETOES: int = 4
 # Match lifecycle timing (seconds)
 # ---------------------------------------------------------------------------
 
-CONFIRMATION_TIMEOUT: int = 60
+CONFIRMATION_TIMEOUT: int = 120
 
 # ---------------------------------------------------------------------------
 # Timeout penalties (minutes) — applied after abort / abandon

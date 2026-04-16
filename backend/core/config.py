@@ -135,7 +135,7 @@ MMR: dict[str, int] = {
 # ---------------------
 
 QUEUE: dict[str, int] = {
-    "abort_interval": 60,
+    "abort_interval": 120,
     "activity_interval": 30,
     "expansion_step": 1,
     "match_interval": 60,
