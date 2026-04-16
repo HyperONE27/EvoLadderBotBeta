@@ -15,8 +15,8 @@ Three processes run together:
 ![Architecture diagram](docs/architecture.svg)
 
 - **Bot** handles all Discord interaction (slash commands, buttons, DMs, replay uploads) and calls the backend over HTTP.
-- **Backend** is the single source of truth. Loads the full database into Polars DataFrames at startup for sub-millisecond reads. Writes go to Supabase first, then update memory. Pushes real-time events to the bot over WebSocket.
-- **Channel Manager** creates and deletes Discord text channels for active matches. Called by the backend; also reads/writes Supabase directly. Optional — skipped if `CHANNEL_MANAGER_URL` is unset.
+- **Backend** is the single source of truth. Loads the full database into Polars DataFrames at startup for sub-millisecond reads. Writes go to Supabase first, then update memory (write-through). Pushes real-time events to the bot over WebSocket.
+- **Channel Manager** creates and deletes Discord text channels for active matches. Called by the backend; also reads/writes Supabase directly.
 
 Matchmaking runs every 60 seconds. It uses an ELO-like system (K=40, default 1500 MMR) with the Hungarian algorithm for optimal pairing.
 
