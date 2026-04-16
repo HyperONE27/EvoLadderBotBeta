@@ -2640,7 +2640,9 @@ class AdminReplayToggleView(AutoDisableView):
                 if idx == current_index
                 else discord.ButtonStyle.secondary
             )
-            btn: discord.ui.Button = discord.ui.Button(label=label, style=style, row=0)
+            btn: discord.ui.Button = discord.ui.Button(
+                label=label, style=style, row=0, emoji="👤"
+            )
             btn.callback = self._make_callback(idx)  # type: ignore[method-assign]
             self.add_item(btn)
 
