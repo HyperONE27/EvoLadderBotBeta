@@ -1,8 +1,12 @@
-# EvoLadder Bot
+# EvoLadderBotBeta
 
-A Discord-based ranked matchmaking system for the [SC: Evo Complete](https://evomod.com/) StarCraft II mod. Players queue from DMs, get matched by MMR, confirm matches, play, upload replays, and see results — all through Discord.
+EvoLadderBot is a Discord-based ranked matchmaking system for [SC: Evo Complete](https://scevo.net/), a StarCraft II mod. SC: Evo Complete brings the StarCraft races into StarCraft II, faithfully recreating their essence while rebalancing them for competitive cross-game play. EvoLadderBotBeta is currently the most up-to-date version of this project and reflects significant refactoring efforts from the original [alpha](https://github.com/HyperONE27/EvoLadderBot) codebase.
 
-Supports 1v1 and 2v2 game modes, with potential extensibility to other modes.
+StarCraft II's binary cannot be modified, and it exposes no lobby automation API. While rudimentary ratings can be maintained via StarCraft II's data bank system, these ratings cannot be transferred to other regions or computers. Building a real ranked ladder means building it outside the game entirely.
+
+A Discord-based solution was natural: Discord is a gamer-native platform already used extensively by the StarCraft community. Players queue in the ladder bot's DMs, get matched by MMR, play in StarCraft II, upload replays, and see results in seconds.
+
+Supports 1v1 and 2v2 game modes, with extensibility to other modes.
 
 ## How It Works
 
