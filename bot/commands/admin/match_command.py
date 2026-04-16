@@ -115,6 +115,23 @@ async def _handle_match_1v1(
         filename=f"admin_match_{match_id}.json",
     )
 
+    # Filter to only the current replays referenced by the match row.
+    # Re-uploads append new rows to replays_1v1; the match row always
+    # points to the latest via player_N_replay_row_id.
+    ref_ids = {
+        match.get("player_1_replay_row_id"),
+        match.get("player_2_replay_row_id"),
+    } - {None}
+    if ref_ids:
+        filtered = [
+            (r, v, u)
+            for r, v, u in zip(replays, verifications, replay_urls)
+            if r.get("id") in ref_ids
+        ]
+        replays = [t[0] for t in filtered]
+        verifications = [t[1] for t in filtered]
+        replay_urls = [t[2] for t in filtered]
+
     if len(replays) >= 2:
         view = AdminReplayToggleView(
             match_embed, replays, verifications, replay_urls, locale=locale
