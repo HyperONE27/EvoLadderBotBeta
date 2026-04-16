@@ -8,42 +8,7 @@ Supports 1v1 and 2v2 game modes, with potential extensibility to other modes.
 
 Three processes run together:
 
-```
-                            ┌─────────────────┐
-                            │  Discord Users  │
-                            └───┬─────────┬───┘
-                                │         │
-               slash commands,  │         │  public match
-             buttons, replay DMs│         │  channels
-                                │         │
-                    ┌───────────▼──┐     ┌▼──────────────────────┐
-                    │     Bot      │     │   Channel Manager     │
-                    │  discord.py  │     │   FastAPI + Discord   │
-                    ├──────────────┤     │       REST API        │
-                    │slash commands│     ├───────────────────────┤
-                    │embeds & views│     │ create/delete match   │
-                    │replay upload │     │ text channels         │
-                    │message queue │     │ channel DB tracking   │
-                    └──────┬───────┘     │                       │
-                      HTTP │ ▲ WS        │                       │
-                           │ │           │                       │
-                  ┌────────▼─┴────┐      │                       │
-                  │    Backend    ├──────▶                       │
-                  │ FastAPI+Polars│ HTTP │                       │
-                  ├───────────────┤      │                       │
-                  │ matchmaker    │      │                       │
-                  │ ELO ratings   │      │                       │
-                  │ replay parser │      │                       │
-                  │ WS broadcast  │      │                       │
-                  └──────┬────────┘      └───────────┬───────────┘
-                         │                           │
-                    read / write                read / write
-                         │                           │
-                  ┌──────▼───────────────────────────▼───────────┐
-                  │                  Supabase                    │
-                  │          PostgreSQL + File Storage           │
-                  └─────────────────────────────────────────────┘
-```
+![Architecture diagram](docs/architecture.svg)
 
 - **Bot** handles all Discord interaction (slash commands, buttons, DMs, replay uploads) and calls the backend over HTTP.
 - **Backend** is the single source of truth. Loads the full database into Polars DataFrames at startup for sub-millisecond reads. Writes go to Supabase first, then update memory. Pushes real-time events to the bot over WebSocket.
