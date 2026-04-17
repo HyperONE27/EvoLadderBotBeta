@@ -294,7 +294,6 @@ What remains?
 - ⏰ Put channel chat history for each match in a nicer-looking embed in /match
 - ⏰ Announce new SEL Code S/Code A/Code B
 - ⏰ Send a one-time DMs message to all bot users about SEL competitions
-- ⏰ Write a README.md that doesn't suck
 - ⏰ Big feature to entice content creators to cast ladder matches
     - ⏰ Add a replays dashboard microservice with a Discord bot as its frontend
     - ⏰ Implement a content creators table
