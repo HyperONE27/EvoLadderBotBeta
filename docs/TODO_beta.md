@@ -312,7 +312,7 @@ What remains?
         - `finalise_match_2v2`, `batch_update_mmrs_2v2`, `admin_resolve_match_2v2`
     - All 6 are idempotent (UPDATE WHERE id=X / UPSERT with on_conflict), safe to retry
     - Does NOT change the cache-before-DB ordering in `_apply_match_resolution` — that is intentional for `count_game_stats` correctness; the retry wrapper protects against transient failures without restructuring
-- ⏰ When queueing 2v2, send a confirmation message to the party member
+- ⏰ When queueing 2v2, send a confirmation message to the party member with details and explaining next steps
 
 ```
 Here is a draft plan to refine:
