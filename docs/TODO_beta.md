@@ -314,6 +314,7 @@ What remains?
     - Does NOT change the cache-before-DB ordering in `_apply_match_resolution` — that is intentional for `count_game_stats` correctness; the retry wrapper protects against transient failures without restructuring
 - ⏰ When queueing 2v2, send a confirmation message to the party member with details and explaining next steps
 - ⏰ ReplayDetails admin embed map correctness should be checked against the matches_1v1 row, not the maps static data
+- ⏰ ReplayDetails admin view does not auto-disable on expire correctly
 
 ```
 Here is a draft plan to refine:
