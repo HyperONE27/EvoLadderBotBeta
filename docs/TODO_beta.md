@@ -317,6 +317,7 @@ What remains?
 - ⏰ ReplayDetails admin view does not auto-disable on expire correctly
 - ⏰ Party invite accept/decline buttons are missing emotes
 - ⏰ MatchInfoEmbed shows too much unnecessary stuff, get rid of it
+- ⏰ Set CHN vs THM to KOR
 
 ```
 Here is a draft plan to refine:
