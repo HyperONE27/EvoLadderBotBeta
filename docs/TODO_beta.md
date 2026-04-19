@@ -316,6 +316,7 @@ What remains?
 - ⏰ ReplayDetails admin embed map correctness should be checked against the matches_1v1 row, not the maps static data
 - ⏰ ReplayDetails admin view does not auto-disable on expire correctly
 - ⏰ Party invite accept/decline buttons are missing emotes
+- ⏰ MatchInfoEmbed shows too much unnecessary stuff, get rid of it
 
 ```
 Here is a draft plan to refine:
