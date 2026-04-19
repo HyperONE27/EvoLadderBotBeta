@@ -319,6 +319,7 @@ What remains?
 - ⏰ MatchInfoEmbed shows too much unnecessary stuff, get rid of it
 - ⏰ Set CHN vs THM to KOR
 - ⏰ Set opinionated default settings for notifications?
+- ⏰ Apparently it is not obvious that you need to upload a replay in order to report the result
 
 ```
 Here is a draft plan to refine:
