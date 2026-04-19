@@ -318,6 +318,7 @@ What remains?
 - ⏰ Party invite accept/decline buttons are missing emotes
 - ⏰ MatchInfoEmbed shows too much unnecessary stuff, get rid of it
 - ⏰ Set CHN vs THM to KOR
+- ⏰ Set opinionated default settings for notifications?
 
 ```
 Here is a draft plan to refine:
