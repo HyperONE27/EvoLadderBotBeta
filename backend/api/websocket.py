@@ -9,10 +9,16 @@ The bot connects to ``/ws`` and receives JSON messages of the form::
 
 Event types: ``match_found``, ``both_confirmed``, ``match_aborted``,
 ``match_abandoned``, ``match_completed``, ``match_conflict``,
-``leaderboard_updated``, ``queue_join_activity``.
+``leaderboard_updated``, ``queue_join_activity``, ``queue_started``,
+``queue_cancelled``.
 
 ``queue_join_activity`` data includes ``game_mode``, ``notify_discord_uids``,
 and ``footers`` (subscriber uid string to DM footer text).
+
+``queue_started`` and ``queue_cancelled`` are 2v2-only partner-notification
+events; their payload includes ``game_mode="2v2"``, ``leader_discord_uid``,
+``partner_discord_uid``, and (for ``queue_started``) ``races`` and
+``map_vetoes`` chosen by the leader.
 """
 
 import json

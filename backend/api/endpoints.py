@@ -1148,6 +1148,26 @@ async def queue_2v2_join(
         }
     )
     await app.broadcast_queue_join_activity_if_needed(ws, request.discord_uid, "2v2")
+
+    party = app.orchestrator.get_party(request.discord_uid)
+    if party is not None:
+        await ws.broadcast(
+            "queue_started",
+            {
+                "game_mode": "2v2",
+                "leader_discord_uid": request.discord_uid,
+                "partner_discord_uid": party["member_discord_uid"],
+                "races": {
+                    "pure_bw_leader_race": request.pure_bw_leader_race,
+                    "pure_bw_member_race": request.pure_bw_member_race,
+                    "mixed_leader_race": request.mixed_leader_race,
+                    "mixed_member_race": request.mixed_member_race,
+                    "pure_sc2_leader_race": request.pure_sc2_leader_race,
+                    "pure_sc2_member_race": request.pure_sc2_member_race,
+                },
+                "map_vetoes": request.map_vetoes,
+            },
+        )
     return Queue2v2JoinResponse(success=True, message=None)
 
 
@@ -1155,7 +1175,17 @@ async def queue_2v2_join(
 async def queue_2v2_leave(
     request: Queue2v2LeaveRequest,
     app: Backend = Depends(get_backend),
+    ws: ConnectionManager = Depends(get_ws_manager),
 ) -> Queue2v2LeaveResponse:
+    # Look up the partner uid before the leave (the queue entry itself is
+    # removed on success, but party membership persists).
+    party = app.orchestrator.get_party(request.discord_uid)
+    partner_uid = (
+        party["member_discord_uid"]
+        if party is not None and party["leader_discord_uid"] == request.discord_uid
+        else None
+    )
+
     success, message = app.orchestrator.leave_queue_2v2(request.discord_uid)
     if not success:
         raise HTTPException(status_code=409, detail=message)
@@ -1168,6 +1198,15 @@ async def queue_2v2_leave(
             "event_data": {},
         }
     )
+    if partner_uid is not None:
+        await ws.broadcast(
+            "queue_cancelled",
+            {
+                "game_mode": "2v2",
+                "leader_discord_uid": request.discord_uid,
+                "partner_discord_uid": partner_uid,
+            },
+        )
     return Queue2v2LeaveResponse(success=True, message=None)
 
 
