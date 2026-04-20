@@ -323,6 +323,7 @@ What remains?
   - ⏰ Extend "How to Join Your Match" to "How to Play Your Match" and include instructions on how to report the match reuslt
   - ⏰ Get rid of "Match Result" and "Replay Status" fields in MatchInfoEmbed?
 - ⏰ Queue activity pings might need to be sent out if someone's cooldown elapses and someone is already in the queue but not triggering the on-queue alert
+- ⏰ Don't send out activity pings until a user has commited to a certain minimum time period (60s?) of waiting
 
 ```
 Here is a draft plan to refine:
