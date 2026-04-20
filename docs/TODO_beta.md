@@ -279,7 +279,32 @@ What remains?
 - ✅ Replay details embed pagination buttons do not include 👤 emote
 - ✅ Increased match confirmation timeout from 60s to 120s
 
-## 2026-04-21
+## 2026-04-20
+
+- ✅ Big feature to entice content creators to cast ladder matches (plan §1)
+    - ✅ Added `content_creators` table + `GET /content_creators/{discord_uid}` and `PUT /owner/caster` add/remove endpoint
+    - ✅ Added `POST /caster/replays/search` filtering `replays_1v1`/`replays_2v2` by game mode, unordered race set, map, length bracket, MMR band; server re-checks creator status as defense-in-depth
+    - ✅ Hidden `replays` keyword DM triggers `CasterReplaySearchView` (filters + paginated results embed with replay download links); non-creators silently ignored
+    - ✅ New `/owner caster add|remove <player>` command reusing the `ConfirmStateChangeView` pattern
+- ✅ When queueing 2v2, send a confirmation message to the party member with details and explaining next steps (plan §9)
+    - ✅ Backend broadcasts new `queue_started_2v2` and `queue_cancelled_2v2` WS events with both party members' UIDs
+    - ✅ Bot WS listener DMs the partner (not the leader) a `Party2v2QueueStartedEmbed` / `Party2v2QueueCancelledEmbed` via low-priority queue
+- ✅ ReplayDetails admin embed map correctness should be checked against the matches_1v1 row, not the maps static data (plan §7)
+    - ✅ `AdminReplayDetailsEmbed` now compares parsed replay map to the `matches_1v1`/`matches_2v2` row's stored `map_name`, not the current season's static map list — so verification stays correct when the season rotates
+- ✅ ReplayDetails admin view does not auto-disable on expire correctly (plan §8)
+    - ✅ `AdminReplayToggleView.on_timeout` now disables both player buttons and edits the message in place, matching `AutoDisableView` behaviour
+- ✅ MatchInfoEmbed shows too much unnecessary stuff, get rid of it (plan §6)
+    - ✅ Dropped the Match Result and Replay Status fields (result is replay-resolved; replay status was redundant with the locked report dropdown)
+    - ✅ Dropped the now-unused `pending_report` threading from `MatchInfoEmbed1v1`/`2v2` and the `QueueSearching*View.submit_report` flows
+- ✅ Apparently it is not obvious that you need to upload a replay in order to report the result (plan §6)
+    - ✅ Extended "How to Join Your Match" → "How to Play Your Match" and added a "How to Report Your Result" section to `LobbyGuideEmbed` in all 6 locales
+    - ✅ Moved report-flow instructions from the embed footer into a dedicated inline field with pre-/post-replay variants, so new players see the upload-to-report path on the main embed
+- ✅ Queue activity pings might need to be sent out if someone's cooldown elapses and someone is already in the queue but not triggering the on-queue alert (plan §3)
+    - ✅ Added a background sweep task that re-checks subscribers whose cooldown has just elapsed against the live 1v1/2v2 queues and fires the ping if someone is still waiting
+- ✅ Don't send out activity pings until a user has committed to a certain minimum time period (60s?) of waiting (plan §3)
+    - ✅ `activity_notifier` now defers the ping by `QUEUE_NOTIFY_COMMITMENT_SECONDS` and only fires it if the joiner is still in the queue when the timer elapses; cancels on leave/match-found
+
+## 2026-04-22
 
 - ⏰ Add a notice about players disconnecting mid-match?
     - We probably should not be allowing reconnects for ladder matches as we have no  way to enforce fairness in these conditions
@@ -293,16 +318,11 @@ What remains?
         - We have to balance this against potential MMR differences, for example, if a new guy shows up when two people are in a long streak of games vs each other, but they're a bit far off from the MMR, how much is too much?
 - ⏰ Players often join, see nobody, and immediately leave despite the new notifications system, so it may not be doing as much to solve desyncs as I thought if I don't log people joining/leaving and display it in a more OBVIOUSLY VISIBLE/public manner
     - People often join and then leave in 5 seconds
-- ⏰ Add time zones and quiet hours selection to `/setup`/ and `/notifications`
+- ⏰ Add time zones and quiet hours selection to `/setup`/ and `/notifications` (plan §4 deferred)
 - ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
-- ⏰ Put channel chat history for each match in a nicer-looking embed in /match
+- ⏰ Put channel chat history for each match in a nicer-looking embed in /match (plan §5 tabled)
 - ⏰ Announce new SEL Code S/Code A/Code B
 - ⏰ Send a one-time DMs message to all bot users about SEL competitions
-- ⏰ Big feature to entice content creators to cast ladder matches
-    - ⏰ Add a replays dashboard microservice with a Discord bot as its frontend
-    - ⏰ Implement a content creators table
-    - ⏰ Implements a content creators-only command that lets content creators easily filter for and find replays they want to cast
-    - ⏰ Implement filters for length, race, map, etc.
 - ⏰ Add retry logic for match resolution for Cloudflare Error 500 outages
     - Add `_retry_db(fn, *, max_retries=2, delay=0.5)` in `backend/database/database.py`
     - Catches `postgrest.exceptions.APIError` (5xx codes) and `httpx.TransportError`/`httpx.TimeoutException`
@@ -312,18 +332,9 @@ What remains?
         - `finalise_match_2v2`, `batch_update_mmrs_2v2`, `admin_resolve_match_2v2`
     - All 6 are idempotent (UPDATE WHERE id=X / UPSERT with on_conflict), safe to retry
     - Does NOT change the cache-before-DB ordering in `_apply_match_resolution` — that is intentional for `count_game_stats` correctness; the retry wrapper protects against transient failures without restructuring
-- ⏰ When queueing 2v2, send a confirmation message to the party member with details and explaining next steps
-- ⏰ ReplayDetails admin embed map correctness should be checked against the matches_1v1 row, not the maps static data
-- ⏰ ReplayDetails admin view does not auto-disable on expire correctly
 - ⏰ Party invite accept/decline buttons are missing emotes
-- ⏰ MatchInfoEmbed shows too much unnecessary stuff, get rid of it
 - ⏰ Set CHN vs THM to KOR
 - ⏰ Set opinionated default settings for notifications?
-- ⏰ Apparently it is not obvious that you need to upload a replay in order to report the result
-  - ⏰ Extend "How to Join Your Match" to "How to Play Your Match" and include instructions on how to report the match reuslt
-  - ⏰ Get rid of "Match Result" and "Replay Status" fields in MatchInfoEmbed?
-- ⏰ Queue activity pings might need to be sent out if someone's cooldown elapses and someone is already in the queue but not triggering the on-queue alert
-- ⏰ Don't send out activity pings until a user has commited to a certain minimum time period (60s?) of waiting
 - ⏰ Fix people getting paired on the same races/maps over and over? Especially races, add a little randomness into the matchmaker by matching first then filtering matchup instead of the other way around
 
 ```
