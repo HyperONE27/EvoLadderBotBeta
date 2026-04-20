@@ -114,6 +114,10 @@ class Cache:
         # existing preferences without an HTTP call mid-flow.
         self.notification_presets: dict[int, dict[str, Any]] = {}
 
+        # The single status-embed message in ACTIVITY_STATS_CHANNEL_ID (may be None
+        # if the channel isn't configured or discovery is still in progress).
+        self.activity_status_message: "discord.Message | None" = None
+
         self._populate_json_data()
         self._populate_locale_data()
 

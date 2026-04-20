@@ -46,6 +46,7 @@ from bot.core.config import (
     QUEUE_NOTIFY_COMMITMENT_SECONDS,
     WS_RECONNECT_BACKOFF_SECONDS,
 )
+from bot.services import activity_status
 from bot.services.activity_notifier import (
     cancel_deferred_ping,
     schedule_deferred_ping,
@@ -182,6 +183,9 @@ def _joiner_still_queued(joiner_uid: int) -> bool:
 
 async def _on_queue_join_activity(client: discord.Client, data: dict) -> None:
     """Schedule anonymous low-priority DMs after the commitment delay."""
+    game_mode = str(data.get("game_mode", "1v1"))
+    asyncio.create_task(activity_status.broadcast_queue_join(client, game_mode))
+    asyncio.create_task(activity_status.refresh_status_embed())
     schedule_deferred_ping(
         client,
         data,
@@ -248,6 +252,7 @@ async def _dispatch_queue_join_activity(client: discord.Client, data: dict) -> N
 
 async def _on_queue_started_2v2(client: discord.Client, data: dict) -> None:
     """DM the 2v2 party partner that their leader has started a queue search."""
+    asyncio.create_task(activity_status.refresh_status_embed())
     partner_raw = data.get("partner_discord_uid")
     try:
         partner_uid = int(partner_raw) if partner_raw is not None else None
@@ -287,6 +292,7 @@ async def _on_queue_started_2v2(client: discord.Client, data: dict) -> None:
 
 async def _on_queue_cancelled_2v2(client: discord.Client, data: dict) -> None:
     """DM the 2v2 party partner that their leader has left the queue."""
+    asyncio.create_task(activity_status.refresh_status_embed())
     partner_raw = data.get("partner_discord_uid")
     try:
         partner_uid = int(partner_raw) if partner_raw is not None else None
@@ -321,6 +327,8 @@ async def _on_match_found(client: discord.Client, match_data: dict) -> None:
     for uid in (p1_uid, p2_uid):
         if uid is not None:
             cancel_deferred_ping(int(uid))
+    asyncio.create_task(activity_status.broadcast_match_found(client, match_id, "1v1"))
+    asyncio.create_task(activity_status.refresh_status_embed())
     cache = get_cache()
     logger.info(
         "[WS] match_found handler start",
@@ -530,6 +538,7 @@ async def _on_match_aborted(client: discord.Client, match_data: dict) -> None:
     """
     p1_uid = match_data.get("player_1_discord_uid")
     p2_uid = match_data.get("player_2_discord_uid")
+    asyncio.create_task(activity_status.refresh_status_embed())
 
     # DEPRECATED: Full embeds with player names, races, and MMR.
     # Replaced by MatchAbortedMinimalEmbed to prevent leaking player
@@ -558,6 +567,7 @@ async def _on_match_abandoned(client: discord.Client, match_data: dict) -> None:
     """
     p1_uid = match_data.get("player_1_discord_uid")
     p2_uid = match_data.get("player_2_discord_uid")
+    asyncio.create_task(activity_status.refresh_status_embed())
 
     # DEPRECATED: Full embeds with player names, races, and MMR.
     # Replaced by MatchAbandonedMinimalEmbed to prevent leaking player
@@ -580,8 +590,14 @@ async def _on_match_abandoned(client: discord.Client, match_data: dict) -> None:
 
 async def _on_match_completed(client: discord.Client, match_data: dict) -> None:
     """Notify both players of the completed match and post to match log."""
+    match_id: int = match_data["id"]
     p1_uid = match_data.get("player_1_discord_uid")
     p2_uid = match_data.get("player_2_discord_uid")
+
+    asyncio.create_task(
+        activity_status.broadcast_match_completed(client, match_id, "1v1")
+    )
+    asyncio.create_task(activity_status.refresh_status_embed())
 
     p1_info = await _fetch_player_info(p1_uid) if p1_uid else None
     p2_info = await _fetch_player_info(p2_uid) if p2_uid else None
@@ -619,6 +635,8 @@ async def _on_match_found_2v2(client: discord.Client, match_data: dict) -> None:
     leader_uids = _get_2v2_leader_uids(match_data)
     for uid in leader_uids:
         cancel_deferred_ping(int(uid))
+    asyncio.create_task(activity_status.broadcast_match_found(client, match_id, "2v2"))
+    asyncio.create_task(activity_status.refresh_status_embed())
     cache = get_cache()
     logger.info(
         "[WS] match_found_2v2 handler start",
@@ -770,6 +788,7 @@ async def _on_all_confirmed_2v2(client: discord.Client, match_data: dict) -> Non
 
 async def _on_match_aborted_2v2(client: discord.Client, match_data: dict) -> None:
     all_uids = _get_2v2_uids(match_data)
+    asyncio.create_task(activity_status.refresh_status_embed())
 
     # DEPRECATED: Full embeds with player names, races, and MMR.
     # Replaced by MatchAbortedMinimalEmbed to prevent leaking player
@@ -790,6 +809,7 @@ async def _on_match_aborted_2v2(client: discord.Client, match_data: dict) -> Non
 
 async def _on_match_abandoned_2v2(client: discord.Client, match_data: dict) -> None:
     all_uids = _get_2v2_uids(match_data)
+    asyncio.create_task(activity_status.refresh_status_embed())
 
     # DEPRECATED: Full embeds with player names, races, and MMR.
     # Replaced by MatchAbandonedMinimalEmbed to prevent leaking player
@@ -809,7 +829,12 @@ async def _on_match_abandoned_2v2(client: discord.Client, match_data: dict) -> N
 
 
 async def _on_match_completed_2v2(client: discord.Client, match_data: dict) -> None:
+    match_id: int = match_data["id"]
     all_uids = _get_2v2_uids(match_data)
+    asyncio.create_task(
+        activity_status.broadcast_match_completed(client, match_id, "2v2")
+    )
+    asyncio.create_task(activity_status.refresh_status_embed())
     player_infos = await _fetch_player_infos_2v2(all_uids)
     await _send_to_all_2v2_localized(
         client, all_uids, MatchFinalizedEmbed2v2, match_data, player_infos

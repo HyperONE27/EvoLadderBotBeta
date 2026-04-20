@@ -35,6 +35,7 @@ from bot.core.queues import (
 from bot.core.role_sync import backfill_roles
 from bot.core.ws_listener import start_ws_listener
 from bot.helpers.replay_handler import handle_replay_upload
+from bot.services import activity_status
 from common.datetime_helpers import utc_now
 from common.i18n import t
 from common.logging.config import configure_structlog
@@ -262,6 +263,8 @@ async def on_ready() -> None:
         _ws_task = asyncio.create_task(start_ws_listener(client))
         # Backfill ladder player role in background.
         asyncio.create_task(backfill_roles(client))
+        # Discover or create the activity-status embed and refresh it.
+        asyncio.create_task(activity_status.on_ready(client))
         _initialized = True
     except Exception as e:
         logger.error(f"[Discord Gateway] Error during initialization: {e}")

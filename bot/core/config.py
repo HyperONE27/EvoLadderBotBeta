@@ -83,6 +83,16 @@ BOT_USER_ID: int = _get_int_env("BOT_USER_ID")
 
 MATCH_LOG_CHANNEL_ID: int = _get_int_env("MATCH_LOG_CHANNEL_ID")
 
+# Optional channel for the single, edited-in-place activity-status embed.
+ACTIVITY_STATS_CHANNEL_ID: int | None = (
+    int(v) if (v := os.getenv("ACTIVITY_STATS_CHANNEL_ID")) else None
+)
+
+# Optional channel for anonymous queue-join/leave/match broadcasts.
+ACTIVITY_LOG_CHANNEL_ID: int | None = (
+    int(v) if (v := os.getenv("ACTIVITY_LOG_CHANNEL_ID")) else None
+)
+
 SERVER_GUILD_ID: int = _get_int_env("SERVER_GUILD_ID")
 
 # Optional: role granted to non-banned players who have accepted ToS.

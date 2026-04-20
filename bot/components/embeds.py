@@ -4477,6 +4477,60 @@ class Party2v2QueueCancelledEmbed(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
+class ActivityStatusEmbed(discord.Embed):
+    """Live queue / match counts for the activity-status channel.
+
+    Edited in-place by the activity-status service. Never DM'd.
+    """
+
+    def __init__(
+        self,
+        queue_1v1_count: int,
+        queue_2v2_count: int,
+        active_match_count: int,
+        last_queue_join_at: "datetime | None",
+        last_hour_match_count: int,
+        locale: str = "enUS",
+    ) -> None:
+        from discord.utils import format_dt
+
+        super().__init__(
+            title=t("activity_status_embed.title.1", locale),
+            description=t("activity_status_embed.description.1", locale),
+            color=discord.Color.blurple(),
+        )
+        self.add_field(
+            name=t("activity_status_embed.field_name.queue_1v1", locale),
+            value=str(queue_1v1_count),
+            inline=True,
+        )
+        self.add_field(
+            name=t("activity_status_embed.field_name.queue_2v2", locale),
+            value=str(queue_2v2_count),
+            inline=True,
+        )
+        self.add_field(
+            name=t("activity_status_embed.field_name.active_matches", locale),
+            value=str(active_match_count),
+            inline=True,
+        )
+        if last_queue_join_at is not None:
+            last_join_value = format_dt(last_queue_join_at, style="R")
+        else:
+            last_join_value = t("activity_status_embed.value.no_activity", locale)
+        self.add_field(
+            name=t("activity_status_embed.field_name.last_queue_join", locale),
+            value=last_join_value,
+            inline=False,
+        )
+        self.add_field(
+            name=t("activity_status_embed.field_name.last_hour_matches", locale),
+            value=str(last_hour_match_count),
+            inline=True,
+        )
+        apply_default_embed_footer(self, locale=locale)
+
+
 class ReplayErrorEmbed(discord.Embed):
     """Red error embed for a replay parsing failure."""
 
