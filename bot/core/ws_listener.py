@@ -34,6 +34,8 @@ from bot.components.embeds import (
     LobbyGuideEmbed,
     MatchInfoEmbed1v1,
     MatchInfoEmbeds2v2,
+    Party2v2QueueCancelledEmbed,
+    Party2v2QueueStartedEmbed,
     QueueSearchingEmbed,
     TalkChannelEmbed,
 )
@@ -137,6 +139,10 @@ async def _handle_message(client: discord.Client, raw: str) -> None:
         _on_leaderboard_updated(data)
     elif event == "queue_join_activity":
         await _on_queue_join_activity(client, data)
+    elif event == "queue_started":
+        await _on_queue_started_2v2(client, data)
+    elif event == "queue_cancelled":
+        await _on_queue_cancelled_2v2(client, data)
     else:
         logger.warning(f"[WS] Unknown event type: {event}")
 
@@ -214,6 +220,73 @@ async def _on_queue_join_activity(client: discord.Client, data: dict) -> None:
             discord_uids=unreachable,
             game_mode=game_mode,
         )
+
+
+async def _on_queue_started_2v2(client: discord.Client, data: dict) -> None:
+    """DM the 2v2 party partner that their leader has started a queue search."""
+    partner_raw = data.get("partner_discord_uid")
+    try:
+        partner_uid = int(partner_raw) if partner_raw is not None else None
+    except TypeError, ValueError:
+        partner_uid = None
+    if partner_uid is None:
+        logger.warning("[WS] queue_started missing partner_discord_uid", data=data)
+        return
+
+    races: dict = data.get("races") or {}
+    map_vetoes: list[str] = list(data.get("map_vetoes") or [])
+
+    try:
+        user = await client.fetch_user(partner_uid)
+    except Exception:
+        logger.exception(
+            "[WS] queue_started fetch_user failed", partner_uid=partner_uid
+        )
+        return
+
+    locale = get_player_locale(partner_uid)
+    embed = Party2v2QueueStartedEmbed(
+        pure_bw_leader_race=races.get("pure_bw_leader_race"),
+        pure_bw_member_race=races.get("pure_bw_member_race"),
+        mixed_leader_race=races.get("mixed_leader_race"),
+        mixed_member_race=races.get("mixed_member_race"),
+        pure_sc2_leader_race=races.get("pure_sc2_leader_race"),
+        pure_sc2_member_race=races.get("pure_sc2_member_race"),
+        map_vetoes=map_vetoes,
+        locale=locale,
+    )
+    try:
+        await queue_user_send_low(user, embed=embed)
+    except Exception:
+        logger.exception("[WS] queue_started DM failed", partner_uid=partner_uid)
+
+
+async def _on_queue_cancelled_2v2(client: discord.Client, data: dict) -> None:
+    """DM the 2v2 party partner that their leader has left the queue."""
+    partner_raw = data.get("partner_discord_uid")
+    try:
+        partner_uid = int(partner_raw) if partner_raw is not None else None
+    except TypeError, ValueError:
+        partner_uid = None
+    if partner_uid is None:
+        logger.warning("[WS] queue_cancelled missing partner_discord_uid", data=data)
+        return
+
+    try:
+        user = await client.fetch_user(partner_uid)
+    except Exception:
+        logger.exception(
+            "[WS] queue_cancelled fetch_user failed", partner_uid=partner_uid
+        )
+        return
+
+    locale = get_player_locale(partner_uid)
+    try:
+        await queue_user_send_low(
+            user, embed=Party2v2QueueCancelledEmbed(locale=locale)
+        )
+    except Exception:
+        logger.exception("[WS] queue_cancelled DM failed", partner_uid=partner_uid)
 
 
 async def _on_match_found(client: discord.Client, match_data: dict) -> None:

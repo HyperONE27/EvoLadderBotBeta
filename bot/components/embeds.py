@@ -4391,6 +4391,92 @@ class TalkChannelEmbed(discord.Embed):
         apply_default_embed_footer(self, locale=locale)
 
 
+class Party2v2QueueStartedEmbed(discord.Embed):
+    """Notifies a 2v2 partner that their party leader has entered the queue."""
+
+    def __init__(
+        self,
+        pure_bw_leader_race: str | None,
+        pure_bw_member_race: str | None,
+        mixed_leader_race: str | None,
+        mixed_member_race: str | None,
+        pure_sc2_leader_race: str | None,
+        pure_sc2_member_race: str | None,
+        map_vetoes: list[str],
+        locale: str = "enUS",
+    ) -> None:
+        super().__init__(
+            title=t("party_2v2_queue_started_embed.title.1", locale),
+            description=t("party_2v2_queue_started_embed.description.1", locale),
+            color=discord.Color.blurple(),
+        )
+
+        leader_label = t("party_2v2_queue_started_embed.role.leader", locale)
+        member_label = t("party_2v2_queue_started_embed.role.member", locale)
+
+        def _comp_value(leader_race: str | None, member_race: str | None) -> str:
+            if leader_race and member_race:
+                lr_emote = get_race_emote(leader_race)
+                mr_emote = get_race_emote(member_race)
+                return (
+                    f"- {leader_label}: {lr_emote} {_race_display(leader_race, locale)}\n"
+                    f"- {member_label}: {mr_emote} {_race_display(member_race, locale)}"
+                )
+            return "—"
+
+        self.add_field(
+            name=t("comp.bw_bw.1", locale),
+            value=_comp_value(pure_bw_leader_race, pure_bw_member_race),
+            inline=False,
+        )
+        self.add_field(
+            name=t("comp.bw_sc2.1", locale),
+            value=_comp_value(mixed_leader_race, mixed_member_race),
+            inline=False,
+        )
+        self.add_field(
+            name=t("comp.sc2_sc2.1", locale),
+            value=_comp_value(pure_sc2_leader_race, pure_sc2_member_race),
+            inline=False,
+        )
+
+        veto_count = len(map_vetoes)
+        if map_vetoes:
+            sorted_vetoes = sorted(map_vetoes)
+            veto_lines: list[str] = []
+            for i, map_name in enumerate(sorted_vetoes):
+                game = _get_map_game(map_name)
+                game_emote = get_game_emote(game)
+                veto_lines.append(f"{_NUMBER_EMOTES[i]} {game_emote} {map_name}")
+            veto_value = "\n".join(veto_lines)
+        else:
+            veto_value = t("queue_setup_embed.veto_value_none.1", locale)
+        self.add_field(
+            name=t(
+                "queue_setup_embed.field_name.3",
+                locale,
+                veto_count=str(veto_count),
+                max_map_vetoes=str(MAX_MAP_VETOES),
+            ),
+            value=veto_value,
+            inline=False,
+        )
+
+        apply_default_embed_footer(self, locale=locale)
+
+
+class Party2v2QueueCancelledEmbed(discord.Embed):
+    """Notifies a 2v2 partner that their party leader has left the queue."""
+
+    def __init__(self, locale: str = "enUS") -> None:
+        super().__init__(
+            title=t("party_2v2_queue_cancelled_embed.title.1", locale),
+            description=t("party_2v2_queue_cancelled_embed.description.1", locale),
+            color=discord.Color.light_grey(),
+        )
+        apply_default_embed_footer(self, locale=locale)
+
+
 class ReplayErrorEmbed(discord.Embed):
     """Red error embed for a replay parsing failure."""
 
