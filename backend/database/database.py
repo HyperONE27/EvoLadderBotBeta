@@ -794,6 +794,35 @@ class DatabaseWriter:
         ).execute()
 
     # ------------------------------------------------------------------
+    # Content creators (caster library access)
+    # ------------------------------------------------------------------
+
+    def insert_content_creator(
+        self,
+        discord_uid: int,
+        discord_username: str,
+        first_promoted_at: datetime,
+        last_promoted_at: datetime,
+    ) -> dict:
+        """Insert a content_creator row. Returns the resulting row."""
+        data: dict[str, Any] = {
+            "discord_uid": discord_uid,
+            "discord_username": discord_username,
+            "role": "content_creator",
+            "first_promoted_at": first_promoted_at.isoformat(),
+            "last_promoted_at": last_promoted_at.isoformat(),
+            "last_demoted_at": None,
+        }
+        response = self.client.table("content_creators").insert(data).execute()
+        return cast(dict[str, Any], response.data[0])
+
+    def delete_content_creator(self, discord_uid: int) -> None:
+        """Delete a content_creator row by Discord UID."""
+        self.client.table("content_creators").delete().eq(
+            "discord_uid", discord_uid
+        ).execute()
+
+    # ------------------------------------------------------------------
     # MMR 1v1 (batch)
     # ------------------------------------------------------------------
 

@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from backend.domain_types.dataframes import (
     AdminsRow,
+    ContentCreatorsRow,
     Matches1v1Row,
     Matches2v2Row,
     MMRs1v1Row,
@@ -778,3 +779,57 @@ class FirstSetupStartedRequest(BaseModel):
 
 class FirstSetupStartedResponse(BaseModel):
     ok: bool
+
+
+# --- /content_creators ---
+
+
+class ContentCreatorsResponse(BaseModel):
+    content_creator: ContentCreatorsRow | None
+
+
+# --- /owner caster ---
+
+
+class OwnerCasterRequest(BaseModel):
+    discord_uid: int
+    discord_username: str
+    action: str  # "add" or "remove"
+    owner_discord_uid: int
+
+
+class OwnerCasterResponse(BaseModel):
+    success: bool
+    action: str | None = None
+    error: str | None = None
+
+
+# --- /caster replays search ---
+
+
+class CasterReplaySearchRequest(BaseModel):
+    caster_discord_uid: int
+    game_mode: str  # "1v1" or "2v2"
+    races: list[str] = Field(default_factory=list)
+    map_name: str | None = None
+    min_length_minutes: int | None = None
+    max_length_minutes: int | None = None
+    mmr_min: int | None = None
+    mmr_max: int | None = None
+    limit: int = 50
+
+
+class CasterReplayResult(BaseModel):
+    match_id: int
+    game_mode: str
+    players: list[str]
+    races: list[str]
+    map_name: str
+    length_seconds: int
+    mmr_avg: int | None = None
+    replay_url: str
+    played_at: datetime | None = None
+
+
+class CasterReplaySearchResponse(BaseModel):
+    results: list[CasterReplayResult]

@@ -36,6 +36,12 @@ from backend.api.models import (
     PartySnapshotRow,
     AdminSnapshotResponse,
     AdminsResponse,
+    CasterReplaySearchRequest,
+    CasterReplaySearchResponse,
+    CasterReplayResult,
+    ContentCreatorsResponse,
+    OwnerCasterRequest,
+    OwnerCasterResponse,
     LeaderboardEntry,
     LeaderboardEntry2v2Model,
     LeaderboardResponse,
@@ -335,6 +341,19 @@ async def get_admin(
     app: Backend = Depends(get_backend),
 ) -> AdminsResponse:
     return AdminsResponse(admin=app.orchestrator.get_admin(discord_uid))
+
+
+# --- /content_creators/{discord_uid} ---
+
+
+@router.get("/content_creators/{discord_uid}", response_model=ContentCreatorsResponse)
+async def get_content_creator(
+    discord_uid: int,
+    app: Backend = Depends(get_backend),
+) -> ContentCreatorsResponse:
+    return ContentCreatorsResponse(
+        content_creator=app.orchestrator.get_content_creator(discord_uid)
+    )
 
 
 # --- /admin ban ---
@@ -745,6 +764,42 @@ async def owner_set_mmr(
     )
     await _broadcast_leaderboard_if_dirty(app, ws)
     return OwnerSetMMRResponse(success=True, old_mmr=old_mmr)
+
+
+# --- /owner caster ---
+
+
+@router.put("/owner/caster", response_model=OwnerCasterResponse)
+async def owner_caster(
+    request: OwnerCasterRequest,
+    app: Backend = Depends(get_backend),
+) -> OwnerCasterResponse:
+    if request.action == "add":
+        result = app.orchestrator.add_content_creator(
+            request.discord_uid, request.discord_username
+        )
+    elif request.action == "remove":
+        result = app.orchestrator.remove_content_creator(request.discord_uid)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown action '{request.action}'. Expected 'add' or 'remove'.",
+        )
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Failed."))
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.owner_discord_uid,
+            "event_type": "owner_command",
+            "action": "caster_toggle",
+            "target_discord_uid": request.discord_uid,
+            "event_data": {
+                "target_discord_uid": request.discord_uid,
+                "action": request.action,
+            },
+        }
+    )
+    return OwnerCasterResponse(success=True, action=request.action)
 
 
 # --- /owner announcement ---
@@ -2190,3 +2245,167 @@ async def party_info(
         member_player_name=party["member_player_name"],
         created_at=party["created_at"],
     )
+
+
+# ---------------------------------------------------------------------------
+# Caster replay search
+# ---------------------------------------------------------------------------
+
+
+@router.post("/caster/replays/search", response_model=CasterReplaySearchResponse)
+async def caster_replays_search(
+    request: CasterReplaySearchRequest,
+    app: Backend = Depends(get_backend),
+) -> CasterReplaySearchResponse:
+    if not app.orchestrator.is_content_creator(request.caster_discord_uid):
+        raise HTTPException(status_code=403, detail="Not a content creator.")
+
+    if request.game_mode == "1v1":
+        replays_df = app.state_manager.replays_1v1_df
+        matches_df = app.state_manager.matches_1v1_df
+    elif request.game_mode == "2v2":
+        replays_df = app.state_manager.replays_2v2_df
+        matches_df = app.state_manager.matches_2v2_df
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown game_mode '{request.game_mode}'. Expected '1v1' or '2v2'.",
+        )
+
+    if replays_df.is_empty():
+        return CasterReplaySearchResponse(results=[])
+
+    filtered = replays_df.filter(pl.col("upload_status") == "success")
+
+    if request.map_name:
+        filtered = filtered.filter(pl.col("map_name") == request.map_name)
+
+    if request.min_length_minutes is not None:
+        filtered = filtered.filter(
+            pl.col("game_duration_seconds") >= request.min_length_minutes * 60
+        )
+    if request.max_length_minutes is not None:
+        filtered = filtered.filter(
+            pl.col("game_duration_seconds") <= request.max_length_minutes * 60
+        )
+
+    if request.races:
+        required = {r.lower() for r in request.races}
+        if request.game_mode == "1v1":
+            race_cols = ["player_1_race", "player_2_race"]
+        else:
+            race_cols = [
+                "team_1_player_1_race",
+                "team_1_player_2_race",
+                "team_2_player_1_race",
+                "team_2_player_2_race",
+            ]
+        race_rows = filtered.select(race_cols).rows()
+        ids = filtered.get_column("id").to_list()
+        keep_ids: list[int] = []
+        for replay_id, race_tuple in zip(ids, race_rows, strict=True):
+            present = {r.lower() for r in race_tuple if r}
+            if required.issubset(present):
+                keep_ids.append(replay_id)
+        if not keep_ids:
+            return CasterReplaySearchResponse(results=[])
+        filtered = filtered.filter(pl.col("id").is_in(keep_ids))
+
+    match_key = "matches_1v1_id" if request.game_mode == "1v1" else "matches_2v2_id"
+    match_ids = filtered.get_column(match_key).to_list()
+    matches_subset = matches_df.filter(pl.col("id").is_in(match_ids))
+    matches_by_id = {row["id"]: row for row in matches_subset.iter_rows(named=True)}
+
+    results: list[CasterReplayResult] = []
+    for replay_row in filtered.iter_rows(named=True):
+        match_id = replay_row[match_key]
+        match_row = matches_by_id.get(match_id)
+        if match_row is None:
+            continue
+
+        if request.game_mode == "1v1":
+            mmr_avg: int | None = None
+            if (
+                match_row.get("player_1_mmr") is not None
+                and match_row.get("player_2_mmr") is not None
+            ):
+                mmr_avg = int(
+                    (match_row["player_1_mmr"] + match_row["player_2_mmr"]) / 2
+                )
+            players = [
+                str(replay_row.get("player_1_name") or ""),
+                str(replay_row.get("player_2_name") or ""),
+            ]
+            races = [
+                str(replay_row.get("player_1_race") or ""),
+                str(replay_row.get("player_2_race") or ""),
+            ]
+        else:
+            mmr_avg = None
+            if (
+                match_row.get("team_1_mmr") is not None
+                and match_row.get("team_2_mmr") is not None
+            ):
+                mmr_avg = int((match_row["team_1_mmr"] + match_row["team_2_mmr"]) / 2)
+            players = [
+                str(replay_row.get("team_1_player_1_name") or ""),
+                str(replay_row.get("team_1_player_2_name") or ""),
+                str(replay_row.get("team_2_player_1_name") or ""),
+                str(replay_row.get("team_2_player_2_name") or ""),
+            ]
+            races = [
+                str(replay_row.get("team_1_player_1_race") or ""),
+                str(replay_row.get("team_1_player_2_race") or ""),
+                str(replay_row.get("team_2_player_1_race") or ""),
+                str(replay_row.get("team_2_player_2_race") or ""),
+            ]
+
+        if request.mmr_min is not None and (
+            mmr_avg is None or mmr_avg < request.mmr_min
+        ):
+            continue
+        if request.mmr_max is not None and (
+            mmr_avg is None or mmr_avg > request.mmr_max
+        ):
+            continue
+
+        results.append(
+            CasterReplayResult(
+                match_id=match_id,
+                game_mode=request.game_mode,
+                players=players,
+                races=races,
+                map_name=str(replay_row.get("map_name") or ""),
+                length_seconds=int(replay_row.get("game_duration_seconds") or 0),
+                mmr_avg=mmr_avg,
+                replay_url=str(replay_row.get("replay_path") or ""),
+                played_at=match_row.get("completed_at") or match_row.get("assigned_at"),
+            )
+        )
+
+    results.sort(
+        key=lambda r: r.played_at.timestamp() if r.played_at else 0.0,
+        reverse=True,
+    )
+    if len(results) > request.limit:
+        results = results[: request.limit]
+
+    app.orchestrator.log_event(
+        {
+            "discord_uid": request.caster_discord_uid,
+            "event_type": "caster_command",
+            "action": "replay_search",
+            "event_data": {
+                "game_mode": request.game_mode,
+                "races": request.races,
+                "map_name": request.map_name,
+                "min_length_minutes": request.min_length_minutes,
+                "max_length_minutes": request.max_length_minutes,
+                "mmr_min": request.mmr_min,
+                "mmr_max": request.mmr_max,
+                "result_count": len(results),
+            },
+        }
+    )
+
+    return CasterReplaySearchResponse(results=results)

@@ -9,6 +9,7 @@ from backend.algorithms.game_stats import (
 )
 from backend.domain_types.dataframes import (
     AdminsRow,
+    ContentCreatorsRow,
     Matches1v1Row,
     Matches2v2Row,
     MMRs1v1Row,
@@ -25,6 +26,10 @@ from backend.domain_types.ephemeral import (
     QueueEntry2v2,
 )
 from backend.lookups.admin_lookups import get_admin_by_discord_uid
+from backend.lookups.content_creator_lookups import (
+    get_content_creator_by_discord_uid,
+    is_content_creator,
+)
 from backend.lookups.match_1v1_lookups import get_match_1v1_by_id
 from backend.lookups.mmr_1v1_lookups import (
     get_mmr_1v1_by_discord_uid_and_race,
@@ -54,6 +59,18 @@ class StateReader:
     def get_admin(self, discord_uid: int) -> AdminsRow | None:
         """Get an admin by their Discord UID."""
         return get_admin_by_discord_uid(discord_uid)
+
+    # ------------------------------------------------------------------
+    # Content creators
+    # ------------------------------------------------------------------
+
+    def get_content_creator(self, discord_uid: int) -> ContentCreatorsRow | None:
+        """Get a content_creator row by Discord UID."""
+        return get_content_creator_by_discord_uid(discord_uid)
+
+    def is_content_creator(self, discord_uid: int) -> bool:
+        """True if the Discord UID is listed in content_creators."""
+        return is_content_creator(discord_uid)
 
     # ------------------------------------------------------------------
     # Players

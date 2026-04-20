@@ -46,6 +46,7 @@ class StateManager:
         # In-memory DataFrames (caching the entire database)
         # Note: "events" is intentionally absent — it is write-only at runtime.
         self.admins_df: pl.DataFrame = pl.DataFrame()
+        self.content_creators_df: pl.DataFrame = pl.DataFrame()
         self.players_df: pl.DataFrame = pl.DataFrame()
         self.notifications_df: pl.DataFrame = pl.DataFrame()
         self.matches_1v1_df: pl.DataFrame = pl.DataFrame()

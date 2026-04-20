@@ -8,6 +8,7 @@ from backend.api.websocket import ConnectionManager
 from backend.database.database import DatabaseWriter
 from backend.database.storage import StorageWriter
 from backend.lookups.admin_lookups import init_admin_lookups
+from backend.lookups.content_creator_lookups import init_content_creator_lookups
 from backend.lookups.match_1v1_lookups import init_match_1v1_lookups
 from backend.lookups.mmr_1v1_lookups import init_mmr_1v1_lookups
 
@@ -96,6 +97,7 @@ class Backend:
         init_i18n(JSONLoader().load_locale_data())
         modules = [
             init_admin_lookups,
+            init_content_creator_lookups,
             init_country_lookups,
             init_cross_table_lookups,
             init_emote_lookups,

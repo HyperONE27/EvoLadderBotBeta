@@ -13,6 +13,7 @@ from backend.orchestrator.state import StateManager
 from backend.orchestrator.transitions import (
     _admin,
     _base,
+    _content_creator,
     _leaderboard,
     _match,
     _match_2v2,
@@ -164,3 +165,7 @@ class TransitionManager:
     get_active_matches_1v1 = _admin.get_active_matches_1v1
     get_queue_snapshot_2v2 = _admin.get_queue_snapshot_2v2
     get_active_matches_2v2 = _admin.get_active_matches_2v2
+
+    # -- content creators (_content_creator.py) ------------------------------
+    add_content_creator = _content_creator.add_content_creator
+    remove_content_creator = _content_creator.remove_content_creator

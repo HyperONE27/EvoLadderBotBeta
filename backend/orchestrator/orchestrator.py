@@ -12,6 +12,7 @@ from backend.database.database import DatabaseReader, DatabaseWriter
 from backend.domain_types.dataframes import (
     Matches2v2Row,
     AdminsRow,
+    ContentCreatorsRow,
     Matches1v1Row,
     MMRs1v1Row,
     NotificationsRow,
@@ -46,6 +47,32 @@ class Orchestrator:
     def get_admin(self, discord_uid: int) -> AdminsRow | None:
         """Get an admin by their Discord UID."""
         return self._state_reader.get_admin(discord_uid)
+
+    # ------------------------------------------------------------------
+    # Reads — Content creators
+    # ------------------------------------------------------------------
+
+    def get_content_creator(self, discord_uid: int) -> ContentCreatorsRow | None:
+        """Get a content_creator row by Discord UID."""
+        return self._state_reader.get_content_creator(discord_uid)
+
+    def is_content_creator(self, discord_uid: int) -> bool:
+        """True if the Discord UID is listed in content_creators."""
+        return self._state_reader.is_content_creator(discord_uid)
+
+    # ------------------------------------------------------------------
+    # Writes — Content creators
+    # ------------------------------------------------------------------
+
+    def add_content_creator(self, discord_uid: int, discord_username: str) -> dict:
+        """Add a content creator (idempotent). Returns a result dict."""
+        return self._transition_manager.add_content_creator(
+            discord_uid, discord_username
+        )
+
+    def remove_content_creator(self, discord_uid: int) -> dict:
+        """Remove a content creator (idempotent). Returns a result dict."""
+        return self._transition_manager.remove_content_creator(discord_uid)
 
     # ------------------------------------------------------------------
     # Reads

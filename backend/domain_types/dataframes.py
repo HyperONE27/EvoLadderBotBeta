@@ -30,6 +30,16 @@ ADMINS_SCHEMA: dict[str, pl.DataType] = {
     "last_demoted_at": pl.Datetime("us", "utc"),
 }
 
+CONTENT_CREATORS_SCHEMA: dict[str, pl.DataType] = {
+    "id": pl.Int16,
+    "discord_uid": pl.Int64,
+    "discord_username": pl.String,
+    "role": pl.String,
+    "first_promoted_at": pl.Datetime("us", "utc"),
+    "last_promoted_at": pl.Datetime("us", "utc"),
+    "last_demoted_at": pl.Datetime("us", "utc"),
+}
+
 PLAYERS_SCHEMA: dict[str, pl.DataType] = {
     "id": pl.Int64,
     "discord_uid": pl.Int64,
@@ -261,6 +271,7 @@ REPLAYS_2V2_SCHEMA: dict[str, pl.DataType] = {
 
 TABLE_SCHEMAS: dict[str, dict[str, pl.DataType]] = {
     "admins": ADMINS_SCHEMA,
+    "content_creators": CONTENT_CREATORS_SCHEMA,
     "players": PLAYERS_SCHEMA,
     "notifications": NOTIFICATIONS_SCHEMA,
     # "events" is intentionally excluded — write-only at runtime, never loaded into Polars.
@@ -280,6 +291,16 @@ TABLE_SCHEMAS: dict[str, dict[str, pl.DataType]] = {
 
 
 class AdminsRow(TypedDict):
+    id: int
+    discord_uid: int
+    discord_username: str
+    role: str
+    first_promoted_at: datetime
+    last_promoted_at: datetime
+    last_demoted_at: datetime | None
+
+
+class ContentCreatorsRow(TypedDict):
     id: int
     discord_uid: int
     discord_username: str

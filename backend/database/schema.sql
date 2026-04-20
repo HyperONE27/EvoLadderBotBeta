@@ -15,6 +15,17 @@ CREATE TABLE IF NOT EXISTS admins (
     last_demoted_at         TIMESTAMPTZ
 );
 
+CREATE TABLE IF NOT EXISTS content_creators (
+    id                      SMALLSERIAL PRIMARY KEY,
+    discord_uid             BIGINT NOT NULL UNIQUE,
+    discord_username        TEXT NOT NULL,
+    role                    TEXT NOT NULL DEFAULT 'content_creator'
+        CHECK (role IN ('content_creator')),
+    first_promoted_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_promoted_at        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_demoted_at         TIMESTAMPTZ
+);
+
 CREATE TABLE IF NOT EXISTS players (
     id                      BIGSERIAL PRIMARY KEY,
     discord_uid             BIGINT NOT NULL UNIQUE,
