@@ -10,7 +10,9 @@ from bot.commands.admin.snapshot_command import register_admin_snapshot_command
 from bot.commands.admin.statusreset_command import register_admin_statusreset_command
 from bot.commands.owner.admin_command import register_owner_admin_command
 from bot.commands.owner.announcement_command import register_owner_announcement_command
+from bot.commands.owner.caster_command import register_owner_caster_command
 from bot.commands.owner.mmr_command import register_owner_mmr_command
+from bot.commands.secret.replay_command import handle_replays_message
 from bot.commands.user.activity_command import register_activity_command
 from bot.commands.user.referral_command import register_referral_command
 from bot.commands.user.help_command import register_help_command
@@ -67,6 +69,7 @@ def _register_commands(client: discord.Client) -> None:
     register_admin_statusreset_command(tree)
     register_owner_admin_command(tree)
     register_owner_announcement_command(tree)
+    register_owner_caster_command(tree)
     register_owner_mmr_command(tree)
     register_activity_command(tree)
     register_help_command(tree)
@@ -187,6 +190,12 @@ async def on_message(message: discord.Message) -> None:
         # Replay upload handler — only fires for DM messages with attachments.
         if message.attachments:
             await handle_replay_upload(client, message)
+            return
+
+        # Hidden keyword: content creators typing exactly "replays" open the
+        # caster replay search view. Non-creators see no response.
+        if message.content.strip().lower() == "replays":
+            await handle_replays_message(client, message)
 
 
 @client.event
