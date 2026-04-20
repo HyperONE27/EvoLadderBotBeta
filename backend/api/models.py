@@ -833,3 +833,14 @@ class CasterReplayResult(BaseModel):
 
 class CasterReplaySearchResponse(BaseModel):
     results: list[CasterReplayResult]
+
+
+# --- /activity/stats ---
+
+
+class ActivityStatsResponse(BaseModel):
+    queue_1v1_count: int
+    queue_2v2_count: int
+    active_match_count: int
+    last_queue_join_at: datetime | None = None
+    last_hour_match_count: int

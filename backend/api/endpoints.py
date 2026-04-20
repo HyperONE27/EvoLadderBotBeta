@@ -32,6 +32,7 @@ from backend.api.models import (
     AdminResolveResponse,
     ActiveMatchSnapshotRow,
     ActiveMatchSnapshot2v2Row,
+    ActivityStatsResponse,
     AdminSnapshot2v2Response,
     PartySnapshotRow,
     AdminSnapshotResponse,
@@ -1024,6 +1025,20 @@ async def stats_active_players(
 ) -> ActivePlayersResponse:
     return ActivePlayersResponse(
         active_player_count=app.orchestrator.get_active_player_count()
+    )
+
+
+@router.get("/activity/stats", response_model=ActivityStatsResponse)
+async def activity_stats(
+    app: Backend = Depends(get_backend),
+) -> ActivityStatsResponse:
+    stats = app.orchestrator.get_activity_stats()
+    return ActivityStatsResponse(
+        queue_1v1_count=stats["queue_1v1_count"],
+        queue_2v2_count=stats["queue_2v2_count"],
+        active_match_count=stats["active_match_count"],
+        last_queue_join_at=stats["last_queue_join_at"],
+        last_hour_match_count=stats["last_hour_match_count"],
     )
 
 

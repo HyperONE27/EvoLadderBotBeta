@@ -1,5 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
+
+import polars as pl
 
 from backend.algorithms.queue_join_analytics import (
     bucket_deduped_queue_join_counts,
@@ -37,6 +39,7 @@ from common.datetime_helpers import utc_now
 
 class Orchestrator:
     def __init__(self, state_manager: StateManager, db_writer: DatabaseWriter) -> None:
+        self._state_manager = state_manager
         self._state_reader = StateReader(state_manager)
         self._transition_manager = TransitionManager(state_manager, db_writer)
 
@@ -291,6 +294,37 @@ class Orchestrator:
             "mixed_sc2": mixed_sc2,
             "all_three": all_three,
             "active_matches": len(self._transition_manager.get_active_matches_2v2()),
+        }
+
+    def get_activity_stats(self) -> dict[str, Any]:
+        """Glanceable queue/match counts for the activity-status embed."""
+        queue_1v1 = self._state_reader.get_queue_1v1()
+        queue_2v2 = self._state_reader.get_queue_2v2()
+
+        active_1v1 = self._transition_manager.get_active_matches_1v1()
+        active_2v2 = self._transition_manager.get_active_matches_2v2()
+
+        join_times: list[Any] = [e["joined_at"] for e in queue_1v1]
+        join_times.extend(e["joined_at"] for e in queue_2v2)
+        last_queue_join_at = max(join_times) if join_times else None
+
+        one_hour_ago = utc_now() - timedelta(hours=1)
+        count = 0
+        for df in (
+            self._state_manager.matches_1v1_df,
+            self._state_manager.matches_2v2_df,
+        ):
+            if df.is_empty():
+                continue
+            recent = df.filter(pl.col("assigned_at") >= one_hour_ago)
+            count += recent.height
+
+        return {
+            "queue_1v1_count": len(queue_1v1),
+            "queue_2v2_count": len(queue_2v2),
+            "active_match_count": len(active_1v1) + len(active_2v2),
+            "last_queue_join_at": last_queue_join_at,
+            "last_hour_match_count": count,
         }
 
     # ------------------------------------------------------------------
