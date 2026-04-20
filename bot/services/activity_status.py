@@ -81,14 +81,28 @@ async def _discover_or_create_status_message(
         logger.error(
             "[activity_status] channel is not a TextChannel",
             channel_id=ACTIVITY_STATS_CHANNEL_ID,
+            channel_type=type(channel).__name__,
         )
         return None
     me = client.user
     if me is None:
         return None
-    async for msg in channel.history(limit=50):
-        if msg.author.id == me.id and msg.embeds:
-            return msg
+    try:
+        async for msg in channel.history(limit=50):
+            if msg.author.id == me.id and msg.embeds:
+                return msg
+    except discord.Forbidden:
+        logger.error(
+            "[activity_status] missing Read Message History on status channel",
+            channel_id=ACTIVITY_STATS_CHANNEL_ID,
+        )
+        return None
+    except Exception:
+        logger.exception(
+            "[activity_status] channel.history failed",
+            channel_id=ACTIVITY_STATS_CHANNEL_ID,
+        )
+        return None
     embed = ActivityStatusEmbed(
         queue_1v1_count=0,
         queue_2v2_count=0,
@@ -96,7 +110,20 @@ async def _discover_or_create_status_message(
         last_queue_join_at=None,
         last_hour_match_count=0,
     )
-    return await queue_channel_send_low(channel, embed=embed)
+    try:
+        return await queue_channel_send_low(channel, embed=embed)
+    except discord.Forbidden:
+        logger.error(
+            "[activity_status] missing Send Messages on status channel",
+            channel_id=ACTIVITY_STATS_CHANNEL_ID,
+        )
+        return None
+    except Exception:
+        logger.exception(
+            "[activity_status] failed to seed status embed",
+            channel_id=ACTIVITY_STATS_CHANNEL_ID,
+        )
+        return None
 
 
 async def on_ready(client: discord.Client) -> None:
@@ -144,8 +171,15 @@ async def _refresh_status_embed_once(client: discord.Client) -> None:
 async def start_status_poller(client: discord.Client) -> None:
     """Run forever, refreshing the status embed on a fixed 5s cadence."""
     if ACTIVITY_STATS_CHANNEL_ID is None:
+        logger.info(
+            "[activity_status] ACTIVITY_STATS_CHANNEL_ID unset; status poller skipped"
+        )
         return
-    logger.info("[activity_status] status poller started")
+    logger.info(
+        "[activity_status] status poller started",
+        channel_id=ACTIVITY_STATS_CHANNEL_ID,
+        interval_seconds=_STATUS_POLL_INTERVAL_SECONDS,
+    )
     while True:
         try:
             await _refresh_status_embed_once(client)
