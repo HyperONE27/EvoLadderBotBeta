@@ -136,7 +136,7 @@ async def _handle_match_1v1(
         view = AdminReplayToggleView(
             match_embed, replays, verifications, replay_urls, locale=locale
         )
-        await interaction.followup.send(
+        view.message = await interaction.followup.send(  # type: ignore[func-returns-value]
             embeds=view.build_embeds(), file=file, view=view
         )
     elif len(replays) == 1:

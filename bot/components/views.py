@@ -2656,6 +2656,7 @@ class AdminReplayToggleView(AutoDisableView):
                 locale=self._locale,
                 current_index=idx,
             )
+            new_view.message = interaction.message
             await interaction.response.edit_message(
                 embeds=new_view.build_embeds(), view=new_view
             )
