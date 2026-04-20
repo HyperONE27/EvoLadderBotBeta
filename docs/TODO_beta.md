@@ -279,7 +279,7 @@ What remains?
 - ✅ Replay details embed pagination buttons do not include 👤 emote
 - ✅ Increased match confirmation timeout from 60s to 120s
 
-## 2026-04-17
+## 2026-04-21
 
 - ⏰ Add a notice about players disconnecting mid-match?
     - We probably should not be allowing reconnects for ladder matches as we have no  way to enforce fairness in these conditions
@@ -320,6 +320,7 @@ What remains?
 - ⏰ Set CHN vs THM to KOR
 - ⏰ Set opinionated default settings for notifications?
 - ⏰ Apparently it is not obvious that you need to upload a replay in order to report the result
+- ⏰ Queue activity pings might need to be sent out if someone's cooldown elapses and someone is already in the queue but not triggering the on-queue alert
 
 ```
 Here is a draft plan to refine:
