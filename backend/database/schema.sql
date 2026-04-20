@@ -100,7 +100,8 @@ CREATE TABLE IF NOT EXISTS events (
     event_type              TEXT NOT NULL
         CHECK (event_type IN (
             'player_command', 'admin_command', 'owner_command',
-            'player_update',  'match_event',   'system_event'
+            'caster_command', 'player_update', 'match_event',
+            'system_event'
         )),
     action                  TEXT NOT NULL,
         -- Specific sub-type, e.g. "setup", "ban", "match_found", "matchmaking_wave"

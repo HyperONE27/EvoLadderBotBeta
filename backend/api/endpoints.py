@@ -2309,7 +2309,7 @@ async def caster_replays_search(
     if replays_df.is_empty():
         return CasterReplaySearchResponse(results=[])
 
-    filtered = replays_df.filter(pl.col("upload_status") == "success")
+    filtered = replays_df.filter(pl.col("upload_status") == "completed")
 
     if request.map_name:
         filtered = filtered.filter(pl.col("map_name") == request.map_name)
