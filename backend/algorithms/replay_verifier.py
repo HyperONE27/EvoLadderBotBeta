@@ -49,14 +49,18 @@ def verify_replay_1v1(
     }
 
     # --- Map ---
-    # match["map_name"] is the short name (e.g. "Celestial Enclave"); the replay
-    # contains the full name (e.g. "Celestial Enclave LE").  Resolve via maps data.
-    short_name: str = match["map_name"]
-    map_entry = maps.get(short_name, {})
-    expected_map: str = map_entry.get("name", short_name)
+    # The match row stores the canonical short name at creation time. Anchor
+    # the comparison to it directly so later edits to maps.json (renames,
+    # removals) can't retroactively break verification of historical matches.
+    # maps.json is still consulted as a best-effort to accept the currently
+    # resolved full name, but is no longer the source of truth.
+    expected_map: str = match["map_name"]
     played_map: str = parsed.get("map_name", "")
+    map_entry = maps.get(expected_map, {})
+    expected_full: str | None = map_entry.get("name")
     result["map"] = {
-        "success": expected_map == played_map,
+        "success": played_map == expected_map
+        or (expected_full is not None and played_map == expected_full),
         "expected_map": expected_map,
         "played_map": played_map,
     }
@@ -158,12 +162,14 @@ def verify_replay_2v2(
     result["indeterminate"] = parsed.get("match_result") == "indeterminate"
 
     # --- Map ---
-    short_name: str = match["map_name"]
-    map_entry = maps.get(short_name, {})
-    expected_map: str = map_entry.get("name", short_name)
+    # See verify_replay_1v1 for the rationale on anchoring to match["map_name"].
+    expected_map: str = match["map_name"]
     played_map: str = parsed.get("map_name", "")
+    map_entry = maps.get(expected_map, {})
+    expected_full: str | None = map_entry.get("name")
     result["map"] = {
-        "success": expected_map == played_map,
+        "success": played_map == expected_map
+        or (expected_full is not None and played_map == expected_full),
         "expected_map": expected_map,
         "played_map": played_map,
     }
