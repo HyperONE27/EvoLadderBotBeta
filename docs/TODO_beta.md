@@ -324,6 +324,7 @@ What remains?
   - ⏰ Get rid of "Match Result" and "Replay Status" fields in MatchInfoEmbed?
 - ⏰ Queue activity pings might need to be sent out if someone's cooldown elapses and someone is already in the queue but not triggering the on-queue alert
 - ⏰ Don't send out activity pings until a user has commited to a certain minimum time period (60s?) of waiting
+- ⏰ Fix people getting paired on the same races/maps over and over? Especially races, add a little randomness into the matchmaker by matching first then filtering matchup instead of the other way around
 
 ```
 Here is a draft plan to refine:
