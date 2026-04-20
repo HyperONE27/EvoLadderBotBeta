@@ -3211,16 +3211,13 @@ class MatchReportView1v1(AutoDisableView):
         )
         self.add_item(self._toggle_button)
 
-    def _build_embeds(
-        self, locale: str, pending_report: str | None = None
-    ) -> list[discord.Embed]:
+    def _build_embeds(self, locale: str) -> list[discord.Embed]:
         server_code = self._match_data.get("server_name", "USW")
         return [
             MatchInfoEmbed1v1(
                 self._match_data,
                 self._p1_info,
                 self._p2_info,
-                pending_report=pending_report,
                 locale=locale,
             ),
             LobbyGuideEmbed(server_code, locale=locale, visible=self.guide_visible),
@@ -3256,7 +3253,7 @@ class MatchReportView1v1(AutoDisableView):
             self.report_select.disabled = True
             locale = get_player_locale(interaction.user.id)
             await interaction.edit_original_response(
-                embeds=self._build_embeds(locale, pending_report=report), view=self
+                embeds=self._build_embeds(locale), view=self
             )
 
         except Exception:
@@ -3900,15 +3897,12 @@ class MatchReportView2v2(AutoDisableView):
         )
         self.add_item(self._toggle_button)
 
-    def _build_embeds(
-        self, locale: str, pending_report: str | None = None
-    ) -> list[discord.Embed]:
+    def _build_embeds(self, locale: str) -> list[discord.Embed]:
         server_code = self._match_data.get("server_name", "USW")
         return list(
             MatchInfoEmbeds2v2(
                 self._match_data,
                 self._player_infos,
-                pending_report=pending_report,
                 locale=locale,
             )
         ) + [LobbyGuideEmbed(server_code, locale=locale, visible=self.guide_visible)]
@@ -3943,7 +3937,7 @@ class MatchReportView2v2(AutoDisableView):
             self.report_select.disabled = True
             locale = get_player_locale(interaction.user.id)
             await interaction.edit_original_response(
-                embeds=self._build_embeds(locale, pending_report=report), view=self
+                embeds=self._build_embeds(locale), view=self
             )
 
         except Exception:

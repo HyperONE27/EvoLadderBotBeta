@@ -560,7 +560,6 @@ class MatchInfoEmbed1v1(discord.Embed):
         match_data: dict,
         p1_info: dict[str, Any] | None = None,
         p2_info: dict[str, Any] | None = None,
-        pending_report: str | None = None,
         replay_uploaded: bool = False,
         locale: str = "enUS",
     ) -> None:
@@ -702,38 +701,16 @@ class MatchInfoEmbed1v1(discord.Embed):
         )
 
         self.add_field(name="", value="", inline=False)
-        self.add_field(name="", value="", inline=False)
-
-        if pending_report is not None:
-            result_value = t(
-                "match_info_embed.field_value_pending.4",
-                locale,
-                result=_report_display(pending_report, locale),
-            )
-        else:
-            result_value = t("match_info_embed.field_value_none.4", locale)
-        self.add_field(
-            name=t("match_info_embed.field_name.4", locale),
-            value=result_value,
-            inline=True,
-        )
-
-        replay_value = (
-            t("match_info_embed.field_value_uploaded.5", locale)
-            if replay_uploaded
-            else t("match_info_embed.field_value_no_replay.5", locale)
-        )
-        self.add_field(
-            name=t("match_info_embed.field_name.5", locale),
-            value=replay_value,
-            inline=True,
-        )
 
         if ENABLE_REPLAY_VALIDATION and not replay_uploaded:
-            footer_text = t("match_info_embed.footer.1", locale)
+            report_value = t("match_info_embed.field_value.report.pre_replay", locale)
         else:
-            footer_text = t("match_info_embed.footer.2", locale)
-        self.set_footer(text=footer_text)
+            report_value = t("match_info_embed.field_value.report.post_replay", locale)
+        self.add_field(
+            name=t("match_info_embed.field_name.report", locale),
+            value=report_value,
+            inline=False,
+        )
 
         apply_default_embed_footer(self, locale=locale)
 
@@ -1192,7 +1169,6 @@ class MatchInfoEmbeds2v2(list[discord.Embed]):
         self,
         match_data: dict,
         player_infos: dict[int, dict[str, Any] | None] | None = None,
-        pending_report: str | None = None,
         replay_uploaded: bool = False,
         locale: str = "enUS",
     ) -> None:
@@ -1344,38 +1320,16 @@ class MatchInfoEmbeds2v2(list[discord.Embed]):
         )
 
         embed2.add_field(name="", value="", inline=False)
-        embed2.add_field(name="", value="", inline=False)
-
-        if pending_report is not None:
-            result_value = t(
-                "match_info_embed_2v2.field_value_pending.4",
-                locale,
-                result=_report_display(pending_report, locale),
-            )
-        else:
-            result_value = t("match_info_embed.field_value_none.4", locale)
-        embed2.add_field(
-            name=t("match_info_embed.field_name.4", locale),
-            value=result_value,
-            inline=True,
-        )
-
-        replay_value = (
-            t("match_info_embed.field_value_uploaded.5", locale)
-            if replay_uploaded
-            else t("match_info_embed.field_value_no_replay.5", locale)
-        )
-        embed2.add_field(
-            name=t("match_info_embed.field_name.5", locale),
-            value=replay_value,
-            inline=True,
-        )
 
         if ENABLE_REPLAY_VALIDATION and not replay_uploaded:
-            footer_text = t("match_info_embed.footer.1", locale)
+            report_value = t("match_info_embed.field_value.report.pre_replay", locale)
         else:
-            footer_text = t("match_info_embed.footer.2", locale)
-        embed2.set_footer(text=footer_text)
+            report_value = t("match_info_embed.field_value.report.post_replay", locale)
+        embed2.add_field(
+            name=t("match_info_embed.field_name.report", locale),
+            value=report_value,
+            inline=False,
+        )
 
         apply_default_embed_footer(embed2, locale=locale)
 
