@@ -3405,6 +3405,9 @@ async def _leave_queue(
             view = cache.active_searching_views.pop(interaction.user.id, None)
             if view is not None and hasattr(view, "stop_heartbeat"):
                 view.stop_heartbeat()
+            from bot.services.activity_notifier import cancel_deferred_ping
+
+            cancel_deferred_ping(interaction.user.id)
         except Exception:
             pass
 
@@ -4312,6 +4315,9 @@ async def _leave_queue_2v2(
             view = cache.active_searching_views.pop(discord_user_id, None)
             if view is not None and hasattr(view, "stop_heartbeat"):
                 view.stop_heartbeat()
+            from bot.services.activity_notifier import cancel_deferred_ping
+
+            cancel_deferred_ping(discord_user_id)
         except Exception:
             pass
 

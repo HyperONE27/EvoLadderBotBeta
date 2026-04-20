@@ -1,0 +1,88 @@
+"""Deferred ``queue_join_activity`` DMs with a commitment delay + cooldown sweep.
+
+We want to avoid pinging subscribers when the queuer immediately bails. We hold
+each wave of DMs for ``QUEUE_NOTIFY_COMMITMENT_SECONDS`` and drop it if the
+joiner leaves or gets matched in that window. Subscriber cooldowns already live
+on the backend; this module is purely in-memory and is lost on bot restart.
+
+The ``joiner_discord_uid`` field must be present on the ``queue_join_activity``
+WS payload for cancellation to work. Payloads without it still fire, they just
+can't be cancelled early.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import structlog
+from typing import Callable, Coroutine, Any
+
+import discord
+
+logger = structlog.get_logger(__name__)
+
+_DeferredSend = Callable[[discord.Client, dict[str, Any]], Coroutine[Any, Any, None]]
+
+# joiner_discord_uid -> pending task
+_deferred_tasks: dict[int, asyncio.Task[None]] = {}
+
+
+def schedule_deferred_ping(
+    client: discord.Client,
+    data: dict[str, Any],
+    *,
+    commitment_seconds: int,
+    still_queued: Callable[[int], bool],
+    send: _DeferredSend,
+) -> None:
+    """Hold the DM wave for ``commitment_seconds``, then re-check and send.
+
+    ``still_queued(uid)`` gets called right before sending; if it returns False
+    (joiner left or got matched), the wave is dropped.
+
+    If a second deferred ping arrives for the same joiner while one is still
+    pending, we cancel the old one — the newer payload is authoritative.
+    """
+    raw = data.get("joiner_discord_uid")
+    try:
+        joiner_uid = int(raw) if raw is not None else None
+    except TypeError, ValueError:
+        joiner_uid = None
+
+    if joiner_uid is None:
+        asyncio.create_task(send(client, data))
+        return
+
+    existing = _deferred_tasks.pop(joiner_uid, None)
+    if existing is not None and not existing.done():
+        existing.cancel()
+
+    async def _runner() -> None:
+        try:
+            await asyncio.sleep(commitment_seconds)
+            if not still_queued(joiner_uid):
+                logger.info(
+                    "[activity_notifier] joiner no longer queued, dropping wave",
+                    joiner_discord_uid=joiner_uid,
+                )
+                return
+            await send(client, data)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception(
+                "[activity_notifier] deferred ping failed",
+                joiner_discord_uid=joiner_uid,
+            )
+        finally:
+            _deferred_tasks.pop(joiner_uid, None)
+
+    _deferred_tasks[joiner_uid] = asyncio.create_task(
+        _runner(), name=f"activity-notifier-{joiner_uid}"
+    )
+
+
+def cancel_deferred_ping(joiner_discord_uid: int) -> None:
+    """Cancel a pending wave for this joiner, if any."""
+    task = _deferred_tasks.pop(joiner_discord_uid, None)
+    if task is not None and not task.done():
+        task.cancel()

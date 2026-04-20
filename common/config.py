@@ -117,3 +117,12 @@ ACTIVITY_ANALYTICS_MAX_RANGE_DAYS: int = 90
 # Default cooldown (minutes) for new notification rows and when ``/notifyme`` omits
 # an explicit value. Must stay within DB CHECK on ``queue_notify_cooldown_minutes``.
 QUEUE_NOTIFY_COOLDOWN_MINUTES_DEFAULT: int = 15
+
+# Delay before a queue-join notification is actually sent. Cancels if the joiner
+# leaves or is matched before this elapses, so we don't ping subscribers for a
+# queuer who bails after a few seconds.
+QUEUE_NOTIFY_COMMITMENT_SECONDS: int = 60
+
+# Interval (seconds) between sweeps that re-ping subscribers whose cooldown has
+# elapsed while someone is still sitting in the queue.
+QUEUE_NOTIFY_SWEEP_INTERVAL_SECONDS: int = 30

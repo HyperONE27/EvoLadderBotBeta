@@ -43,7 +43,12 @@ from bot.core.config import (
     BACKEND_URL,
     ENABLE_REPLAY_VALIDATION,
     MATCH_LOG_CHANNEL_ID,
+    QUEUE_NOTIFY_COMMITMENT_SECONDS,
     WS_RECONNECT_BACKOFF_SECONDS,
+)
+from bot.services.activity_notifier import (
+    cancel_deferred_ping,
+    schedule_deferred_ping,
 )
 from bot.core.dependencies import get_cache, get_player_locale
 from bot.helpers.embed_branding import apply_default_embed_footer
@@ -167,7 +172,26 @@ async def _on_talk_channel_created(client: discord.Client, data: dict) -> None:
             logger.exception(f"[WS] Failed to DM user {uid} for talk_channel_created")
 
 
+def _joiner_still_queued(joiner_uid: int) -> bool:
+    """True if the joiner is still in our local queue-tracking caches."""
+    cache = get_cache()
+    if joiner_uid in cache.active_match_info:
+        return False
+    return joiner_uid in cache.active_searching_messages
+
+
 async def _on_queue_join_activity(client: discord.Client, data: dict) -> None:
+    """Schedule anonymous low-priority DMs after the commitment delay."""
+    schedule_deferred_ping(
+        client,
+        data,
+        commitment_seconds=QUEUE_NOTIFY_COMMITMENT_SECONDS,
+        still_queued=_joiner_still_queued,
+        send=_dispatch_queue_join_activity,
+    )
+
+
+async def _dispatch_queue_join_activity(client: discord.Client, data: dict) -> None:
     """Send anonymous low-priority DMs to opt-in subscribers."""
 
     raw_uids = data.get("notify_discord_uids") or []
@@ -294,6 +318,9 @@ async def _on_match_found(client: discord.Client, match_data: dict) -> None:
     match_id: int = match_data["id"]
     p1_uid = match_data.get("player_1_discord_uid")
     p2_uid = match_data.get("player_2_discord_uid")
+    for uid in (p1_uid, p2_uid):
+        if uid is not None:
+            cancel_deferred_ping(int(uid))
     cache = get_cache()
     logger.info(
         "[WS] match_found handler start",
@@ -590,6 +617,8 @@ async def _on_match_found_2v2(client: discord.Client, match_data: dict) -> None:
     match_id: int = match_data["id"]
     all_uids = _get_2v2_uids(match_data)
     leader_uids = _get_2v2_leader_uids(match_data)
+    for uid in leader_uids:
+        cancel_deferred_ping(int(uid))
     cache = get_cache()
     logger.info(
         "[WS] match_found_2v2 handler start",

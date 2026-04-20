@@ -16,6 +16,7 @@ from backend.api.websocket import ConnectionManager
 from backend.core.bootstrap import Backend
 from backend.core.config import CONFIRMATION_TIMEOUT
 
+from common.config import QUEUE_NOTIFY_SWEEP_INTERVAL_SECONDS
 from common.logging.config import configure_structlog
 
 logger = structlog.get_logger(__name__)
@@ -98,6 +99,33 @@ async def _confirmation_timeout_2v2(match_id: int, timeout: int) -> None:
         )
 
 
+async def _activity_notifier_sweep_loop() -> None:
+    """Re-ping subscribers whose cooldown elapsed while someone is still queued.
+
+    Complements the immediate ``queue_join_activity`` broadcast on queue-join:
+    if Alice sits in queue longer than Bob's notify cooldown, Bob gets pinged
+    again. DB-side ``last_sent`` tracking prevents spam.
+    """
+    ws = get_ws_manager()
+    while True:
+        await asyncio.sleep(QUEUE_NOTIFY_SWEEP_INTERVAL_SECONDS)
+        try:
+            backend = get_backend()
+            for game_mode, queue in (
+                ("1v1", backend.state_manager.queue_1v1),
+                ("2v2", backend.state_manager.queue_2v2),
+            ):
+                if not queue:
+                    continue
+                longest_waiter = min(queue, key=lambda e: e["joined_at"])
+                joiner_uid = int(longest_waiter["discord_uid"])
+                await backend.broadcast_queue_join_activity_if_needed(
+                    ws, joiner_uid, game_mode
+                )
+        except Exception:
+            logger.exception("Activity-notifier sweep failed")
+
+
 async def _confirmation_timeout(match_id: int, timeout: int) -> None:
     """Wait for the confirmation window, then handle timeout if not yet confirmed."""
     await asyncio.sleep(timeout)
@@ -139,11 +167,13 @@ async def lifespan(app: FastAPI):
 
     matchmaker_task = asyncio.create_task(_matchmaker_loop())
     matchmaker_task_2v2 = asyncio.create_task(_matchmaker_loop_2v2())
+    activity_notifier_task = asyncio.create_task(_activity_notifier_sweep_loop())
 
     yield
 
     matchmaker_task.cancel()
     matchmaker_task_2v2.cancel()
+    activity_notifier_task.cancel()
     backend.process_pool.shutdown(wait=False)
     logger.info("[Backend] Backend shutting down...")
 

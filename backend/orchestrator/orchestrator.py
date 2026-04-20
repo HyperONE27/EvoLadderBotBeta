@@ -902,6 +902,7 @@ class Orchestrator:
 
         return {
             "game_mode": game_mode,
+            "joiner_discord_uid": joiner_uid,
             "notify_discord_uids": uids,
             "footers": footers,
             "locales": locales,
