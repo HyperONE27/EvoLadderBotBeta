@@ -39,8 +39,10 @@ def schedule_deferred_ping(
     ``still_queued(uid)`` gets called right before sending; if it returns False
     (joiner left or got matched), the wave is dropped.
 
-    If a second deferred ping arrives for the same joiner while one is still
-    pending, we cancel the old one — the newer payload is authoritative.
+    If a pending task already exists for this joiner, we keep it: the backend
+    re-fires ``queue_join_activity`` from the sweep loop every
+    ``QUEUE_NOTIFY_SWEEP_INTERVAL_SECONDS``, and if we reset the timer on every
+    sweep tick the DM would never get to fire.
     """
     raw = data.get("joiner_discord_uid")
     try:
@@ -52,9 +54,9 @@ def schedule_deferred_ping(
         asyncio.create_task(send(client, data))
         return
 
-    existing = _deferred_tasks.pop(joiner_uid, None)
+    existing = _deferred_tasks.get(joiner_uid)
     if existing is not None and not existing.done():
-        existing.cancel()
+        return
 
     async def _runner() -> None:
         try:
