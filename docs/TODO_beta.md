@@ -320,6 +320,8 @@ What remains?
 - ⏰ Set CHN vs THM to KOR
 - ⏰ Set opinionated default settings for notifications?
 - ⏰ Apparently it is not obvious that you need to upload a replay in order to report the result
+  - ⏰ Extend "How to Join Your Match" to "How to Play Your Match" and include instructions on how to report the match reuslt
+  - ⏰ Get rid of "Match Result" and "Replay Status" fields in MatchInfoEmbed?
 - ⏰ Queue activity pings might need to be sent out if someone's cooldown elapses and someone is already in the queue but not triggering the on-queue alert
 
 ```
