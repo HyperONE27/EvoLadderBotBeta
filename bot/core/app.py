@@ -272,8 +272,10 @@ async def on_ready() -> None:
         _ws_task = asyncio.create_task(start_ws_listener(client))
         # Backfill ladder player role in background.
         asyncio.create_task(backfill_roles(client))
-        # Discover or create the activity-status embed and refresh it.
+        # Discover or create the activity-status embed, then start the
+        # independent 5-second polling loop that keeps it fresh.
         asyncio.create_task(activity_status.on_ready(client))
+        asyncio.create_task(activity_status.start_status_poller(client))
         _initialized = True
     except Exception as e:
         logger.error(f"[Discord Gateway] Error during initialization: {e}")

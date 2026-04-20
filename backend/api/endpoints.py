@@ -533,6 +533,7 @@ async def admin_resolve(
         }
     )
     asyncio.create_task(_request_channel_delete(match_id, "1v1"))
+    await app.broadcast_activity_log(ws, "match_completed", "1v1", match_id=match_id)
     await _broadcast_leaderboard_if_dirty(app, ws)
     return AdminResolveResponse(success=True, data=result)
 
@@ -621,6 +622,7 @@ async def admin_resolve_2v2(
         }
     )
     asyncio.create_task(_request_channel_delete(match_id, "2v2"))
+    await app.broadcast_activity_log(ws, "match_completed", "2v2", match_id=match_id)
     await _broadcast_leaderboard_if_dirty(app, ws)
     return AdminResolveResponse(success=True, data=result)
 
@@ -1138,6 +1140,7 @@ async def queue_join(
         }
     )
     await app.broadcast_queue_join_activity_if_needed(ws, request.discord_uid, "1v1")
+    await app.broadcast_activity_log(ws, "queue_join", "1v1")
     return QueueJoinResponse(success=True, message=None)
 
 
@@ -1145,6 +1148,7 @@ async def queue_join(
 async def queue_leave(
     request: QueueLeaveRequest,
     app: Backend = Depends(get_backend),
+    ws: ConnectionManager = Depends(get_ws_manager),
 ) -> QueueLeaveResponse:
     success, message = app.orchestrator.leave_queue_1v1(request.discord_uid)
     if not success:
@@ -1158,6 +1162,7 @@ async def queue_leave(
             "event_data": {},
         }
     )
+    await app.broadcast_activity_log(ws, "queue_leave", "1v1")
     return QueueLeaveResponse(success=True, message=None)
 
 
@@ -1218,6 +1223,7 @@ async def queue_2v2_join(
         }
     )
     await app.broadcast_queue_join_activity_if_needed(ws, request.discord_uid, "2v2")
+    await app.broadcast_activity_log(ws, "queue_join", "2v2")
 
     party = app.orchestrator.get_party(request.discord_uid)
     if party is not None:
@@ -1277,6 +1283,7 @@ async def queue_2v2_leave(
                 "partner_discord_uid": partner_uid,
             },
         )
+    await app.broadcast_activity_log(ws, "queue_leave", "2v2")
     return Queue2v2LeaveResponse(success=True, message=None)
 
 
@@ -1436,6 +1443,9 @@ async def match_report(
             asyncio.create_task(_request_channel_delete(match_id, "1v1"))
         elif result is not None:
             await ws.broadcast("match_completed", enriched)
+            await app.broadcast_activity_log(
+                ws, "match_completed", "1v1", match_id=match_id
+            )
             asyncio.create_task(_request_channel_delete(match_id, "1v1"))
         await _broadcast_leaderboard_if_dirty(app, ws)
     app.orchestrator.log_event(
@@ -1563,6 +1573,9 @@ async def match_2v2_report(
             asyncio.create_task(_request_channel_delete(match_id, "2v2"))
         elif result is not None:
             await ws.broadcast("match_completed", {"game_mode": "2v2", **enriched})
+            await app.broadcast_activity_log(
+                ws, "match_completed", "2v2", match_id=match_id
+            )
             asyncio.create_task(_request_channel_delete(match_id, "2v2"))
         await _broadcast_leaderboard_if_dirty(app, ws)
     app.orchestrator.log_event(
@@ -1929,6 +1942,9 @@ async def upload_replay(
             # Broadcast match_completed + leaderboard via WebSocket.
             resolved_match = app.orchestrator.enrich_match_with_ranks(resolved_match)
             await ws.broadcast("match_completed", resolved_match)
+            await app.broadcast_activity_log(
+                ws, "match_completed", "1v1", match_id=match_id
+            )
             asyncio.create_task(_request_channel_delete(match_id, "1v1"))
             await _broadcast_leaderboard_if_dirty(app, ws)
 
@@ -2154,6 +2170,9 @@ async def upload_replay_2v2(
         # Broadcast match_completed + leaderboard via WebSocket.
         resolved_match["game_mode"] = "2v2"
         await ws.broadcast("match_completed", resolved_match)
+        await app.broadcast_activity_log(
+            ws, "match_completed", "2v2", match_id=match_id
+        )
         asyncio.create_task(_request_channel_delete(match_id, "2v2"))
         await _broadcast_leaderboard_if_dirty(app, ws)
 

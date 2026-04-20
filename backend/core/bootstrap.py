@@ -86,6 +86,23 @@ class Backend:
             return
         await ws.broadcast("queue_join_activity", payload)
 
+    async def broadcast_activity_log(
+        self,
+        ws: ConnectionManager,
+        kind: str,
+        game_mode: str,
+        match_id: int | None = None,
+    ) -> None:
+        """Fire an anonymous, always-on activity-log event.
+
+        Independent of the notifications/opt-in flow. Consumed by the bot's
+        dedicated activity-log channel handler; no player identities exposed.
+        """
+        payload: dict[str, object] = {"kind": kind, "game_mode": game_mode}
+        if match_id is not None:
+            payload["match_id"] = match_id
+        await ws.broadcast("activity_log", payload)
+
     def _initialize_orchestrator(self) -> None:
         # Initialize orchestrator components
         self.state_manager = StateManager()

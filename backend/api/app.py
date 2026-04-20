@@ -41,6 +41,9 @@ async def _matchmaker_loop() -> None:
                 # Broadcast match_found to the bot.
                 enriched = backend.orchestrator.enrich_match_with_ranks(dict(match))
                 await ws.broadcast("match_found", enriched)
+                await backend.broadcast_activity_log(
+                    ws, "match_created", "1v1", match_id=match_id
+                )
 
                 # Schedule a confirmation timeout for this match.
                 asyncio.create_task(
@@ -67,6 +70,9 @@ async def _matchmaker_loop_2v2() -> None:
 
                 enriched = backend.orchestrator.enrich_match_2v2_with_ranks(dict(match))
                 await ws.broadcast("match_found", {"game_mode": "2v2", **enriched})
+                await backend.broadcast_activity_log(
+                    ws, "match_created", "2v2", match_id=match_id
+                )
 
                 asyncio.create_task(
                     _confirmation_timeout_2v2(match_id, CONFIRMATION_TIMEOUT)
