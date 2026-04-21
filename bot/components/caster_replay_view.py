@@ -367,6 +367,11 @@ class CasterReplaySearchView(discord.ui.LayoutView):
 
         self._results: list[dict[str, Any]] = []
         self._has_searched: bool = False
+        # Snapshot of the game_mode that produced self._results. The
+        # displayed text layout is keyed off this, not self.game_mode, so
+        # flipping the mode buttons doesn't mangle the current results
+        # until the next Search.
+        self._searched_game_mode: str = self.game_mode
         self._page: int = 0
         self._error: bool = False
 
@@ -376,7 +381,7 @@ class CasterReplaySearchView(discord.ui.LayoutView):
 
     @property
     def _total_pages(self) -> int:
-        per_page = _results_per_page(self.game_mode)
+        per_page = _results_per_page(self._searched_game_mode)
         return max(1, (len(self._results) + per_page - 1) // per_page)
 
     def _rebuild(self) -> None:
@@ -387,7 +392,7 @@ class CasterReplaySearchView(discord.ui.LayoutView):
         elif self._has_searched:
             body = _build_results_content(
                 self._results,
-                game_mode=self.game_mode,
+                game_mode=self._searched_game_mode,
                 page=self._page,
                 total_pages=self._total_pages,
                 locale=self._locale,
@@ -490,9 +495,9 @@ class CasterReplaySearchView(discord.ui.LayoutView):
                 await interaction.response.defer()
                 return
             self.game_mode = mode
+            # Map list depends on game mode, so clear the selection.
+            # Results and pagination stay put until the next Search.
             self.map_name = None
-            # Reset page on mode change since per_page may change.
-            self._page = 0
             self._rebuild()
             await interaction.response.edit_message(view=self)
 
@@ -570,6 +575,7 @@ class CasterReplaySearchView(discord.ui.LayoutView):
                 )
                 self._results = results
                 self._has_searched = True
+                self._searched_game_mode = self.game_mode
                 self._error = False
                 self._page = 0
                 self._rebuild()
