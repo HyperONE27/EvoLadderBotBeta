@@ -4,8 +4,8 @@ Triggered by the hidden ``replays`` keyword in DMs (see
 :mod:`bot.commands.secret.replay_command`) for players gated by the
 ``content_creators`` table.
 
-The view holds filter state (game mode, races, map, length bracket, MMR
-bracket) and POSTs to ``/caster/replays/search`` when the Search button
+The view holds filter state (game mode, races, map, min length, max
+length) and POSTs to ``/caster/replays/search`` when the Search button
 is pressed. Results are rendered as a paginated Components v2 layout
 (``LayoutView`` + ``Container`` + ``TextDisplay``) in place.
 """
@@ -13,6 +13,7 @@ is pressed. Results are rendered as a paginated Components v2 layout
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable, Coroutine
 from typing import Any
 
 import discord
@@ -20,7 +21,7 @@ import structlog
 
 from bot.components.embeds import ErrorEmbed
 from bot.components.views import AutoDisableView
-from bot.core.config import BACKEND_URL, CURRENT_SEASON
+from bot.core.config import BACKEND_URL
 from bot.core.http import get_session
 from bot.helpers.emotes import get_flag_emote, get_game_emote, get_race_emote
 from common.i18n import t
@@ -31,22 +32,8 @@ logger = structlog.get_logger(__name__)
 
 _GAME_MODES = ("1v1", "2v2")
 
-# Length bracket keys map to (min_minutes, max_minutes) or None for "any".
-_LENGTH_BRACKETS: dict[str, tuple[int | None, int | None]] = {
-    "any": (None, None),
-    "under_10": (None, 10),
-    "10_to_20": (10, 20),
-    "20_to_30": (20, 30),
-    "over_30": (30, None),
-}
-
-_MMR_BRACKETS: dict[str, tuple[int | None, int | None]] = {
-    "any": (None, None),
-    "under_1000": (None, 1000),
-    "1000_to_1500": (1000, 1500),
-    "1500_to_2000": (1500, 2000),
-    "over_2000": (2000, None),
-}
+_MIN_LENGTH_OPTIONS = list(range(1, 26))  # 1, 2, ..., 25 minutes
+_MAX_LENGTH_OPTIONS = list(range(2, 51, 2))  # 2, 4, ..., 50 minutes
 
 _RESULTS_PER_PAGE_1V1 = 10
 _RESULTS_PER_PAGE_2V2 = 5
@@ -304,33 +291,6 @@ class CasterReplayResultsView(discord.ui.LayoutView):
         await interaction.response.edit_message(view=self)
 
 
-class _GameModeSelect(discord.ui.Select["CasterReplaySearchView"]):
-    def __init__(self, selected: str, locale: str) -> None:
-        options = [
-            discord.SelectOption(
-                label=t(f"caster_replay.game_mode.{mode}", locale),
-                value=mode,
-                default=(mode == selected),
-            )
-            for mode in _GAME_MODES
-        ]
-        super().__init__(
-            placeholder=t("caster_replay.placeholder.game_mode", locale),
-            min_values=1,
-            max_values=1,
-            options=options,
-            row=0,
-        )
-
-    async def callback(self, interaction: discord.Interaction) -> None:
-        view = self.view
-        assert view is not None
-        view.game_mode = self.values[0]
-        view.map_name = None
-        view._rebuild()
-        await interaction.response.edit_message(view=view)
-
-
 class _RaceFilterSelect(discord.ui.Select["CasterReplaySearchView"]):
     def __init__(self, selected: list[str], locale: str) -> None:
         races = get_races()
@@ -348,7 +308,7 @@ class _RaceFilterSelect(discord.ui.Select["CasterReplaySearchView"]):
             min_values=0,
             max_values=min(2, len(options)),
             options=options,
-            row=1,
+            row=0,
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -360,7 +320,7 @@ class _RaceFilterSelect(discord.ui.Select["CasterReplaySearchView"]):
 
 class _MapFilterSelect(discord.ui.Select["CasterReplaySearchView"]):
     def __init__(self, game_mode: str, selected: str | None, locale: str) -> None:
-        maps = get_maps(game_mode=game_mode, season=CURRENT_SEASON) or {}
+        maps = get_maps(game_mode=game_mode) or {}
         options = [
             discord.SelectOption(
                 label=map_data["short_name"],
@@ -381,7 +341,7 @@ class _MapFilterSelect(discord.ui.Select["CasterReplaySearchView"]):
             min_values=0,
             max_values=1,
             options=options,
-            row=2,
+            row=1,
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -392,19 +352,44 @@ class _MapFilterSelect(discord.ui.Select["CasterReplaySearchView"]):
         await interaction.response.defer()
 
 
-class _LengthBracketSelect(discord.ui.Select["CasterReplaySearchView"]):
-    def __init__(self, selected: str, locale: str) -> None:
+class _MinLengthSelect(discord.ui.Select["CasterReplaySearchView"]):
+    def __init__(self, selected: int | None, locale: str) -> None:
         options = [
             discord.SelectOption(
-                label=t(f"caster_replay.length.{key}", locale),
-                value=key,
-                default=(key == selected),
+                label=t("caster_replay.length.minutes", locale, minutes=str(n)),
+                value=str(n),
+                default=(n == selected),
             )
-            for key in _LENGTH_BRACKETS
+            for n in _MIN_LENGTH_OPTIONS
         ]
         super().__init__(
-            placeholder=t("caster_replay.placeholder.length", locale),
-            min_values=1,
+            placeholder=t("caster_replay.placeholder.length_min", locale),
+            min_values=0,
+            max_values=1,
+            options=options,
+            row=2,
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        assert view is not None
+        view.min_length_minutes = int(self.values[0]) if self.values else None
+        await interaction.response.defer()
+
+
+class _MaxLengthSelect(discord.ui.Select["CasterReplaySearchView"]):
+    def __init__(self, selected: int | None, locale: str) -> None:
+        options = [
+            discord.SelectOption(
+                label=t("caster_replay.length.minutes", locale, minutes=str(n)),
+                value=str(n),
+                default=(n == selected),
+            )
+            for n in _MAX_LENGTH_OPTIONS
+        ]
+        super().__init__(
+            placeholder=t("caster_replay.placeholder.length_max", locale),
+            min_values=0,
             max_values=1,
             options=options,
             row=3,
@@ -413,7 +398,7 @@ class _LengthBracketSelect(discord.ui.Select["CasterReplaySearchView"]):
     async def callback(self, interaction: discord.Interaction) -> None:
         view = self.view
         assert view is not None
-        view.length_bracket = self.values[0]
+        view.max_length_minutes = int(self.values[0]) if self.values else None
         await interaction.response.defer()
 
 
@@ -432,16 +417,30 @@ class CasterReplaySearchView(AutoDisableView):
         self.game_mode: str = "1v1"
         self.races: list[str] = []
         self.map_name: str | None = None
-        self.length_bracket: str = "any"
+        self.min_length_minutes: int | None = None
+        self.max_length_minutes: int | None = None
         self._search_lock = asyncio.Lock()
         self._rebuild()
 
     def _rebuild(self) -> None:
         self.clear_items()
-        self.add_item(_GameModeSelect(self.game_mode, self._locale))
         self.add_item(_RaceFilterSelect(self.races, self._locale))
         self.add_item(_MapFilterSelect(self.game_mode, self.map_name, self._locale))
-        self.add_item(_LengthBracketSelect(self.length_bracket, self._locale))
+        self.add_item(_MinLengthSelect(self.min_length_minutes, self._locale))
+        self.add_item(_MaxLengthSelect(self.max_length_minutes, self._locale))
+
+        for mode in _GAME_MODES:
+            mode_btn: discord.ui.Button[CasterReplaySearchView] = discord.ui.Button(
+                label=t(f"caster_replay.game_mode.{mode}", self._locale),
+                style=(
+                    discord.ButtonStyle.primary
+                    if self.game_mode == mode
+                    else discord.ButtonStyle.secondary
+                ),
+                row=4,
+            )
+            mode_btn.callback = self._make_game_mode_callback(mode)  # type: ignore[method-assign,assignment]
+            self.add_item(mode_btn)
 
         search_btn: discord.ui.Button[CasterReplaySearchView] = discord.ui.Button(
             label=t("caster_replay.button.search", self._locale),
@@ -452,12 +451,25 @@ class CasterReplaySearchView(AutoDisableView):
         search_btn.callback = self._on_search  # type: ignore[method-assign]
         self.add_item(search_btn)
 
+    def _make_game_mode_callback(
+        self, mode: str
+    ) -> Callable[[discord.Interaction], Coroutine[Any, Any, None]]:
+        async def callback(interaction: discord.Interaction) -> None:
+            if self.game_mode == mode:
+                await interaction.response.defer()
+                return
+            self.game_mode = mode
+            self.map_name = None
+            self._rebuild()
+            await interaction.response.edit_message(view=self)
+
+        return callback
+
     async def _on_search(self, interaction: discord.Interaction) -> None:
         if self._search_lock.locked():
             await interaction.response.defer()
             return
         async with self._search_lock:
-            min_len, max_len = _LENGTH_BRACKETS[self.length_bracket]
             payload: dict[str, Any] = {
                 "caster_discord_uid": self._caster_discord_uid,
                 "game_mode": self.game_mode,
@@ -466,10 +478,10 @@ class CasterReplaySearchView(AutoDisableView):
             }
             if self.map_name:
                 payload["map_name"] = self.map_name
-            if min_len is not None:
-                payload["min_length_minutes"] = min_len
-            if max_len is not None:
-                payload["max_length_minutes"] = max_len
+            if self.min_length_minutes is not None:
+                payload["min_length_minutes"] = self.min_length_minutes
+            if self.max_length_minutes is not None:
+                payload["max_length_minutes"] = self.max_length_minutes
 
             await interaction.response.defer(thinking=True)
             try:
