@@ -2358,14 +2358,27 @@ async def caster_replays_search(
 
     filtered = replays_df.filter(pl.col("upload_status") == "completed")
 
+    match_key = "matches_1v1_id" if request.game_mode == "1v1" else "matches_2v2_id"
+
     if request.map_name:
-        long_names = get_map_long_names_by_short_name(
-            request.map_name, game_mode=request.game_mode
+        # matches_*.map_name may be the short name (current) or a long name
+        # (post-refactor). Match against the union so either form works, and
+        # so replays whose in-game map name differs from maps.json (e.g.
+        # "[TLMC21] Celestial Enclave") are still picked up via their match.
+        candidate_names = {
+            request.map_name,
+            *get_map_long_names_by_short_name(
+                request.map_name, game_mode=request.game_mode
+            ),
+        }
+        map_match_ids = (
+            matches_df.filter(pl.col("map_name").is_in(list(candidate_names)))
+            .get_column("id")
+            .to_list()
         )
-        if long_names:
-            filtered = filtered.filter(pl.col("map_name").is_in(long_names))
-        else:
-            filtered = filtered.filter(pl.col("map_name") == request.map_name)
+        if not map_match_ids:
+            return CasterReplaySearchResponse(results=[])
+        filtered = filtered.filter(pl.col(match_key).is_in(map_match_ids))
 
     if request.min_length_minutes is not None:
         filtered = filtered.filter(
@@ -2398,7 +2411,6 @@ async def caster_replays_search(
             return CasterReplaySearchResponse(results=[])
         filtered = filtered.filter(pl.col("id").is_in(keep_ids))
 
-    match_key = "matches_1v1_id" if request.game_mode == "1v1" else "matches_2v2_id"
     match_ids = filtered.get_column(match_key).to_list()
     matches_subset = matches_df.filter(pl.col("id").is_in(match_ids))
     matches_by_id = {row["id"]: row for row in matches_subset.iter_rows(named=True)}

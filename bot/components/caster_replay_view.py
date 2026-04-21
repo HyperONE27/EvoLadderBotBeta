@@ -402,6 +402,14 @@ class CasterReplaySearchView(discord.ui.LayoutView):
         self.add_item(container)
 
         if self._has_searched and not self._error and self._total_pages > 1:
+            skip_prev_btn: discord.ui.Button[CasterReplaySearchView] = (
+                discord.ui.Button(
+                    emoji="⏪",
+                    style=discord.ButtonStyle.secondary,
+                    disabled=self._page == 0,
+                )
+            )
+            skip_prev_btn.callback = self._on_skip_prev  # type: ignore[method-assign]
             prev_btn: discord.ui.Button[CasterReplaySearchView] = discord.ui.Button(
                 label=t("button.previous", self._locale),
                 emoji="◀️",
@@ -416,8 +424,16 @@ class CasterReplaySearchView(discord.ui.LayoutView):
                 disabled=self._page >= self._total_pages - 1,
             )
             next_btn.callback = self._on_next  # type: ignore[method-assign]
+            skip_next_btn: discord.ui.Button[CasterReplaySearchView] = (
+                discord.ui.Button(
+                    emoji="⏩",
+                    style=discord.ButtonStyle.secondary,
+                    disabled=self._page >= self._total_pages - 1,
+                )
+            )
+            skip_next_btn.callback = self._on_skip_next  # type: ignore[method-assign]
             pagination_row: discord.ui.ActionRow[CasterReplaySearchView] = (
-                discord.ui.ActionRow(prev_btn, next_btn)
+                discord.ui.ActionRow(skip_prev_btn, prev_btn, next_btn, skip_next_btn)
             )
             self.add_item(pagination_row)
 
@@ -489,6 +505,16 @@ class CasterReplaySearchView(discord.ui.LayoutView):
     async def _on_next(self, interaction: discord.Interaction) -> None:
         if self._page < self._total_pages - 1:
             self._page += 1
+        self._rebuild()
+        await interaction.response.edit_message(view=self)
+
+    async def _on_skip_prev(self, interaction: discord.Interaction) -> None:
+        self._page = max(0, self._page - 5)
+        self._rebuild()
+        await interaction.response.edit_message(view=self)
+
+    async def _on_skip_next(self, interaction: discord.Interaction) -> None:
+        self._page = min(self._total_pages - 1, self._page + 5)
         self._rebuild()
         await interaction.response.edit_message(view=self)
 
