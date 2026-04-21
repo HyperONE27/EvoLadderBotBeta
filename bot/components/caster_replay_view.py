@@ -31,6 +31,7 @@ from common.lookups.race_lookups import get_races
 logger = structlog.get_logger(__name__)
 
 _GAME_MODES = ("1v1", "2v2")
+_GAME_MODE_EMOJIS = {"1v1": "👤", "2v2": "👥"}
 
 _MIN_LENGTH_OPTIONS = list(range(1, 26))  # 1, 2, ..., 25 minutes
 _MAX_LENGTH_OPTIONS = list(range(2, 51, 2))  # 2, 4, ..., 50 minutes
@@ -441,6 +442,7 @@ class CasterReplaySearchView(discord.ui.LayoutView):
         for mode in _GAME_MODES:
             mode_btn: discord.ui.Button[CasterReplaySearchView] = discord.ui.Button(
                 label=t(f"caster_replay.game_mode.{mode}", self._locale),
+                emoji=_GAME_MODE_EMOJIS[mode],
                 style=(
                     discord.ButtonStyle.primary
                     if self.game_mode == mode
