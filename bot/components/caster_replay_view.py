@@ -54,7 +54,6 @@ _SEARCH_LIMIT = 500
 _TEXT_DISPLAY_CHAR_LIMIT = 4000
 
 _NAME_PAD = 12
-_MAP_PAD = 40
 _MMR_PAD = 4
 _MATCH_ID_PAD = 7
 _DURATION_PAD = 7
@@ -72,11 +71,6 @@ def _fmt_mmr(mmr: int | None) -> str:
 
 def _fmt_match_id(match_id: int) -> str:
     return f"`{match_id:>{_MATCH_ID_PAD}}`"
-
-
-def _fmt_map(map_name: str) -> str:
-    truncated = map_name[:_MAP_PAD]
-    return f"`{truncated:<{_MAP_PAD}}`"
 
 
 def _fmt_duration(length_seconds: int) -> str:
@@ -142,8 +136,8 @@ def _format_row_1v1(result: dict[str, Any], locale: str) -> str:
         f"{vs_token} "
         f"{_safe_race_emote(r2)} {_safe_flag_emote(n2)} {_fmt_name(p2)} {_fmt_mmr(m2)}"
     )
-    line_2 = f"{_fmt_duration(length_seconds)} {_fmt_map(map_name)} {download}"
-    return f"{line_1}\n{line_2}"
+    line_2 = f"{_fmt_duration(length_seconds)} `{map_name}`"
+    return f"{line_1}\n{line_2}\n{download}"
 
 
 def _format_row_2v2(result: dict[str, Any], locale: str) -> str:
@@ -182,8 +176,8 @@ def _format_row_2v2(result: dict[str, Any], locale: str) -> str:
         f"{_safe_race_emote(r[2])} {_safe_flag_emote(n[2])} {_fmt_name(p[2])} "
         f"{_safe_race_emote(r[3])} {_safe_flag_emote(n[3])} {_fmt_name(p[3])} {_fmt_mmr(m2)}"
     )
-    line_3 = f"{_fmt_duration(length_seconds)} {_fmt_map(map_name)} {download}"
-    return f"{line_1}\n{line_2}\n{line_3}"
+    line_3 = f"{_fmt_duration(length_seconds)} `{map_name}`"
+    return f"{line_1}\n{line_2}\n{line_3}\n{download}"
 
 
 def _build_text_display_content(
