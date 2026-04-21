@@ -204,10 +204,23 @@ _FLAVOR_SUFFIX = {"bw", "sc2", "both"}
 
 
 def _format_duration(wait_seconds: int) -> str:
-    """Return ``XXmYYs`` (e.g. ``3m07s``). Seconds are zero-padded to 2 digits."""
+    """Human-readable duration with hours/minutes dropped when zero.
+
+    Examples: ``45 seconds``, ``2 minutes, 5 seconds``,
+    ``1 hour, 0 minutes, 3 seconds``.
+    """
     wait_seconds = max(0, int(wait_seconds))
-    minutes, seconds = divmod(wait_seconds, 60)
-    return f"{minutes}m{seconds:02d}s"
+    hours, remainder = divmod(wait_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    def _unit(value: int, singular: str) -> str:
+        return f"{value} {singular}" if value == 1 else f"{value} {singular}s"
+
+    if hours > 0:
+        return f"{_unit(hours, 'hour')}, {_unit(minutes, 'minute')}, {_unit(seconds, 'second')}"
+    if minutes > 0:
+        return f"{_unit(minutes, 'minute')}, {_unit(seconds, 'second')}"
+    return _unit(seconds, "second")
 
 
 async def on_activity_log(client: discord.Client, data: dict[str, Any]) -> None:
