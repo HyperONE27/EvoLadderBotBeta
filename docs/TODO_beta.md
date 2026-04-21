@@ -296,7 +296,7 @@ What remains?
     - ✅ Bot WS listener DMs the partner (not the leader) a `Party2v2QueueStartedEmbed` / `Party2v2QueueCancelledEmbed` via low-priority queue
     - ✅ Need to confirm the partner actually gets a notification
     - ✅ Need to iterate the UI on that
-    - ⏰ Check locales
+    - ✅ Check locales
 - ✅ ReplayDetails admin embed map correctness should be checked against the matches_1v1 row, not the maps static data (plan §7)
     - ✅ `AdminReplayDetailsEmbed` now compares parsed replay map to the `matches_1v1`/`matches_2v2` row's stored `map_name`, not the current season's static map list — so verification stays correct when the season rotates
     - ⏰ Check locales

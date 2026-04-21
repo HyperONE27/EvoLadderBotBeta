@@ -48,9 +48,10 @@ _MMR_BRACKETS: dict[str, tuple[int | None, int | None]] = {
     "over_2000": (2000, None),
 }
 
-_RESULTS_PER_PAGE_1V1 = 20
-_RESULTS_PER_PAGE_2V2 = 10
+_RESULTS_PER_PAGE_1V1 = 10
+_RESULTS_PER_PAGE_2V2 = 5
 _SEARCH_LIMIT = 500
+_TEXT_DISPLAY_CHAR_LIMIT = 4000
 
 _NAME_PAD = 12
 _MAP_PAD = 40
@@ -215,7 +216,23 @@ def _build_text_display_content(
 
     footer = t("embed_brand.footer.1", locale)
 
-    return f"### {title}\n{header}\n\n" + "\n\n".join(rows) + f"\n\n-# {footer}"
+    content = f"### {title}\n{header}\n\n" + "\n\n".join(rows) + f"\n\n-# {footer}"
+
+    if len(content) > _TEXT_DISPLAY_CHAR_LIMIT:
+        logger.warning(
+            "[caster] replay page exceeded TextDisplay limit; truncating",
+            game_mode=game_mode,
+            page=page,
+            rendered_length=len(content),
+            limit=_TEXT_DISPLAY_CHAR_LIMIT,
+        )
+        while len(content) > _TEXT_DISPLAY_CHAR_LIMIT and rows:
+            rows.pop()
+            content = (
+                f"### {title}\n{header}\n\n" + "\n\n".join(rows) + f"\n\n-# {footer}"
+            )
+
+    return content
 
 
 class CasterReplayResultsView(discord.ui.LayoutView):
@@ -458,7 +475,7 @@ class CasterReplaySearchView(AutoDisableView):
             if max_len is not None:
                 payload["max_length_minutes"] = max_len
 
-            await interaction.response.defer()
+            await interaction.response.defer(thinking=True)
             try:
                 async with get_session().post(
                     f"{BACKEND_URL}/caster/replays/search",
@@ -476,33 +493,33 @@ class CasterReplaySearchView(AutoDisableView):
                             status=resp.status,
                             detail=detail,
                         )
-                        await interaction.followup.send(
-                            embed=ErrorEmbed(
-                                title=t("error_embed.title.generic", self._locale),
-                                description=t(
-                                    "caster_replay.error.search_failed", self._locale
-                                ),
-                                locale=self._locale,
-                            )
-                        )
+                        await self._send_error_followup(interaction)
                         return
                     data = await resp.json()
-            except Exception:
-                logger.exception("[caster] replay search request raised")
-                await interaction.followup.send(
-                    embed=ErrorEmbed(
-                        title=t("error_embed.title.generic", self._locale),
-                        description=t(
-                            "caster_replay.error.search_failed", self._locale
-                        ),
-                        locale=self._locale,
-                    )
-                )
-                return
 
-            results = data.get("results") or []
-            results_view = CasterReplayResultsView(
-                results, game_mode=self.game_mode, locale=self._locale
+                results = data.get("results") or []
+                logger.info(
+                    "[caster] replay search ok",
+                    game_mode=self.game_mode,
+                    count=len(results),
+                )
+                results_view = CasterReplayResultsView(
+                    results, game_mode=self.game_mode, locale=self._locale
+                )
+                sent = await interaction.followup.send(view=results_view, wait=True)
+                results_view.message = sent
+            except Exception:
+                logger.exception("[caster] replay search failed")
+                await self._send_error_followup(interaction)
+
+    async def _send_error_followup(self, interaction: discord.Interaction) -> None:
+        try:
+            await interaction.followup.send(
+                embed=ErrorEmbed(
+                    title=t("error_embed.title.generic", self._locale),
+                    description=t("caster_replay.error.search_failed", self._locale),
+                    locale=self._locale,
+                )
             )
-            sent = await interaction.followup.send(view=results_view, wait=True)
-            results_view.message = sent
+        except Exception:
+            logger.exception("[caster] failed to send error followup")
