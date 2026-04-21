@@ -2401,6 +2401,10 @@ async def caster_replays_search(
         if match_row is None:
             continue
 
+        # Names, races, uids, and mmrs must all come from match_row so they
+        # share the same positional ordering. The replay row's player columns
+        # are populated from sc2reader's lobby-slot ordering, which does not
+        # necessarily match the matchmaker's ordering used for uids/mmrs.
         if request.game_mode == "1v1":
             p1_mmr = match_row.get("player_1_mmr")
             p2_mmr = match_row.get("player_2_mmr")
@@ -2409,12 +2413,12 @@ async def caster_replays_search(
                 int(p2_mmr) if p2_mmr is not None else None,
             ]
             players = [
-                str(replay_row.get("player_1_name") or ""),
-                str(replay_row.get("player_2_name") or ""),
+                str(match_row.get("player_1_name") or ""),
+                str(match_row.get("player_2_name") or ""),
             ]
             races = [
-                str(replay_row.get("player_1_race") or ""),
-                str(replay_row.get("player_2_race") or ""),
+                str(match_row.get("player_1_race") or ""),
+                str(match_row.get("player_2_race") or ""),
             ]
             uid_order = [
                 match_row.get("player_1_discord_uid"),
@@ -2428,16 +2432,16 @@ async def caster_replays_search(
                 int(t2_mmr) if t2_mmr is not None else None,
             ]
             players = [
-                str(replay_row.get("team_1_player_1_name") or ""),
-                str(replay_row.get("team_1_player_2_name") or ""),
-                str(replay_row.get("team_2_player_1_name") or ""),
-                str(replay_row.get("team_2_player_2_name") or ""),
+                str(match_row.get("team_1_player_1_name") or ""),
+                str(match_row.get("team_1_player_2_name") or ""),
+                str(match_row.get("team_2_player_1_name") or ""),
+                str(match_row.get("team_2_player_2_name") or ""),
             ]
             races = [
-                str(replay_row.get("team_1_player_1_race") or ""),
-                str(replay_row.get("team_1_player_2_race") or ""),
-                str(replay_row.get("team_2_player_1_race") or ""),
-                str(replay_row.get("team_2_player_2_race") or ""),
+                str(match_row.get("team_1_player_1_race") or ""),
+                str(match_row.get("team_1_player_2_race") or ""),
+                str(match_row.get("team_2_player_1_race") or ""),
+                str(match_row.get("team_2_player_2_race") or ""),
             ]
             uid_order = [
                 match_row.get("team_1_player_1_discord_uid"),
