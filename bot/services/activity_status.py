@@ -30,6 +30,7 @@ from bot.core.config import (
     BACKEND_URL,
 )
 from bot.core.dependencies import get_cache
+from bot.helpers.embed_branding import apply_default_embed_footer
 from bot.helpers.message_helpers import (
     queue_channel_send_low,
     queue_message_edit_low,
@@ -262,8 +263,13 @@ async def on_activity_log(client: discord.Client, data: dict[str, Any]) -> None:
         return
 
     ts = int(utc_now().timestamp())
-    content = f"<t:{ts}> (<t:{ts}:R>) {t(key, 'enUS', **format_kwargs)}"
+    body = t(key, "enUS", **format_kwargs)
+    embed = discord.Embed(
+        description=f"<t:{ts}> (<t:{ts}:R>)\n{body}",
+        color=discord.Color.blurple(),
+    )
+    apply_default_embed_footer(embed, locale="enUS")
     try:
-        await queue_channel_send_low(channel, content=content)
+        await queue_channel_send_low(channel, embed=embed)
     except Exception:
         logger.exception("[activity_status] log send failed", kind=kind)
