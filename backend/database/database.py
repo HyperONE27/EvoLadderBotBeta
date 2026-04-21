@@ -116,6 +116,27 @@ class DatabaseReader:
         except Exception as e:
             raise ValueError(f"Table '{table_name}' schema validation failed: {e}")
 
+    def fetch_last_queue_join_at(self, game_mode: str) -> datetime | None:
+        """Return the ``performed_at`` of the most recent ``queue_join`` event."""
+
+        resp = (
+            self.client.table("events")
+            .select("performed_at")
+            .eq("action", "queue_join")
+            .eq("game_mode", game_mode)
+            .eq("event_type", "player_command")
+            .order("performed_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = resp.data or []
+        if not rows:
+            return None
+        row = rows[0]
+        if not isinstance(row, dict):
+            return None
+        return ensure_utc(cast(dict[str, Any], row).get("performed_at"))
+
     def fetch_queue_join_events(
         self,
         start: datetime,

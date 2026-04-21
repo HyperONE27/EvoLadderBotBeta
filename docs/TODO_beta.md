@@ -294,35 +294,35 @@ What remains?
 - ✅ When queueing 2v2, send a confirmation message to the party member with details and explaining next steps (plan §9)
     - ✅ Backend broadcasts new `queue_started_2v2` and `queue_cancelled_2v2` WS events with both party members' UIDs
     - ✅ Bot WS listener DMs the partner (not the leader) a `Party2v2QueueStartedEmbed` / `Party2v2QueueCancelledEmbed` via low-priority queue
-    - ⏰ Need to confirm the partner actually gets a notification
-    - ⏰ Need to iterate the UI on that
+    - ✅ Need to confirm the partner actually gets a notification
+    - ✅ Need to iterate the UI on that
     - ⏰ Check locales
 - ✅ ReplayDetails admin embed map correctness should be checked against the matches_1v1 row, not the maps static data (plan §7)
     - ✅ `AdminReplayDetailsEmbed` now compares parsed replay map to the `matches_1v1`/`matches_2v2` row's stored `map_name`, not the current season's static map list — so verification stays correct when the season rotates
     - ⏰ Check locales
 - ✅ ReplayDetails admin view does not auto-disable on expire correctly (plan §8)
     - ✅ `AdminReplayToggleView.on_timeout` now disables both player buttons and edits the message in place, matching `AutoDisableView` behaviour
-    - ⏰ Check locales
+    - ✅ Check locales
 - ✅ MatchInfoEmbed shows too much unnecessary stuff, get rid of it (plan §6)
     - ✅ Dropped the Match Result and Replay Status fields (result is replay-resolved; replay status was redundant with the locked report dropdown)
     - ✅ Dropped the now-unused `pending_report` threading from `MatchInfoEmbed1v1`/`2v2` and the `QueueSearching*View.submit_report` flows
-    - ⏰ Check locales
+    - ✅ Check locales
 - ✅ Apparently it is not obvious that you need to upload a replay in order to report the result (plan §6)
     - ✅ Extended "How to Join Your Match" → "How to Play Your Match" and added a "How to Report Your Result" section to `LobbyGuideEmbed` in all 6 locales
     - ✅ Moved report-flow instructions from the embed footer into a dedicated inline field with pre-/post-replay variants, so new players see the upload-to-report path on the main embed
-    - ⏰ Check locales
+    - ✅ Check locales
 - ✅ Queue activity pings might need to be sent out if someone's cooldown elapses and someone is already in the queue but not triggering the on-queue alert (plan §3)
     - ✅ Added a background sweep task that re-checks subscribers whose cooldown has just elapsed against the live 1v1/2v2 queues and fires the ping if someone is still waiting
-    - ⏰ Don't know how to test this...I guess set alt account to 5 minutes and see if it fires on its own
-    - ⏰ Check locales
+    - ✅ Don't know how to test this...I guess set alt account to 5 minutes and see if it fires on its own
+    - ✅ Check locales
 - ✅ Don't send out activity pings until a user has committed to a certain minimum time period (60s?) of waiting (plan §3)
     - ✅ `activity_notifier` now defers the ping by `QUEUE_NOTIFY_COMMITMENT_SECONDS` and only fires it if the joiner is still in the queue when the timer elapses; cancels on leave/match-found
-    - ⏰ Test this
-    - ⏰ Check locales
+    - ✅ Test this
+    - ✅ Check locales
 - ✅ Implemented public queue stats + queue activity log channels
-    - ⏰ Iterate the UI to be less unsightly
+    - ✅ Iterate the UI to be less unsightly
     - ⏰ Add a summary of the last 7 days of activity
-    - ⏰ When someone leaves the queue, include in the message how long they had waited
+    - ✅ When someone leaves the queue, include in the message how long they had waited
 
 ## 2026-04-22
 

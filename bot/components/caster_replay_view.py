@@ -1,4 +1,4 @@
-"""Caster replay search view and results embed.
+"""Caster replay search view and results layout.
 
 Triggered by the hidden ``replays`` keyword in DMs (see
 :mod:`bot.commands.secret.replay_command`) for players gated by the
@@ -6,7 +6,8 @@ Triggered by the hidden ``replays`` keyword in DMs (see
 
 The view holds filter state (game mode, races, map, length bracket, MMR
 bracket) and POSTs to ``/caster/replays/search`` when the Search button
-is pressed. Results are rendered as a paginated embed in place.
+is pressed. Results are rendered as a paginated Components v2 layout
+(``LayoutView`` + ``Container`` + ``TextDisplay``) in place.
 """
 
 from __future__ import annotations
@@ -21,9 +22,7 @@ from bot.components.embeds import ErrorEmbed
 from bot.components.views import AutoDisableView
 from bot.core.config import BACKEND_URL, CURRENT_SEASON
 from bot.core.http import get_session
-from bot.helpers.embed_branding import apply_default_embed_footer
-from bot.helpers.emotes import get_game_emote, get_race_emote
-from common.datetime_helpers import ensure_utc, to_discord_timestamp
+from bot.helpers.emotes import get_flag_emote, get_game_emote, get_race_emote
 from common.i18n import t
 from common.lookups.map_lookups import get_maps
 from common.lookups.race_lookups import get_races
@@ -49,171 +48,247 @@ _MMR_BRACKETS: dict[str, tuple[int | None, int | None]] = {
     "over_2000": (2000, None),
 }
 
-_RESULTS_PER_PAGE = 5
-_SEARCH_LIMIT = 50
+_RESULTS_PER_PAGE_1V1 = 20
+_RESULTS_PER_PAGE_2V2 = 10
+_SEARCH_LIMIT = 500
+
+_NAME_PAD = 12
+_MAP_PAD = 40
+_MMR_PAD = 4
+_MATCH_ID_PAD = 5
 
 
-class CasterReplayResultsEmbed(discord.Embed):
-    """Paginated embed rendering replay search results."""
+def _fmt_name(name: str) -> str:
+    truncated = name[:_NAME_PAD]
+    return f"`{truncated:<{_NAME_PAD}}`"
+
+
+def _fmt_mmr(mmr: int | None) -> str:
+    label = str(mmr) if mmr is not None else "—"
+    return f"`{label:>{_MMR_PAD}}`"
+
+
+def _fmt_match_id(match_id: int) -> str:
+    return f"`{match_id:>{_MATCH_ID_PAD}}`"
+
+
+def _fmt_map(map_name: str) -> str:
+    truncated = map_name[:_MAP_PAD]
+    return f"`{truncated:<{_MAP_PAD}}`"
+
+
+def _fmt_duration(length_seconds: int) -> str:
+    minutes = length_seconds // 60
+    seconds = length_seconds % 60
+    return f"`{minutes}m{seconds:02d}s`"
+
+
+def _safe_race_emote(race: str | None) -> str:
+    if not race:
+        return "  "
+    try:
+        return get_race_emote(race)
+    except ValueError:
+        return "  "
+
+
+def _safe_flag_emote(nationality: str | None) -> str:
+    if not nationality:
+        return "  "
+    try:
+        emote = get_flag_emote(nationality)
+    except Exception:
+        return "  "
+    if isinstance(emote, discord.PartialEmoji):
+        return str(emote)
+    return emote
+
+
+def _results_per_page(game_mode: str) -> int:
+    return _RESULTS_PER_PAGE_1V1 if game_mode == "1v1" else _RESULTS_PER_PAGE_2V2
+
+
+def _format_row_1v1(result: dict[str, Any], locale: str) -> str:
+    players = result.get("players") or []
+    races = result.get("races") or []
+    nationalities = result.get("nationalities") or []
+    side_mmrs = result.get("side_mmrs") or []
+
+    p1 = players[0] if len(players) > 0 else ""
+    p2 = players[1] if len(players) > 1 else ""
+    r1 = races[0] if len(races) > 0 else None
+    r2 = races[1] if len(races) > 1 else None
+    n1 = nationalities[0] if len(nationalities) > 0 else None
+    n2 = nationalities[1] if len(nationalities) > 1 else None
+    m1 = side_mmrs[0] if len(side_mmrs) > 0 else None
+    m2 = side_mmrs[1] if len(side_mmrs) > 1 else None
+
+    match_id = int(result.get("match_id") or 0)
+    length_seconds = int(result.get("length_seconds") or 0)
+    map_name = str(result.get("map_name") or "")
+    replay_url = str(result.get("replay_url") or "")
+
+    download_label = t("caster_replay.result.download", locale)
+    download = f"[{download_label}]({replay_url})" if replay_url else "—"
+
+    vs_token = t("caster_replay.result.vs", locale)
+
+    line_1 = (
+        f"{_fmt_match_id(match_id)} "
+        f"{_safe_race_emote(r1)} {_safe_flag_emote(n1)} {_fmt_name(p1)} {_fmt_mmr(m1)} "
+        f"{vs_token} "
+        f"{_safe_race_emote(r2)} {_safe_flag_emote(n2)} {_fmt_name(p2)} {_fmt_mmr(m2)}"
+    )
+    line_2 = f"{_fmt_duration(length_seconds)} {_fmt_map(map_name)} {download}"
+    return f"{line_1}\n{line_2}"
+
+
+def _format_row_2v2(result: dict[str, Any], locale: str) -> str:
+    players = result.get("players") or []
+    races = result.get("races") or []
+    nationalities = result.get("nationalities") or []
+    side_mmrs = result.get("side_mmrs") or []
+
+    def get(seq: list[Any], idx: int) -> Any:
+        return seq[idx] if len(seq) > idx else None
+
+    p = [get(players, i) or "" for i in range(4)]
+    r = [get(races, i) for i in range(4)]
+    n = [get(nationalities, i) for i in range(4)]
+    m1 = get(side_mmrs, 0)
+    m2 = get(side_mmrs, 1)
+
+    match_id = int(result.get("match_id") or 0)
+    length_seconds = int(result.get("length_seconds") or 0)
+    map_name = str(result.get("map_name") or "")
+    replay_url = str(result.get("replay_url") or "")
+
+    download_label = t("caster_replay.result.download", locale)
+    download = f"[{download_label}]({replay_url})" if replay_url else "—"
+
+    vs_token = t("caster_replay.result.vs", locale)
+    vs_cell = f"`{vs_token:>{_MATCH_ID_PAD}}`"
+
+    line_1 = (
+        f"{_fmt_match_id(match_id)} "
+        f"{_safe_race_emote(r[0])} {_safe_flag_emote(n[0])} {_fmt_name(p[0])} "
+        f"{_safe_race_emote(r[1])} {_safe_flag_emote(n[1])} {_fmt_name(p[1])} {_fmt_mmr(m1)}"
+    )
+    line_2 = (
+        f"{vs_cell} "
+        f"{_safe_race_emote(r[2])} {_safe_flag_emote(n[2])} {_fmt_name(p[2])} "
+        f"{_safe_race_emote(r[3])} {_safe_flag_emote(n[3])} {_fmt_name(p[3])} {_fmt_mmr(m2)}"
+    )
+    line_3 = f"{_fmt_duration(length_seconds)} {_fmt_map(map_name)} {download}"
+    return f"{line_1}\n{line_2}\n{line_3}"
+
+
+def _build_text_display_content(
+    results: list[dict[str, Any]],
+    *,
+    game_mode: str,
+    page: int,
+    total_pages: int,
+    locale: str,
+) -> str:
+    total = len(results)
+    title = t("caster_replay.results.title", locale, total=str(total))
+
+    if total == 0:
+        body = t("caster_replay.results.empty", locale)
+        footer = t("embed_brand.footer.1", locale)
+        return f"### {title}\n\n{body}\n\n-# {footer}"
+
+    per_page = _results_per_page(game_mode)
+    start = page * per_page
+    end = min(start + per_page, total)
+
+    header = t(
+        "caster_replay.results.page_header",
+        locale,
+        page=str(page + 1),
+        total=str(total_pages),
+    )
+
+    formatter = _format_row_1v1 if game_mode == "1v1" else _format_row_2v2
+    rows = [formatter(result, locale) for result in results[start:end]]
+
+    footer = t("embed_brand.footer.1", locale)
+
+    return f"### {title}\n{header}\n\n" + "\n\n".join(rows) + f"\n\n-# {footer}"
+
+
+class CasterReplayResultsView(discord.ui.LayoutView):
+    """Paginated Components v2 layout for replay search results."""
 
     def __init__(
         self,
         results: list[dict[str, Any]],
         *,
-        page: int,
-        total_pages: int,
-        locale: str = "enUS",
-    ) -> None:
-        total = len(results)
-        title = t("caster_replay.results.title", locale, total=str(total))
-        if total == 0:
-            super().__init__(
-                title=title,
-                description=t("caster_replay.results.empty", locale),
-                color=discord.Color.orange(),
-            )
-            apply_default_embed_footer(self, locale=locale)
-            return
-
-        start = page * _RESULTS_PER_PAGE
-        end = min(start + _RESULTS_PER_PAGE, total)
-        description_lines: list[str] = [
-            t(
-                "caster_replay.results.page_header",
-                locale,
-                page=str(page + 1),
-                total=str(total_pages),
-            )
-        ]
-        super().__init__(
-            title=title,
-            description="\n".join(description_lines),
-            color=discord.Color.green(),
-        )
-
-        for result in results[start:end]:
-            field_name = t(
-                "caster_replay.result.match_header",
-                locale,
-                match_id=str(result.get("match_id", "?")),
-                game_mode=result.get("game_mode", ""),
-            )
-
-            players = result.get("players") or []
-            races = result.get("races") or []
-            race_pairs: list[str] = []
-            for idx, player in enumerate(players):
-                race = races[idx] if idx < len(races) else None
-                emote = get_race_emote(race) if race else ""
-                race_pairs.append(f"{emote} {player}".strip())
-            players_line = " vs ".join(race_pairs) if race_pairs else "—"
-
-            length_seconds = int(result.get("length_seconds") or 0)
-            length_label = (
-                f"{length_seconds // 60}:{length_seconds % 60:02d}"
-                if length_seconds
-                else "—"
-            )
-            map_name = result.get("map_name") or "—"
-            mmr_avg = result.get("mmr_avg")
-            mmr_label = str(mmr_avg) if mmr_avg is not None else "—"
-
-            played_at = ensure_utc(result.get("played_at"))
-            played_label = (
-                to_discord_timestamp(dt=played_at, style="R") if played_at else "—"
-            )
-
-            replay_url = result.get("replay_url") or ""
-            download_line = (
-                f"[{t('caster_replay.result.download', locale)}]({replay_url})"
-                if replay_url
-                else "—"
-            )
-
-            field_value = (
-                f"{players_line}\n"
-                + t(
-                    "caster_replay.result.details",
-                    locale,
-                    map_name=map_name,
-                    length=length_label,
-                    mmr=mmr_label,
-                    played_at=played_label,
-                )
-                + f"\n{download_line}"
-            )
-            self.add_field(name=field_name, value=field_value, inline=False)
-
-        apply_default_embed_footer(self, locale=locale)
-
-
-class CasterReplayResultsView(AutoDisableView):
-    """Pagination controls for replay search results."""
-
-    def __init__(
-        self,
-        results: list[dict[str, Any]],
-        *,
+        game_mode: str,
         locale: str = "enUS",
     ) -> None:
         super().__init__(timeout=600)
         self._results = results
+        self._game_mode = game_mode
         self._locale = locale
         self._page = 0
-        self._total_pages = max(
-            1, (len(results) + _RESULTS_PER_PAGE - 1) // _RESULTS_PER_PAGE
-        )
+        per_page = _results_per_page(game_mode)
+        self._total_pages = max(1, (len(results) + per_page - 1) // per_page)
+        self.message: discord.Message | None = None
         self._build()
 
     def _build(self) -> None:
         self.clear_items()
-        prev_btn: discord.ui.Button[CasterReplayResultsView] = discord.ui.Button(
-            label=t("button.previous", self._locale),
-            emoji="◀️",
-            style=discord.ButtonStyle.secondary,
-            disabled=self._page == 0,
-            row=0,
+        container: discord.ui.Container[CasterReplayResultsView] = discord.ui.Container(
+            accent_colour=discord.Color.green(),
         )
-        prev_btn.callback = self._on_prev  # type: ignore[method-assign]
-        self.add_item(prev_btn)
+        container.add_item(
+            discord.ui.TextDisplay(
+                _build_text_display_content(
+                    self._results,
+                    game_mode=self._game_mode,
+                    page=self._page,
+                    total_pages=self._total_pages,
+                    locale=self._locale,
+                )
+            )
+        )
+        self.add_item(container)
 
-        next_btn: discord.ui.Button[CasterReplayResultsView] = discord.ui.Button(
-            label=t("button.next", self._locale),
-            emoji="▶️",
-            style=discord.ButtonStyle.secondary,
-            disabled=self._page >= self._total_pages - 1,
-            row=0,
-        )
-        next_btn.callback = self._on_next  # type: ignore[method-assign]
-        self.add_item(next_btn)
+        if self._total_pages > 1:
+            prev_btn: discord.ui.Button[CasterReplayResultsView] = discord.ui.Button(
+                label=t("button.previous", self._locale),
+                emoji="◀️",
+                style=discord.ButtonStyle.secondary,
+                disabled=self._page == 0,
+            )
+            prev_btn.callback = self._on_prev  # type: ignore[method-assign]
+
+            next_btn: discord.ui.Button[CasterReplayResultsView] = discord.ui.Button(
+                label=t("button.next", self._locale),
+                emoji="▶️",
+                style=discord.ButtonStyle.secondary,
+                disabled=self._page >= self._total_pages - 1,
+            )
+            next_btn.callback = self._on_next  # type: ignore[method-assign]
+
+            action_row: discord.ui.ActionRow[CasterReplayResultsView] = (
+                discord.ui.ActionRow(prev_btn, next_btn)
+            )
+            self.add_item(action_row)
 
     async def _on_prev(self, interaction: discord.Interaction) -> None:
         if self._page > 0:
             self._page -= 1
         self._build()
-        await interaction.response.edit_message(
-            embed=CasterReplayResultsEmbed(
-                self._results,
-                page=self._page,
-                total_pages=self._total_pages,
-                locale=self._locale,
-            ),
-            view=self,
-        )
+        await interaction.response.edit_message(view=self)
 
     async def _on_next(self, interaction: discord.Interaction) -> None:
         if self._page < self._total_pages - 1:
             self._page += 1
         self._build()
-        await interaction.response.edit_message(
-            embed=CasterReplayResultsEmbed(
-                self._results,
-                page=self._page,
-                total_pages=self._total_pages,
-                locale=self._locale,
-            ),
-            view=self,
-        )
+        await interaction.response.edit_message(view=self)
 
 
 class _GameModeSelect(discord.ui.Select["CasterReplaySearchView"]):
@@ -426,16 +501,8 @@ class CasterReplaySearchView(AutoDisableView):
                 return
 
             results = data.get("results") or []
-            total_pages = max(
-                1, (len(results) + _RESULTS_PER_PAGE - 1) // _RESULTS_PER_PAGE
+            results_view = CasterReplayResultsView(
+                results, game_mode=self.game_mode, locale=self._locale
             )
-            results_view = CasterReplayResultsView(results, locale=self._locale)
-            results_view.message = await interaction.followup.send(  # type: ignore[func-returns-value]
-                embed=CasterReplayResultsEmbed(
-                    results,
-                    page=0,
-                    total_pages=total_pages,
-                    locale=self._locale,
-                ),
-                view=results_view,
-            )
+            sent = await interaction.followup.send(view=results_view, wait=True)
+            results_view.message = sent

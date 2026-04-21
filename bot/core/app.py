@@ -276,6 +276,7 @@ async def on_ready() -> None:
         # independent 5-second polling loop that keeps it fresh.
         asyncio.create_task(activity_status.on_ready(client))
         asyncio.create_task(activity_status.start_status_poller(client))
+        asyncio.create_task(activity_status.start_chart_refresher(client))
         _initialized = True
     except Exception as e:
         logger.error(f"[Discord Gateway] Error during initialization: {e}")

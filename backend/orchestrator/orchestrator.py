@@ -4,7 +4,8 @@ from typing import Any
 import polars as pl
 
 from backend.algorithms.queue_join_analytics import (
-    bucket_deduped_queue_join_counts,
+    bucket_queue_join_counts,
+    dedupe_per_fixed_window,
 )
 from backend.core.config import (
     ACTIVITY_QUEUE_JOIN_CHART_BUCKET_MINUTES,
@@ -304,27 +305,39 @@ class Orchestrator:
         active_1v1 = self._transition_manager.get_active_matches_1v1()
         active_2v2 = self._transition_manager.get_active_matches_2v2()
 
-        join_times: list[Any] = [e["joined_at"] for e in queue_1v1]
-        join_times.extend(e["joined_at"] for e in queue_2v2)
-        last_queue_join_at = max(join_times) if join_times else None
+        reader = DatabaseReader()
+        last_queue_join_at_1v1 = reader.fetch_last_queue_join_at("1v1")
+        last_queue_join_at_2v2 = reader.fetch_last_queue_join_at("2v2")
 
-        one_hour_ago = utc_now() - timedelta(hours=1)
-        count = 0
-        for df in (
-            self._state_manager.matches_1v1_df,
-            self._state_manager.matches_2v2_df,
-        ):
+        now = utc_now()
+        one_hour_ago = now - timedelta(hours=1)
+
+        def _recent_matches(df: pl.DataFrame) -> int:
             if df.is_empty():
-                continue
-            recent = df.filter(pl.col("assigned_at") >= one_hour_ago)
-            count += recent.height
+                return 0
+            return df.filter(pl.col("assigned_at") >= one_hour_ago).height
+
+        matches_last_hour_1v1 = _recent_matches(self._state_manager.matches_1v1_df)
+        matches_last_hour_2v2 = _recent_matches(self._state_manager.matches_2v2_df)
+
+        queue_joins_last_hour_1v1 = len(
+            self.fetch_deduped_queue_joins(one_hour_ago, now, "1v1")
+        )
+        queue_joins_last_hour_2v2 = len(
+            self.fetch_deduped_queue_joins(one_hour_ago, now, "2v2")
+        )
 
         return {
             "queue_1v1_count": len(queue_1v1),
             "queue_2v2_count": len(queue_2v2),
-            "active_match_count": len(active_1v1) + len(active_2v2),
-            "last_queue_join_at": last_queue_join_at,
-            "last_hour_match_count": count,
+            "active_match_count_1v1": len(active_1v1),
+            "active_match_count_2v2": len(active_2v2),
+            "last_queue_join_at_1v1": last_queue_join_at_1v1,
+            "last_queue_join_at_2v2": last_queue_join_at_2v2,
+            "queue_joins_last_hour_1v1": queue_joins_last_hour_1v1,
+            "queue_joins_last_hour_2v2": queue_joins_last_hour_2v2,
+            "matches_last_hour_1v1": matches_last_hour_1v1,
+            "matches_last_hour_2v2": matches_last_hour_2v2,
         }
 
     # ------------------------------------------------------------------
@@ -783,6 +796,24 @@ class Orchestrator:
     # Queue join analytics (/activity)
     # ------------------------------------------------------------------
 
+    def fetch_deduped_queue_joins(
+        self,
+        start: datetime,
+        end: datetime,
+        game_mode: str,
+    ) -> list[datetime]:
+        """Fetch queue_join events in range and apply the per-uid dedupe window.
+
+        Centralized so ``/activity`` charts and the activity-status embed agree
+        on the same "one join per player per slot" counting rule.
+        """
+
+        reader = DatabaseReader()
+        events = reader.fetch_queue_join_events(start, end, game_mode)
+        return dedupe_per_fixed_window(
+            events, ACTIVITY_QUEUE_JOIN_DEDUPE_WINDOW_MINUTES
+        )
+
     def get_queue_join_analytics(
         self,
         start: datetime,
@@ -794,15 +825,8 @@ class Orchestrator:
         """Return ``(bucket_minutes, [{ "t": iso, "count": int }, ...])``."""
 
         bucket = bucket_minutes or ACTIVITY_QUEUE_JOIN_CHART_BUCKET_MINUTES
-        reader = DatabaseReader()
-        events = reader.fetch_queue_join_events(start, end, game_mode)
-        buckets = bucket_deduped_queue_join_counts(
-            events,
-            start,
-            end,
-            bucket,
-            ACTIVITY_QUEUE_JOIN_DEDUPE_WINDOW_MINUTES,
-        )
+        kept_times = self.fetch_deduped_queue_joins(start, end, game_mode)
+        buckets = bucket_queue_join_counts(kept_times, start, end, bucket)
         rows: list[dict[str, Any]] = [
             {"t": bt.isoformat(), "count": c} for bt, c in buckets
         ]

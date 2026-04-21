@@ -118,6 +118,10 @@ class Cache:
         # if the channel isn't configured or discovery is still in progress).
         self.activity_status_message: "discord.Message | None" = None
 
+        # The single 24h activity-chart message in ACTIVITY_STATS_CHANNEL_ID,
+        # refreshed on every quarter-hour clock tick.
+        self.activity_chart_message: "discord.Message | None" = None
+
         self._populate_json_data()
         self._populate_locale_data()
 

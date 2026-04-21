@@ -4487,46 +4487,67 @@ class ActivityStatusEmbed(discord.Embed):
         self,
         queue_1v1_count: int,
         queue_2v2_count: int,
-        active_match_count: int,
-        last_queue_join_at: "datetime | None",
-        last_hour_match_count: int,
+        active_match_count_1v1: int,
+        active_match_count_2v2: int,
+        last_queue_join_at_1v1: "datetime | None",
+        last_queue_join_at_2v2: "datetime | None",
+        queue_joins_last_hour_1v1: int,
+        queue_joins_last_hour_2v2: int,
+        matches_last_hour_1v1: int,
+        matches_last_hour_2v2: int,
         locale: str = "enUS",
     ) -> None:
-        from discord.utils import format_dt
-
         super().__init__(
             title=t("activity_status_embed.title.1", locale),
-            description=t("activity_status_embed.description.1", locale),
             color=discord.Color.blurple(),
         )
+
+        def _format_last_join(ts: "datetime | None") -> str:
+            if ts is None:
+                return t("activity_status_embed.value.no_activity", locale)
+            unix = int(ts.timestamp())
+            return f"<t:{unix}> (<t:{unix}:R>)"
+
+        def _section_value(
+            queueing_label: str,
+            queueing_count: int,
+            active_matches: int,
+            last_queue_join: "datetime | None",
+            queue_joins_last_hour: int,
+            matches_last_hour: int,
+        ) -> str:
+            lines = [
+                f"- **{queueing_label}:** {queueing_count}",
+                f"- **{t('activity_status_embed.metric.active_matches', locale)}:** {active_matches}",
+                f"- **{t('activity_status_embed.metric.last_queue_join', locale)}:** {_format_last_join(last_queue_join)}",
+                f"- **{t('activity_status_embed.metric.queue_joins_last_hour', locale)}:** {queue_joins_last_hour}",
+                f"- **{t('activity_status_embed.metric.matches_last_hour', locale)}:** {matches_last_hour}",
+            ]
+            return "\n".join(lines)
+
         self.add_field(
-            name=t("activity_status_embed.field_name.queue_1v1", locale),
-            value=str(queue_1v1_count),
-            inline=True,
-        )
-        self.add_field(
-            name=t("activity_status_embed.field_name.queue_2v2", locale),
-            value=str(queue_2v2_count),
-            inline=True,
-        )
-        self.add_field(
-            name=t("activity_status_embed.field_name.active_matches", locale),
-            value=str(active_match_count),
-            inline=True,
-        )
-        if last_queue_join_at is not None:
-            last_join_value = format_dt(last_queue_join_at, style="R")
-        else:
-            last_join_value = t("activity_status_embed.value.no_activity", locale)
-        self.add_field(
-            name=t("activity_status_embed.field_name.last_queue_join", locale),
-            value=last_join_value,
+            name=t("activity_status_embed.section.1v1", locale),
+            value=_section_value(
+                t("activity_status_embed.metric.players_queueing", locale),
+                queue_1v1_count,
+                active_match_count_1v1,
+                last_queue_join_at_1v1,
+                queue_joins_last_hour_1v1,
+                matches_last_hour_1v1,
+            ),
             inline=False,
         )
         self.add_field(
-            name=t("activity_status_embed.field_name.last_hour_matches", locale),
-            value=str(last_hour_match_count),
-            inline=True,
+            name=t("activity_status_embed.section.2v2", locale),
+            value=_section_value(
+                t("activity_status_embed.metric.teams_queueing", locale),
+                queue_2v2_count,
+                active_match_count_2v2,
+                last_queue_join_at_2v2,
+                queue_joins_last_hour_2v2,
+                matches_last_hour_2v2,
+            ),
+            inline=False,
         )
         apply_default_embed_footer(self, locale=locale)
 

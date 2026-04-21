@@ -1038,9 +1038,14 @@ async def activity_stats(
     return ActivityStatsResponse(
         queue_1v1_count=stats["queue_1v1_count"],
         queue_2v2_count=stats["queue_2v2_count"],
-        active_match_count=stats["active_match_count"],
-        last_queue_join_at=stats["last_queue_join_at"],
-        last_hour_match_count=stats["last_hour_match_count"],
+        active_match_count_1v1=stats["active_match_count_1v1"],
+        active_match_count_2v2=stats["active_match_count_2v2"],
+        last_queue_join_at_1v1=stats["last_queue_join_at_1v1"],
+        last_queue_join_at_2v2=stats["last_queue_join_at_2v2"],
+        queue_joins_last_hour_1v1=stats["queue_joins_last_hour_1v1"],
+        queue_joins_last_hour_2v2=stats["queue_joins_last_hour_2v2"],
+        matches_last_hour_1v1=stats["matches_last_hour_1v1"],
+        matches_last_hour_2v2=stats["matches_last_hour_2v2"],
     )
 
 
@@ -2365,6 +2370,30 @@ async def caster_replays_search(
     matches_subset = matches_df.filter(pl.col("id").is_in(match_ids))
     matches_by_id = {row["id"]: row for row in matches_subset.iter_rows(named=True)}
 
+    players_df = app.state_manager.players_df
+    nationality_by_uid: dict[int, str | None] = {}
+    if not players_df.is_empty():
+        if request.game_mode == "1v1":
+            uid_cols = ["player_1_discord_uid", "player_2_discord_uid"]
+        else:
+            uid_cols = [
+                "team_1_player_1_discord_uid",
+                "team_1_player_2_discord_uid",
+                "team_2_player_1_discord_uid",
+                "team_2_player_2_discord_uid",
+            ]
+        needed_uids: set[int] = set()
+        for row in matches_subset.select(uid_cols).iter_rows():
+            for uid in row:
+                if uid is not None:
+                    needed_uids.add(int(uid))
+        if needed_uids:
+            player_rows = players_df.filter(
+                pl.col("discord_uid").is_in(list(needed_uids))
+            ).select(["discord_uid", "nationality"])
+            for uid, nationality in player_rows.iter_rows():
+                nationality_by_uid[int(uid)] = nationality
+
     results: list[CasterReplayResult] = []
     for replay_row in filtered.iter_rows(named=True):
         match_id = replay_row[match_key]
@@ -2373,14 +2402,12 @@ async def caster_replays_search(
             continue
 
         if request.game_mode == "1v1":
-            mmr_avg: int | None = None
-            if (
-                match_row.get("player_1_mmr") is not None
-                and match_row.get("player_2_mmr") is not None
-            ):
-                mmr_avg = int(
-                    (match_row["player_1_mmr"] + match_row["player_2_mmr"]) / 2
-                )
+            p1_mmr = match_row.get("player_1_mmr")
+            p2_mmr = match_row.get("player_2_mmr")
+            side_mmrs: list[int | None] = [
+                int(p1_mmr) if p1_mmr is not None else None,
+                int(p2_mmr) if p2_mmr is not None else None,
+            ]
             players = [
                 str(replay_row.get("player_1_name") or ""),
                 str(replay_row.get("player_2_name") or ""),
@@ -2389,13 +2416,17 @@ async def caster_replays_search(
                 str(replay_row.get("player_1_race") or ""),
                 str(replay_row.get("player_2_race") or ""),
             ]
+            uid_order = [
+                match_row.get("player_1_discord_uid"),
+                match_row.get("player_2_discord_uid"),
+            ]
         else:
-            mmr_avg = None
-            if (
-                match_row.get("team_1_mmr") is not None
-                and match_row.get("team_2_mmr") is not None
-            ):
-                mmr_avg = int((match_row["team_1_mmr"] + match_row["team_2_mmr"]) / 2)
+            t1_mmr = match_row.get("team_1_mmr")
+            t2_mmr = match_row.get("team_2_mmr")
+            side_mmrs = [
+                int(t1_mmr) if t1_mmr is not None else None,
+                int(t2_mmr) if t2_mmr is not None else None,
+            ]
             players = [
                 str(replay_row.get("team_1_player_1_name") or ""),
                 str(replay_row.get("team_1_player_2_name") or ""),
@@ -2408,15 +2439,28 @@ async def caster_replays_search(
                 str(replay_row.get("team_2_player_1_race") or ""),
                 str(replay_row.get("team_2_player_2_race") or ""),
             ]
+            uid_order = [
+                match_row.get("team_1_player_1_discord_uid"),
+                match_row.get("team_1_player_2_discord_uid"),
+                match_row.get("team_2_player_1_discord_uid"),
+                match_row.get("team_2_player_2_discord_uid"),
+            ]
 
-        if request.mmr_min is not None and (
-            mmr_avg is None or mmr_avg < request.mmr_min
-        ):
-            continue
-        if request.mmr_max is not None and (
-            mmr_avg is None or mmr_avg > request.mmr_max
-        ):
-            continue
+        nationalities: list[str | None] = [
+            nationality_by_uid.get(int(uid)) if uid is not None else None
+            for uid in uid_order
+        ]
+
+        if request.mmr_min is not None or request.mmr_max is not None:
+            known = [m for m in side_mmrs if m is not None]
+            if not known:
+                continue
+            side_min = min(known)
+            side_max = max(known)
+            if request.mmr_min is not None and side_max < request.mmr_min:
+                continue
+            if request.mmr_max is not None and side_min > request.mmr_max:
+                continue
 
         results.append(
             CasterReplayResult(
@@ -2424,9 +2468,10 @@ async def caster_replays_search(
                 game_mode=request.game_mode,
                 players=players,
                 races=races,
+                nationalities=nationalities,
                 map_name=str(replay_row.get("map_name") or ""),
                 length_seconds=int(replay_row.get("game_duration_seconds") or 0),
-                mmr_avg=mmr_avg,
+                side_mmrs=side_mmrs,
                 replay_url=str(replay_row.get("replay_path") or ""),
                 played_at=match_row.get("completed_at") or match_row.get("assigned_at"),
             )

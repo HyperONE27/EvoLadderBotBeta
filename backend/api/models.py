@@ -824,9 +824,10 @@ class CasterReplayResult(BaseModel):
     game_mode: str
     players: list[str]
     races: list[str]
+    nationalities: list[str | None]
     map_name: str
     length_seconds: int
-    mmr_avg: int | None = None
+    side_mmrs: list[int | None]
     replay_url: str
     played_at: datetime | None = None
 
@@ -841,6 +842,11 @@ class CasterReplaySearchResponse(BaseModel):
 class ActivityStatsResponse(BaseModel):
     queue_1v1_count: int
     queue_2v2_count: int
-    active_match_count: int
-    last_queue_join_at: datetime | None = None
-    last_hour_match_count: int
+    active_match_count_1v1: int
+    active_match_count_2v2: int
+    last_queue_join_at_1v1: datetime | None = None
+    last_queue_join_at_2v2: datetime | None = None
+    queue_joins_last_hour_1v1: int
+    queue_joins_last_hour_2v2: int
+    matches_last_hour_1v1: int
+    matches_last_hour_2v2: int

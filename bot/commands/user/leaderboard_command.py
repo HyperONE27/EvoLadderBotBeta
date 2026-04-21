@@ -207,7 +207,7 @@ class LeaderboardEmbed(discord.Embed):
                     name = f"{entry['player_name'][:12]:<12}"
                     mmr = entry["mmr"]
                     lines.append(
-                        f"`{ordinal}.` {rank_emote} {race_emote} {flag_emote} `{name}` `{mmr}`"
+                        f"`{ordinal}.` {rank_emote} {flag_emote} {race_emote} `{name}` `{mmr}`"
                     )
                 chunks.append("\n".join(lines))
 
