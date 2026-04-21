@@ -70,10 +70,23 @@ async def _fetch_activity_stats() -> dict[str, Any] | None:
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.get(f"{BACKEND_URL}/activity/stats") as resp:
                 if resp.status >= 400:
+                    logger.warning(
+                        "[activity_status] backend returned error",
+                        status=resp.status,
+                    )
                     return None
                 data = await resp.json()
+    except TimeoutError:
+        logger.warning(
+            "[activity_status] backend timed out",
+            timeout_seconds=_HTTP_TIMEOUT,
+        )
+        return None
+    except aiohttp.ClientError as e:
+        logger.warning("[activity_status] backend unreachable", error=str(e))
+        return None
     except Exception:
-        logger.exception("[activity_status] fetch failed")
+        logger.exception("[activity_status] fetch failed unexpectedly")
         return None
     return dict(data)
 
