@@ -34,7 +34,7 @@ from bot.helpers.message_helpers import (
     queue_channel_send_low,
     queue_message_edit_low,
 )
-from common.datetime_helpers import ensure_utc
+from common.datetime_helpers import ensure_utc, utc_now
 from common.i18n import t
 
 logger = structlog.get_logger(__name__)
@@ -261,7 +261,8 @@ async def on_activity_log(client: discord.Client, data: dict[str, Any]) -> None:
     if not isinstance(channel, discord.TextChannel):
         return
 
-    content = t(key, "enUS", **format_kwargs)
+    ts = int(utc_now().timestamp())
+    content = f"<t:{ts}> (<t:{ts}:R>) {t(key, 'enUS', **format_kwargs)}"
     try:
         await queue_channel_send_low(channel, content=content)
     except Exception:
