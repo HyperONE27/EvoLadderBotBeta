@@ -200,6 +200,15 @@ _LOG_KEY_BY_KIND: dict[str, str] = {
     "match_completed": "activity_log.match_completed",
 }
 
+_FLAVOR_SUFFIX = {"bw", "sc2", "both"}
+
+
+def _format_duration(wait_seconds: int) -> str:
+    """Return ``XXmYYs`` (e.g. ``3m07s``). Seconds are zero-padded to 2 digits."""
+    wait_seconds = max(0, int(wait_seconds))
+    minutes, seconds = divmod(wait_seconds, 60)
+    return f"{minutes}m{seconds:02d}s"
+
 
 async def on_activity_log(client: discord.Client, data: dict[str, Any]) -> None:
     """Post one anonymous line to the activity-log channel for a single event."""
@@ -215,6 +224,16 @@ async def on_activity_log(client: discord.Client, data: dict[str, Any]) -> None:
     match_id = data.get("match_id")
     if match_id is not None:
         format_kwargs["match_id"] = str(match_id)
+
+    if kind == "queue_join":
+        flavor = data.get("flavor")
+        if isinstance(flavor, str) and flavor in _FLAVOR_SUFFIX:
+            key = f"{key}.{flavor}"
+    elif kind == "queue_leave":
+        wait_seconds = data.get("wait_seconds")
+        if isinstance(wait_seconds, (int, float)):
+            format_kwargs["duration"] = _format_duration(int(wait_seconds))
+            key = "activity_log.queue_leave_with_duration"
 
     try:
         channel = client.get_channel(

@@ -92,6 +92,7 @@ class Backend:
         kind: str,
         game_mode: str,
         match_id: int | None = None,
+        extra: dict[str, object] | None = None,
     ) -> None:
         """Fire an anonymous, always-on activity-log event.
 
@@ -101,6 +102,8 @@ class Backend:
         payload: dict[str, object] = {"kind": kind, "game_mode": game_mode}
         if match_id is not None:
             payload["match_id"] = match_id
+        if extra:
+            payload.update(extra)
         await ws.broadcast("activity_log", payload)
 
     def _initialize_orchestrator(self) -> None:

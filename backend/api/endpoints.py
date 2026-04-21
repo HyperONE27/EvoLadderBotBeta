@@ -1140,7 +1140,17 @@ async def queue_join(
         }
     )
     await app.broadcast_queue_join_activity_if_needed(ws, request.discord_uid, "1v1")
-    await app.broadcast_activity_log(ws, "queue_join", "1v1")
+    has_bw = bool(request.bw_race)
+    has_sc2 = bool(request.sc2_race)
+    flavor = (
+        "both" if has_bw and has_sc2 else "bw" if has_bw else "sc2" if has_sc2 else None
+    )
+    await app.broadcast_activity_log(
+        ws,
+        "queue_join",
+        "1v1",
+        extra={"flavor": flavor} if flavor else None,
+    )
     return QueueJoinResponse(success=True, message=None)
 
 
@@ -1150,6 +1160,7 @@ async def queue_leave(
     app: Backend = Depends(get_backend),
     ws: ConnectionManager = Depends(get_ws_manager),
 ) -> QueueLeaveResponse:
+    entry = app.orchestrator.get_queue_entry_1v1(request.discord_uid)
     success, message = app.orchestrator.leave_queue_1v1(request.discord_uid)
     if not success:
         raise HTTPException(status_code=409, detail=message)
@@ -1162,7 +1173,11 @@ async def queue_leave(
             "event_data": {},
         }
     )
-    await app.broadcast_activity_log(ws, "queue_leave", "1v1")
+    extra: dict[str, object] | None = None
+    if entry is not None:
+        wait_seconds = max(0, int((utc_now() - entry["joined_at"]).total_seconds()))
+        extra = {"wait_seconds": wait_seconds}
+    await app.broadcast_activity_log(ws, "queue_leave", "1v1", extra=extra)
     return QueueLeaveResponse(success=True, message=None)
 
 
