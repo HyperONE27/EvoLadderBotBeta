@@ -272,9 +272,9 @@ async def on_ready() -> None:
         _ws_task = asyncio.create_task(start_ws_listener(client))
         # Backfill ladder player role in background.
         asyncio.create_task(backfill_roles(client))
-        # Discover or create the activity-status embed, then start the
-        # independent 5-second polling loop that keeps it fresh.
-        asyncio.create_task(activity_status.on_ready(client))
+        # Clean the activity channel and seed caches with existing messages,
+        # then start the pollers that keep both messages fresh.
+        await activity_status.on_ready(client)
         asyncio.create_task(activity_status.start_status_poller(client))
         asyncio.create_task(activity_status.start_chart_refresher(client))
         _initialized = True

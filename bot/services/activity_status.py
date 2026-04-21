@@ -91,9 +91,9 @@ async def _fetch_activity_stats() -> dict[str, Any] | None:
     return dict(data)
 
 
-async def _discover_or_create_status_message(
+async def _get_activity_channel(
     client: discord.Client,
-) -> discord.Message | None:
+) -> discord.TextChannel | None:
     if ACTIVITY_STATS_CHANNEL_ID is None:
         return None
     try:
@@ -113,24 +113,97 @@ async def _discover_or_create_status_message(
             channel_type=type(channel).__name__,
         )
         return None
+    return channel
+
+
+def _classify_bot_message(msg: discord.Message, me_id: int) -> str | None:
+    """Classify a bot-authored message in the activity channel.
+
+    Returns ``"status"`` for an image-less embed, ``"chart"`` for an embed
+    containing an image, ``"other"`` for anything else the bot sent, or
+    ``None`` if the message isn't from us (leave it alone).
+    """
+    if msg.author.id != me_id:
+        return None
+    if not msg.embeds:
+        return "other"
+    first = msg.embeds[0]
+    if first.image and first.image.url:
+        return "chart"
+    return "status"
+
+
+async def _cleanup_and_discover_messages(
+    client: discord.Client,
+) -> tuple[discord.Message | None, discord.Message | None]:
+    """Scan the activity channel for our status + chart messages.
+
+    Keeps only the most recent of each; deletes any other bot-authored
+    messages (stray text, duplicates, old formats) so the channel stays
+    as exactly two pinned-by-convention messages.
+    """
+    channel = await _get_activity_channel(client)
+    if channel is None:
+        return None, None
     me = client.user
     if me is None:
-        return None
+        return None, None
+
+    status_msg: discord.Message | None = None
+    chart_msg: discord.Message | None = None
+    to_delete: list[discord.Message] = []
+
     try:
-        async for msg in channel.history(limit=50):
-            if msg.author.id == me.id and msg.embeds and not msg.attachments:
-                return msg
+        async for msg in channel.history(limit=100):
+            kind = _classify_bot_message(msg, me.id)
+            if kind is None:
+                continue
+            if kind == "status":
+                if status_msg is None:
+                    status_msg = msg
+                else:
+                    to_delete.append(msg)
+            elif kind == "chart":
+                if chart_msg is None:
+                    chart_msg = msg
+                else:
+                    to_delete.append(msg)
+            else:
+                to_delete.append(msg)
     except discord.Forbidden:
         logger.error(
-            "[activity_status] missing Read Message History on status channel",
+            "[activity_status] missing Read Message History on activity channel",
             channel_id=ACTIVITY_STATS_CHANNEL_ID,
         )
-        return None
+        return None, None
     except Exception:
         logger.exception(
             "[activity_status] channel.history failed",
             channel_id=ACTIVITY_STATS_CHANNEL_ID,
         )
+        return None, None
+
+    for msg in to_delete:
+        try:
+            await msg.delete()
+            logger.info(
+                "[activity_status] deleted stray bot message",
+                message_id=msg.id,
+            )
+        except Exception:
+            logger.warning(
+                "[activity_status] failed to delete stray bot message",
+                message_id=msg.id,
+            )
+
+    return status_msg, chart_msg
+
+
+async def _create_status_message(
+    client: discord.Client,
+) -> discord.Message | None:
+    channel = await _get_activity_channel(client)
+    if channel is None:
         return None
     embed = ActivityStatusEmbed(
         queue_1v1_count=0,
@@ -161,18 +234,20 @@ async def _discover_or_create_status_message(
 
 
 async def on_ready(client: discord.Client) -> None:
-    """Discover or create the status embed message. Idempotent under reconnect.
+    """Clean the activity channel and populate the cache with existing messages.
 
-    The chart message is owned by ``start_chart_refresher`` so it can run its
-    own discover-or-create step behind exponential backoff.
+    Does not create missing messages here — the pollers will create them on
+    their first iteration so the chart seeding can share the backend-backoff
+    path.
     """
     if ACTIVITY_STATS_CHANNEL_ID is None:
         return
+    status_msg, chart_msg = await _cleanup_and_discover_messages(client)
     cache = get_cache()
-    if cache.activity_status_message is None:
-        message = await _discover_or_create_status_message(client)
-        if message is not None:
-            cache.activity_status_message = message
+    if status_msg is not None:
+        cache.activity_status_message = status_msg
+    if chart_msg is not None:
+        cache.activity_chart_message = chart_msg
 
 
 async def _refresh_status_embed_once(client: discord.Client) -> None:
@@ -180,7 +255,7 @@ async def _refresh_status_embed_once(client: discord.Client) -> None:
     cache = get_cache()
     message = cache.activity_status_message
     if message is None:
-        message = await _discover_or_create_status_message(client)
+        message = await _create_status_message(client)
         if message is None:
             return
         cache.activity_status_message = message
@@ -264,41 +339,11 @@ async def _build_chart_payload() -> tuple[discord.Embed, discord.File] | None:
     return embed, file
 
 
-async def _discover_or_create_chart_message(
+async def _create_chart_message(
     client: discord.Client,
 ) -> discord.Message | None:
-    if ACTIVITY_STATS_CHANNEL_ID is None:
-        return None
-    try:
-        channel = client.get_channel(
-            ACTIVITY_STATS_CHANNEL_ID
-        ) or await client.fetch_channel(ACTIVITY_STATS_CHANNEL_ID)
-    except Exception:
-        logger.exception(
-            "[activity_status] chart fetch_channel failed",
-            channel_id=ACTIVITY_STATS_CHANNEL_ID,
-        )
-        return None
-    if not isinstance(channel, discord.TextChannel):
-        return None
-    me = client.user
-    if me is None:
-        return None
-    try:
-        async for msg in channel.history(limit=50):
-            if msg.author.id == me.id and msg.attachments:
-                return msg
-    except discord.Forbidden:
-        logger.error(
-            "[activity_status] missing Read Message History on chart channel",
-            channel_id=ACTIVITY_STATS_CHANNEL_ID,
-        )
-        return None
-    except Exception:
-        logger.exception(
-            "[activity_status] chart channel.history failed",
-            channel_id=ACTIVITY_STATS_CHANNEL_ID,
-        )
+    channel = await _get_activity_channel(client)
+    if channel is None:
         return None
     payload = await _build_chart_payload()
     if payload is None:
@@ -329,7 +374,7 @@ async def _refresh_chart_message_once(client: discord.Client) -> bool:
     cache = get_cache()
     message = cache.activity_chart_message
     if message is None:
-        message = await _discover_or_create_chart_message(client)
+        message = await _create_chart_message(client)
         if message is None:
             return False
         cache.activity_chart_message = message
