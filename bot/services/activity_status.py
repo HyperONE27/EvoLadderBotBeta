@@ -54,6 +54,9 @@ _CHART_QUARTER_HOUR_MINUTES = 15
 _CHART_GAME_MODE = "1v1"
 _CHART_TIME_RANGE = "24h"
 _CHART_IMAGE_FILENAME = "activity.png"
+_CHART_BACKOFF_INITIAL_SECONDS = 2.0
+_CHART_BACKOFF_MAX_SECONDS = 300.0
+_CHART_BACKOFF_MULTIPLIER = 2.0
 
 
 # ---------------------------------------------------------------------------
@@ -145,7 +148,11 @@ async def _discover_or_create_status_message(
 
 
 async def on_ready(client: discord.Client) -> None:
-    """Discover or create the status embed + chart messages. Idempotent under reconnect."""
+    """Discover or create the status embed message. Idempotent under reconnect.
+
+    The chart message is owned by ``start_chart_refresher`` so it can run its
+    own discover-or-create step behind exponential backoff.
+    """
     if ACTIVITY_STATS_CHANNEL_ID is None:
         return
     cache = get_cache()
@@ -153,10 +160,6 @@ async def on_ready(client: discord.Client) -> None:
         message = await _discover_or_create_status_message(client)
         if message is not None:
             cache.activity_status_message = message
-    if cache.activity_chart_message is None:
-        chart_message = await _discover_or_create_chart_message(client)
-        if chart_message is not None:
-            cache.activity_chart_message = chart_message
 
 
 async def _refresh_status_embed_once(client: discord.Client) -> None:
@@ -304,27 +307,34 @@ async def _discover_or_create_chart_message(
         return None
 
 
-async def _refresh_chart_message_once(client: discord.Client) -> None:
-    """Edit the chart message with a freshly rendered 24h chart."""
+async def _refresh_chart_message_once(client: discord.Client) -> bool:
+    """Edit the chart message with a freshly rendered 24h chart.
+
+    Returns ``True`` when the chart was successfully created or edited,
+    ``False`` on any failure (so the caller can decide whether to retry).
+    """
     cache = get_cache()
     message = cache.activity_chart_message
     if message is None:
         message = await _discover_or_create_chart_message(client)
         if message is None:
-            return
+            return False
         cache.activity_chart_message = message
-        return
+        return True
     payload = await _build_chart_payload()
     if payload is None:
-        return
+        return False
     embed, file = payload
     try:
         await queue_message_edit_low(message, embed=embed, attachments=[file])
+        return True
     except discord.NotFound:
         logger.warning("[activity_status] chart message disappeared; will rediscover")
         cache.activity_chart_message = None
+        return False
     except Exception:
         logger.exception("[activity_status] chart edit failed")
+        return False
 
 
 def _seconds_until_next_quarter_hour(now: datetime) -> float:
@@ -337,7 +347,11 @@ def _seconds_until_next_quarter_hour(now: datetime) -> float:
 
 
 async def start_chart_refresher(client: discord.Client) -> None:
-    """Run forever, refreshing the 24h chart on every clock-aligned quarter-hour."""
+    """Run forever, refreshing the 24h chart.
+
+    Performs an immediate refresh on start (with exponential backoff if the
+    backend is unreachable), then continues on the clock-aligned quarter-hour.
+    """
     if ACTIVITY_STATS_CHANNEL_ID is None:
         logger.info(
             "[activity_status] ACTIVITY_STATS_CHANNEL_ID unset; chart refresher skipped"
@@ -347,9 +361,25 @@ async def start_chart_refresher(client: discord.Client) -> None:
         "[activity_status] chart refresher started",
         channel_id=ACTIVITY_STATS_CHANNEL_ID,
     )
+
+    delay = _CHART_BACKOFF_INITIAL_SECONDS
     while True:
-        delay = _seconds_until_next_quarter_hour(utc_now())
+        try:
+            ok = await _refresh_chart_message_once(client)
+        except Exception:
+            logger.exception("[activity_status] initial chart refresh raised")
+            ok = False
+        if ok:
+            break
+        logger.warning(
+            "[activity_status] initial chart refresh failed, retrying",
+            delay_seconds=delay,
+        )
         await asyncio.sleep(delay)
+        delay = min(delay * _CHART_BACKOFF_MULTIPLIER, _CHART_BACKOFF_MAX_SECONDS)
+
+    while True:
+        await asyncio.sleep(_seconds_until_next_quarter_hour(utc_now()))
         try:
             await _refresh_chart_message_once(client)
         except Exception:
