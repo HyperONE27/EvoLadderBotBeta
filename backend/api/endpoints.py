@@ -2448,6 +2448,7 @@ async def caster_replays_search(
 
     players_df = app.state_manager.players_df
     nationality_by_uid: dict[int, str | None] = {}
+    name_by_uid: dict[int, str] = {}
     if not players_df.is_empty():
         if request.game_mode == "1v1":
             uid_cols = ["player_1_discord_uid", "player_2_discord_uid"]
@@ -2466,9 +2467,11 @@ async def caster_replays_search(
         if needed_uids:
             player_rows = players_df.filter(
                 pl.col("discord_uid").is_in(list(needed_uids))
-            ).select(["discord_uid", "nationality"])
-            for uid, nationality in player_rows.iter_rows():
+            ).select(["discord_uid", "nationality", "player_name"])
+            for uid, nationality, player_name in player_rows.iter_rows():
                 nationality_by_uid[int(uid)] = nationality
+                if player_name:
+                    name_by_uid[int(uid)] = str(player_name)
 
     results: list[CasterReplayResult] = []
     for replay_row in filtered.iter_rows(named=True):
@@ -2529,6 +2532,11 @@ async def caster_replays_search(
         nationalities: list[str | None] = [
             nationality_by_uid.get(int(uid)) if uid is not None else None
             for uid in uid_order
+        ]
+
+        players = [
+            name_by_uid.get(int(uid), fallback) if uid is not None else fallback
+            for uid, fallback in zip(uid_order, players, strict=True)
         ]
 
         if request.mmr_min is not None or request.mmr_max is not None:
