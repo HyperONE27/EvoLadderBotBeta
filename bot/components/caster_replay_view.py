@@ -24,6 +24,7 @@ from bot.components.views import AutoDisableView
 from bot.core.config import BACKEND_URL
 from bot.core.http import get_session
 from bot.helpers.emotes import get_flag_emote, get_game_emote, get_race_emote
+from common.datetime_helpers import ensure_utc
 from common.i18n import t
 from common.lookups.map_lookups import get_maps
 from common.lookups.race_lookups import get_races
@@ -65,6 +66,12 @@ def _fmt_duration(length_seconds: int) -> str:
     seconds = length_seconds % 60
     raw = f"{minutes}m{seconds:02d}s"
     return f"`{raw:>{_DURATION_PAD}}`"
+
+
+def _fmt_played_at(raw: Any) -> str:
+    dt = ensure_utc(raw)
+    label = dt.strftime("%Y-%m-%d %H:%M") if dt else "—"
+    return f"`{label}`"
 
 
 def _safe_race_emote(race: str | None) -> str:
@@ -111,6 +118,7 @@ def _format_row_1v1(result: dict[str, Any], locale: str) -> str:
     length_seconds = int(result.get("length_seconds") or 0)
     map_name = str(result.get("map_name") or "")
     replay_url = str(result.get("replay_url") or "")
+    played_at = result.get("played_at")
 
     download_label = t("caster_replay.result.download", locale)
     download = f"[{download_label}]({replay_url})" if replay_url else "—"
@@ -123,7 +131,7 @@ def _format_row_1v1(result: dict[str, Any], locale: str) -> str:
         f"{vs_token} "
         f"{_safe_race_emote(r2)} {_safe_flag_emote(n2)} {_fmt_name(p2)} {_fmt_mmr(m2)}"
     )
-    line_2 = f"{_fmt_duration(length_seconds)} `{map_name}`"
+    line_2 = f"{_fmt_duration(length_seconds)} {_fmt_played_at(played_at)} `{map_name}`"
     return f"{line_1}\n{line_2}\n{download}"
 
 
@@ -146,6 +154,7 @@ def _format_row_2v2(result: dict[str, Any], locale: str) -> str:
     length_seconds = int(result.get("length_seconds") or 0)
     map_name = str(result.get("map_name") or "")
     replay_url = str(result.get("replay_url") or "")
+    played_at = result.get("played_at")
 
     download_label = t("caster_replay.result.download", locale)
     download = f"[{download_label}]({replay_url})" if replay_url else "—"
@@ -163,7 +172,7 @@ def _format_row_2v2(result: dict[str, Any], locale: str) -> str:
         f"{_safe_race_emote(r[2])} {_safe_flag_emote(n[2])} {_fmt_name(p[2])} "
         f"{_safe_race_emote(r[3])} {_safe_flag_emote(n[3])} {_fmt_name(p[3])} {_fmt_mmr(m2)}"
     )
-    line_3 = f"{_fmt_duration(length_seconds)} `{map_name}`"
+    line_3 = f"{_fmt_duration(length_seconds)} {_fmt_played_at(played_at)} `{map_name}`"
     return f"{line_1}\n{line_2}\n{line_3}\n{download}"
 
 
