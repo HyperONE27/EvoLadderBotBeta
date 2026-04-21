@@ -4,10 +4,11 @@ Triggered by the hidden ``replays`` keyword in DMs (see
 :mod:`bot.commands.secret.replay_command`) for players gated by the
 ``content_creators`` table.
 
-The view holds filter state (game mode, races, map, min length, max
-length) and POSTs to ``/caster/replays/search`` when the Search button
-is pressed. Results are rendered as a paginated Components v2 layout
-(``LayoutView`` + ``Container`` + ``TextDisplay``) in place.
+A single ``LayoutView`` holds both the filter controls (game mode,
+races, map, min length, max length) and the paginated results rendered
+in a ``Container`` + ``TextDisplay``. Every interaction edits the same
+message so dropdown adjustments and repeated searches don't flood the
+channel.
 """
 
 from __future__ import annotations
@@ -19,8 +20,6 @@ from typing import Any
 import discord
 import structlog
 
-from bot.components.embeds import ErrorEmbed
-from bot.components.views import AutoDisableView
 from bot.core.config import BACKEND_URL
 from bot.core.http import get_session
 from bot.helpers.emotes import get_flag_emote, get_game_emote, get_race_emote
@@ -176,7 +175,7 @@ def _format_row_2v2(result: dict[str, Any], locale: str) -> str:
     return f"{line_1}\n{line_2}\n{line_3}\n{download}"
 
 
-def _build_text_display_content(
+def _build_results_content(
     results: list[dict[str, Any]],
     *,
     game_mode: str,
@@ -186,10 +185,10 @@ def _build_text_display_content(
 ) -> str:
     total = len(results)
     title = t("caster_replay.results.title", locale, total=str(total))
+    footer = t("embed_brand.footer.1", locale)
 
     if total == 0:
         body = t("caster_replay.results.empty", locale)
-        footer = t("embed_brand.footer.1", locale)
         return f"### {title}\n\n{body}\n\n-# {footer}"
 
     per_page = _results_per_page(game_mode)
@@ -205,8 +204,6 @@ def _build_text_display_content(
 
     formatter = _format_row_1v1 if game_mode == "1v1" else _format_row_2v2
     rows = [formatter(result, locale) for result in results[start:end]]
-
-    footer = t("embed_brand.footer.1", locale)
 
     content = f"### {title}\n{header}\n\n" + "\n\n".join(rows) + f"\n\n-# {footer}"
 
@@ -227,77 +224,18 @@ def _build_text_display_content(
     return content
 
 
-class CasterReplayResultsView(discord.ui.LayoutView):
-    """Paginated Components v2 layout for replay search results."""
+def _build_prompt_content(locale: str) -> str:
+    title = t("caster_replay.results.title_initial", locale)
+    prompt = t("caster_replay.results.prompt", locale)
+    footer = t("embed_brand.footer.1", locale)
+    return f"### {title}\n\n{prompt}\n\n-# {footer}"
 
-    def __init__(
-        self,
-        results: list[dict[str, Any]],
-        *,
-        game_mode: str,
-        locale: str = "enUS",
-    ) -> None:
-        super().__init__(timeout=600)
-        self._results = results
-        self._game_mode = game_mode
-        self._locale = locale
-        self._page = 0
-        per_page = _results_per_page(game_mode)
-        self._total_pages = max(1, (len(results) + per_page - 1) // per_page)
-        self.message: discord.Message | None = None
-        self._build()
 
-    def _build(self) -> None:
-        self.clear_items()
-        container: discord.ui.Container[CasterReplayResultsView] = discord.ui.Container(
-            accent_colour=discord.Color.green(),
-        )
-        container.add_item(
-            discord.ui.TextDisplay(
-                _build_text_display_content(
-                    self._results,
-                    game_mode=self._game_mode,
-                    page=self._page,
-                    total_pages=self._total_pages,
-                    locale=self._locale,
-                )
-            )
-        )
-        self.add_item(container)
-
-        if self._total_pages > 1:
-            prev_btn: discord.ui.Button[CasterReplayResultsView] = discord.ui.Button(
-                label=t("button.previous", self._locale),
-                emoji="◀️",
-                style=discord.ButtonStyle.secondary,
-                disabled=self._page == 0,
-            )
-            prev_btn.callback = self._on_prev  # type: ignore[method-assign]
-
-            next_btn: discord.ui.Button[CasterReplayResultsView] = discord.ui.Button(
-                label=t("button.next", self._locale),
-                emoji="▶️",
-                style=discord.ButtonStyle.secondary,
-                disabled=self._page >= self._total_pages - 1,
-            )
-            next_btn.callback = self._on_next  # type: ignore[method-assign]
-
-            action_row: discord.ui.ActionRow[CasterReplayResultsView] = (
-                discord.ui.ActionRow(prev_btn, next_btn)
-            )
-            self.add_item(action_row)
-
-    async def _on_prev(self, interaction: discord.Interaction) -> None:
-        if self._page > 0:
-            self._page -= 1
-        self._build()
-        await interaction.response.edit_message(view=self)
-
-    async def _on_next(self, interaction: discord.Interaction) -> None:
-        if self._page < self._total_pages - 1:
-            self._page += 1
-        self._build()
-        await interaction.response.edit_message(view=self)
+def _build_error_content(locale: str) -> str:
+    title = t("caster_replay.results.title_initial", locale)
+    body = t("caster_replay.error.search_failed", locale)
+    footer = t("embed_brand.footer.1", locale)
+    return f"### {title}\n\n{body}\n\n-# {footer}"
 
 
 class _RaceFilterSelect(discord.ui.Select["CasterReplaySearchView"]):
@@ -317,7 +255,6 @@ class _RaceFilterSelect(discord.ui.Select["CasterReplaySearchView"]):
             min_values=0,
             max_values=min(2, len(options)),
             options=options,
-            row=0,
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -350,7 +287,6 @@ class _MapFilterSelect(discord.ui.Select["CasterReplaySearchView"]):
             min_values=0,
             max_values=1,
             options=options,
-            row=1,
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -376,7 +312,6 @@ class _MinLengthSelect(discord.ui.Select["CasterReplaySearchView"]):
             min_values=0,
             max_values=1,
             options=options,
-            row=2,
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -401,7 +336,6 @@ class _MaxLengthSelect(discord.ui.Select["CasterReplaySearchView"]):
             min_values=0,
             max_values=1,
             options=options,
-            row=3,
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -411,8 +345,8 @@ class _MaxLengthSelect(discord.ui.Select["CasterReplaySearchView"]):
         await interaction.response.defer()
 
 
-class CasterReplaySearchView(AutoDisableView):
-    """Filter view for caster replay search (DM-only, content-creator gated)."""
+class CasterReplaySearchView(discord.ui.LayoutView):
+    """Combined filter controls and results — all in one message, edited in place."""
 
     def __init__(
         self,
@@ -423,21 +357,75 @@ class CasterReplaySearchView(AutoDisableView):
         super().__init__(timeout=900)
         self._caster_discord_uid = caster_discord_uid
         self._locale = locale
+
         self.game_mode: str = "1v1"
         self.races: list[str] = []
         self.map_name: str | None = None
         self.min_length_minutes: int | None = None
         self.max_length_minutes: int | None = None
+
+        self._results: list[dict[str, Any]] = []
+        self._has_searched: bool = False
+        self._page: int = 0
+        self._error: bool = False
+
         self._search_lock = asyncio.Lock()
+        self.message: discord.Message | None = None
         self._rebuild()
+
+    @property
+    def _total_pages(self) -> int:
+        per_page = _results_per_page(self.game_mode)
+        return max(1, (len(self._results) + per_page - 1) // per_page)
 
     def _rebuild(self) -> None:
         self.clear_items()
+
+        if self._error:
+            body = _build_error_content(self._locale)
+        elif self._has_searched:
+            body = _build_results_content(
+                self._results,
+                game_mode=self.game_mode,
+                page=self._page,
+                total_pages=self._total_pages,
+                locale=self._locale,
+            )
+        else:
+            body = _build_prompt_content(self._locale)
+
+        container: discord.ui.Container[CasterReplaySearchView] = discord.ui.Container(
+            accent_colour=discord.Color.green(),
+        )
+        container.add_item(discord.ui.TextDisplay(body))
+        self.add_item(container)
+
+        if self._has_searched and not self._error and self._total_pages > 1:
+            prev_btn: discord.ui.Button[CasterReplaySearchView] = discord.ui.Button(
+                label=t("button.previous", self._locale),
+                emoji="◀️",
+                style=discord.ButtonStyle.secondary,
+                disabled=self._page == 0,
+            )
+            prev_btn.callback = self._on_prev  # type: ignore[method-assign]
+            next_btn: discord.ui.Button[CasterReplaySearchView] = discord.ui.Button(
+                label=t("button.next", self._locale),
+                emoji="▶️",
+                style=discord.ButtonStyle.secondary,
+                disabled=self._page >= self._total_pages - 1,
+            )
+            next_btn.callback = self._on_next  # type: ignore[method-assign]
+            pagination_row: discord.ui.ActionRow[CasterReplaySearchView] = (
+                discord.ui.ActionRow(prev_btn, next_btn)
+            )
+            self.add_item(pagination_row)
+
         self.add_item(_RaceFilterSelect(self.races, self._locale))
         self.add_item(_MapFilterSelect(self.game_mode, self.map_name, self._locale))
         self.add_item(_MinLengthSelect(self.min_length_minutes, self._locale))
         self.add_item(_MaxLengthSelect(self.max_length_minutes, self._locale))
 
+        mode_buttons: list[discord.ui.Button[CasterReplaySearchView]] = []
         for mode in _GAME_MODES:
             mode_btn: discord.ui.Button[CasterReplaySearchView] = discord.ui.Button(
                 label=t(f"caster_replay.game_mode.{mode}", self._locale),
@@ -446,19 +434,21 @@ class CasterReplaySearchView(AutoDisableView):
                     if self.game_mode == mode
                     else discord.ButtonStyle.secondary
                 ),
-                row=4,
             )
             mode_btn.callback = self._make_game_mode_callback(mode)  # type: ignore[method-assign,assignment]
-            self.add_item(mode_btn)
+            mode_buttons.append(mode_btn)
 
         search_btn: discord.ui.Button[CasterReplaySearchView] = discord.ui.Button(
             label=t("caster_replay.button.search", self._locale),
             emoji="🔍",
             style=discord.ButtonStyle.primary,
-            row=4,
         )
         search_btn.callback = self._on_search  # type: ignore[method-assign]
-        self.add_item(search_btn)
+
+        controls_row: discord.ui.ActionRow[CasterReplaySearchView] = (
+            discord.ui.ActionRow(*mode_buttons, search_btn)
+        )
+        self.add_item(controls_row)
 
     def _make_game_mode_callback(
         self, mode: str
@@ -469,16 +459,31 @@ class CasterReplaySearchView(AutoDisableView):
                 return
             self.game_mode = mode
             self.map_name = None
+            # Reset page on mode change since per_page may change.
+            self._page = 0
             self._rebuild()
             await interaction.response.edit_message(view=self)
 
         return callback
+
+    async def _on_prev(self, interaction: discord.Interaction) -> None:
+        if self._page > 0:
+            self._page -= 1
+        self._rebuild()
+        await interaction.response.edit_message(view=self)
+
+    async def _on_next(self, interaction: discord.Interaction) -> None:
+        if self._page < self._total_pages - 1:
+            self._page += 1
+        self._rebuild()
+        await interaction.response.edit_message(view=self)
 
     async def _on_search(self, interaction: discord.Interaction) -> None:
         if self._search_lock.locked():
             await interaction.response.defer()
             return
         async with self._search_lock:
+            await interaction.response.defer()
             payload: dict[str, Any] = {
                 "caster_discord_uid": self._caster_discord_uid,
                 "game_mode": self.game_mode,
@@ -492,7 +497,6 @@ class CasterReplaySearchView(AutoDisableView):
             if self.max_length_minutes is not None:
                 payload["max_length_minutes"] = self.max_length_minutes
 
-            await interaction.response.defer(thinking=True)
             try:
                 async with get_session().post(
                     f"{BACKEND_URL}/caster/replays/search",
@@ -510,7 +514,9 @@ class CasterReplaySearchView(AutoDisableView):
                             status=resp.status,
                             detail=detail,
                         )
-                        await self._send_error_followup(interaction)
+                        self._error = True
+                        self._rebuild()
+                        await interaction.edit_original_response(view=self)
                         return
                     data = await resp.json()
 
@@ -520,23 +526,31 @@ class CasterReplaySearchView(AutoDisableView):
                     game_mode=self.game_mode,
                     count=len(results),
                 )
-                results_view = CasterReplayResultsView(
-                    results, game_mode=self.game_mode, locale=self._locale
-                )
-                sent = await interaction.followup.send(view=results_view, wait=True)
-                results_view.message = sent
+                self._results = results
+                self._has_searched = True
+                self._error = False
+                self._page = 0
+                self._rebuild()
+                await interaction.edit_original_response(view=self)
             except Exception:
                 logger.exception("[caster] replay search failed")
-                await self._send_error_followup(interaction)
+                self._error = True
+                self._rebuild()
+                try:
+                    await interaction.edit_original_response(view=self)
+                except Exception:
+                    logger.exception("[caster] failed to edit message with error state")
 
-    async def _send_error_followup(self, interaction: discord.Interaction) -> None:
-        try:
-            await interaction.followup.send(
-                embed=ErrorEmbed(
-                    title=t("error_embed.title.generic", self._locale),
-                    description=t("caster_replay.error.search_failed", self._locale),
-                    locale=self._locale,
+    async def on_timeout(self) -> None:
+        for item in self.walk_children():
+            if hasattr(item, "disabled"):
+                item.disabled = True
+        if self.message is not None:
+            try:
+                await self.message.edit(view=self)
+            except discord.NotFound:
+                pass
+            except discord.HTTPException:
+                logger.warning(
+                    "[caster] failed to disable view on timeout", exc_info=True
                 )
-            )
-        except Exception:
-            logger.exception("[caster] failed to send error followup")

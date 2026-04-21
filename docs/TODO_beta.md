@@ -299,7 +299,30 @@ What remains?
     - ✅ Need to iterate the UI on that
     - ✅ Check locales
 - ✅ ReplayDetails admin embed map correctness should be checked against the matches_1v1 row, not the maps static data (plan §7)
-    - ✅ `AdminReplayDetailsEmbed` now compares parsed replay map to the `matches_1v1`/`matches_2v2` row's stored `map_name`, not the current season's static map list — so verification stays correct when the season rotates
+    - ❌ `AdminReplayDetailsEmbed` now compares parsed replay map to the `matches_1v1`/`matches_2v2` row's stored `map_name`, not the current season's static map list — so verification stays correct when the season rotates
+        - This fails because the matches_1v1 table stores the short name of the map and not the full name, and we don't store seasons in the table, so this information is lost
+        - ⏰ We need to refactor writing to the matches_1v1 and matches_2v2 table to use full map names
+        - Root cause: `data/core/maps.json` keys are short names (e.g. `"Celestial Enclave"`); the `"name"` field is the sc2reader full name (e.g. `"Celestial Enclave LE"`). Matchmaker pool uses JSON keys, so short names flow into `matches_*`. `replays_*` is populated from sc2reader and already holds full names.
+        - Impacted sites:
+
+            | Category | File:line | Change |
+            |---|---|---|
+            | Matchmaker (write) | `backend/algorithms/match_params.py:48` | `_available_maps()` must return `season_data[key]["name"]` instead of JSON keys |
+            | Matchmaker (write) | `backend/algorithms/match_params.py:120,124` | Propagates automatically once `_available_maps` is fixed |
+            | Matchmaker (write) | `backend/algorithms/match_params_2v2.py:118,130` | Same fix for 2v2 |
+            | Picker (value) | `bot/components/views.py:2537–2542` | `MapVetoSelect` value must be full name (matchmaker consumes these) |
+            | Picker (value) | `bot/components/views.py:3613–3618` | `MapVetoSelect2v2` same |
+            | Picker (value) | `bot/components/caster_replay_view.py:335–340` | `_MapFilterSelect` value must be full name (endpoint compares against `replays_*.map_name` which is already full) — currently broken |
+            | Embed (read) | `bot/components/embeds.py:195` | `_get_map_link()` switch `get_map_by_short_name` → `get_map_by_name` |
+            | Embed (read) | `bot/components/embeds.py:646,662` | `MatchInfoEmbed1v1` same |
+            | Embed (read) | `bot/components/embeds.py:1265,1281` | `MatchInfoEmbed2v2` same |
+            | Verifier (self-heals) | `backend/algorithms/replay_verifier.py:57–63`, `:165–173` | Primary equality check starts working; `expected_full` fallback becomes dead but harmless |
+            | Already correct | `backend/algorithms/replay_parser.py:243,472`, `backend/orchestrator/transitions/_replay.py:48,256` | `replays_*` already stores full names |
+            | Display-only | `bot/components/embeds.py:3311,3437,3669,4143,4270` | Admin / replay-success embeds — no lookup, passthrough display |
+            | Schema | `backend/database/schema.sql` | `map_name TEXT` — no DDL change |
+        - Open questions before implementation:
+            - Backfill existing `matches_1v1` / `matches_2v2` short-name rows via SQL `UPDATE`? Otherwise pre-refactor matches still fail verification.
+            - `preferences_1v1.last_chosen_vetoes` / `preferences_2v2.last_chosen_vetoes` store short names today — same short→full migration decision applies.
     - ⏰ Check locales
 - ✅ ReplayDetails admin view does not auto-disable on expire correctly (plan §8)
     - ✅ `AdminReplayToggleView.on_timeout` now disables both player buttons and edits the message in place, matching `AutoDisableView` behaviour

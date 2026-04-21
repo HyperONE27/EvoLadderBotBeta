@@ -36,7 +36,7 @@ async def queue_user_send_high(
     user: discord.User | discord.Member,
     content: str | None = None,
     embed: discord.Embed | None = None,
-    view: discord.ui.View | None = None,
+    view: discord.ui.View | discord.ui.LayoutView | None = None,
     **kwargs: Any,
 ) -> discord.Message:
     queue = get_message_queue()
@@ -59,7 +59,7 @@ async def queue_message_reply_high(
     message: discord.Message,
     content: str | None = None,
     embed: discord.Embed | None = None,
-    view: discord.ui.View | None = None,
+    view: discord.ui.View | discord.ui.LayoutView | None = None,
     **kwargs: Any,
 ) -> discord.Message:
     queue = get_message_queue()
@@ -125,7 +125,7 @@ async def queue_user_send_low(
     user: discord.User | discord.Member,
     content: str | None = None,
     embed: discord.Embed | None = None,
-    view: discord.ui.View | None = None,
+    view: discord.ui.View | discord.ui.LayoutView | None = None,
     **kwargs: Any,
 ) -> discord.Message:
     queue = get_message_queue()
@@ -148,7 +148,7 @@ async def queue_channel_send_low(
     channel: discord.abc.Messageable,
     content: str | None = None,
     embed: discord.Embed | None = None,
-    view: discord.ui.View | None = None,
+    view: discord.ui.View | discord.ui.LayoutView | None = None,
     **kwargs: Any,
 ) -> discord.Message:
     queue = get_message_queue()
@@ -209,7 +209,7 @@ async def queue_message_reply_low(
     message: discord.Message,
     content: str | None = None,
     embed: discord.Embed | None = None,
-    view: discord.ui.View | None = None,
+    view: discord.ui.View | discord.ui.LayoutView | None = None,
     **kwargs: Any,
 ) -> discord.Message:
     queue = get_message_queue()
