@@ -420,10 +420,22 @@ class CasterReplaySearchView(discord.ui.LayoutView):
             )
             self.add_item(pagination_row)
 
-        self.add_item(_RaceFilterSelect(self.races, self._locale))
-        self.add_item(_MapFilterSelect(self.game_mode, self.map_name, self._locale))
-        self.add_item(_MinLengthSelect(self.min_length_minutes, self._locale))
-        self.add_item(_MaxLengthSelect(self.max_length_minutes, self._locale))
+        self.add_item(discord.ui.ActionRow(_RaceFilterSelect(self.races, self._locale)))
+        self.add_item(
+            discord.ui.ActionRow(
+                _MapFilterSelect(self.game_mode, self.map_name, self._locale)
+            )
+        )
+        self.add_item(
+            discord.ui.ActionRow(
+                _MinLengthSelect(self.min_length_minutes, self._locale)
+            )
+        )
+        self.add_item(
+            discord.ui.ActionRow(
+                _MaxLengthSelect(self.max_length_minutes, self._locale)
+            )
+        )
 
         mode_buttons: list[discord.ui.Button[CasterReplaySearchView]] = []
         for mode in _GAME_MODES:
