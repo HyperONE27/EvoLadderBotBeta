@@ -130,6 +130,8 @@
   "button.profile_2v2": "👥 2v2",
   "button.profile_info": "👤 Info",
   "button.restart": "Restart",
+  "button.skip_back_5": "Back 5",
+  "button.skip_forward_5": "Forward 5",
   "button.try_again": "Try Again",
   "caster_replay.button.search": "Search replays",
   "caster_replay.error.search_failed": "Replay search failed. Please try again shortly.",

@@ -130,6 +130,8 @@
   "button.profile_2v2": "👥 2v2",
   "button.profile_info": "👤 정보",
   "button.restart": "재시작",
+  "button.skip_back_5": "뒤로 5",
+  "button.skip_forward_5": "앞으로 5",
   "button.try_again": "재시도",
   "caster_replay.button.search": "리플레이 검색",
   "caster_replay.error.search_failed": "리플레이 검색에 실패했습니다. 잠시 후 다시 시도해 주세요.",

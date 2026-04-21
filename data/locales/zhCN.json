@@ -130,6 +130,8 @@
   "button.profile_2v2": "👥 2v2",
   "button.profile_info": "👤 信息",
   "button.restart": "重新开始",
+  "button.skip_back_5": "后退 5",
+  "button.skip_forward_5": "前进 5",
   "button.try_again": "重试",
   "caster_replay.button.search": "搜索录像",
   "caster_replay.error.search_failed": "录像搜索失败,请稍后重试。",

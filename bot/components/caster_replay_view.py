@@ -404,6 +404,7 @@ class CasterReplaySearchView(discord.ui.LayoutView):
         if self._has_searched and not self._error and self._total_pages > 1:
             skip_prev_btn: discord.ui.Button[CasterReplaySearchView] = (
                 discord.ui.Button(
+                    label=t("button.skip_back_5", self._locale),
                     emoji="⏪",
                     style=discord.ButtonStyle.secondary,
                     disabled=self._page == 0,
@@ -426,6 +427,7 @@ class CasterReplaySearchView(discord.ui.LayoutView):
             next_btn.callback = self._on_next  # type: ignore[method-assign]
             skip_next_btn: discord.ui.Button[CasterReplaySearchView] = (
                 discord.ui.Button(
+                    label=t("button.skip_forward_5", self._locale),
                     emoji="⏩",
                     style=discord.ButtonStyle.secondary,
                     disabled=self._page >= self._total_pages - 1,

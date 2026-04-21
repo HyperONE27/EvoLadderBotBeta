@@ -130,6 +130,8 @@
   "button.profile_2v2": "👥 2v2",
   "button.profile_info": "👤 Info",
   "button.restart": "Reiniciar",
+  "button.skip_back_5": "Atrás 5",
+  "button.skip_forward_5": "Adelante 5",
   "button.try_again": "Reintentar",
   "caster_replay.button.search": "Buscar replays",
   "caster_replay.error.search_failed": "La búsqueda de replays falló. Inténtalo de nuevo en un momento.",
