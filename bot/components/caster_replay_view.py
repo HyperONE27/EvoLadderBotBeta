@@ -70,7 +70,7 @@ def _fmt_duration(length_seconds: int) -> str:
 
 def _fmt_played_at(raw: Any) -> str:
     dt = ensure_utc(raw)
-    label = dt.strftime("%Y-%m-%d %H:%M") if dt else "—"
+    label = dt.strftime("%Y-%m-%d") if dt else "—"
     return f"`{label}`"
 
 

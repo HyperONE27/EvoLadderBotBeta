@@ -288,9 +288,10 @@ What remains?
     - ✅ Added `POST /caster/replays/search` filtering `replays_1v1`/`replays_2v2` by game mode, unordered race set, map, length bracket, MMR band; server re-checks creator status as defense-in-depth
     - ✅ Hidden `replays` keyword DM triggers `CasterReplaySearchView` (filters + paginated results embed with replay download links); non-creators silently ignored
     - ✅ New `/owner caster add|remove <player>` command reusing the `ConfirmStateChangeView` pattern
-    - ⏰ UI is ugly, iterate it
-    - ⏰ I don't think it even generates any replays...
-    - ⏰ Check locales
+    - ✅ UI is ugly, iterate it
+    - ✅ I don't think it even generates any replays...
+        - ✅ Fixed
+    - ✅ Check locales
 - ✅ When queueing 2v2, send a confirmation message to the party member with details and explaining next steps (plan §9)
     - ✅ Backend broadcasts new `queue_started_2v2` and `queue_cancelled_2v2` WS events with both party members' UIDs
     - ✅ Bot WS listener DMs the partner (not the leader) a `Party2v2QueueStartedEmbed` / `Party2v2QueueCancelledEmbed` via low-priority queue

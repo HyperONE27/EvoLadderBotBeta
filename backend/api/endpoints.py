@@ -2306,6 +2306,32 @@ async def party_info(
 # ---------------------------------------------------------------------------
 
 
+def _pick_reporter_side(match_row: dict[str, Any], game_mode: str) -> int:
+    """Pick side 1 or 2 whose report matches the resolved match_result.
+
+    Used to dedupe caster search results down to one replay per match. If
+    the match is unresolved, prefer whichever side filed a report; if
+    neither did, fall back to side 1.
+    """
+    if game_mode == "1v1":
+        report_1_key, report_2_key = "player_1_report", "player_2_report"
+    else:
+        report_1_key, report_2_key = "team_1_report", "team_2_report"
+    result = match_row.get("match_result")
+    report_1 = match_row.get(report_1_key)
+    report_2 = match_row.get(report_2_key)
+    if result is not None:
+        if report_1 == result:
+            return 1
+        if report_2 == result:
+            return 2
+    if report_1 is not None:
+        return 1
+    if report_2 is not None:
+        return 2
+    return 1
+
+
 @router.post("/caster/replays/search", response_model=CasterReplaySearchResponse)
 async def caster_replays_search(
     request: CasterReplaySearchRequest,
@@ -2369,6 +2395,37 @@ async def caster_replays_search(
     match_ids = filtered.get_column(match_key).to_list()
     matches_subset = matches_df.filter(pl.col("id").is_in(match_ids))
     matches_by_id = {row["id"]: row for row in matches_subset.iter_rows(named=True)}
+
+    # Dedupe: at most one replay per match. Prefer the replay uploaded by the
+    # side whose report matches the resolved match_result. Fall back to any
+    # replay for the match if the preferred side's replay isn't in the set.
+    replays_by_match: dict[int, list[dict[str, Any]]] = {}
+    for replay_row in filtered.iter_rows(named=True):
+        replays_by_match.setdefault(int(replay_row[match_key]), []).append(replay_row)
+
+    chosen_replay_ids: set[int] = set()
+    for match_id, replay_list in replays_by_match.items():
+        if len(replay_list) == 1:
+            chosen_replay_ids.add(int(replay_list[0]["id"]))
+            continue
+        match_row = matches_by_id.get(match_id)
+        preferred_id: int | None = None
+        if match_row is not None:
+            side = _pick_reporter_side(match_row, request.game_mode)
+            if request.game_mode == "1v1":
+                row_id_key = f"player_{side}_replay_row_id"
+            else:
+                row_id_key = f"team_{side}_replay_row_id"
+            raw_id = match_row.get(row_id_key)
+            if raw_id is not None:
+                preferred_id = int(raw_id)
+        available_ids = {int(r["id"]) for r in replay_list}
+        if preferred_id is not None and preferred_id in available_ids:
+            chosen_replay_ids.add(preferred_id)
+        else:
+            chosen_replay_ids.add(int(replay_list[0]["id"]))
+
+    filtered = filtered.filter(pl.col("id").is_in(list(chosen_replay_ids)))
 
     players_df = app.state_manager.players_df
     nationality_by_uid: dict[int, str | None] = {}
