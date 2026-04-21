@@ -1,9 +1,10 @@
 """Deferred ``queue_join_activity`` DMs with a commitment delay + cooldown sweep.
 
 We want to avoid pinging subscribers when the queuer immediately bails. We hold
-each wave of DMs for ``QUEUE_NOTIFY_COMMITMENT_SECONDS`` and drop it if the
-joiner leaves or gets matched in that window. Subscriber cooldowns already live
-on the backend; this module is purely in-memory and is lost on bot restart.
+each wave of DMs for ``QUEUE_NOTIFY_COMMITMENT_SECONDS`` and let the match-found
+/ queue-leave handlers cancel the pending task if the joiner bails during that
+window. Subscriber cooldowns already live on the backend; this module is purely
+in-memory and is lost on bot restart.
 
 The ``joiner_discord_uid`` field must be present on the ``queue_join_activity``
 WS payload for cancellation to work. Payloads without it still fire, they just
@@ -31,13 +32,15 @@ def schedule_deferred_ping(
     data: dict[str, Any],
     *,
     commitment_seconds: int,
-    still_queued: Callable[[int], bool],
     send: _DeferredSend,
 ) -> None:
-    """Hold the DM wave for ``commitment_seconds``, then re-check and send.
+    """Hold the DM wave for ``commitment_seconds``, then send.
 
-    ``still_queued(uid)`` gets called right before sending; if it returns False
-    (joiner left or got matched), the wave is dropped.
+    The backend only emits ``queue_join_activity`` for a joiner who is
+    currently in the queue (initial broadcast) or still in the queue
+    (sweep re-broadcast), so we trust the payload. If the joiner bails
+    during the commitment window the match-found / queue-leave handlers
+    will call ``cancel_deferred_ping`` to drop the pending task.
 
     If a pending task already exists for this joiner, we keep it: the backend
     re-fires ``queue_join_activity`` from the sweep loop every
@@ -61,12 +64,6 @@ def schedule_deferred_ping(
     async def _runner() -> None:
         try:
             await asyncio.sleep(commitment_seconds)
-            if not still_queued(joiner_uid):
-                logger.info(
-                    "[activity_notifier] joiner no longer queued, dropping wave",
-                    joiner_discord_uid=joiner_uid,
-                )
-                return
             await send(client, data)
         except asyncio.CancelledError:
             raise

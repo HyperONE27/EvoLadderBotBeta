@@ -175,21 +175,12 @@ async def _on_talk_channel_created(client: discord.Client, data: dict) -> None:
             logger.exception(f"[WS] Failed to DM user {uid} for talk_channel_created")
 
 
-def _joiner_still_queued(joiner_uid: int) -> bool:
-    """True if the joiner is still in our local queue-tracking caches."""
-    cache = get_cache()
-    if joiner_uid in cache.active_match_info:
-        return False
-    return joiner_uid in cache.active_searching_messages
-
-
 async def _on_queue_join_activity(client: discord.Client, data: dict) -> None:
     """Schedule anonymous low-priority DMs after the commitment delay."""
     schedule_deferred_ping(
         client,
         data,
         commitment_seconds=QUEUE_NOTIFY_COMMITMENT_SECONDS,
-        still_queued=_joiner_still_queued,
         send=_dispatch_queue_join_activity,
     )
 
