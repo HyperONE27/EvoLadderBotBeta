@@ -84,6 +84,32 @@ def get_map_by_short_name(short_name: str) -> Map | None:
     )
 
 
+def get_map_long_names_by_short_name(
+    short_name: str, *, game_mode: str | None = None
+) -> list[str]:
+    """Return every long ``name`` variant that shares the given short name.
+
+    Different seasons can carry the same short name but different long
+    names (e.g. ``"Mothership LE"`` vs ``"Mothership SEL"``). Replays store
+    the long name parsed from the .SC2Replay file, so callers filtering
+    replays by short name need the full set of variants.
+    """
+    names: list[str] = []
+    seen: set[str] = set()
+    source = _get_source().maps
+    game_modes = [game_mode] if game_mode else list(source.keys())
+    for gm in game_modes:
+        for season_data in source.get(gm, {}).values():
+            for map_data in season_data.values():
+                if map_data.get("short_name") != short_name:
+                    continue
+                long_name = map_data.get("name") or ""
+                if long_name and long_name not in seen:
+                    seen.add(long_name)
+                    names.append(long_name)
+    return names
+
+
 def get_map_by_name(name: str) -> Map | None:
     return next(
         (

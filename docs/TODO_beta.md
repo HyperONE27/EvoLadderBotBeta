@@ -324,6 +324,7 @@ What remains?
             - Backfill existing `matches_1v1` / `matches_2v2` short-name rows via SQL `UPDATE`? Otherwise pre-refactor matches still fail verification.
             - `preferences_1v1.last_chosen_vetoes` / `preferences_2v2.last_chosen_vetoes` store short names today — same short→full migration decision applies.
     - ⏰ Check locales
+    - ⏰ After implementing this, take care that the conversion doesn't break how map names show up in the caster replay dashboard
 - ✅ ReplayDetails admin view does not auto-disable on expire correctly (plan §8)
     - ✅ `AdminReplayToggleView.on_timeout` now disables both player buttons and edits the message in place, matching `AutoDisableView` behaviour
     - ✅ Check locales

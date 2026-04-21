@@ -21,6 +21,7 @@ from backend.lookups.admin_lookups import get_admin_by_discord_uid
 from backend.lookups.replay_1v1_lookups import get_replays_1v1_by_match_id
 from common.config import ACTIVITY_ANALYTICS_MAX_RANGE_DAYS
 from common.datetime_helpers import ensure_utc, utc_now
+from common.lookups.map_lookups import get_map_long_names_by_short_name
 from backend.api.models import (
     AdminBanRequest,
     AdminBanResponse,
@@ -2358,7 +2359,13 @@ async def caster_replays_search(
     filtered = replays_df.filter(pl.col("upload_status") == "completed")
 
     if request.map_name:
-        filtered = filtered.filter(pl.col("map_name") == request.map_name)
+        long_names = get_map_long_names_by_short_name(
+            request.map_name, game_mode=request.game_mode
+        )
+        if long_names:
+            filtered = filtered.filter(pl.col("map_name").is_in(long_names))
+        else:
+            filtered = filtered.filter(pl.col("map_name") == request.map_name)
 
     if request.min_length_minutes is not None:
         filtered = filtered.filter(
