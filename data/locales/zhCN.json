@@ -145,7 +145,7 @@
   "caster_replay.placeholder.length": "比赛时长",
   "caster_replay.placeholder.map": "地图(可选)",
   "caster_replay.placeholder.races": "种族(最多 2 个)",
-  "caster_replay.result.download": "下载录像",
+  "caster_replay.result.download": "**下载**",
   "caster_replay.result.vs": "vs",
   "caster_replay.results.empty": "没有符合筛选条件的录像。",
   "caster_replay.results.page_header": "第 **{page}** / {total} 页",

@@ -145,7 +145,7 @@
   "caster_replay.placeholder.length": "Duración del partido",
   "caster_replay.placeholder.map": "Mapa (opcional)",
   "caster_replay.placeholder.races": "Razas (hasta 2)",
-  "caster_replay.result.download": "Descargar replay",
+  "caster_replay.result.download": "**Descargar**",
   "caster_replay.result.vs": "vs",
   "caster_replay.results.empty": "Ningún replay coincidió con tus filtros.",
   "caster_replay.results.page_header": "Página **{page}** / {total}",

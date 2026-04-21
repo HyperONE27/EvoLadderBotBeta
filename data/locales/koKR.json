@@ -145,7 +145,7 @@
   "caster_replay.placeholder.length": "경기 길이",
   "caster_replay.placeholder.map": "맵 (선택)",
   "caster_replay.placeholder.races": "종족 (최대 2개)",
-  "caster_replay.result.download": "리플레이 다운로드",
+  "caster_replay.result.download": "**다운로드**",
   "caster_replay.result.vs": "vs",
   "caster_replay.results.empty": "필터에 맞는 리플레이가 없습니다.",
   "caster_replay.results.page_header": "페이지 **{page}** / {total}",

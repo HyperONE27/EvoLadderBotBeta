@@ -145,7 +145,7 @@
   "caster_replay.placeholder.length": "Длительность матча",
   "caster_replay.placeholder.map": "Карта (необязательно)",
   "caster_replay.placeholder.races": "Расы (до 2)",
-  "caster_replay.result.download": "Скачать реплей",
+  "caster_replay.result.download": "**Скачать**",
   "caster_replay.result.vs": "vs",
   "caster_replay.results.empty": "Реплеи по заданным фильтрам не найдены.",
   "caster_replay.results.page_header": "Страница **{page}** / {total}",

@@ -145,7 +145,7 @@
   "caster_replay.placeholder.length": "Match length",
   "caster_replay.placeholder.map": "Map (optional)",
   "caster_replay.placeholder.races": "Races (up to 2)",
-  "caster_replay.result.download": "Download replay",
+  "caster_replay.result.download": "**Download**",
   "caster_replay.result.vs": "vs",
   "caster_replay.results.empty": "No replays matched your filters.",
   "caster_replay.results.page_header": "Page **{page}** / {total}",

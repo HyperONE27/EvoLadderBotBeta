@@ -56,7 +56,8 @@ _TEXT_DISPLAY_CHAR_LIMIT = 4000
 _NAME_PAD = 12
 _MAP_PAD = 40
 _MMR_PAD = 4
-_MATCH_ID_PAD = 5
+_MATCH_ID_PAD = 7
+_DURATION_PAD = 7
 
 
 def _fmt_name(name: str) -> str:
@@ -81,7 +82,8 @@ def _fmt_map(map_name: str) -> str:
 def _fmt_duration(length_seconds: int) -> str:
     minutes = length_seconds // 60
     seconds = length_seconds % 60
-    return f"`{minutes}m{seconds:02d}s`"
+    raw = f"{minutes}m{seconds:02d}s"
+    return f"`{raw:>{_DURATION_PAD}}`"
 
 
 def _safe_race_emote(race: str | None) -> str:
