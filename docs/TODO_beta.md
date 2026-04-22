@@ -386,6 +386,9 @@ What remains?
 - ⏰ heartbeat embed/view update and cancel queue embed/view update can race
 - ⏰ add "last match" under "last queue attempt" in queue activity stats channel
 - ⏰ prohibit queueing if "country" is set to "Other" and send a notice asking the user to set their country using `/setcountry` if they could not find it in `/setup`
+- ⏰ add numbers to "How to Report Your Result"
+- ⏰ move notice about downloading data to bottom of "How to Play Your Match"
+- ⏰ display discord username and uid as backtick escaped strings
 
 ```
 Here is a draft plan to refine:
