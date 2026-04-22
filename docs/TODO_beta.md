@@ -381,6 +381,8 @@ What remains?
 - ⏰ Set CHN vs THM to KOR
 - ⏰ Set opinionated default settings for notifications?
 - ⏰ Fix people getting paired on the same races/maps over and over? Especially races, add a little randomness into the matchmaker by matching first then filtering matchup instead of the other way around
+- ⏰ 2v2 leaderboard doesn't update before 2v2 result is resolved
+- ⏰ 2v2 races doesn't resolve correctly, says the races are wrong even though they are right, just because the teams are in the wrong order
 
 ```
 Here is a draft plan to refine:
