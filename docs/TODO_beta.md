@@ -384,6 +384,7 @@ What remains?
 - ⏰ 2v2 leaderboard doesn't update before 2v2 result is resolved
 - ⏰ 2v2 races doesn't resolve correctly, says the races are wrong even though they are right, just because the teams are in the wrong order
 - ⏰ heartbeat embed/view update and cancel queue embed/view update can race
+- ⏰ add "last match" under "last queue attempt" in queue activity stats channel
 
 ```
 Here is a draft plan to refine:
