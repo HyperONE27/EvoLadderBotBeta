@@ -385,6 +385,7 @@ What remains?
 - ⏰ 2v2 races doesn't resolve correctly, says the races are wrong even though they are right, just because the teams are in the wrong order
 - ⏰ heartbeat embed/view update and cancel queue embed/view update can race
 - ⏰ add "last match" under "last queue attempt" in queue activity stats channel
+- ⏰ prohibit queueing if "country" is set to "Other" and send a notice asking the user to set their country using `/setcountry` if they could not find it in `/setup`
 
 ```
 Here is a draft plan to refine:
