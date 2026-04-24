@@ -389,6 +389,8 @@ What remains?
 - ⏰ add numbers to "How to Report Your Result"
 - ⏰ move notice about downloading data to bottom of "How to Play Your Match"
 - ⏰ display discord username and uid as backtick escaped strings
+- ⏰ Color code #ladder-activity-log embed types
+- ⏰ 
 
 ```
 Here is a draft plan to refine:
