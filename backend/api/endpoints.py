@@ -13,7 +13,6 @@ from backend.core.config import (
     CHANNEL_DELETION_DELAY_SECONDS,
     CHANNEL_MANAGER_URL,
     COERCE_INDETERMINATE_AS_LOSS,
-    CURRENT_SEASON,
 )
 from backend.algorithms.replay_parser import parse_replay_1v1, parse_replay_2v2
 from backend.algorithms.replay_verifier import verify_replay_1v1, verify_replay_2v2
@@ -465,13 +464,12 @@ async def admin_match(
     # Run verification on each replay.
     verifications: list[dict | None] = []
     replay_urls: list[str | None] = []
-    season_maps = app.state_manager.maps.get("1v1", {}).get(CURRENT_SEASON, {})
 
     for replay in replays:
         replay_urls.append(replay.get("replay_path"))
         if match is not None:
             verification = verify_replay_1v1(
-                dict(replay), dict(match), app.state_manager.mods, season_maps
+                dict(replay), dict(match), app.state_manager.mods
             )
             verifications.append(verification)
         else:
@@ -1902,10 +1900,7 @@ async def upload_replay(
     )
 
     # --- 7. Verify ---
-    season_maps = app.state_manager.maps.get("1v1", {}).get(CURRENT_SEASON, {})
-    verification = verify_replay_1v1(
-        parsed, dict(match), app.state_manager.mods, season_maps
-    )
+    verification = verify_replay_1v1(parsed, dict(match), app.state_manager.mods)
 
     # --- 8. Attempt auto-resolution if verification passes ---
     auto_resolved = False
@@ -2144,10 +2139,7 @@ async def upload_replay_2v2(
     )
 
     # --- 7. Verify ---
-    season_maps = app.state_manager.maps.get("2v2", {}).get(CURRENT_SEASON, {})
-    verification = verify_replay_2v2(
-        parsed, dict(match), app.state_manager.mods, season_maps
-    )
+    verification = verify_replay_2v2(parsed, dict(match), app.state_manager.mods)
 
     # --- 8. Attempt auto-resolution if verification passes ---
     auto_resolved = False

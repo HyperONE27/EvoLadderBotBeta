@@ -45,7 +45,19 @@ def _available_maps(
     if season_data is None:
         raise KeyError(f"Season {season!r} not found under game mode {game_mode!r}.")
     vetoed = set(p1_vetoes) | set(p2_vetoes)
-    return [m for m in season_data if m.strip() and m not in vetoed]
+    # Return the long ``name`` for each map so the value that flows into
+    # ``matches_*.map_name`` matches the sc2reader long name stored in
+    # ``replays_*.map_name`` at verification time. Vetoes are compared in the
+    # same namespace (long names) — see MapVetoSelect.
+    result: list[str] = []
+    for short_name, map_data in season_data.items():
+        if not short_name.strip():
+            continue
+        long_name = map_data.get("name") or short_name
+        if long_name in vetoed:
+            continue
+        result.append(long_name)
+    return result
 
 
 def _resolve_server(

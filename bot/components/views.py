@@ -2532,14 +2532,15 @@ class Sc2RaceSelect(discord.ui.Select):
 class MapVetoSelect(discord.ui.Select):
     def __init__(self, selected: list[str] | None = None, locale: str = "enUS") -> None:
         maps = get_maps(game_mode="1v1", season=CURRENT_SEASON) or {}
+        selected_set = set(selected or [])
         options = [
             discord.SelectOption(
                 label=map_data["short_name"],
-                value=map_name,
+                value=map_data["name"],
                 emoji=get_game_emote(map_data.get("game", "sc2")),
-                default=(map_name in (selected or [])),
+                default=(map_data["name"] in selected_set),
             )
-            for map_name, map_data in sorted(maps.items())
+            for _, map_data in sorted(maps.items())
         ]
         if not options:
             options = [
@@ -3608,14 +3609,15 @@ class CompSelect2v2(discord.ui.Select):
 class MapVetoSelect2v2(discord.ui.Select):
     def __init__(self, selected: list[str] | None = None, locale: str = "enUS") -> None:
         maps = get_maps(game_mode="2v2", season=CURRENT_SEASON) or {}
+        selected_set = set(selected or [])
         options = [
             discord.SelectOption(
                 label=map_data["short_name"],
-                value=map_name,
+                value=map_data["name"],
                 emoji=get_game_emote(map_data.get("game", "sc2")),
-                default=(map_name in (selected or [])),
+                default=(map_data["name"] in selected_set),
             )
-            for map_name, map_data in sorted(maps.items())
+            for _, map_data in sorted(maps.items())
         ]
         if not options:
             options = [

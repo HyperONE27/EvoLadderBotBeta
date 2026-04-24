@@ -17,7 +17,6 @@ from bot.core.config import (
     BOT_USER_ID,
     COERCE_INDETERMINATE_AS_LOSS,
     CONFIRMATION_TIMEOUT,
-    CURRENT_SEASON,
     DISCORD_INVITE_URL,
     ENABLE_REPLAY_VALIDATION,
     EXPECTED_LOBBY_SETTINGS,
@@ -46,7 +45,10 @@ from common.datetime_helpers import (
 )
 from common.json_types import Country, GeographicRegion
 from common.lookups.country_lookups import get_country_by_code
-from common.lookups.map_lookups import get_map_by_short_name, get_maps
+from common.lookups.map_lookups import (
+    get_map_by_name,
+    get_map_by_short_name,
+)
 from common.lookups.mod_lookups import get_mod_by_code
 from common.lookups.race_lookups import (
     get_bw_race_codes,
@@ -148,13 +150,23 @@ def _race_display(race_code: str, locale: str = "enUS") -> str:
 
 
 def _get_map_game(map_name: str) -> str:
-    """Return 'bw' or 'sc2' for a map by looking it up in both map pools."""
-    for mode in ("1v1", "2v2"):
-        maps = get_maps(game_mode=mode, season=CURRENT_SEASON) or {}
-        map_data = maps.get(map_name)
-        if map_data:
-            return map_data.get("game", "sc2")
+    """Return 'bw' or 'sc2' for a map. Accepts either the long ``name`` (the
+    value flowing through match/veto state) or the short name (used in older
+    callers)."""
+    map_data = get_map_by_name(map_name) or get_map_by_short_name(map_name)
+    if map_data:
+        return map_data.get("game", "sc2")
     return "sc2"
+
+
+def _veto_display(map_name: str) -> tuple[str, str]:
+    """Resolve a veto entry (long name) to its ``(game, short_label)`` pair
+    for rendering in the queue-setup embed. Falls back to the passed-in value
+    when no lookup hits (e.g. stale preference data)."""
+    map_data = get_map_by_name(map_name) or get_map_by_short_name(map_name)
+    if map_data:
+        return map_data.get("game", "sc2"), map_data.get("short_name", map_name)
+    return "sc2", map_name
 
 
 def _report_display(report: str, locale: str = "enUS") -> str:
@@ -191,8 +203,12 @@ def _lobby_setting_display(value: str, locale: str = "enUS") -> str:
 
 
 def _get_map_link(map_name: str, server_code: str) -> str:
-    """Get the appropriate battlenet map link based on server region."""
-    map_data = get_map_by_short_name(map_name)
+    """Get the appropriate battlenet map link based on server region.
+
+    ``map_name`` is the long ``name`` as stored in ``matches_*.map_name``; we
+    still fall back to short-name lookup so older rows keep rendering a link.
+    """
+    map_data = get_map_by_name(map_name) or get_map_by_short_name(map_name)
     if not map_data:
         return "Unavailable"
     server = get_game_server_by_code(server_code)
@@ -279,9 +295,9 @@ class QueueSetupEmbed1v1(discord.Embed):
             sorted_vetoes = sorted(map_vetoes)
             veto_lines: list[str] = []
             for i, map_name in enumerate(sorted_vetoes):
-                game = _get_map_game(map_name)
+                game, label = _veto_display(map_name)
                 game_emote = get_game_emote(game)
-                veto_lines.append(f"{_NUMBER_EMOTES[i]} {game_emote} {map_name}")
+                veto_lines.append(f"{_NUMBER_EMOTES[i]} {game_emote} {label}")
             veto_value = "\n".join(veto_lines)
         else:
             veto_value = t("queue_setup_embed.veto_value_none.1", locale)
@@ -643,7 +659,7 @@ class MatchInfoEmbed1v1(discord.Embed):
 
         self.add_field(name="", value="", inline=False)
 
-        map_info = get_map_by_short_name(map_name)
+        map_info = get_map_by_name(map_name) or get_map_by_short_name(map_name)
         map_author = map_info["author"] if map_info else "Unknown"
         map_link = _get_map_link(map_name, server_code)
 
@@ -1142,9 +1158,9 @@ class QueueSetupEmbed2v2(discord.Embed):
             sorted_vetoes = sorted(map_vetoes)
             veto_lines: list[str] = []
             for i, map_name in enumerate(sorted_vetoes):
-                game = _get_map_game(map_name)
+                game, label = _veto_display(map_name)
                 game_emote = get_game_emote(game)
-                veto_lines.append(f"{_NUMBER_EMOTES[i]} {game_emote} {map_name}")
+                veto_lines.append(f"{_NUMBER_EMOTES[i]} {game_emote} {label}")
             veto_value = "\n".join(veto_lines)
         else:
             veto_value = t("queue_setup_embed.veto_value_none.1", locale)
@@ -1262,7 +1278,7 @@ class MatchInfoEmbeds2v2(list[discord.Embed]):
         # --- Embed 2: map, lobby settings, report, replay ---
         embed2 = discord.Embed(description="", color=discord.Color.teal())
 
-        map_info = get_map_by_short_name(map_name)
+        map_info = get_map_by_name(map_name) or get_map_by_short_name(map_name)
         map_author = map_info["author"] if map_info else "Unknown"
         map_link = _get_map_link(map_name, server_code)
 
@@ -4445,9 +4461,9 @@ class Party2v2QueueStartedEmbed(discord.Embed):
             sorted_vetoes = sorted(map_vetoes)
             veto_lines: list[str] = []
             for i, map_name in enumerate(sorted_vetoes):
-                game = _get_map_game(map_name)
+                game, label = _veto_display(map_name)
                 game_emote = get_game_emote(game)
-                veto_lines.append(f"{_NUMBER_EMOTES[i]} {game_emote} {map_name}")
+                veto_lines.append(f"{_NUMBER_EMOTES[i]} {game_emote} {label}")
             veto_value = "\n".join(veto_lines)
         else:
             veto_value = t("queue_setup_embed.veto_value_none.1", locale)

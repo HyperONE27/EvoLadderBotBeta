@@ -22,7 +22,6 @@ def verify_replay_1v1(
     parsed: dict[str, Any],
     match: dict[str, Any],
     mods: dict[str, Any],
-    maps: dict[str, Any],
 ) -> dict[str, Any]:
     """
     Verify a parsed 1v1 replay against a match record.
@@ -31,7 +30,6 @@ def verify_replay_1v1(
         parsed: dict returned by ``parse_replay_1v1()``.
         match:  ``Matches1v1Row`` dict from the backend state.
         mods:   ``state_manager.mods`` dict (from mods.json).
-        maps:   ``state_manager.maps`` dict (from maps.json, season-level).
 
     Returns:
         dict with keys: races, map, mod, timestamp, observers, ai_players,
@@ -49,18 +47,13 @@ def verify_replay_1v1(
     }
 
     # --- Map ---
-    # The match row stores the canonical short name at creation time. Anchor
-    # the comparison to it directly so later edits to maps.json (renames,
-    # removals) can't retroactively break verification of historical matches.
-    # maps.json is still consulted as a best-effort to accept the currently
-    # resolved full name, but is no longer the source of truth.
+    # ``matches_*.map_name`` is written at match creation as the long ``name``
+    # resolved from the current season's map pool, which is the same string
+    # sc2reader reports for the replay. Straight equality is sufficient.
     expected_map: str = match["map_name"]
     played_map: str = parsed.get("map_name", "")
-    map_entry = maps.get(expected_map, {})
-    expected_full: str | None = map_entry.get("name")
     result["map"] = {
-        "success": played_map == expected_map
-        or (expected_full is not None and played_map == expected_full),
+        "success": played_map == expected_map,
         "expected_map": expected_map,
         "played_map": played_map,
     }
@@ -113,7 +106,6 @@ def verify_replay_2v2(
     parsed: dict[str, Any],
     match: dict[str, Any],
     mods: dict[str, Any],
-    maps: dict[str, Any],
 ) -> dict[str, Any]:
     """
     Verify a parsed 2v2 replay against a match record.
@@ -122,7 +114,6 @@ def verify_replay_2v2(
         parsed: dict returned by ``parse_replay_2v2()``.
         match:  ``Matches2v2Row`` dict from the backend state.
         mods:   ``state_manager.mods`` dict (from mods.json).
-        maps:   ``state_manager.maps`` dict (from maps.json, season-level).
 
     Returns:
         dict with keys: races_team_1, races_team_2, mirror_match, map, mod,
@@ -162,14 +153,12 @@ def verify_replay_2v2(
     result["indeterminate"] = parsed.get("match_result") == "indeterminate"
 
     # --- Map ---
-    # See verify_replay_1v1 for the rationale on anchoring to match["map_name"].
+    # See verify_replay_1v1 for the rationale on straight equality against
+    # match["map_name"] (which is the long name at match-creation time).
     expected_map: str = match["map_name"]
     played_map: str = parsed.get("map_name", "")
-    map_entry = maps.get(expected_map, {})
-    expected_full: str | None = map_entry.get("name")
     result["map"] = {
-        "success": played_map == expected_map
-        or (expected_full is not None and played_map == expected_full),
+        "success": played_map == expected_map,
         "expected_map": expected_map,
         "played_map": played_map,
     }
