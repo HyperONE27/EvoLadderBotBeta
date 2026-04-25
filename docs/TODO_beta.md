@@ -349,10 +349,11 @@ What remains?
     - ⏰ Add a summary of the last 7 days of activity
     - ✅ When someone leaves the queue, include in the message how long they had waited
 
-## 2026-04-22
+## 2026-04-25
 
 - ⏰ Add a notice about players disconnecting mid-match?
     - We probably should not be allowing reconnects for ladder matches as we have no  way to enforce fairness in these conditions
+    - Explain we are counting disconnects as losses somewhere where we display rules
 - ⏰ Migrate wave-based matchmaking approach to a non-wave-based algorithm/faster wave-based algorithm with no matching obligations per wave so we don't get synchronization issues causing players to match up into the same opponents over and over again
     - For this to happen, we need:
         - A persistent record of recent matches
