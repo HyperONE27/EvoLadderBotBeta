@@ -295,10 +295,12 @@ class PartyInviteResponseView(AutoDisableView):
         accept_btn: discord.ui.Button[PartyInviteResponseView] = discord.ui.Button(
             label=t("party.button.accept", _locale),
             style=discord.ButtonStyle.green,
+            emoji="✅",
         )
         decline_btn: discord.ui.Button[PartyInviteResponseView] = discord.ui.Button(
             label=t("party.button.decline", _locale),
             style=discord.ButtonStyle.red,
+            emoji="❌",
         )
 
         async def _on_accept(interaction: discord.Interaction) -> None:
