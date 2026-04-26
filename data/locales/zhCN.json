@@ -66,7 +66,7 @@
   "admin_match_embed.replay_uploaded": "✅ 已上传",
   "admin_match_embed.resolved_no": "❌ 否",
   "admin_match_embed.resolved_yes_no_name": "✅ 是\n`{admin_uid}`",
-  "admin_match_embed.resolved_yes_with_name": "✅ 是\n{admin_username} (`{admin_uid}`)",
+  "admin_match_embed.resolved_yes_with_name": "✅ 是\n`{admin_username}` (`{admin_uid}`)",
   "admin_match_embed.title.1": "🔍 管理员比赛 #{match_id} 状态",
   "admin_match_embed_2v2.description.1": "**队伍1** (MMR: {t1_mmr}) vs **队伍2** (MMR: {t2_mmr})",
   "admin_match_embed_2v2.field_name.reports": "📊 原始队伍报告",

@@ -636,7 +636,7 @@ class MatchInfoEmbed1v1(discord.Embed):
         p1_line = (
             f"- {p1_rank_emote} {p1_flag} {p1_race_emote} {p1_name} ({p1_race_name})"
         )
-        p1_line += f"\n  - {discord_label}: {p1_discord_username} ({p1_uid})"
+        p1_line += f"\n  - {discord_label}: `{p1_discord_username}` (`{p1_uid}`)"
         if p1_battletag:
             p1_line += f"\n  - {battletag_label}: `{p1_battletag}`"
         if p1_alts:
@@ -645,7 +645,7 @@ class MatchInfoEmbed1v1(discord.Embed):
         p2_line = (
             f"- {p2_rank_emote} {p2_flag} {p2_race_emote} {p2_name} ({p2_race_name})"
         )
-        p2_line += f"\n  - {discord_label}: {p2_discord_username} ({p2_uid})"
+        p2_line += f"\n  - {discord_label}: `{p2_discord_username}` (`{p2_uid}`)"
         if p2_battletag:
             p2_line += f"\n  - {battletag_label}: `{p2_battletag}`"
         if p2_alts:
@@ -1230,7 +1230,7 @@ class MatchInfoEmbeds2v2(list[discord.Embed]):
             alts = (info.get("alt_player_names") or []) if info else []
 
             line = f"- {flag} {race_emote} {name} ({race_name})"
-            line += f"\n  - {discord_label}: {discord_username} ({uid})"
+            line += f"\n  - {discord_label}: `{discord_username}` (`{uid}`)"
             if battletag:
                 line += f"\n  - {battletag_label}: `{battletag}`"
             if alts:

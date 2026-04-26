@@ -66,7 +66,7 @@
   "admin_match_embed.replay_uploaded": "✅ Uploaded",
   "admin_match_embed.resolved_no": "❌ No",
   "admin_match_embed.resolved_yes_no_name": "✅ Yes\n`{admin_uid}`",
-  "admin_match_embed.resolved_yes_with_name": "✅ Yes\n{admin_username} (`{admin_uid}`)",
+  "admin_match_embed.resolved_yes_with_name": "✅ Yes\n`{admin_username}` (`{admin_uid}`)",
   "admin_match_embed.title.1": "🔍 Admin Match #{match_id} State",
   "admin_match_embed_2v2.description.1": "**Team 1** (MMR: {t1_mmr}) vs **Team 2** (MMR: {t2_mmr})",
   "admin_match_embed_2v2.field_name.reports": "📊 Original Team Reports",

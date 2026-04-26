@@ -66,7 +66,7 @@
   "admin_match_embed.replay_uploaded": "✅ Загружено",
   "admin_match_embed.resolved_no": "❌ Нет",
   "admin_match_embed.resolved_yes_no_name": "✅ Да\n`{admin_uid}`",
-  "admin_match_embed.resolved_yes_with_name": "✅ Да\n{admin_username} (`{admin_uid}`)",
+  "admin_match_embed.resolved_yes_with_name": "✅ Да\n`{admin_username}` (`{admin_uid}`)",
   "admin_match_embed.title.1": "🔍 Состояние матча админа #{match_id}",
   "admin_match_embed_2v2.description.1": "**Команда 1** (MMR: {t1_mmr}) vs **Команда 2** (MMR: {t2_mmr})",
   "admin_match_embed_2v2.field_name.reports": "📊 Отчёты команд",
