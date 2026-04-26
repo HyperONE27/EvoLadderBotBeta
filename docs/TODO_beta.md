@@ -366,11 +366,6 @@ What remains?
     - People often join and then leave in 5 seconds
     - ❌ People can literally see the activity now and we don't seem to have huge improvements
     - ❌ Full information doesn't solve low queue behavior or lack of broader coordination on when to play
-- ❌ Put channel chat history for each match in a nicer-looking embed in /match (plan §5 tabled)
-    - This takes up too many characters towards embed character limits
-    - ⏰ Put it in a JSON file attachment instead, or reorganize the existing section to be more useful/split it out
-- ✅ Announce new SEL Code S/Code A/Code B
-    - ⏰ Done, now create Code A/Code B schedules + signups + signup announcement
 - ✅ Send a one-time DMs message to all bot users about SEL competitions
 - ✅ Party invite accept/decline buttons are missing emotes
 - ✅ Set CHN vs THM to KOR
@@ -388,6 +383,11 @@ What remains?
 
 ❌⏰✅
 
+- ❌ Put channel chat history for each match in a nicer-looking embed in /match (plan §5 tabled)
+    - This takes up too many characters towards embed character limits
+    - ⏰ Put it in a JSON file attachment instead, or reorganize the existing section to be more useful/split it out
+- ✅ Announce new SEL Code S/Code A/Code B
+    - ⏰ Done, now create Code A/Code B schedules + signups + signup announcement
 - ⏰ Add a notice about players disconnecting mid-match?
     - We probably should not be allowing reconnects for ladder matches as we have no  way to enforce fairness in these conditions
     - Explain we are counting disconnects as losses somewhere where we display rules
