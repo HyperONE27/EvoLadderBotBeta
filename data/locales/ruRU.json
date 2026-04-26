@@ -34,6 +34,7 @@
   "activity_stats.window.avg": "средн. {avg}",
   "activity_stats.windows.name": "Пиковые дни и пик за день",
   "activity_status_embed.metric.active_matches": "Активные матчи",
+  "activity_status_embed.metric.last_match": "Последний матч",
   "activity_status_embed.metric.last_queue_join": "Последний вход в очередь",
   "activity_status_embed.metric.matches_last_hour": "Матчи за последний час",
   "activity_status_embed.metric.players_queueing": "Игроков в очереди",

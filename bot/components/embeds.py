@@ -4507,6 +4507,8 @@ class ActivityStatusEmbed(discord.Embed):
         active_match_count_2v2: int,
         last_queue_join_at_1v1: "datetime | None",
         last_queue_join_at_2v2: "datetime | None",
+        last_match_at_1v1: "datetime | None",
+        last_match_at_2v2: "datetime | None",
         queue_joins_last_hour_1v1: int,
         queue_joins_last_hour_2v2: int,
         matches_last_hour_1v1: int,
@@ -4518,7 +4520,7 @@ class ActivityStatusEmbed(discord.Embed):
             color=discord.Color.blurple(),
         )
 
-        def _format_last_join(ts: "datetime | None") -> str:
+        def _format_timestamp(ts: "datetime | None") -> str:
             if ts is None:
                 return t("activity_status_embed.value.no_activity", locale)
             unix = int(ts.timestamp())
@@ -4529,13 +4531,15 @@ class ActivityStatusEmbed(discord.Embed):
             queueing_count: int,
             active_matches: int,
             last_queue_join: "datetime | None",
+            last_match: "datetime | None",
             queue_joins_last_hour: int,
             matches_last_hour: int,
         ) -> str:
             lines = [
                 f"- **{queueing_label}:** {queueing_count}",
                 f"- **{t('activity_status_embed.metric.active_matches', locale)}:** {active_matches}",
-                f"- **{t('activity_status_embed.metric.last_queue_join', locale)}:** {_format_last_join(last_queue_join)}",
+                f"- **{t('activity_status_embed.metric.last_queue_join', locale)}:** {_format_timestamp(last_queue_join)}",
+                f"- **{t('activity_status_embed.metric.last_match', locale)}:** {_format_timestamp(last_match)}",
                 f"- **{t('activity_status_embed.metric.queue_joins_last_hour', locale)}:** {queue_joins_last_hour}",
                 f"- **{t('activity_status_embed.metric.matches_last_hour', locale)}:** {matches_last_hour}",
             ]
@@ -4548,6 +4552,7 @@ class ActivityStatusEmbed(discord.Embed):
                 queue_1v1_count,
                 active_match_count_1v1,
                 last_queue_join_at_1v1,
+                last_match_at_1v1,
                 queue_joins_last_hour_1v1,
                 matches_last_hour_1v1,
             ),
@@ -4560,6 +4565,7 @@ class ActivityStatusEmbed(discord.Embed):
                 queue_2v2_count,
                 active_match_count_2v2,
                 last_queue_join_at_2v2,
+                last_match_at_2v2,
                 queue_joins_last_hour_2v2,
                 matches_last_hour_2v2,
             ),

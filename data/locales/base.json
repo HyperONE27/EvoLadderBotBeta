@@ -34,6 +34,7 @@
   "activity_stats.window.avg": "",
   "activity_stats.windows.name": "",
   "activity_status_embed.metric.active_matches": "",
+  "activity_status_embed.metric.last_match": "",
   "activity_status_embed.metric.last_queue_join": "",
   "activity_status_embed.metric.matches_last_hour": "",
   "activity_status_embed.metric.players_queueing": "",

@@ -35,7 +35,7 @@ from backend.orchestrator.queue_notify import compute_queue_activity_targets
 from backend.orchestrator.reader import StateReader
 from backend.orchestrator.state import StateManager
 from backend.orchestrator.transitions import TransitionManager
-from common.datetime_helpers import utc_now
+from common.datetime_helpers import ensure_utc, utc_now
 
 
 class Orchestrator:
@@ -320,6 +320,15 @@ class Orchestrator:
         matches_last_hour_1v1 = _recent_matches(self._state_manager.matches_1v1_df)
         matches_last_hour_2v2 = _recent_matches(self._state_manager.matches_2v2_df)
 
+        def _last_match_at(df: pl.DataFrame) -> datetime | None:
+            if df.is_empty():
+                return None
+            ts = df.select(pl.col("assigned_at").max()).item()
+            return ensure_utc(ts)
+
+        last_match_at_1v1 = _last_match_at(self._state_manager.matches_1v1_df)
+        last_match_at_2v2 = _last_match_at(self._state_manager.matches_2v2_df)
+
         queue_joins_last_hour_1v1 = len(
             self.fetch_deduped_queue_joins(one_hour_ago, now, "1v1")
         )
@@ -334,6 +343,8 @@ class Orchestrator:
             "active_match_count_2v2": len(active_2v2),
             "last_queue_join_at_1v1": last_queue_join_at_1v1,
             "last_queue_join_at_2v2": last_queue_join_at_2v2,
+            "last_match_at_1v1": last_match_at_1v1,
+            "last_match_at_2v2": last_match_at_2v2,
             "queue_joins_last_hour_1v1": queue_joins_last_hour_1v1,
             "queue_joins_last_hour_2v2": queue_joins_last_hour_2v2,
             "matches_last_hour_1v1": matches_last_hour_1v1,

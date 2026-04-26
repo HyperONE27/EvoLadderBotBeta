@@ -846,6 +846,8 @@ class ActivityStatsResponse(BaseModel):
     active_match_count_2v2: int
     last_queue_join_at_1v1: datetime | None = None
     last_queue_join_at_2v2: datetime | None = None
+    last_match_at_1v1: datetime | None = None
+    last_match_at_2v2: datetime | None = None
     queue_joins_last_hour_1v1: int
     queue_joins_last_hour_2v2: int
     matches_last_hour_1v1: int

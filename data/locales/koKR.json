@@ -34,6 +34,7 @@
   "activity_stats.window.avg": "평균 {avg}",
   "activity_stats.windows.name": "최고 활동일 및 시간대",
   "activity_status_embed.metric.active_matches": "진행 중인 경기",
+  "activity_status_embed.metric.last_match": "마지막 경기",
   "activity_status_embed.metric.last_queue_join": "마지막 큐 참여",
   "activity_status_embed.metric.matches_last_hour": "최근 1시간 경기",
   "activity_status_embed.metric.players_queueing": "큐 대기 중인 플레이어",

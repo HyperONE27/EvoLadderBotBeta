@@ -34,6 +34,7 @@
   "activity_stats.window.avg": "avg {avg}",
   "activity_stats.windows.name": "Peak Days and Peak Per Day",
   "activity_status_embed.metric.active_matches": "Active Matches",
+  "activity_status_embed.metric.last_match": "Last Match",
   "activity_status_embed.metric.last_queue_join": "Last Queue Join",
   "activity_status_embed.metric.matches_last_hour": "Matches in the Last Hour",
   "activity_status_embed.metric.players_queueing": "Players Queueing",

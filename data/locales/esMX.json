@@ -34,6 +34,7 @@
   "activity_stats.window.avg": "promedio {avg}",
   "activity_stats.windows.name": "Días Pico y Pico por Día",
   "activity_status_embed.metric.active_matches": "Partidas activas",
+  "activity_status_embed.metric.last_match": "Última partida",
   "activity_status_embed.metric.last_queue_join": "Última entrada a la cola",
   "activity_status_embed.metric.matches_last_hour": "Partidas en la última hora",
   "activity_status_embed.metric.players_queueing": "Jugadores en cola",

@@ -34,6 +34,7 @@
   "activity_stats.window.avg": "平均值 {avg}",
   "activity_stats.windows.name": "高峰日期及每日高峰",
   "activity_status_embed.metric.active_matches": "进行中的对局",
+  "activity_status_embed.metric.last_match": "最近一场对局",
   "activity_status_embed.metric.last_queue_join": "最近加入队列",
   "activity_status_embed.metric.matches_last_hour": "近一小时对局数",
   "activity_status_embed.metric.players_queueing": "排队中的玩家",

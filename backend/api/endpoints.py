@@ -1041,6 +1041,8 @@ async def activity_stats(
         active_match_count_2v2=stats["active_match_count_2v2"],
         last_queue_join_at_1v1=stats["last_queue_join_at_1v1"],
         last_queue_join_at_2v2=stats["last_queue_join_at_2v2"],
+        last_match_at_1v1=stats["last_match_at_1v1"],
+        last_match_at_2v2=stats["last_match_at_2v2"],
         queue_joins_last_hour_1v1=stats["queue_joins_last_hour_1v1"],
         queue_joins_last_hour_2v2=stats["queue_joins_last_hour_2v2"],
         matches_last_hour_1v1=stats["matches_last_hour_1v1"],
