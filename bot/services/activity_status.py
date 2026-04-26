@@ -426,6 +426,13 @@ _LOG_KEY_BY_KIND: dict[str, str] = {
     "match_completed": "activity_log.match_completed",
 }
 
+_LOG_COLOR_BY_KIND: dict[str, discord.Color] = {
+    "queue_join": discord.Color.green(),
+    "queue_leave": discord.Color.red(),
+    "match_created": discord.Color.blurple(),
+    "match_completed": discord.Color.gold(),
+}
+
 _FLAVOR_SUFFIX = {"bw", "sc2", "both"}
 
 
@@ -491,7 +498,7 @@ async def on_activity_log(client: discord.Client, data: dict[str, Any]) -> None:
     body = t(key, "enUS", **format_kwargs)
     embed = discord.Embed(
         description=f"<t:{ts}> (<t:{ts}:R>)\n{body}",
-        color=discord.Color.blurple(),
+        color=_LOG_COLOR_BY_KIND.get(kind, discord.Color.blurple()),
     )
     apply_default_embed_footer(embed, locale="enUS")
     try:
