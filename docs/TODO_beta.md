@@ -349,12 +349,14 @@ What remains?
     - ⏰ Add a summary of the last 7 days of activity
     - ✅ When someone leaves the queue, include in the message how long they had waited
 
-## 2026-04-25
+## 2026-04-26
+
+❌⏰✅
 
 - ⏰ Add a notice about players disconnecting mid-match?
     - We probably should not be allowing reconnects for ladder matches as we have no  way to enforce fairness in these conditions
     - Explain we are counting disconnects as losses somewhere where we display rules
-- ⏰ Migrate wave-based matchmaking approach to a non-wave-based algorithm/faster wave-based algorithm with no matching obligations per wave so we don't get synchronization issues causing players to match up into the same opponents over and over again
+- ❌ Migrate wave-based matchmaking approach to a non-wave-based algorithm/faster wave-based algorithm with no matching obligations per wave so we don't get synchronization issues causing players to match up into the same opponents over and over again
     - For this to happen, we need:
         - A persistent record of recent matches
         - Updated fitness scoring criteria for any given match
@@ -362,13 +364,19 @@ What remains?
         - A poor implementation might cause players to have to wait 5-6 minutes to play vs each other when they're the only ones online anyway
         - However we also want to prefer new matchups when they are available
         - We have to balance this against potential MMR differences, for example, if a new guy shows up when two people are in a long streak of games vs each other, but they're a bit far off from the MMR, how much is too much?
-- ⏰ Players often join, see nobody, and immediately leave despite the new notifications system, so it may not be doing as much to solve desyncs as I thought if I don't log people joining/leaving and display it in a more OBVIOUSLY VISIBLE/public manner
+    - The matchmaking algorithm could use improvement and/or match-first-then-filter like the 2v2 approach rather than filter-first-then-match but we are tabling this for now
+- ❌ Players often join, see nobody, and immediately leave despite the new notifications system, so it may not be doing as much to solve desyncs as I thought if I don't log people joining/leaving and display it in a more OBVIOUSLY VISIBLE/public manner
     - People often join and then leave in 5 seconds
+    - ❌ People can literally see the activity now and we don't seem to have huge improvements
+    - ❌ Full information doesn't solve low queue behavior or lack of broader coordination on when to play
 - ⏰ Add time zones and quiet hours selection to `/setup`/ and `/notifications` (plan §4 deferred)
 - ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
-- ⏰ Put channel chat history for each match in a nicer-looking embed in /match (plan §5 tabled)
-- ⏰ Announce new SEL Code S/Code A/Code B
-- ⏰ Send a one-time DMs message to all bot users about SEL competitions
+- ❌ Put channel chat history for each match in a nicer-looking embed in /match (plan §5 tabled)
+    - This takes up too many characters towards embed character limits
+    - ⏰ Put it in a JSON file attachment instead, or reorganize the existing section to be more useful/split it out
+- ✅ Announce new SEL Code S/Code A/Code B
+    - ⏰ Done, now create Code A/Code B schedules + signups + signup announcement
+- ✅ Send a one-time DMs message to all bot users about SEL competitions
 - ⏰ Add retry logic for match resolution for Cloudflare Error 500 outages
     - Add `_retry_db(fn, *, max_retries=2, delay=0.5)` in `backend/database/database.py`
     - Catches `postgrest.exceptions.APIError` (5xx codes) and `httpx.TransportError`/`httpx.TimeoutException`
@@ -380,7 +388,9 @@ What remains?
     - Does NOT change the cache-before-DB ordering in `_apply_match_resolution` — that is intentional for `count_game_stats` correctness; the retry wrapper protects against transient failures without restructuring
 - ⏰ Party invite accept/decline buttons are missing emotes
 - ⏰ Set CHN vs THM to KOR
-- ⏰ Set opinionated default settings for notifications?
+- ⏰ Set opinionated default settings for notifications
+    - ⏰ Loud verbal recommendation to set some kind of timer
+    - ⏰ Bundle this change with the timezone addition so people have finer control
 - ⏰ Fix people getting paired on the same races/maps over and over? Especially races, add a little randomness into the matchmaker by matching first then filtering matchup instead of the other way around
 - ⏰ 2v2 leaderboard doesn't update before 2v2 result is resolved
 - ⏰ 2v2 races doesn't resolve correctly, says the races are wrong even though they are right, just because the teams are in the wrong order
@@ -391,7 +401,20 @@ What remains?
 - ⏰ move notice about downloading data to bottom of "How to Play Your Match"
 - ⏰ display discord username and uid as backtick escaped strings
 - ⏰ Color code #ladder-activity-log embed types
-- ⏰ 
+    - ⏰ queue joins green
+    - ⏰ queue leaves red
+    - ⏰ match finds blurple
+    - ⏰ match completions gold
+- ⏰ Investigate "clumpiness" in assigned map patterns for matches
+    - People keep getting Golden Wall?
+- ⏰ Set up survey for inactive players (keep it short and simple?)
+    - 1. "What's one thing about the bot we could improve that would make you play one game a week?"
+        - "I don't know when to find players"
+        - "The setup is too complicated"
+        - "The instructions are too confusing"
+        - "Setting up lobbies is too complicated / I don't like the manual lobby setup"
+        - "My language isn't supported"
+        - "Something else"
 
 ```
 Here is a draft plan to refine:
