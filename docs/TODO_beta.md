@@ -386,8 +386,8 @@ What remains?
         - `finalise_match_2v2`, `batch_update_mmrs_2v2`, `admin_resolve_match_2v2`
     - All 6 are idempotent (UPDATE WHERE id=X / UPSERT with on_conflict), safe to retry
     - Does NOT change the cache-before-DB ordering in `_apply_match_resolution` — that is intentional for `count_game_stats` correctness; the retry wrapper protects against transient failures without restructuring
-- ⏰ Party invite accept/decline buttons are missing emotes
-- ⏰ Set CHN vs THM to KOR
+- ✅ Party invite accept/decline buttons are missing emotes
+- ✅ Set CHN vs THM to KOR
 - ⏰ Set opinionated default settings for notifications
     - ⏰ Loud verbal recommendation to set some kind of timer
     - ⏰ Bundle this change with the timezone addition so people have finer control
@@ -395,25 +395,26 @@ What remains?
 - ⏰ 2v2 leaderboard doesn't update before 2v2 result is resolved
 - ⏰ 2v2 races doesn't resolve correctly, says the races are wrong even though they are right, just because the teams are in the wrong order
 - ⏰ heartbeat embed/view update and cancel queue embed/view update can race
-- ⏰ add "last match" under "last queue attempt" in queue activity stats channel
+- ✅ add "last match" under "last queue attempt" in queue activity stats channel
 - ⏰ prohibit queueing if "country" is set to "Other" and send a notice asking the user to set their country using `/setcountry` if they could not find it in `/setup`
-- ⏰ add numbers to "How to Report Your Result"
-- ⏰ move notice about downloading data to bottom of "How to Play Your Match"
-- ⏰ display discord username and uid as backtick escaped strings
-- ⏰ Color code #ladder-activity-log embed types
-    - ⏰ queue joins green
-    - ⏰ queue leaves red
-    - ⏰ match finds blurple
-    - ⏰ match completions gold
+- ✅ add numbers to "How to Report Your Result"
+- ✅ move notice about downloading data to bottom of "How to Play Your Match"
+- ✅ display discord username and uid as backtick escaped strings
+- ✅ Color code #ladder-activity-log embed types
+    - ✅ queue joins green
+    - ✅ queue leaves red
+    - ✅ match finds blurple
+    - ✅ match completions gold
 - ⏰ Investigate "clumpiness" in assigned map patterns for matches
     - People keep getting Golden Wall?
 - ⏰ Set up survey for inactive players (keep it short and simple?)
     - 1. "What's one thing about the bot we could improve that would make you play one game a week?"
         - "I don't know when to find players"
+        - "There aren't enough players around my skill level"
         - "The setup is too complicated"
         - "The instructions are too confusing"
         - "Setting up lobbies is too complicated / I don't like the manual lobby setup"
-        - "My language isn't supported"
+        - "My preferred language isn't supported"
         - "Something else"
 
 ```
