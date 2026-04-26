@@ -353,9 +353,6 @@ What remains?
 
 ❌⏰✅
 
-- ⏰ Add a notice about players disconnecting mid-match?
-    - We probably should not be allowing reconnects for ladder matches as we have no  way to enforce fairness in these conditions
-    - Explain we are counting disconnects as losses somewhere where we display rules
 - ❌ Migrate wave-based matchmaking approach to a non-wave-based algorithm/faster wave-based algorithm with no matching obligations per wave so we don't get synchronization issues causing players to match up into the same opponents over and over again
     - For this to happen, we need:
         - A persistent record of recent matches
@@ -369,14 +366,33 @@ What remains?
     - People often join and then leave in 5 seconds
     - ❌ People can literally see the activity now and we don't seem to have huge improvements
     - ❌ Full information doesn't solve low queue behavior or lack of broader coordination on when to play
-- ⏰ Add time zones and quiet hours selection to `/setup`/ and `/notifications` (plan §4 deferred)
-- ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
 - ❌ Put channel chat history for each match in a nicer-looking embed in /match (plan §5 tabled)
     - This takes up too many characters towards embed character limits
     - ⏰ Put it in a JSON file attachment instead, or reorganize the existing section to be more useful/split it out
 - ✅ Announce new SEL Code S/Code A/Code B
     - ⏰ Done, now create Code A/Code B schedules + signups + signup announcement
 - ✅ Send a one-time DMs message to all bot users about SEL competitions
+- ✅ Party invite accept/decline buttons are missing emotes
+- ✅ Set CHN vs THM to KOR
+- ✅ add "last match" under "last queue attempt" in queue activity stats channel
+- ✅ add numbers to "How to Report Your Result"
+- ✅ move notice about downloading data to bottom of "How to Play Your Match"
+- ✅ display discord username and uid as backtick escaped strings
+- ✅ Color code #ladder-activity-log embed types
+    - ✅ queue joins green
+    - ✅ queue leaves red
+    - ✅ match finds blurple
+    - ✅ match completions gold
+
+## 2026-04-28
+
+❌⏰✅
+
+- ⏰ Add a notice about players disconnecting mid-match?
+    - We probably should not be allowing reconnects for ladder matches as we have no  way to enforce fairness in these conditions
+    - Explain we are counting disconnects as losses somewhere where we display rules
+- ⏰ Add time zones and quiet hours selection to `/setup`/ and `/notifications` (plan §4 deferred)
+- ⏰ Add a prompt reminding users who haven't set up their time zone and quiet hours to do so
 - ⏰ Add retry logic for match resolution for Cloudflare Error 500 outages
     - Add `_retry_db(fn, *, max_retries=2, delay=0.5)` in `backend/database/database.py`
     - Catches `postgrest.exceptions.APIError` (5xx codes) and `httpx.TransportError`/`httpx.TimeoutException`
@@ -386,8 +402,6 @@ What remains?
         - `finalise_match_2v2`, `batch_update_mmrs_2v2`, `admin_resolve_match_2v2`
     - All 6 are idempotent (UPDATE WHERE id=X / UPSERT with on_conflict), safe to retry
     - Does NOT change the cache-before-DB ordering in `_apply_match_resolution` — that is intentional for `count_game_stats` correctness; the retry wrapper protects against transient failures without restructuring
-- ✅ Party invite accept/decline buttons are missing emotes
-- ✅ Set CHN vs THM to KOR
 - ⏰ Set opinionated default settings for notifications
     - ⏰ Loud verbal recommendation to set some kind of timer
     - ⏰ Bundle this change with the timezone addition so people have finer control
@@ -395,16 +409,7 @@ What remains?
 - ⏰ 2v2 leaderboard doesn't update before 2v2 result is resolved
 - ⏰ 2v2 races doesn't resolve correctly, says the races are wrong even though they are right, just because the teams are in the wrong order
 - ⏰ heartbeat embed/view update and cancel queue embed/view update can race
-- ✅ add "last match" under "last queue attempt" in queue activity stats channel
 - ⏰ prohibit queueing if "country" is set to "Other" and send a notice asking the user to set their country using `/setcountry` if they could not find it in `/setup`
-- ✅ add numbers to "How to Report Your Result"
-- ✅ move notice about downloading data to bottom of "How to Play Your Match"
-- ✅ display discord username and uid as backtick escaped strings
-- ✅ Color code #ladder-activity-log embed types
-    - ✅ queue joins green
-    - ✅ queue leaves red
-    - ✅ match finds blurple
-    - ✅ match completions gold
 - ⏰ Investigate "clumpiness" in assigned map patterns for matches
     - People keep getting Golden Wall?
 - ⏰ Set up survey for inactive players (keep it short and simple?)
