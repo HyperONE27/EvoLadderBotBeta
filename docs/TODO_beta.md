@@ -421,6 +421,11 @@ What remains?
         - "Setting up lobbies is too complicated / I don't like the manual lobby setup"
         - "My preferred language isn't supported"
         - "Something else"
+- ⏰ People evidently do not all know about the following features, so remind them!
+    - Notifications (implement after time zones)
+    - The activity logs/stats channel
+    - `/referral` command
+    - Upcoming tournaments
 
 ```
 Here is a draft plan to refine:
