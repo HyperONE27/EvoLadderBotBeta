@@ -412,6 +412,7 @@ What remains?
 - ⏰ prohibit queueing if "country" is set to "Other" and send a notice asking the user to set their country using `/setcountry` if they could not find it in `/setup`
 - ⏰ Investigate "clumpiness" in assigned map patterns for matches
     - People keep getting Golden Wall?
+- ⏰ `/queue` embed+view lifecycle are messed up, zombie QueueSetup/QueueSearchingEmbed/View keep resurrecting
 - ⏰ Set up survey for inactive players (keep it short and simple?)
     - 1. "What's one thing about the bot we could improve that would make you play one game a week?"
         - "I don't know when to find players"
