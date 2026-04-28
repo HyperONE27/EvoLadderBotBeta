@@ -152,7 +152,7 @@ WRAITH_TRANSPARENT_IMAGE_LINK: str = (
     "wraith-transparent.png?ex=69c85ccb&is=69c70b4b&hm=06a49c0c8ea21c513de6f747f585374155a45226c1f4e2b3e4e03ee0fe482297"
 )
 
-DISCORD_MESSAGE_RATE_LIMIT: int = 40
+DISCORD_MESSAGE_RATE_LIMIT: int = 30
 
 # Role assignment queue — PUT /guilds/{id}/members/{id}/roles/{id} is 10/10s per guild.
 # Stay conservative at 1 req/s.
