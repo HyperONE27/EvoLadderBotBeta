@@ -433,6 +433,13 @@ What remains?
     - Some other stuff
     - To the veteran: "Please give your opponent a few extra minutes to get settled in"
     - To the new player: Give them what they need to know right away, such as joining the correct server and channel
+- ⏰ Add more features to replays dashboard
+    - Include the winner hidden under a spoiler
+    - Add more filters:
+        - Player names?
+        - Nationalities
+        - Rating?
+    - Clean up the appearance
 
 ```
 Here is a draft plan to refine:
