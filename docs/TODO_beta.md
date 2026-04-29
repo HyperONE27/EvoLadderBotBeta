@@ -427,6 +427,7 @@ What remains?
     - The activity logs/stats channel
     - `/referral` command
     - Upcoming tournaments
+<<<<<<< Updated upstream
 - ⏰ Send an additional message in the match channel if one or both players are new (first 3 games played)
     - "Hey, {name} is new! 
     - "Please take a moment to read the instructions"
@@ -440,6 +441,14 @@ What remains?
         - Nationalities
         - Rating?
     - Clean up the appearance
+=======
+- ⏰ Redo the matchmaker to an explicitly score-based approach factoring in:
+    - MMR difference between players
+    - Server/ping suitability
+    - 
+- ⏰ Along with above rework: allow queueing with several races and/or random
+    - In addition: implement the attempt-match-first-then-filter approach to matching to allow more diverse matchup assignment
+>>>>>>> Stashed changes
 
 ```
 Here is a draft plan to refine:
