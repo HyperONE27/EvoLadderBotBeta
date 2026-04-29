@@ -427,6 +427,12 @@ What remains?
     - The activity logs/stats channel
     - `/referral` command
     - Upcoming tournaments
+- ⏰ Send an additional message in the match channel if one or both players are new (first 3 games played)
+    - "Hey, {name} is new! 
+    - "Please take a moment to read the instructions"
+    - Some other stuff
+    - To the veteran: "Please give your opponent a few extra minutes to get settled in"
+    - To the new player: Give them what they need to know right away, such as joining the correct server and channel
 
 ```
 Here is a draft plan to refine:
