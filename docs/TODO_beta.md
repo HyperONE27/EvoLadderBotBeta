@@ -349,7 +349,7 @@ What remains?
     - ⏰ Add a summary of the last 7 days of activity
     - ✅ When someone leaves the queue, include in the message how long they had waited
 
-## 2026-04-26
+## 2026-05-01
 
 ❌⏰✅
 
@@ -427,7 +427,6 @@ What remains?
     - The activity logs/stats channel
     - `/referral` command
     - Upcoming tournaments
-<<<<<<< Updated upstream
 - ⏰ Send an additional message in the match channel if one or both players are new (first 3 games played)
     - "Hey, {name} is new! 
     - "Please take a moment to read the instructions"
@@ -441,14 +440,24 @@ What remains?
         - Nationalities
         - Rating?
     - Clean up the appearance
-=======
+- ⏰ Add a weekly activity analysis and send out a global announcement
+    - Include peak active hours in the week for Asia-Pacific, Europe, and Americas players
+    - This will help players know when to queue next week for best results
 - ⏰ Redo the matchmaker to an explicitly score-based approach factoring in:
     - MMR difference between players
     - Server/ping suitability
-    - 
-- ⏰ Along with above rework: allow queueing with several races and/or random
+    - Blocked servers (new feature, see below)
+- ⏰ Along with above rework: allow queueing with several races
     - In addition: implement the attempt-match-first-then-filter approach to matching to allow more diverse matchup assignment
->>>>>>> Stashed changes
+- ⏰ Enable server blocking
+    - New command: `/servers`
+    - Embed and view with a dropdown listing all the servers that the player can be matched to, based on their location
+        - Players will have full discretion to block any servers they wish but they may not received matches
+        - Under certain circumstances, blocks may not be allowed/enforced
+            - e.g. high-MMR players
+        - Players will not be able to block their "home" server
+            - We will need to designate a home server for each region
+    - Upon switching location in `/setup`, `/servers` should be wiped and players will need to select these again
 
 ```
 Here is a draft plan to refine:
