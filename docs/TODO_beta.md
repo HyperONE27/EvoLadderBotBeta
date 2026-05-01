@@ -460,6 +460,9 @@ What remains?
     - Upon switching location in `/setup`, `/servers` should be wiped and players will need to select these again
 - ⏰ Make acceptable pairing windows for MMR in the matchmaker wider
     - Nobody wants to wait more than 5 minutes to get a match
+    - However, also make pairing windows growly more slowly initially, delay wide window pairing until 4-5 minutes
+        - 100/125/150/200/all?
+- ⏰ When resolving a match, pull the player/team names from the backend as arguments so the admin knows what they're selecting in the options list, instead of "Player 1 / Team 1", etc.
 
 ```
 Here is a draft plan to refine:
