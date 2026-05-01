@@ -458,6 +458,8 @@ What remains?
         - Players will not be able to block their "home" server
             - We will need to designate a home server for each region
     - Upon switching location in `/setup`, `/servers` should be wiped and players will need to select these again
+- ⏰ Make acceptable pairing windows for MMR in the matchmaker wider
+    - Nobody wants to wait more than 5 minutes to get a match
 
 ```
 Here is a draft plan to refine:
