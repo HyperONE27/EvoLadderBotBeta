@@ -464,7 +464,8 @@ What remains?
         - 100/100/150/200/all?
 - ⏰ When resolving a match, pull the player/team names from the backend as arguments so the admin knows what they're selecting in the options list, instead of "Player 1 / Team 1", etc.
 - ⏰ When someone queues for the first time, before showing QueueSetupEmbed, display an embed explaining that matches are not automatically created in-game and that players need to create lobbies on their own, and require acknowledging these terms before proceeding
-    - ⏰ Include tips like not leaving the queue too early because MMR window collapses 
+    - ⏰ Include tips like not leaving the queue too early because MMR window collapses
+- ⏰ Invietsgate channel not being created for 1v1 Match #3546 at around 10:40 AM PDT, 2026-05-05
 
 ```
 Here is a draft plan to refine:
