@@ -465,6 +465,8 @@ What remains?
 - ⏰ When resolving a match, pull the player/team names from the backend as arguments so the admin knows what they're selecting in the options list, instead of "Player 1 / Team 1", etc.
 - ⏰ When someone queues for the first time, before showing QueueSetupEmbed, display an embed explaining that matches are not automatically created in-game and that players need to create lobbies on their own, and require acknowledging these terms before proceeding
     - ⏰ Include tips like not leaving the queue too early because MMR window collapses
+- ⏰ Add per-player MMR plots over time
+- ⏰ Add head-to-head winrate viewer
 
 ```
 Here is a draft plan to refine:
