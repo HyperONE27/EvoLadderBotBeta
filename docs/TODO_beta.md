@@ -467,6 +467,7 @@ What remains?
     - ⏰ Include tips like not leaving the queue too early because MMR window collapses
 - ⏰ Add per-player MMR plots over time
 - ⏰ Add head-to-head winrate viewer
+- ⏰ Need a way to centralize player reports of opponents being rude, slow, etc. and uploading evidence/screenshots
 
 ```
 Here is a draft plan to refine:
