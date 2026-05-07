@@ -164,6 +164,11 @@ REPLAY_TIMESTAMP_WINDOW_MINUTES: int = 60
 # ENABLE_REPLAY_VALIDATION             → common/config.py
 # ALLOW_AI_PLAYERS                     → common/config.py
 
+# Whether to verify the replay's cache_handles against the known
+# SC: Evo Complete mod handle sets. Disable temporarily when handle
+# lists are out of date and producing false negatives.
+ENABLE_REPLAY_MOD_CHECK: bool = False
+
 # ---------------------
 # URLs
 # ---------------------

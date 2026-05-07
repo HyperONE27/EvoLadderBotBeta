@@ -7,6 +7,7 @@ from typing import Any
 
 from backend.core.config import (
     ALLOW_AI_PLAYERS,
+    ENABLE_REPLAY_MOD_CHECK,
     EXPECTED_LOBBY_SETTINGS,
     REPLAY_TIMESTAMP_WINDOW_MINUTES,
 )
@@ -243,6 +244,12 @@ def _is_ai_player(name: str) -> bool:
 
 
 def _verify_mod(cache_handles: list[str], mods: dict[str, Any]) -> dict[str, Any]:
+    if not ENABLE_REPLAY_MOD_CHECK:
+        return {
+            "success": True,
+            "message": "Mod check temporarily disabled.",
+        }
+
     multi = mods.get("multi")
     if not multi:
         return {

@@ -6,6 +6,9 @@ stateless internal helpers that carry the most branching logic.
 
 from datetime import datetime, timezone, timedelta
 
+import pytest
+
+from backend.algorithms import replay_verifier
 from backend.algorithms.replay_verifier import (
     _is_ai_player,
     _verify_mod,
@@ -59,6 +62,10 @@ MODS_WITH_HANDLES: dict = {
 
 
 class TestVerifyMod:
+    @pytest.fixture(autouse=True)
+    def _enable_mod_check(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(replay_verifier, "ENABLE_REPLAY_MOD_CHECK", True)
+
     def test_matching_handle_passes(self) -> None:
         result = _verify_mod(["handle_am_1", "some_other_handle"], MODS_WITH_HANDLES)
         assert result["success"] is True
