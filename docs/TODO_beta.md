@@ -469,6 +469,7 @@ What remains?
 - ⏰ Add head-to-head winrate viewer
 - ⏰ Need a way to centralize player reports of opponents being rude, slow, etc. and uploading evidence/screenshots
 - ⏰ Match "Timestamp Valid" in ReplayDetailsEmbed incorrectly measures the time between match assignment and end of replay rather than match assignment and start of replay 
+- ⏰ Collapse `/snapshot` embeds: either paginate, or display fewer and wider player rows to accommodate ability to queue with up to 6 races
 
 ```
 Here is a draft plan to refine:
