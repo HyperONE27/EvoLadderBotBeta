@@ -379,7 +379,7 @@ What remains?
     - ✅ match finds blurple
     - ✅ match completions gold
 
-## 2026-04-28
+## 2026-05-27
 
 ❌⏰✅
 
@@ -472,6 +472,7 @@ What remains?
 - ⏰ Collapse `/snapshot` embeds: either paginate, or display fewer and wider player rows to accommodate ability to queue with up to 6 races
 - ⏰ Add ban_reason column to `players` table
 - ⏰ Add ban and ban reason logging to `events` table
+- ⏰ Condense the presentation of information in MatchInfoEmbed, it still shows too much crap
 
 ```
 Here is a draft plan to refine:
