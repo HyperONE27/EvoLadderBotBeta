@@ -473,6 +473,7 @@ What remains?
 - ⏰ Add ban_reason column to `players` table
 - ⏰ Add ban and ban reason logging to `events` table
 - ⏰ Condense the presentation of information in MatchInfoEmbed, it still shows too much crap
+- ⏰ Auto-collapse the lobby setup guide after the first game
 
 ```
 Here is a draft plan to refine:
