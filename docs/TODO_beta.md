@@ -473,7 +473,11 @@ What remains?
 - ⏰ Add ban_reason column to `players` table
 - ⏰ Add ban and ban reason logging to `events` table
 - ⏰ Condense the presentation of information in MatchInfoEmbed, it still shows too much crap
+    - ⏰ Combined name and BattleTag
+    - ⏰ Abridge match information
+    - ⏰ `(Map)`, by `(author)` syntax is fine
 - ⏰ Auto-collapse the lobby setup guide after the first game
+    - ⏰ Edit the text so it is easier to know what the expand button does
 
 ```
 Here is a draft plan to refine:
