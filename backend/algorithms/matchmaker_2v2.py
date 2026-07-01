@@ -17,7 +17,7 @@ Inspired by Dota 2 / LoL role-queue: find the match first, resolve
 composition afterward.
 
 Step 1 — Build an n×n cost matrix over all teams:
-    cost[i][j] = mmr_diff² − 2^wait_factor × WAIT_PRIORITY_COEFFICIENT
+    cost[i][j] = max(0, mmr_diff − wait_factor × SLACK_PER_CYCLE)²
                  if teams i and j are compatible and within each other's
                  MMR window; _SENTINEL otherwise.
     cost[i][i] = _SENTINEL (no self-match).
@@ -47,23 +47,13 @@ import random
 from copy import deepcopy
 
 from backend.core.config import (
-    BASE_MMR_WINDOW,
-    MMR_WINDOW_GROWTH_PER_CYCLE,
-    WAIT_PRIORITY_COEFFICIENT,
+    SLACK_PER_CYCLE,
+    max_mmr_diff as _max_mmr_diff,
 )
 from backend.domain_types.ephemeral import MatchCandidate2v2, QueueEntry2v2
 
 # Sentinel cost for incompatible / out-of-window / diagonal cells.
 _SENTINEL: float = 1e18
-
-
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
-
-
-def _max_mmr_diff(wait_cycles: int) -> int:
-    return BASE_MMR_WINDOW + wait_cycles * MMR_WINDOW_GROWTH_PER_CYCLE
 
 
 def _has_bw(entry: QueueEntry2v2) -> bool:
@@ -121,8 +111,11 @@ def _build_cost_matrix(teams: list[QueueEntry2v2]) -> list[list[float]]:
             b_window = _max_mmr_diff(b["wait_cycles"])
             if diff > a_window and diff > b_window:
                 continue
+            # Anti-starvation: each wait cycle forgives SLACK_PER_CYCLE MMR of
+            # apparent distance. SLACK_PER_CYCLE == 0 ⇒ pure MMR.
             wait_factor = max(a["wait_cycles"], b["wait_cycles"])
-            score = (diff**2) - ((2**wait_factor) * WAIT_PRIORITY_COEFFICIENT)
+            effective_diff = max(0, diff - wait_factor * SLACK_PER_CYCLE)
+            score = float(effective_diff**2)
             cost[i][j] = score
             cost[j][i] = score  # keep symmetric
 
@@ -337,9 +330,10 @@ def run_matchmaking_wave_2v2(
             e["wait_cycles"] = e["wait_cycles"] + 1
         return early_remaining, []
 
+    # wait_cycles is NOT incremented before the wave: an entry's wait_cycles
+    # equals its number of previous attempts, so a first-timer matches on the
+    # base window. Only the unmatched remainder is incremented at the end.
     entries: list[QueueEntry2v2] = deepcopy(queue)
-    for e in entries:
-        e["wait_cycles"] = e["wait_cycles"] + 1
 
     n = len(entries)
     cost = _build_cost_matrix(entries)
@@ -371,4 +365,7 @@ def run_matchmaking_wave_2v2(
     remaining: list[QueueEntry2v2] = [
         e for e in entries if e["discord_uid"] not in matched_uids
     ]
+    # This wave counts as an attempt for every team that wasn't matched.
+    for e in remaining:
+        e["wait_cycles"] = e["wait_cycles"] + 1
     return remaining, match_candidates

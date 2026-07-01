@@ -8,10 +8,7 @@ from copy import deepcopy
 from datetime import datetime, timezone
 
 from backend.algorithms.matchmaker import run_matchmaking_wave
-from backend.core.config import (
-    BASE_MMR_WINDOW,
-    MMR_WINDOW_GROWTH_PER_CYCLE,
-)
+from backend.core.config import MMR_WINDOW_SCHEDULE, max_mmr_diff
 from backend.domain_types.ephemeral import QueueEntry1v1
 
 _NOW = datetime.now(tz=timezone.utc)
@@ -109,7 +106,7 @@ def test_wave_mmr_window_respected() -> None:
     assert len(matches) == 2
     for m in matches:
         diff = abs(m["player_1_mmr"] - m["player_2_mmr"])
-        assert diff <= BASE_MMR_WINDOW
+        assert diff <= MMR_WINDOW_SCHEDULE[0]
 
 
 def test_wave_excludes_out_of_window() -> None:
@@ -317,20 +314,44 @@ def test_wave_unknown_location_not_blocked() -> None:
 
 
 def test_wave_convergence_via_wait() -> None:
-    mmr_gap = 400  # way beyond BASE_MMR_WINDOW=100
+    mmr_gap = 400  # beyond every finite window in MMR_WINDOW_SCHEDULE
     queue = [
         _entry(1, bw_race="bw_terran", bw_mmr=1500),
         _entry(2, sc2_race="sc2_zerg", sc2_mmr=1500 + mmr_gap),
     ]
-    cycles_needed = (
-        mmr_gap - BASE_MMR_WINDOW + MMR_WINDOW_GROWTH_PER_CYCLE - 1
-    ) // MMR_WINDOW_GROWTH_PER_CYCLE
+    # The window is unlimited once wait_cycles reaches len(MMR_WINDOW_SCHEDULE),
+    # so a match is guaranteed by then regardless of the gap.
+    max_cycles = len(MMR_WINDOW_SCHEDULE) + 1
 
     matches: list = []
-    for _ in range(cycles_needed + 1):
+    for _ in range(max_cycles):
         remaining, matches = run_matchmaking_wave(queue)
         if matches:
             break
         queue = remaining
 
-    assert len(matches) == 1, f"Expected match after {cycles_needed + 1} cycles"
+    assert len(matches) == 1, f"Expected match within {max_cycles} cycles"
+
+
+# ---------------------------------------------------------------------------
+# Window schedule: first-timers use the base window; unlimited past the end
+# ---------------------------------------------------------------------------
+
+
+def test_window_schedule() -> None:
+    """max_mmr_diff follows the 100/100/150/200/250/unlimited schedule."""
+    assert [max_mmr_diff(p) for p in range(5)] == [100, 100, 150, 200, 250]
+    # Any attempt count at or past the schedule length is unlimited.
+    assert max_mmr_diff(len(MMR_WINDOW_SCHEDULE)) >= 10**9
+
+
+def test_first_wave_uses_base_window() -> None:
+    """A first-timer (0 prior attempts) matches only within the base window,
+    and unmatched entries come out at wait_cycles == 1."""
+    queue = [
+        _entry(1, bw_race="bw_terran", bw_mmr=1500),
+        _entry(2, sc2_race="sc2_zerg", sc2_mmr=1500 + MMR_WINDOW_SCHEDULE[0] + 100),
+    ]
+    remaining, matches = run_matchmaking_wave(queue)
+    assert matches == []
+    assert all(e["wait_cycles"] == 1 for e in remaining)

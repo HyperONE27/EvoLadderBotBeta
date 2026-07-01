@@ -13,9 +13,8 @@ from backend.algorithms.match_params_2v2 import resolve_match_params_2v2
 from backend.algorithms.matchmaker_2v2 import run_matchmaking_wave_2v2
 from backend.algorithms.ratings_1v1 import get_new_ratings
 from backend.core.config import (
-    BASE_MMR_WINDOW,
     CURRENT_SEASON,
-    MMR_WINDOW_GROWTH_PER_CYCLE,
+    max_mmr_diff,
 )
 from backend.domain_types.dataframes import Matches2v2Row, row_as
 from backend.domain_types.ephemeral import (
@@ -70,8 +69,7 @@ def _serialize_queue_entry_2v2(entry: QueueEntry2v2) -> dict[str, object]:
         "map_vetoes": entry["map_vetoes"],
         "joined_at": to_iso(dt=entry["joined_at"]),
         "wait_cycles": entry["wait_cycles"],
-        "mmr_window": BASE_MMR_WINDOW
-        + entry["wait_cycles"] * MMR_WINDOW_GROWTH_PER_CYCLE,
+        "mmr_window": max_mmr_diff(entry["wait_cycles"]),
     }
 
 

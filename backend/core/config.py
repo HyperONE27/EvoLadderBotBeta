@@ -99,9 +99,34 @@ MATCHMAKER: dict[str, float | int] = {
     "wait_cycle_priority_exponent": 1.25,
 }
 
-BASE_MMR_WINDOW: int = 100
-MMR_WINDOW_GROWTH_PER_CYCLE: int = 50
-WAIT_PRIORITY_COEFFICIENT: float = 20.0
+# Max allowed MMR gap as a function of how many prior matchmaking attempts an
+# entry has made. Indexed by ``wait_cycles`` (== number of previous waves the
+# entry sat through unmatched; 0 on its very first wave). Any ``wait_cycles`` at
+# or beyond the end of the schedule uses ``UNLIMITED_MMR_WINDOW`` — no MMR gate.
+#
+#   prev attempts:  0    1    2    3    4    5+
+#   window:        100  100  150  200  250  unlimited
+MMR_WINDOW_SCHEDULE: tuple[int, ...] = (100, 100, 150, 200, 250)
+
+# Sentinel "no MMR ceiling" window — larger than any achievable MMR gap. A pair
+# under this window is never rejected on MMR, but is still subject to region
+# blocks and race-pool availability, so a match is unbounded, not guaranteed.
+UNLIMITED_MMR_WINDOW: int = 10**9
+
+# MMR points of apparent distance each wait cycle forgives in the selection cost
+# (anti-starvation). ``0`` → pure MMR: the optimiser always picks the
+# skill-tightest feasible pairing. Higher → long-waiting / outlier-MMR players
+# win contested partners sooner, at the cost of some average match tightness.
+SLACK_PER_CYCLE: int = 50
+
+
+def max_mmr_diff(wait_cycles: int) -> int:
+    """Max allowed MMR gap for an entry that has made ``wait_cycles`` attempts."""
+    index = max(0, wait_cycles)
+    if index >= len(MMR_WINDOW_SCHEDULE):
+        return UNLIMITED_MMR_WINDOW
+    return MMR_WINDOW_SCHEDULE[index]
+
 
 # Region pairs that must never be matched against each other.  Each pair is
 # expressed as a frozenset of two region codes from data/core/regions.json

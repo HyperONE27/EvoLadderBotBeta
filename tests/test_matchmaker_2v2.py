@@ -16,9 +16,9 @@ from backend.algorithms.matchmaker_2v2 import (
     run_matchmaking_wave_2v2,
 )
 from backend.core.config import (
-    BASE_MMR_WINDOW,
-    MMR_WINDOW_GROWTH_PER_CYCLE,
-    WAIT_PRIORITY_COEFFICIENT,
+    MMR_WINDOW_SCHEDULE,
+    SLACK_PER_CYCLE,
+    max_mmr_diff,
 )
 from backend.domain_types.ephemeral import QueueEntry2v2
 
@@ -178,12 +178,8 @@ class TestCostMatrix:
                 a, b = teams[i], teams[j]
                 compat = _compatible(a, b)
                 diff = abs(a["team_mmr"] - b["team_mmr"])
-                a_window = (
-                    BASE_MMR_WINDOW + a["wait_cycles"] * MMR_WINDOW_GROWTH_PER_CYCLE
-                )
-                b_window = (
-                    BASE_MMR_WINDOW + b["wait_cycles"] * MMR_WINDOW_GROWTH_PER_CYCLE
-                )
+                a_window = max_mmr_diff(a["wait_cycles"])
+                b_window = max_mmr_diff(b["wait_cycles"])
                 in_window = diff <= a_window or diff <= b_window
                 should_be_valid = compat and in_window
                 is_valid = cost[i][j] < _SENTINEL
@@ -201,7 +197,8 @@ class TestCostMatrix:
         cost = _build_cost_matrix(teams)
         diff = abs(1500 - 1450)
         wait_factor = max(2, 3)
-        expected = (diff**2) - ((2**wait_factor) * WAIT_PRIORITY_COEFFICIENT)
+        effective_diff = max(0, diff - wait_factor * SLACK_PER_CYCLE)
+        expected = float(effective_diff**2)
         assert cost[0][1] == expected
         assert cost[1][0] == expected
 
@@ -366,18 +363,17 @@ class TestWave2v2:
 
     def test_convergence_via_wait(self) -> None:
         """Invariant 33: out-of-window teams eventually match."""
-        mmr_gap = 400
+        mmr_gap = 400  # beyond every finite window in MMR_WINDOW_SCHEDULE
         queue: list[QueueEntry2v2] = [
             _team(1, 2, pure_bw=("bw_terran", "bw_zerg"), mmr=1500),
             _team(3, 4, pure_sc2=("sc2_terran", "sc2_zerg"), mmr=1500 + mmr_gap),
         ]
-        cycles_needed = (
-            mmr_gap - BASE_MMR_WINDOW + MMR_WINDOW_GROWTH_PER_CYCLE - 1
-        ) // MMR_WINDOW_GROWTH_PER_CYCLE
-        for _ in range(cycles_needed + 1):
+        # Unlimited window once wait_cycles reaches len(MMR_WINDOW_SCHEDULE).
+        max_cycles = len(MMR_WINDOW_SCHEDULE) + 1
+        for _ in range(max_cycles):
             remaining, matches = run_matchmaking_wave_2v2(queue)
             if matches:
                 break
             queue = remaining
 
-        assert len(matches) == 1, f"Expected match after {cycles_needed + 1} cycles"
+        assert len(matches) == 1, f"Expected match within {max_cycles} cycles"

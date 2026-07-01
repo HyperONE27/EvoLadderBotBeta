@@ -34,11 +34,10 @@ automatically.
 from copy import deepcopy
 
 from backend.core.config import (
-    BASE_MMR_WINDOW,
     DISALLOWED_REGION_PAIRS,
     MMR,
-    MMR_WINDOW_GROWTH_PER_CYCLE,
-    WAIT_PRIORITY_COEFFICIENT,
+    SLACK_PER_CYCLE,
+    max_mmr_diff as _max_mmr_diff,
 )
 from backend.domain_types.ephemeral import MatchCandidate1v1, QueueEntry1v1
 
@@ -57,11 +56,6 @@ _SENTINEL: float = 1e18
 
 def _mmr_or_default(value: int | None) -> int:
     return value if value is not None else DEFAULT_MMR
-
-
-def _max_mmr_diff(wait_cycles: int) -> int:
-    """Allowed MMR difference for a player who has waited *wait_cycles* waves."""
-    return BASE_MMR_WINDOW + wait_cycles * MMR_WINDOW_GROWTH_PER_CYCLE
 
 
 def _has_bw(entry: QueueEntry1v1) -> bool:
@@ -120,9 +114,12 @@ def _build_cost_matrix(
             col_window = _max_mmr_diff(col["wait_cycles"])
             if diff > row_window and diff > col_window:
                 continue
+            # Anti-starvation: each wait cycle forgives SLACK_PER_CYCLE MMR of
+            # apparent distance, so a long-waiting player's far pairing can beat
+            # a fresh player's close one. SLACK_PER_CYCLE == 0 ⇒ pure MMR.
             wait_factor = max(row["wait_cycles"], col["wait_cycles"])
-            score = (diff**2) - ((2**wait_factor) * WAIT_PRIORITY_COEFFICIENT)
-            cost[i][j] = score
+            effective_diff = max(0, diff - wait_factor * SLACK_PER_CYCLE)
+            cost[i][j] = float(effective_diff**2)
 
     return cost
 
@@ -262,12 +259,11 @@ def run_matchmaking_wave(
             e["wait_cycles"] = e["wait_cycles"] + 1
         return early_remaining, []
 
-    # Deep-copy so we never touch the caller's data.
+    # Deep-copy so we never touch the caller's data. wait_cycles is NOT
+    # incremented before the wave: an entry's wait_cycles equals its number of
+    # previous attempts, so a first-timer matches on the base window. Only the
+    # unmatched remainder is incremented at the end (see below).
     entries: list[QueueEntry1v1] = deepcopy(queue)
-
-    # Increment wait_cycles for everyone (this wave counts).
-    for e in entries:
-        e["wait_cycles"] = e["wait_cycles"] + 1
 
     # Build BW (row) and SC2 (column) lists.  "Both" players appear in
     # both lists; entries with no race are silently skipped.
@@ -307,5 +303,8 @@ def run_matchmaking_wave(
     remaining: list[QueueEntry1v1] = [
         e for e in entries if e["discord_uid"] not in matched_uids
     ]
+    # This wave counts as an attempt for everyone who wasn't matched.
+    for e in remaining:
+        e["wait_cycles"] = e["wait_cycles"] + 1
 
     return remaining, match_candidates
